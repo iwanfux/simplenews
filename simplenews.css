@@ -1,0 +1,20 @@
+.sn-img-item {
+  padding: 0.5em 0 0 0;
+  position: relative;
+}
+
+.sn-img {
+  background-image: url(sn-term.png);
+  background-repeat: no-repeat;
+  position: relative;
+  height: 15px;
+  left: 0;
+  top: 0;
+  width: 30px;
+}
+
+.sn-item {
+  position: relative;
+  left: 30px;
+  top: -15px;
+}

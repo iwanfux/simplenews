@@ -1,0 +1,26 @@
+#
+# Table structure for table `sn_subscriptions`
+#
+
+CREATE TABLE `sn_subscriptions` (
+  `snid` int(10) NOT NULL auto_increment,
+  `a_status` int(2) NOT NULL default '0',
+  `s_status` int(2) NOT NULL default '0',
+  `mail` varchar(64) NOT NULL default '',
+  `uid` int(10) NOT NULL default '0',
+  PRIMARY KEY  (`snid`)
+) TYPE=MyISAM;
+
+#
+# Table structure for table `sn_newsletters`
+#
+
+CREATE TABLE `sn_newsletters` (
+  `nid` int(10) NOT NULL default '0',
+  `tid` int(10) NOT NULL default '0',
+  `s_status` int(2) NOT NULL default '0',
+  `s_format` varchar(8) NOT NULL default '',
+  `priority` int(2) NOT NULL default '0',
+  `receipt` int(2) NOT NULL default '0',
+  PRIMARY KEY  (`nid`)
+) TYPE=MyISAM;
