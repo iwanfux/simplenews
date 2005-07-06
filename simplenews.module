@@ -295,13 +295,7 @@ function simplenews_block($op='list', $delta=0) {
 			$name_default = variable_get('site_name', 'drupal');
         if ($edit['sn_subscribe'] == 'Subscribe') {
 				  if ($user->uid == 0) {
-				    if (db_num_rows($snid_result)) {
-							//send confirmation email: "You are already subscribed. Do you want to unsubscribe?"
-							$body = t('We have received a request for subscription of your email address, "%mail", to the %s newsletter. However, you were already subscribed to this newsletter. If you want to unsubscribe, visit the confirmation link at the bottom of this email.', array('%mail'=>$sn_email, '%s'=>variable_get('simplenews_from_name', $name_default)));
-              $body .= "\n\n".t('If you do not wish to be removed from this list, please disregard this message.');
-							sn_mail_confirm($sn_email, $body, $snid_obj->snid, 'unsubscribe');
-					  }
-					  else {
+				    if (!db_num_rows($snid_result)) {
 					    $query = "SELECT u.uid FROM {users} u WHERE u.mail = '%s'";
 					    if ($result = db_fetch_object(db_query($query, $sn_email))) {
 						    $uid = $result->uid;
@@ -312,21 +306,24 @@ function simplenews_block($op='list', $delta=0) {
 					    db_query("INSERT INTO {sn_subscriptions} (mail, uid, a_status) VALUES ('%s', %d, %d)", $sn_email, $uid, 0);
 							$snid_result = db_query("SELECT s.snid FROM {sn_subscriptions} s WHERE s.mail = '%s'", $sn_email);
         			$snid_obj = db_fetch_object($snid_result);
-							//send confirmation email: "Confirm subscription"
-							$body = t('We have received a request for subscription of your email address, "%mail", to the %s newsletter. To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this email.', array('%mail'=>$sn_email, '%s'=>variable_get('simplenews_from_name', $name_default)));
-              $body .= "\n\n".t('If you do not wish to be subscribed to this list, please disregard this message.');
-							sn_mail_confirm($sn_email, $body, $snid_obj->snid, 'subscribe');
-            }
+							$watchdog = t('User "%email" added to the database.', array('%email'=>check_plain($sn_email)));
+				      watchdog('simplenews', $watchdog);
+							}
+					//send confirmation email: "Confirm subscription"
+					$body = t('We have received a request for subscription of your email address, "%mail", to the %s newsletter. To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this email.', array('%mail'=>$sn_email, '%s'=>variable_get('simplenews_from_name', $name_default)));
+          $body .= "\n\n".t('If you do not wish to be subscribed to this list, please disregard this message.');
+					sn_mail_confirm($sn_email, $body, $snid_obj->snid, 'subscribe');
   				$message = t('You will receive a confirmation email shortly');
 					}
 					else {
 					  db_query("INSERT INTO {sn_subscriptions} (mail, uid, a_status) VALUES ('%s', %d, %d)", $sn_email, $user->uid, 1);
 					  $message = t('Thanks for your subscription to our newsletter');
+						$watchdog = t('User "%email" added to the database.', array('%email'=>check_plain($sn_email)));
+			      watchdog('simplenews', $watchdog);
 					}
 				}
 				elseif ($edit['sn_subscribe'] == 'Unsubscribe') {
 				  if ($user->uid == 0) {
-						$query = "SELECT s.snid FROM {sn_subscriptions} s WHERE s.mail = '%s'";
 				    if (db_num_rows($snid_result)) {
 					    //send confirmation email: "Confirm deletion"
 							$body = t('We have received a request for the removal of your email address, "%mail", from the %s newsletter. If you want to unsubscribe, simply visit the confirmation link at the bottom of this email.', array('%mail'=>$sn_email, '%s'=>variable_get('simplenews_from_name', $name_default)));
@@ -345,6 +342,8 @@ function simplenews_block($op='list', $delta=0) {
 				    $query = "DELETE FROM {sn_subscriptions} WHERE mail = '%s'";
 				  	if (db_affected_rows(db_query($query, $sn_email))) {
 				  	  $message = t('You have been removed from the newsletter subscription list');
+							$watchdog = t('User "%email" deleted from the database.', array('%email'=>check_plain($sn_email)));
+				      watchdog('simplenews', $watchdog);
 				  	}
 					}
 				}
@@ -583,12 +582,20 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
 		  }
 		break;
 		case 'users':
+		  if ($op2 == 'sni' && is_numeric($op3)) {
+				  db_query('UPDATE {sn_subscriptions} SET a_status = 0 WHERE snid = %d', $op3);
+			}
+			elseif ($op2 == 'sna' && is_numeric($op3)) {
+				  db_query('UPDATE {sn_subscriptions} SET a_status = 1 WHERE snid = %d', $op3);
+			}
 		  if ($op2 == 'delete' && is_numeric($op3)) {
 			  $snid = $op3;
   	    $user = db_fetch_object(db_query('SELECT s.mail FROM {sn_subscriptions} s WHERE snid = %d', $snid));
 			  if ($_POST['edit']['confirm']) {
 				  db_query('DELETE FROM {sn_subscriptions} WHERE snid = %d', $snid);
 					drupal_set_message(t('The user %user was successfully deleted.', array('%user'=>theme('placeholder', $user->mail))), 'status');
+					$watchdog = t('User "%email" deleted from the database.', array('%email'=>check_plain($user->mail)));
+				  watchdog('simplenews', $watchdog);
 					drupal_goto('admin/simplenews/users');
 				}
 				else {
@@ -669,26 +676,39 @@ function theme_simplenews_status($status, $source) {
 }
 
 function simplenews_admin_list() {
-	$header = array(NULL, t('Email'), t('Username'), t('Operations'));
-  $query = 'SELECT s.*, u.name FROM {sn_subscriptions} s INNER JOIN {users} u ON s.uid = u.uid WHERE a_status = 1 ORDER BY s.mail ASC';
+	$header = array(NULL, t('Email'), t('Username'), t('Status'), array('data' => t('Operations'), 'colspan' => '2'));
+  $query = 'SELECT s.*, u.name FROM {sn_subscriptions} s INNER JOIN {users} u ON s.uid = u.uid ORDER BY s.mail ASC';
   $result = pager_query($query, 15, 0, NULL);
   if ($_GET['from']) {
     $i = (int) $_GET['from'];
 	}
 	while ($subs = db_fetch_object($result)) {
+ 		$key_table = TRUE;
 	  $i++;
 	  if ($subs->uid == 0) {
-		  $subs->name = 'Unregistered user';
+		  $subs->name = t('Unregistered user');
 		}
-	  $rows[] = array($i, $subs->mail, ($subs->uid ? l($subs->name, 'user/'.$subs->uid) : $subs->name), l(t('delete from list'), 'admin/simplenews/users/delete/'.$subs->snid));
+		if ($subs->a_status == 0) {
+		  $activate = l(t('activate'), 'admin/simplenews/users/sna/'.$subs->snid);
+		}
+		elseif ($subs->a_status == 1) {
+		  $activate = l(t('inactivate'), 'admin/simplenews/users/sni/'.$subs->snid);
+		}
+	  $rows[] = array($i, $subs->mail, ($subs->uid ? l($subs->name, 'user/'.$subs->uid) : $subs->name), theme('simplenews_status', $subs->a_status, 'published'), l(t('delete'), 'admin/simplenews/users/delete/'.$subs->snid), $activate);
 	}
   if ($pager = theme('pager', NULL, 15, 0)) {
-    $rows[] = array(array('data' => $pager, 'colspan' => '4'));
+    $rows[] = array(array('data' => $pager, 'colspan' => '6'));
   }
   if (!$rows) {
-    $rows[] = array(array('data' => t('No subscriptions available.'), 'colspan' => '4'));
+    $rows[] = array(array('data' => t('No subscriptions available.'), 'colspan' => '6'));
   }
 	$output = theme('table', $header, $rows);
+	if ($key_table) {
+	  $key_header = array(array('data' => t('Table key'), 'colspan' => '2'));
+	  $key_rows[] = array(theme('simplenews_status', 0, 'published'), t('Inactive/No newsletters will be sent'));
+	  $key_rows[] = array(theme('simplenews_status', 1, 'published'), t('Active/User will receive newsletters'));
+	  $output .= theme('table', $key_header, $key_rows);
+	}
   return $output;
 }
 
@@ -712,6 +732,8 @@ function simplenews_admin_list_add() {
 			        $uid = 0;
 		  	    }
 		        if (db_query("INSERT INTO {sn_subscriptions} (mail, uid, a_status) VALUES ('%s', %d, %d)", $email, $uid, 1)) {
+							$watchdog = t('User "%email" added to the database.', array('%email'=>check_plain($email)));
+				      watchdog('simplenews', $watchdog);
 		          $added[] .= $email;
 				  	}
 			    }
@@ -744,18 +766,37 @@ function simplenews_admin_list_add() {
 }
 
 function simplenews_admin_list_export() {
-	  $result = db_query('SELECT mail FROM {sn_subscriptions}');
-		while ($mail = db_fetch_object($result)) {
-		  $mails[] = $mail->mail;
+  $edit = $_POST['op'] ? $_POST['edit'] : array('active'=>1, 'inactive'=>0);
+  $subgroup = form_checkbox(t('Active users'), 'active', 1, $edit['active']);
+	$subgroup .= form_checkbox(t('Inactive users'), 'inactive', 1, $edit['inactive']);
+	$output = form_group('Status', $subgroup);
+	$output .= form_submit(t('Export'));
+	$export = form($output);
+  if ($_POST['op'] == t('Export')) {
+	  if ($edit['active'] == 1) {
+		  $where[] = 'a_status = 1';
 		}
-		if ($mails) {
-		  $mails = implode(", ", $mails);
-		  $output = form_textarea(t('Email addresses'), 'emails', $mails, 60, 5);
+		if ($edit['inactive'] == 1) {
+		  $where[] = 'a_status = 0';
 		}
-		else {
-		  $output = form_textarea(t('Email addresses'), 'emails', t('No addresses were found.'), 60, 5);
+		$where = $where ? ' WHERE '.implode(' OR ', $where) : NULL;
+		if ($where) {
+		  $query = 'SELECT mail FROM {sn_subscriptions}'.$where;
+	    $result = db_query($query);
+	    while ($mail = db_fetch_object($result)) {
+	      $mails[] = $mail->mail;
+	    }
 		}
-	return form($output);
+	  if ($mails) {
+	    $mails = implode(", ", $mails);
+	    $output = form_textarea(t('Email addresses'), 'emails', $mails, 60, 5);
+  	}
+  	else {
+	    $output = form_textarea(t('Email addresses'), 'emails', t('No addresses were found.'), 60, 5);
+	  }
+		$export .= form($output);
+	}
+	return $export;
 }
 
 function simplenews_confirm_del_user($snid, $user) {
@@ -896,6 +937,8 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
 		    if ($_POST['edit']['confirm']) {
           if (db_query('DELETE FROM {sn_subscriptions} WHERE snid = %d', $subs->snid)) {
   	        drupal_set_message(t('%user was successfully deleted from the subscription list.', array('%user'=>theme('placeholder', $subs->mail))), 'status');
+						$watchdog = t('User "%email" deleted from the database.', array('%email'=>check_plain($subs->mail)));
+				    watchdog('simplenews', $watchdog);
 			  	}
   	     drupal_goto('');
 	      }
