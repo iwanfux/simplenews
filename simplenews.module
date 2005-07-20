@@ -58,7 +58,7 @@ function simplenews_access($op, $node) {
 function simplenews_menu($may_cache) {
   $result = db_fetch_object(db_query("SELECT status FROM {blocks} WHERE module = '%s'", 'simplenews'));
   if ($result->status == 1) {
-     $stylesheet = drupal_get_path('module', 'simplenews').'/simplenews.css';
+    $stylesheet = drupal_get_path('module', 'simplenews').'/simplenews.css';
     drupal_set_html_head(theme('stylesheet_import', $stylesheet));
   }
   
@@ -117,12 +117,6 @@ function simplenews_menu($may_cache) {
 function simplenews_form(&$node) {
   simplenews_create_taxonomy();
   global $user;
-  if (ereg('admin/simplenews', $GLOBALS['HTTP_SERVER_VARS']['HTTP_REFERER'])) {
-    variable_set($user->uid.'_sn_return',1);
-  }
-  else {
-    variable_set($user->uid.'_sn_return',0);
-  }
 
   $output = '';
   if (function_exists('taxonomy_node_form')) {
@@ -221,10 +215,6 @@ function simplenews_delete($node) {
   $result = db_query('DELETE FROM {sn_newsletters} WHERE nid = %d', $node->nid);
   if ($result) {
     drupal_set_message(t('Newsletter %title was successfully deleted.', array('%title'=>theme('placeholder', check_plain($node->title)))), 'status');
-  }
-  if (variable_get($user->uid.'_sn_return','') == 1) {
-    variable_set($user->uid.'_sn_return', 0);
-    drupal_goto('admin/simplenews');
   }
 }
 
