@@ -427,7 +427,7 @@ function _sn_send($timer = FALSE) {
   $max_time = $max_time - 0.5;
   $result = db_query('SELECT s.nid, n.created FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d ORDER BY n.created ASC', 1);
   while ($nid = db_fetch_object($result)) {
-     $node = module_invoke('node', 'load', array('nid' => $nid->nid));
+    $node = module_invoke('node', 'load', array('nid' => $nid->nid), NULL, TRUE);
     $node = simplenews_replace_vars($node, FALSE);
     if ($node->s_format == 'html') {
       $node = module_invoke('node', 'prepare', $node, FALSE);
