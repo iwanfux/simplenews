@@ -251,9 +251,11 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       }
     break;
     case 'update':
-      $query = "SELECT s.snid FROM {sn_subscriptions} s WHERE s.uid = %d";
-      if ($result = db_fetch_object(db_query($query, $account->uid))) {
-        db_query("UPDATE {sn_subscriptions} s SET s.mail = '%s' WHERE s.snid = %d", $edit['mail'], $result->snid);
+      if ($category == 'account') {
+        $query = "SELECT s.snid FROM {sn_subscriptions} s WHERE s.uid = %d";
+        if ($result = db_fetch_object(db_query($query, $account->uid))) {
+          db_query("UPDATE {sn_subscriptions} s SET s.mail = '%s' WHERE s.snid = %d", $edit['mail'] ? $edit['mail'] : $account->mail, $result->snid);
+        }
       }
     break;
   }
