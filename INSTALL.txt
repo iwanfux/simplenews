@@ -35,4 +35,4 @@ Installation
 
 - Enable the simplenews block by navigating to administer -> blocks
 
-- Configure simplenews by navigating to administer -> simplenews -> settings
+- Configure simplenews by navigating to administer -> newsletters -> settings

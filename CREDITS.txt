@@ -3,5 +3,3 @@ CREDITS.txt
 
 Written by
   - Dries Knapen <drieske AT hotmail DOT com>
-
-based on parts of the mail module, and some modified functions of the image module.

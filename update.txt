@@ -1,0 +1,27 @@
+Update instructions to update Simplenews v 1.1.2.4 and v 1.6 or older.
+
+Notes before you start
+
+* This applies to versions 1.1.2.4 (4-6) and 1.6 (HEAD) or older.
+  Updating is highly recommended, as several critical bugs have been fixed
+* If you have several newsletters at the moment, updating will subscribe all your
+  current addresses to all available newsletters: exactly as it is right now.
+  Your subscribers will be able to change their subscriptions later.
+* One side-effect of updating: people that have subscribed as anonymous users,
+  but have not yet confirmed their subsription, will be subscribed to all newsletters,
+  but they will be inactive, and their confirmation link will not work anymore!
+  It is therefore advised that, before updating, you export all inactive users,
+  and manually activate them after the update. Or you could send them a mail that
+  they need to use the subscription form again, but in that case, you should delete 
+  them first from the subscription table, otherwise it won't work. 
+  Nasty thing, but that's the way it is...
+
+Update instructions
+
+* disable the simplenews block on your site
+* prevent anyone from using simplenews.module (i.e. create newsletter, administer simplenews, ...)
+* upload simplenews.module and style.css
+* upload update-simplenews.php to the root folder of your Drupal installation
+* navigate to http://yourdomain/update-simplenews.php
+* go to your homepage
+* you may need to refresh (CTRL+R) for the new stylesheet to work

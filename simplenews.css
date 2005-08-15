@@ -1,5 +1,5 @@
 .sn-img-item {
-  padding: 0.5em 0 0 0;
+  padding: 0 0 0 0;
   position: relative;
 }
 
@@ -15,6 +15,25 @@
 
 .sn-item {
   position: relative;
-  left: 30px;
+  left: 25px;
   top: -15px;
+  height: .7em;
+}
+
+.sn-term-link {
+  padding: .7em 0 .7em 0;
+  position: relative;
+  font-weight: bold;
+}
+
+.sn-xml-icon {
+  text-align: right;
+}
+
+.sn-message {
+  padding: .5em 0 .5em 0;
+}
+
+.sn-manage-form {
+  padding: 1em 0 0 0;
 }

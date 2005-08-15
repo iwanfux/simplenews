@@ -24,3 +24,13 @@ CREATE TABLE `sn_newsletters` (
   `receipt` int(2) NOT NULL default '0',
   PRIMARY KEY  (`nid`)
 ) TYPE=MyISAM;
+
+#
+# Table structure for table `sn_snid_tid`
+#
+
+CREATE TABLE sn_snid_tid (
+  snid int(10) NOT NULL default '0',
+  tid int(10) NOT NULL default '0',
+  PRIMARY KEY  (snid,tid)
+) TYPE=MyISAM;
