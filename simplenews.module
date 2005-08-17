@@ -198,15 +198,7 @@ function simplenews_form(&$node) {
  */
 function simplenews_validate(&$node) {
   if ($node->taxonomy && $node->send == 1) {
-    $vid = simplenews_get_vid();
-    $result = db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid);
-    while ($tid = db_fetch_object($result)) {
-      $tids[] = $tid->tid;
-    }
-    foreach ($node->taxonomy as $tax) {
-      $taxes[] = $tax;
-    }
-    if (!array_intersect($tids, $taxes)) {
+    if (!simplenews_validate_taxonomy($node->taxonomy)) {
       form_set_error('', t('You should select a newsletter type if you want to send this newsletter.'));
     }
   }
@@ -219,6 +211,18 @@ function simplenews_validate(&$node) {
       form_set_error('', t('Cannot send test newsletter: no valid test e-mail address specified.'));
     }
   }
+}
+
+function simplenews_validate_taxonomy($taxonomy) {
+  $vid = simplenews_get_vid();
+  $result = db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid);
+  while ($tid = db_fetch_object($result)) {
+    $tids[] = $tid->tid;
+  }
+  foreach ($taxonomy as $tax) {
+    $taxes[] = $tax;
+  }
+  return array_intersect($tids, $taxes);
 }
 
 /**
@@ -235,17 +239,19 @@ function simplenews_cron() {
  */
 function simplenews_insert($node) {
   $edit = $_POST['edit'];
+  $tid = array_values(simplenews_validate_taxonomy($node->taxonomy));
+  $node->sn_tid = $tid ? $tid[0] : 0;
   //tid is also saved in this table since it is needed by _sn_send(), and the term_node table is
   //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
   //since simplenews_cron() also calls _sn_send().
   if ($edit['send'] == 1 && user_access('send newsletter')) {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $edit['taxonomy'][0], 1, $node->s_format, $node->priority, $node->receipt);
+    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt);
     _sn_send(TRUE);
   }
   else {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $edit['taxonomy'][0], 0, $node->s_format, $node->priority, $node->receipt);
+    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->sn_tid, 0, $node->s_format, $node->priority, $node->receipt);
   }
   if ($edit['send'] == 2) {
     simplenews_send_test($node->nid);
@@ -257,14 +263,16 @@ function simplenews_insert($node) {
  */
 function simplenews_update($node) {
   $edit = $_POST['edit'];
+  $tid = array_values(simplenews_validate_taxonomy($node->taxonomy));
+  $node->sn_tid = $tid ? $tid[0] : 0;
   if ($edit['send'] == 1 && user_access('send newsletter')) {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-    WHERE nid = %d", $edit['taxonomy'][0], 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
+    WHERE nid = %d", $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
     _sn_send(TRUE);
   }
   else {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
-    WHERE nid = %d", $edit['taxonomy'][0], $node->s_format, $node->priority, $node->receipt, $node->nid);
+    WHERE nid = %d", $node->sn_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
   }
   if ($edit['send'] == 2) {
     simplenews_send_test($node->nid);
@@ -978,12 +986,31 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
 
 function simplenews_admin_news($sent) {
   $vid = simplenews_get_vid();
+  $names['all'] = t('all newsletters');
+  $queries['all'] = '';
+  $names['na'] = t('n/a');
+  $queries['na'] = ' AND s.tid = 0';
+  foreach (module_invoke('taxonomy', 'get_tree', simplenews_get_vid()) as $newsletter) {
+    $names[$newsletter->tid] = $newsletter->name;
+    $queries[$newsletter->tid] = ' AND s.tid = '.$newsletter->tid;
+  }
+  if (empty($_SESSION['simplenews_overview_filter'])) {
+    $_SESSION['simplenews_overview_filter'] = 'all';
+  }
+  $op = $_POST['op'];
+  if ($op == t('Filter') && isset($_POST['edit']['filter'])) {
+    $_SESSION['simplenews_overview_filter'] = $_POST['edit']['filter'];
+  }
+  $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_overview_filter'], $names);
+  $form .= form_submit(t('Filter'));
+  
+  
   $header = array(t('Title'), t('Type'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
   if ($sent == 'notsent') {
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d ORDER BY n.created DESC";
+    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_overview_filter']]." ORDER BY n.created DESC";
   }
   else {
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d ORDER BY n.created DESC";
+    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d".$queries[$_SESSION['simplenews_overview_filter']]." ORDER BY n.created DESC";
   }
   $result = pager_query($query, 10, 0, NULL, 0);
   while ($node = db_fetch_object($result)) {
@@ -1004,7 +1031,8 @@ function simplenews_admin_news($sent) {
   else {
     $key_table = TRUE;
   }
-  $output = theme('table', $header, $rows);
+  $output  = '<div class="container-inline">'. form($form) .'</div>';
+  $output .= theme('table', $header, $rows);
   
   if ($key_table) {
   $key_header = array(array('data' => t('Table key'), 'colspan' => '2'));
