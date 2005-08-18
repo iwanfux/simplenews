@@ -986,34 +986,39 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
   print theme('page', $output);
 }
 
-
-function simplenews_admin_news($sent) {
-  $vid = simplenews_get_vid();
+function simplenews_set_filter($type, $na = TRUE) {
   $names['all'] = t('all newsletters');
   $queries['all'] = '';
+  if ($na) {
   $names['na'] = t('n/a');
   $queries['na'] = ' AND s.tid = 0';
+  }
   foreach (module_invoke('taxonomy', 'get_tree', simplenews_get_vid()) as $newsletter) {
     $names[$newsletter->tid] = $newsletter->name;
     $queries[$newsletter->tid] = ' AND s.tid = '.$newsletter->tid;
   }
-  if (empty($_SESSION['simplenews_overview_filter'])) {
-    $_SESSION['simplenews_overview_filter'] = 'all';
+  if (empty($_SESSION[$type])) {
+    $_SESSION[$type] = 'all';
   }
   $op = $_POST['op'];
   if ($op == t('Filter') && isset($_POST['edit']['filter'])) {
-    $_SESSION['simplenews_overview_filter'] = $_POST['edit']['filter'];
+    $_SESSION[$type] = $_POST['edit']['filter'];
   }
-  $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_overview_filter'], $names);
-  $form .= form_submit(t('Filter'));
-  
-  
+  return array($names, $queries);
+}
+
+function simplenews_admin_news($sent) {
+  $vid = simplenews_get_vid();
   $header = array(t('Title'), t('Type'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
   if ($sent == 'notsent') {
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_overview_filter']]." ORDER BY n.created DESC";
+    list($names, $queries) = array_values(simplenews_set_filter('simplenews_drafts_filter'));
+    $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_drafts_filter'], $names);
+    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_drafts_filter']]." ORDER BY n.created DESC";
   }
   else {
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d".$queries[$_SESSION['simplenews_overview_filter']]." ORDER BY n.created DESC";
+    list($names, $queries) = array_values(simplenews_set_filter('simplenews_sent_filter'));
+    $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_sent_filter'], $names);
+    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d".$queries[$_SESSION['simplenews_sent_filter']]." ORDER BY n.created DESC";
   }
   $result = pager_query($query, 10, 0, NULL, 0);
   while ($node = db_fetch_object($result)) {
@@ -1034,6 +1039,7 @@ function simplenews_admin_news($sent) {
   else {
     $key_table = TRUE;
   }
+  $form .= form_submit(t('Filter'));
   $output  = '<div class="container-inline">'. form($form) .'</div>';
   $output .= theme('table', $header, $rows);
   
@@ -1061,14 +1067,19 @@ function theme_simplenews_status($status, $source) {
 }
 
 function simplenews_admin_list() {
+  list($names, $queries) = array_values(simplenews_set_filter('simplenews_subscriptions_filter',FALSE));
+  $form  = form_select(t('Show subscriptions to'), 'filter', $_SESSION['simplenews_subscriptions_filter'], $names);
+  $form .= form_submit(t('Filter'));
+  $output  = '<div class="container-inline">'. form($form) .'</div>';
+
   $header = array(NULL, t('E-mail'), t('Username'), t('Status'), array('data' => t('Operations'), 'colspan' => '3'));
-  $query = 'SELECT s.*, u.name FROM {sn_subscriptions} s INNER JOIN {users} u ON s.uid = u.uid ORDER BY s.mail ASC';
+  $query = 'SELECT DISTINCT ss.*, u.name FROM {sn_subscriptions} ss INNER JOIN {users} u ON ss.uid = u.uid INNER JOIN {sn_snid_tid} s ON ss.snid = s.snid'.$queries[$_SESSION['simplenews_subscriptions_filter']].' ORDER BY ss.mail ASC';
   $result = pager_query($query, 15, 0, NULL);
   if ($_GET['from']) {
     $i = (int) $_GET['from'];
   }
   while ($subs = db_fetch_object($result)) {
-     $key_table = TRUE;
+    $key_table = TRUE;
     $i++;
     if ($subs->uid == 0) {
       $subs->name = t('Unregistered user');
@@ -1087,7 +1098,7 @@ function simplenews_admin_list() {
   if (!$rows) {
     $rows[] = array(array('data' => t('No subscriptions available.'), 'colspan' => '7'));
   }
-  $output = theme('table', $header, $rows);
+  $output .= theme('table', $header, $rows);
   if ($key_table) {
     $key_header = array(array('data' => t('Table key'), 'colspan' => '2'));
     $key_rows[] = array(theme('simplenews_status', 0, 'published'), t('Inactive/No newsletters will be sent'));
