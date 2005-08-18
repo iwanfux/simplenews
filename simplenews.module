@@ -303,10 +303,13 @@ function simplenews_load($node) {
  * Deletes subscriptions to term when term is deleted, and cleans the blocks table
  */
 function simplenews_taxonomy($op, $type, $object) {
-  if ($type == 'term' && $op == 'delete' && $object->vid = simplenews_get_vid()) {
+  if ($type == 'term' && $op == 'delete' && $object->vid == simplenews_get_vid()) {
     db_query('DELETE FROM {sn_snid_tid} WHERE tid = %d', $object->tid);
     db_query('DELETE FROM {blocks} WHERE module = "%s" AND delta = "%s"', 'simplenews', 'newsletter-'.$object->tid);
     drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter'=>theme('placeholder', $object->name))));
+  }
+  elseif ($op == 'delete' && $type == 'vocabulary' && $object->vid == simplenews_get_vid())  {
+    variable_del('simplenews_vid');
   }
 } 
 
