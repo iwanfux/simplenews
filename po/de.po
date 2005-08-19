@@ -2,12 +2,13 @@
 # $Id$
 # Tobias Maier <tobias.maier@gmail.com>, 2005.
 # Uwe Hermann <uwe@hermann-uwe.de>, 2005.
+# Sascha Toennies <babel@sascha-toennies.de>, 2005.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2005-08-18 18:42+0200\n"
+"PO-Revision-Date: 2005-08-19 02:19+0200\n"
 "Last-Translator: Uwe Hermann <uwe@hermann-uwe.de>\n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -265,7 +266,7 @@ msgstr "Benutzer %email wurde zur Datenbank hinzugefügt."
 
 #: simplenews.module:468
 msgid "We have received a request for subscription of your e-mail address, %mail, to the \"%newsletter\" newsletter from %site (%uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail."
-msgstr ""
+msgstr "Wir haben eine Bestellung des \"%newsletter\"-Newsletters der Website \"%site\" (%uri) von Ihrer E-Mail-Adresse \"%mail\" erhalten. Wenn Sie die Aufnahme Ihrer Adresse in die Mailingliste bestätigen wollen, besuchen Sie bitte den Link am Ende diese E-Mail."
 
 #: simplenews.module:469
 #: ;493
@@ -285,7 +286,7 @@ msgstr "Sie werden demnächst mehrere Bestätigungsmails empfangen"
 #: simplenews.module:478
 #: ;478;502;502
 msgid "The newsletter subscriptions have been updated"
-msgstr ""
+msgstr "Die Newsletter-Abos wurden aktualisiert"
 
 #: simplenews.module:486
 msgid "We have received a request for the removal of your e-mail address, %mail, from the \"%newsletter\" newsletter from %site (%uri). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail."
