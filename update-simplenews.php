@@ -32,7 +32,7 @@ if (module_exist('simplenews')) {
       }
     }
     $error .= 'Updated db table: permission<br>';
-    cache_clear_all();
+    menu_rebuild();
     $error .= 'Update completed';
   }
   else {
