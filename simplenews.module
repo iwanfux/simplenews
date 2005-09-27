@@ -205,7 +205,7 @@ function simplenews_form(&$node) {
  * Implementation of hook_validate().
  */
 function simplenews_validate(&$node) {
-  if ($_POST) node_validate_title($node);
+  node_validate_title($node);
   if ($node->taxonomy && $node->send == 1) {
     if (!simplenews_validate_taxonomy($node->taxonomy)) {
       form_set_error('', t('You should select a newsletter type if you want to send this newsletter.'));
