@@ -28,7 +28,7 @@ function simplenews_node_info() {
 * Valid permissions for this module
 */ 
 function simplenews_perm() {
-  return array('view links in block', 'create newsletter', 'edit own newsletter', 'administer newsletters', 'send newsletter');
+  return array('view links in block', 'create newsletter', 'edit own newsletter', 'administer newsletters', 'send newsletter', 'subscribe to newsletters');
 }
 
 /**
@@ -66,7 +66,7 @@ function simplenews_menu($may_cache) {
   $result = db_query('SELECT delta FROM {blocks} WHERE module = "%s" AND status = %d', 'simplenews', 1);
   while ($delta = db_fetch_object($result)) {
     list($type, $tid) = explode('-', $delta->delta);
-    if ($_POST['sn_'.$tid]) {
+    if ($_POST['sn_'.$tid] && user_access('subscribe to newsletters')) {
       $edit = $_POST['edit'];
       simplenews_process_subscription($tid, $edit['sn_email_'.$tid], $edit['sn_subscribe_'.$tid]);
     }
@@ -93,7 +93,7 @@ function simplenews_menu($may_cache) {
     $items[] = array('path' => 'admin/simplenews/types/list', 'title' => t('list newsletters'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_DEFAULT_LOCAL_TASK, 'weight' => -10);
-    $items[] = array('path' => 'admin/simplenews/types/add', 'title' => t('add newsletters'),
+    $items[] = array('path' => 'admin/simplenews/types/add', 'title' => t('add newsletter'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -9);
                      
@@ -122,7 +122,7 @@ function simplenews_menu($may_cache) {
                      'callback' => 'simplenews_confirm_subscription',
                      'type' => MENU_CALLBACK);
     $items[] = array('path' => 'newsletter/subscriptions', 'title' => t('manage newsletter subscriptions'),
-                     'access' => user_access('access content'),
+                     'access' => user_access('subscribe to newsletters'),
                      'callback' => 'simplenews_subscription_manager_page',
                      'type' => MENU_CALLBACK);
   }
@@ -158,7 +158,7 @@ function simplenews_form(&$node) {
   $output .= filter_form('format', $node->format);
 
   if (!$sel1 = $node->s_format) {
-    $sel1 = variable_get('simplenews_format', 'html');
+    $sel1 = variable_get('simplenews_format', 'plain');
   }
   if (!$sel2 = $node->priority) {
     $sel2 = variable_get('simplenews_priority', 0);
@@ -182,19 +182,18 @@ function simplenews_form(&$node) {
       $options[2] = t('Send one test newsletter to the test address');
       $group .= form_radios(t('Sending'), 'send', $edit['send'] ? $edit['send'] : 0, $options, t('You have no privileges to send this newsletter'));
     }
+    if (variable_get('simplenews_test_address_override', 0)) {
+      $group .= form_textfield(t('Test e-mail addresses'), 'test_address', $edit['test_address'] ? $edit['test_address'] : variable_get('simplenews_test_address', ''), 60, 128);
+      $message = t('Supply a comma-separated list of e-mail addresses to be used as test addresses.');
+    }
+    else {
+      $message = '';
+    }
   }
   else {
     $atts = array('disabled'=>'disabled');
     $group .= form_checkbox(t('This newsletter has been sent'), 'none', 0, TRUE, NULL, $atts);
   }
-  if (variable_get('simplenews_test_address_override', 0)) {
-    $group .= form_textfield(t('Test e-mail addresses'), 'test_address', $edit['test_address'] ? $edit['test_address'] : variable_get('simplenews_test_address', ''), 60, 128);
-    $message = t('Supply a comma-separated list of e-mail addresses to be used as test addresses.');
-  }
-  else {
-    $message = '';
-  }
-  
   $output .= form_group_collapsible(t('Newsletter sending options'), $group, FALSE, $message);
   $output .= form_hidden('s_status', $node->s_status);
   $output .= '<br />';
@@ -208,7 +207,7 @@ function simplenews_validate(&$node) {
   node_validate_title($node);
   if ($node->taxonomy && $node->send == 1) {
     if (!simplenews_validate_taxonomy($node->taxonomy)) {
-      form_set_error('', t('You should select a newsletter type if you want to send this newsletter.'));
+      form_set_error('', t('You should select a newsletter if you want to send this newsletter.'));
     }
   }
   if ($node->send == 2) {
@@ -371,7 +370,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
           db_query("UPDATE {sn_subscriptions} SET mail = '%s' WHERE snid = %d", $edit['mail'] ? $edit['mail'] : $account->mail, $result->snid);
         }
       }
-      elseif ($category == 'newsletter') {
+      elseif ($category == 'newsletter' && user_access('subscribe to newsletters')) {
         _simplenews_subscription_manager(FALSE, FALSE, TRUE);
       }
     break;
@@ -382,13 +381,15 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       }
     break;
     case 'form':
-      if ($category == 'newsletter') {
+      if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
         $output[] = array('title' => t('Current newsletter subscriptions'), 'data' => _simplenews_subscription_manager($account).form_hidden('sn_email', $account->mail).form_hidden('sn_update', 'Update'));
         return $output;
       }
     break;
     case 'categories':
-      $output[] = array('name' => 'newsletter', 'title' => t('my newsletters'), 'weight' => 10);
+      if (user_access('subscribe to newsletters')) {
+        $output[] = array('name' => 'newsletter', 'title' => t('my newsletters'), 'weight' => 10);
+      }
     return $output;
   }
 }
@@ -419,14 +420,16 @@ function simplenews_block($op='list', $delta=0) {
           $message = NULL;
         }
         $block['subject'] = check_plain($newsletter->name);
-        if (variable_get('simplenews_block_f_'.$tid, 1)) {
+        if (variable_get('simplenews_block_f_'.$tid, 1) && user_access('subscribe to newsletters')) {
           $block['content'] = _sn_block($message, $tid);
         }
         else {
           if ($message) {
             $block['content'] = $message;
           }
-          $block['content'] .= l(t('Manage my subscriptions'), 'newsletter/subscriptions/');
+          if (user_access('subscribe to newsletters')) {
+            $block['content'] .= l(t('Manage my subscriptions'), 'newsletter/subscriptions/');
+          }
         }
       }
       if (user_access('view links in block') || user_access('administer newsletters')) {
@@ -545,94 +548,104 @@ function simplenews_subscription_manager() {
 }
 
 function simplenews_subscription_manager_page() {
-  global $user;
-  if ($user->uid == 0) {
-    return _simplenews_subscription_manager();
+  if (user_access('subscribe to newsletters')) {
+    global $user;
+    if ($user->uid == 0) {
+      return _simplenews_subscription_manager();
+    }
+    else {
+      drupal_goto('user/'.$user->uid.'/edit/newsletter');
+    }
   }
   else {
-    drupal_goto('user/'.$user->uid.'/edit/newsletter');
+    drupal_goto();
   }
 }
 
 function _simplenews_subscription_manager($account = FALSE, $snid = FALSE, $pre_process_only = FALSE) {
-  if ($account) $user = $account;
-  else global $user;
-  $tree = taxonomy_get_tree(simplenews_get_vid());
-  $edit = $_POST['edit'];
-  if ($_POST['sn_subscribe']) {
-    if ($tree) {
-      if ($_POST['sn_subscribe'] == t('Subscribe')) $sub = 'Subscribe';
-      if ($_POST['sn_subscribe'] == t('Unsubscribe')) $sub = 'Unsubscribe';
-      $selected = FALSE;
-      foreach ($tree as $newsletter) {
-        if ($edit['sn_'.$newsletter->tid] == 1) {
-          simplenews_process_subscription($newsletter->tid, $edit['sn_email'], $sub);
-          $selected = TRUE;
+  if (user_access('subscribe to newsletters')) {
+    if ($account) $user = $account;
+    else global $user;
+    $tree = taxonomy_get_tree(simplenews_get_vid());
+    $edit = $_POST['edit'];
+    if ($_POST['sn_subscribe']) {
+      if ($tree) {
+        if ($_POST['sn_subscribe'] == t('Subscribe')) $sub = 'Subscribe';
+        if ($_POST['sn_subscribe'] == t('Unsubscribe')) $sub = 'Unsubscribe';
+        $selected = FALSE;
+        foreach ($tree as $newsletter) {
+          if ($edit['sn_'.$newsletter->tid] == 1) {
+            simplenews_process_subscription($newsletter->tid, $edit['sn_email'], $sub);
+            $selected = TRUE;
+          }
+        }
+      }
+      if (!$selected) drupal_set_message(t('You should select at least one newsletter.'), 'error');
+    }
+    elseif ($_POST['sn_update'] || $edit['sn_update']) {
+      if ($tree) {
+        foreach ($tree as $newsletter) {
+          if ($edit['sn_'.$newsletter->tid] == 1) {
+            simplenews_process_subscription($newsletter->tid, $edit['sn_email'], 'Subscribe');
+          }
+          else {
+           simplenews_process_subscription($newsletter->tid, $edit['sn_email'], 'Unsubscribe');
+          }
         }
       }
     }
-    if (!$selected) drupal_set_message(t('You should select at least one newsletter.'), 'error');
-  }
-  elseif ($_POST['sn_update'] || $edit['sn_update']) {
+    if ($pre_process_only) return;
+    if ($snid && $_POST['sn_update']) drupal_goto('admin/simplenews/users');
+    $output = '<div class="sn-manage-form">';
     if ($tree) {
       foreach ($tree as $newsletter) {
-        if ($edit['sn_'.$newsletter->tid] == 1) {
-          simplenews_process_subscription($newsletter->tid, $edit['sn_email'], 'Subscribe');
+        if ($user->uid == 0) {
+          $checked = 0;
         }
         else {
-          simplenews_process_subscription($newsletter->tid, $edit['sn_email'], 'Unsubscribe');
+          if ($snid) {
+            $result = db_query("SELECT s.snid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE t.tid = %d AND s.snid = %d", $newsletter->tid, $snid);
+          }
+          else {
+            $result = db_query("SELECT s.snid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE t.tid = %d AND s.uid = %d", $newsletter->tid, $user->uid);
+          }
+          if (db_num_rows($result)) {
+            $checked = 1;
+          }
+          else $checked = 0;
         }
+        $group .= form_checkbox($newsletter->name, 'sn_'.$newsletter->tid, 1, $checked);
       }
-    }
-  }
-  if ($pre_process_only) return;
-  if ($snid && $_POST['sn_update']) drupal_goto('admin/simplenews/users');
-  $output = '<div class="sn-manage-form">';
-  if ($tree) {
-    foreach ($tree as $newsletter) {
+      if ($account) return $group;
       if ($user->uid == 0) {
-        $checked = 0;
+        $output .= form_textfield(t('E-mail'), 'sn_email', '', 20, 35);
+        $output .= form_group(t('Available newsletters'), $group, t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'));
+        $output .= form_submit(t('Subscribe'), 'sn_subscribe');
+        $output .= form_submit(t('Unsubscribe'), 'sn_subscribe');
       }
       else {
         if ($snid) {
-          $result = db_query("SELECT s.snid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE t.tid = %d AND s.snid = %d", $newsletter->tid, $snid);
+          $result = db_query("SELECT mail FROM {sn_subscriptions} WHERE snid = %d", $snid);
+          $sn_email = db_result($result);
+          $message = t('Current subscriptions for %mail.', array('%mail'=>theme('placeholder', $sn_email)));
+          $explanation = '';
         }
         else {
-          $result = db_query("SELECT s.snid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE t.tid = %d AND s.uid = %d", $newsletter->tid, $user->uid);
+          $sn_email = $user->mail;
+          $message = t('Available newsletters');
+          $explanation = t('Select the newsletter(s) to which you want to be subscribed.');
         }
-        if (db_num_rows($result)) {
-          $checked = 1;
-        }
-        else $checked = 0;
+        $output .= form_hidden('sn_email', $sn_email);
+        $output .= form_group($message, $group, $explanation);
+        $output .= form_submit(t('Update'), 'sn_update');
       }
-      $group .= form_checkbox($newsletter->name, 'sn_'.$newsletter->tid, 1, $checked);
     }
-    if ($account) return $group;
-    if ($user->uid == 0) {
-      $output .= form_textfield(t('E-mail'), 'sn_email', '', 20, 35);
-      $output .= form_group(t('Available newsletters'), $group, t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'));
-      $output .= form_submit(t('Subscribe'), 'sn_subscribe');
-      $output .= form_submit(t('Unsubscribe'), 'sn_subscribe');
-    }
-    else {
-      if ($snid) {
-        $result = db_query("SELECT mail FROM {sn_subscriptions} WHERE snid = %d", $snid);
-        $sn_email = db_result($result);
-        $message = t('Current subscriptions for %mail.', array('%mail'=>theme('placeholder', $sn_email)));
-        $explanation = '';
-      }
-      else {
-        $sn_email = $user->mail;
-        $message = t('Available newsletters');
-        $explanation = t('Select the newsletter(s) to which you want to be subscribed.');
-      }
-      $output .= form_hidden('sn_email', $sn_email);
-      $output .= form_group($message, $group, $explanation);
-      $output .= form_submit(t('Update'), 'sn_update');
-    }
+    $output .= '</div>';
+    return form($output);
   }
-  $output .= '</div>';
-  return form($output);
+  else {
+    return '';
+  }
 }
 
 // Todo: use node_title_list() instead? Disadvantage: not separately themable?
@@ -709,7 +722,7 @@ function _sn_block($message, $tid) {
 /**
 * Prepare node for sending
 */
-function simplenews_node_prepare($nid) {
+function simplenews_node_prepare($nid, $tid) {
   $node = node_load(array('nid' => $nid), NULL, TRUE);
   $node = simplenews_replace_vars($node, FALSE);
   if ($node->s_format == 'html') {
@@ -722,8 +735,14 @@ function simplenews_node_prepare($nid) {
   }
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'drupal');
-  $node->from_address = variable_get('simplenews_from_address', $address_default);
-  $node->from_name = variable_get('simplenews_from_name', $name_default);
+  if ($tid) {
+    $node->from_address = variable_get('simplenews_from_address_'.$tid, $address_default);
+    $node->from_name = variable_get('simplenews_from_name_'.$tid, $name_default);
+  }
+  else {
+    $node->from_address = variable_get('simplenews_from_address', $address_default);
+    $node->from_name = variable_get('simplenews_from_name', $name_default);
+  }
   $node->encode = '';
   return $node;
 }
@@ -747,8 +766,8 @@ function _sn_send($timer = FALSE) {
   }
   $result = db_query(db_rewrite_sql('SELECT n.nid, s.tid, n.created FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d ORDER BY n.created ASC'), 1);
   while ($nid = db_fetch_object($result)) {
-    $node = simplenews_node_prepare($nid->nid);
     $term = taxonomy_get_term($nid->tid);
+    $node = simplenews_node_prepare($nid->nid, $nid->tid);
     $node->title = "[$term->name] ".$node->title;
     $result2 = db_query('SELECT s.mail, s.snid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE s.s_status = %d AND s.a_status = %d AND t.tid = %d ORDER BY s.snid ASC', 0, 1, $nid->tid);
     while ($mail = db_fetch_object($result2)) {
@@ -802,9 +821,10 @@ function _sn_send($timer = FALSE) {
 * Send a test newsletter
 */
 function simplenews_send_test($input) {
-  $node = simplenews_node_prepare($input->nid);
-  $tid = db_fetch_object(db_query('SELECT tid FROM {sn_newsletters} WHERE nid = %d', $input->nid));
-  $term = $tid ? taxonomy_get_term($tid->tid) : FALSE;
+  $tid = db_result(db_query('SELECT tid FROM {sn_newsletters} WHERE nid = %d', $input->nid));
+  $tid = $tid ? $tid : FALSE;
+  $node = simplenews_node_prepare($input->nid, $tid);
+  $term = $tid ? taxonomy_get_term($tid) : FALSE;
   $name = $term ? $term->name : 'Unassigned newsletter';
   $node->title = "[$name] ".$node->title;
   $node->message = $node->body."\n\n--\n".t('Footer will be appended here');
@@ -912,7 +932,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
       $output .= simplenews_admin_news('notsent');
     break;
     case 'types':
-      $output .= t('You can create different newsletter types (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') . '<br />&nbsp;<br />';
+      $output .= t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') . '<br />&nbsp;<br />';
       if ($op2 == 'add' || $op2 == 'edit') {
         if ($_POST['edit']) {
           if ($_POST['op'] == t('Delete')) {
@@ -1033,7 +1053,7 @@ function simplenews_set_filter($type, $na = TRUE) {
 
 function simplenews_admin_news($sent) {
   $vid = simplenews_get_vid();
-  $header = array(t('Title'), t('Type'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
+  $header = array(t('Title'), t('Newsletter'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
   if ($sent == 'notsent') {
     list($names, $queries) = array_values(simplenews_set_filter('simplenews_drafts_filter'));
     $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_drafts_filter'], $names);
@@ -1268,6 +1288,7 @@ function simplenews_confirm_del_user($snid, $user) {
 function simplenews_admin_settings($term = FALSE) {
   $output = '<br />';
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
+  $name_default = variable_get('site_name', 'drupal');
   if ($term) {
     $result = db_result(db_query('SELECT status FROM {blocks} WHERE module = "%s" AND delta = "%s"', 'simplenews', 'newsletter-'.$term->tid));
     if (!$result) {
@@ -1282,6 +1303,19 @@ function simplenews_admin_settings($term = FALSE) {
       variable_set('simplenews_block_i_status_'.$term->tid, $edit['block_i_status'.$term->tid]);
       variable_set('simplenews_block_i_'.$term->tid, $edit['block_i'.$term->tid]);
       variable_set('simplenews_block_f_'.$term->tid, $edit['block_f'.$term->tid]);
+      
+      variable_set('simplenews_from_name_'.$term->tid, $edit['from_name'.$term->tid]);
+      //valid_email_address() allows empty address, so check this first
+      if ($edit['from_address'.$term->tid] == '') {
+        form_set_error('from_address'.$term->tid, t("You have to supply a sender's e-mail address."));
+      }
+      elseif (!valid_email_address($edit['from_address'.$term->tid])) {
+        form_set_error('from_address'.$term->tid, t("The sender's e-mail address you supplied is not valid."));
+      }
+      else {
+        variable_set('simplenews_from_address_'.$term->tid, $edit['from_address'.$term->tid]);
+        drupal_set_message(t('Your settings were saved.'));
+      }
     }
     $group = form_checkbox(t('Display block message'), 'block_m_status'.$term->tid, 1, variable_get('simplenews_block_m_status_'.$term->tid, 1));
     $group .= form_textfield(t('Block message'), 'block_m'.$term->tid, variable_get('simplenews_block_m_'.$term->tid, t('Stay informed on our latest news!')), 60, 100);
@@ -1291,7 +1325,12 @@ function simplenews_admin_settings($term = FALSE) {
     $group .= form_select(t('Number of issues to display'), 'block_i'.$term->tid, variable_get('simplenews_block_i_'.$term->tid, 5), drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10)));
     $group .= form_checkbox(t('Display link to RSS-feed'), 'block_r'.$term->tid, 1, variable_get('simplenews_block_r_'.$term->tid, 1));
     
-    $output .= form_group_collapsible(drupal_ucfirst(t('%name block options', array('%name' => theme('placeholder', $term->name)))), $group, FALSE, t('Links (to overview page, RSS-feed and latest issues) are only displayed to users who have "view links in block" privileges.'));
+    $output .= form_group_collapsible(drupal_ucfirst(t('%name block options', array('%name' => theme('placeholder', $term->name)))), $group, TRUE, t('Links (to overview page, RSS-feed and latest issues) are only displayed to users who have "view links in block" privileges.'));
+    $output .= '<br />';
+    
+    $group = form_textfield(t('From name'), 'from_name'.$term->tid, variable_get('simplenews_from_name_'.$term->tid, $name_default), 30, 35);
+    $group .= form_textfield(t('From e-mail address'), 'from_address'.$term->tid, variable_get('simplenews_from_address_'.$term->tid, $address_default), 30, 35);
+    $output .= form_group_collapsible(drupal_ucfirst(t('%name sender information', array('%name' => theme('placeholder', $term->name)))), $group, TRUE);
   }
   else {
     if ($_POST['op'] == t('Submit')) {
@@ -1301,10 +1340,10 @@ function simplenews_admin_settings($term = FALSE) {
       variable_set('simplenews_receipt', $edit['receipt']);
       variable_set('simplenews_send', $edit['send']);
       variable_set('simplenews_time', $edit['time']);
-      variable_set('simplenews_from_name', $edit['from_name']);
       variable_set('simplenews_test_address', $edit['test_address']);
       variable_set('simplenews_test_address_override', $edit['test_address_override']);
       variable_set('simplenews_throttle', $edit['throttle']);
+      variable_set('simplenews_from_name', $edit['from_name']);
       //valid_email_address() allows empty address, so check this first
       if ($edit['from_address'] == '') {
         form_set_error('from_address', t("You have to supply a sender's e-mail address."));
@@ -1314,10 +1353,10 @@ function simplenews_admin_settings($term = FALSE) {
       }
       else {
         variable_set('simplenews_from_address', $edit['from_address']);
-        drupal_set_message(t('Your settings were saved.'), 'status');
+        drupal_set_message(t('Your settings were saved.'));
       }
     }
-    $group = form_select(t('Format'), 'format', variable_get('simplenews_format', 'html'), array('plain' => t('plain'), 'html' => t('html')), t('Select the default newsletter sending format.'));
+    $group = form_select(t('Format'), 'format', variable_get('simplenews_format', 'plain'), array('plain' => t('plain'), 'html' => t('html')), t('Select the default newsletter sending format.'));
     $group .= form_select(t('Priority'), 'priority', variable_get('simplenews_priority', 0), array(0 => t('none'), 1 => t('highest'), 2 => t('high'), 3 => t('normal'), 4 => t('low'), 5 => t('lowest')), t('Note that e-mail priority is ignored by a lot of e-mail programs.'));
     $group .= form_checkbox(t('Request receipt'), 'receipt', 1, variable_get('simplenews_receipt', 0), t('Request a Read Receipt from your newsletters. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your newsletter.'));
     $options[0] = t("Don't send now");
@@ -1330,14 +1369,13 @@ function simplenews_admin_settings($term = FALSE) {
     $group = form_textfield(t('Test e-mail address'), 'test_address', variable_get('simplenews_test_address', $address_default), 60, 128);
     $group .= form_checkbox(t('Allow test address override'), 'test_address_override', 1, variable_get('simplenews_test_address_override', 0));
     $output .= form_group_collapsible(drupal_ucfirst(t('Test addresses options')), $group, TRUE, t('Supply a comma-separated list of e-mail addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation.'));
-    $output .= '<br />';  
+    $output .= '<br />';
     
-    $name_default = variable_get('site_name', 'drupal');
     $group = form_textfield(t('From name'), 'from_name', variable_get('simplenews_from_name', $name_default), 30, 35);
     $group .= form_textfield(t('From e-mail address'), 'from_address', variable_get('simplenews_from_address', $address_default), 30, 35);
-    $output .= form_group_collapsible(t('Sender information'), $group, TRUE);
+    $output .= form_group_collapsible(t('Sender information'), $group, TRUE, t('Default sender address that will only be used for confirmation e-mails. You can specify sender information for each newsletter separately on the newsletter\'s settings page.'));
     $output .= '<br />';
-  
+    
     $max_time = array(0, 1, 2, 3, 4);
     for ($i = 5; $i < ini_get('max_execution_time'); $i=$i+5) {
       $max_time[] = $i;
@@ -1346,8 +1384,8 @@ function simplenews_admin_settings($term = FALSE) {
     $output .= form_group_collapsible(t('Initial send time'), $group, TRUE, t('Sets the maximum time in seconds during which newsletters are sent. If not all recipients have been mailed within this time, sending is further handled as a cronjob.').' <br /> '.t('The highest value in the dropdown list is based on max_execution_time in your php.ini file. Note that if not all previous newletters have been sent to all recipients yet, these are sent first.'));
     $output .= '<br />';
     
-    $throttle = array(10,20,30,40,50,100,150,200,300,400,500);    
-    $group = form_select(t('Number of mails'), 'throttle', variable_get('simplenews_throttle', 20), drupal_map_assoc($throttle));
+    $throttle = array(10=>10,20=>20,30=>30,40=>40,50=>50,100=>100,150=>150,200=>200,300=>300,400=>400,500=>500,999999=>t('Unlimited'));
+    $group = form_select(t('Number of mails'), 'throttle', variable_get('simplenews_throttle', 20), $throttle);
     $output .= form_group_collapsible(t('Cron throttle'), $group, TRUE, t('Sets the numbers of newsletters sent per cron run.'));
 
   }
@@ -1366,9 +1404,6 @@ function simplenews_create_taxonomy() {
     $edit['vid'] = $vid;
     $edit['weight'] = 0;
     switch(taxonomy_save_term($edit)) {
-      case SAVED_NEW:
-        drupal_set_message(t('Created new term %name.', array('%name' => theme('placeholder', $edit['name']))));
-        break;
       case SAVED_UPDATED:
         drupal_set_message(t('Updated term %name.', array('%name' => theme('placeholder', $edit['name']))));
         break;
@@ -1386,9 +1421,6 @@ function simplenews_get_vid() {
   if (!$vid) {
     $edit = array('name' => t('Newsletter type'), 'multiple' => '0', 'required' => '0', 'hierarchy' => '0', 'relations' => '0', 'module' => 'simplenews', 'nodes' => array('simplenews'));
     switch (taxonomy_save_vocabulary($edit)) {
-      case SAVED_NEW:
-        drupal_set_message(t('Created new vocabulary %name.', array('%name' => theme('placeholder', $edit['name']))));
-        break;
       case SAVED_UPDATED:
         drupal_set_message(t('Updated vocabulary %name.', array('%name' => theme('placeholder', $edit['name']))));
          break;
@@ -1403,11 +1435,11 @@ function simplenews_get_vid() {
 }
 
 function simplenews_types_overview() {
-  $header = array(t('Newsletter type'), t('Operations'));
+  $header = array(t('Newsletter name'), t('Operations'));
   $tree = taxonomy_get_tree(simplenews_get_vid());
   if ($tree) {
     foreach ($tree as $term) {
-      $rows[] = array($term->name, l(t('edit type'), "admin/simplenews/types/edit/$term->tid"));
+      $rows[] = array($term->name, l(t('edit newsletter'), "admin/simplenews/types/edit/$term->tid"));
     }
     if (!$rows) {
       $rows = array();
@@ -1420,7 +1452,7 @@ function simplenews_admin_types($edit = array()) {
   if (empty($edit)) {
     $edit['vid'] = simplenews_get_vid();
   }
-  $form = form_textfield(t('Newsletter type'), 'name', $edit['name'], 50, 64, t('This name is used to identify the type.'), NULL, TRUE);
+  $form = form_textfield(t('Newsletter name'), 'name', $edit['name'], 50, 64, t('This name is used to identify the newsletter.'), NULL, TRUE);
   $form .= form_textarea(t('Description'), 'description', $edit['description'], 60, 5, t('The description can be used to provide more information.'));
   $form .= form_weight(t('Weight'), 'weight', $edit['weight'], 10, t('In listings, the heavier (with a higher weight value) terms will sink and the lighter terms will be positioned nearer the top.'));
   $form .= form_hidden('vid', $edit['vid']);
