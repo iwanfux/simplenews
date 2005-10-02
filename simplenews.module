@@ -196,7 +196,6 @@ function simplenews_form(&$node) {
   }
   $output .= form_group_collapsible(t('Newsletter sending options'), $group, FALSE, $message);
   $output .= form_hidden('s_status', $node->s_status);
-  $output .= '<br />';
   return $output;
 }
 
@@ -627,7 +626,7 @@ function _simplenews_subscription_manager($account = FALSE, $snid = FALSE, $pre_
         if ($snid) {
           $result = db_query("SELECT mail FROM {sn_subscriptions} WHERE snid = %d", $snid);
           $sn_email = db_result($result);
-          $message = t('Current subscriptions for %mail.', array('%mail'=>theme('placeholder', $sn_email)));
+          $message = t('Subscriptions for %mail', array('%mail'=>theme('placeholder', $sn_email)));
           $explanation = '';
         }
         else {
@@ -725,13 +724,10 @@ function _sn_block($message, $tid) {
 function simplenews_node_prepare($nid, $tid) {
   $node = node_load(array('nid' => $nid), NULL, TRUE);
   $node = simplenews_replace_vars($node, FALSE);
-  if ($node->s_format == 'html') {
-    $node = node_prepare($node, FALSE);
-  }
-  else {
-    // first do node_prepare() to allow PHP-code to be parsed, then strip remaining HTML-tags
-    $node = node_prepare($node, FALSE);
-    $node->body = sn_html_to_text($node->body);
+  $node = node_prepare($node);
+  $node->body = '<h2>'.$node->title.'</h2>'."\n".$node->body;
+  if ($node->s_format == 'plain') {
+    $node->body = sn_html_to_text($node->body, variable_get('simplenews_hyperlinks_'.$tid, 1));
   }
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'drupal');
@@ -743,7 +739,6 @@ function simplenews_node_prepare($nid, $tid) {
     $node->from_address = variable_get('simplenews_from_address', $address_default);
     $node->from_name = variable_get('simplenews_from_name', $name_default);
   }
-  $node->encode = '';
   return $node;
 }
 
@@ -840,7 +835,6 @@ function simplenews_send_test($input) {
 */
 function sn_mail_confirm($email, $message, $newsletter, $snid = NULL, $tid = NULL, $op = NULL) {
   $mail->s_format = 'plain';
-  $mail->encode = '';
   $mail->priority = 'none';
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'drupal');
@@ -876,7 +870,7 @@ function sn_mail_send($mail) {
   $email->From($mail->from_address, $mail->from_name);
   $email->To($mail->to);
   $email->Subject($mail->title);
-  $email->Message($mail->message, 'UTF-8', $mail->encode);
+  $email->Message($mail->message, 'UTF-8', '8Bit');
   $email->priority($mail->priority);
   if ($mail->receipt) {
     $email->Receipt($mail->from_address);
@@ -888,29 +882,39 @@ function sn_mail_send($mail) {
 /**
 * Other module-specific functions
 */
-function sn_html_to_text($txt) {
-  $pattern = '@(<a href="(.+?)">(.+?)</a>)@ei';
-  $txt = preg_replace($pattern, "'\\3 ['. _sn_mail_urls('\\2') .']'", $txt);
-  $urls = _sn_mail_urls();
-  if (count($urls)) {
+function sn_html_to_text($txt, $inline) {
+  $pattern = '@(<a href="(.\S+?)"[^>]*>(.+?)</a>)@ei';
+  if ($inline) {
+    $txt = preg_replace($pattern, "'\\3 ['. _sn_mail_url('\\2') .']'", $txt);
+  }
+  else {
+    $txt = preg_replace($pattern, "'\\3 ['. _sn_mail_urls('\\2') .']'", $txt);
+    $urls = _sn_mail_urls();
+    if (count($urls)) {
       $txt .= "\n";
       $i = 0;
       for ($max = count($urls); $i < $max; $i++) {
         $txt .= '['. ($i + 1) .'] '. $urls[$i] ."\n";
       }
+    }
+    _sn_mail_urls(0, TRUE);
   }
-  _sn_mail_urls(0, TRUE);
-  // correctly convert line breaks
-  $txt = preg_replace('!</?blockquote>!i', '"', $txt);
-  $txt = preg_replace('!</?(em|i)>!i', '/', $txt);
-  $txt = preg_replace('!</?(b|strong)>!i', '*', $txt);
-  $txt = preg_replace("@<br />(?!\n)@i", "\n", $txt);
-  $txt = preg_replace("@</p>(?!\n\n)@i", "\n\n", $txt);
-  $txt = preg_replace("@<li>@i", "* ", $txt);
-  $txt = preg_replace("@</li>\n?@i", "\n", $txt);
+  
+  // some basic html to text conversion
+  $txt = preg_replace(_sn_define_search(), _sn_define_replace(), $txt);
+  $txt = preg_replace("/\n\s+\n/", "\n\n", $txt);
   $txt = strip_tags($txt);
   $txt = decode_entities($txt);
-  return wordwrap($txt, 72);
+  return wordwrap($txt, 80);
+}
+
+function _sn_mail_url($url) {
+  if (preg_match('@://@', $url)) {
+    return $url;
+  }
+  else {
+    return url($url, NULL, NULL, 1);
+  }
 }
 
 function _sn_mail_urls($url = 0, $refresh = FALSE) {
@@ -919,11 +923,120 @@ function _sn_mail_urls($url = 0, $refresh = FALSE) {
     $urls = array();
   }
   if ($url) {
-    $urls[] = strpos($url, '://') ? $url : url($url, NULL, NULL, 1);
+    $urls[] = _sn_mail_url($url);
     return count($urls);
   }
   return $urls;
 }
+
+/**
+ *  List of preg* regular expression patterns to search for,
+ *  used in conjunction with $replace.
+ *  Based on / modified from html2txt.module
+ */
+function _sn_define_search() {
+
+    $search = array(
+        "/\r/",                                       // Non-legal carriage return
+        "/[\t]+/",                                    // tabs
+        '/<script[^>]*>.*?<\/script>/i',              // <script>s -- which strip_tags supposedly has problems with
+        '!<h[12][^>]*>(.+?)</h[12]>!ie',              // H1 - H2
+        '/<h3[^>]*>(.+?)<\/h3>/ie',                   // H3
+        '/<h[456][^>]*>(.+?)<\/h[456]>/ie',           // H4 - H6
+        '!<blockquote[^>]*>!i',                       // <blockquote>
+        '!</blockquote>!i',                           // </blockquote>
+        '!</?p[^>]*>!i',                              // <p>
+        '/<br[^>]*>/i',                               // <br>
+        '!</?(b|strong)[^>]*>!i',                     // <b> and <strong>
+        '!</?(em|i)[^>]*>!i',                         // <em> and <i>
+        '/(<ul[^>]*>|<\/ul>)/i',                      // <ul> and </ul>
+        '/(<ol[^>]*>|<\/ol>)/i',                      // <ol> and </ol>
+        '!<li[^>]*>!i',                               // <li>
+        '!</li>!i',                                   // </li>
+        '/<hr[^>]*>/i',                               // <hr>
+        '/(<table[^>]*>|<\/table>)/i',                // <table> and </table>
+        '/(<tr[^>]*>|<\/tr>)/i',                      // <tr> and </tr>
+        '/<td[^>]*>(.+?)<\/td>/i',                    // <td> and </td>
+        '/<th[^>]*>(.+?)<\/th>/i',                    // <th> and </th>
+        '/&nbsp;/i',
+        '/&quot;/i',
+        '/&gt;/i',
+        '/&lt;/i',
+        '/&amp;/i',
+        '/&copy;/i',
+        '/&trade;/i',
+        '/&#8220;/',
+        '/&#8221;/',
+        '/&#8211;/',
+        '/&#8217;/',
+        '/&#38;/',
+        '/&#169;/',
+        '/&#8482;/',
+        '/&#151;/',
+        '/&#147;/',
+        '/&#148;/',
+        '/&#149;/',
+        '/&reg;/i',
+        '/&bull;/i',
+        '/&[&;]+;/i'
+    );
+    
+    return $search;
+}
+
+/**
+ *  List of pattern replacements corresponding to patterns searched.
+ *  Based on / modified from html2txt.module
+ */
+function _sn_define_replace() {
+
+    $replace = array(
+        '',                                                               // Non-legal carriage return
+        ' ',                                                              // Tabs
+        '',                                                               // <script>s -- which strip_tags supposedly has problems with
+        "\"\n------------\" .strtoupper('\\1'). \"------------\n\n\"",    // H1 - H2
+        "\"\n\" . strtoupper('\\1') . \"\n\n\"",                          // H3
+        "ucwords(\"\n\n\\1\n\n\")",                                       // H4 - H6
+        "\n\n\t",                                                         // <blockquote>
+        "\n\n",                                                           // </blockquote>
+        "\n\n",                                                           // <p>
+        "\n",                                                             // <br>
+        '*',                                                              // <b> and <strong>
+        '/',                                                              // <em> and <i>
+        "\n\n",                                                           // <ul> and </ul>
+        "\n\n",                                                           // <ol> and </ol>
+        "  * ",                                                            // <li>
+        "\n",                                                             //</li>
+        "\n-------------------------\n",                                  // <hr>
+        "\n\n",                                                           // <table> and </table>
+        "\n",                                                             // <tr> and </tr>
+        "\t\t\\1\n",                                                      // <td> and </td>
+        "strtoupper(\"\t\t\\1\n\")",                                      // <th> and </th>
+        ' ',
+        '"',
+        '>',
+        '<',
+        '&',
+        '(c)',
+        '(tm)',
+        '"',
+        '"',
+        '-',
+        "'",
+        '&',
+        '(c)',
+        '(tm)',
+        '--',
+        '"',
+        '"',
+        '*',
+        '(R)',
+        '*',
+        ''
+    );
+    return $replace;
+}
+
 
 function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
   simplenews_create_taxonomy();
@@ -1056,15 +1169,17 @@ function simplenews_admin_news($sent) {
   $header = array(t('Title'), t('Newsletter'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
   if ($sent == 'notsent') {
     list($names, $queries) = array_values(simplenews_set_filter('simplenews_drafts_filter'));
-    $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_drafts_filter'], $names);
+    $form  = form_select('', 'filter', $_SESSION['simplenews_drafts_filter'], $names);
     $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_drafts_filter']]." ORDER BY n.created DESC";
+    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_drafts_filter']];
   }
   else {
     list($names, $queries) = array_values(simplenews_set_filter('simplenews_sent_filter'));
-    $form  = form_select(t('Show issues from'), 'filter', $_SESSION['simplenews_sent_filter'], $names);
+    $form  = form_select('', 'filter', $_SESSION['simplenews_sent_filter'], $names);
     $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d".$queries[$_SESSION['simplenews_sent_filter']]." ORDER BY n.created DESC";
+    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {sn_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d".$queries[$_SESSION['simplenews_sent_filter']];
   }
-  $result = pager_query(db_rewrite_sql($query), 10, 0, NULL, 0);
+  $result = pager_query(db_rewrite_sql($query), 10, 0, db_rewrite_sql($count_query), 0);
   while ($node = db_fetch_object($result)) {
     $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($node->nid, $vid, 'name'));
     $rows[] = array(l($node->title, 'node/'. $node->nid),
@@ -1084,7 +1199,7 @@ function simplenews_admin_news($sent) {
     $key_table = TRUE;
   }
   $form .= form_submit(t('Filter'));
-  $output  = '<div class="container-inline">'. form($form) .'</div>';
+  $output = form(form_group(t('Show issues from'), "<div class=\"container-inline\">$form</div>"));
   $output .= theme('table', $header, $rows);
   
   if ($key_table) {
@@ -1112,13 +1227,14 @@ function theme_simplenews_status($status, $source) {
 
 function simplenews_admin_list() {
   list($names, $queries) = array_values(simplenews_set_filter('simplenews_subscriptions_filter',FALSE));
-  $form  = form_select(t('Show subscriptions to'), 'filter', $_SESSION['simplenews_subscriptions_filter'], $names);
+  $form  = form_select('', 'filter', $_SESSION['simplenews_subscriptions_filter'], $names);
   $form .= form_submit(t('Filter'));
-  $output  = '<div class="container-inline">'. form($form) .'</div>';
+  $output = form(form_group(t('Show subscriptions to'), "<div class=\"container-inline\">$form</div>"));
 
   $header = array(NULL, t('E-mail'), t('Username'), t('Status'), array('data' => t('Operations'), 'colspan' => '3'));
   $query = 'SELECT DISTINCT ss.*, u.name FROM {sn_subscriptions} ss INNER JOIN {users} u ON ss.uid = u.uid INNER JOIN {sn_snid_tid} s ON ss.snid = s.snid'.$queries[$_SESSION['simplenews_subscriptions_filter']].' ORDER BY ss.mail ASC';
-  $result = pager_query($query, 15, 0, NULL);
+  $count_query = 'SELECT COUNT(DISTINCT(ss.snid)) FROM {sn_subscriptions} ss INNER JOIN {sn_snid_tid} s ON ss.snid = s.snid'.$queries[$_SESSION['simplenews_subscriptions_filter']];
+  $result = pager_query($query, 15, 0, $count_query);
   if ($_GET['page']) {
     $i = (int) $_GET['page'] * 15;
   }
@@ -1156,7 +1272,7 @@ function simplenews_admin_list_add() {
   $edit = $_POST['edit'];
   $tree = taxonomy_get_tree(simplenews_get_vid());
 
-  if ($_POST['op'] == t('Submit')) {
+  if ($_POST['op'] == t('Import')) {
     if ($edit['emails'] != '') {
       $emails = explode(",", $edit['emails']);
        foreach ($emails as $email) {
@@ -1222,7 +1338,7 @@ function simplenews_admin_list_add() {
   }
   $output .= form_textarea(t('E-mail addresses'), 'emails', '', 60, 5, t('Supply a comma separated list of e-mail addresses to be added to the list. Spaces between commas and addresses are allowed.'));
   $output .= form_group(t('Subscribe imported addresses to'), $subgroup);
-  $output .= form_submit(t('Submit'));
+  $output .= form_submit(t('Import'));
   return form($output);
 }
 
@@ -1304,6 +1420,8 @@ function simplenews_admin_settings($term = FALSE) {
       variable_set('simplenews_block_i_'.$term->tid, $edit['block_i'.$term->tid]);
       variable_set('simplenews_block_f_'.$term->tid, $edit['block_f'.$term->tid]);
       
+      variable_set('simplenews_hyperlinks_'.$term->tid, $edit['hyperlinks'.$term->tid]);
+      
       variable_set('simplenews_from_name_'.$term->tid, $edit['from_name'.$term->tid]);
       //valid_email_address() allows empty address, so check this first
       if ($edit['from_address'.$term->tid] == '') {
@@ -1320,17 +1438,22 @@ function simplenews_admin_settings($term = FALSE) {
     $group = form_checkbox(t('Display block message'), 'block_m_status'.$term->tid, 1, variable_get('simplenews_block_m_status_'.$term->tid, 1));
     $group .= form_textfield(t('Block message'), 'block_m'.$term->tid, variable_get('simplenews_block_m_'.$term->tid, t('Stay informed on our latest news!')), 60, 100);
     $group .= form_checkbox(t('Display subscription form'), 'block_f'.$term->tid, 1, variable_get('simplenews_block_f_'.$term->tid, 1));
-    $group .= form_checkbox(t('Display link to overview page'), 'block_l'.$term->tid, 1, variable_get('simplenews_block_l_'.$term->tid, 1));
+    $group .= form_checkbox(t('Display link to archives'), 'block_l'.$term->tid, 1, variable_get('simplenews_block_l_'.$term->tid, 1));
     $group .= form_checkbox(t('Display latest issues'), 'block_i_status'.$term->tid, 1, variable_get('simplenews_block_i_status_'.$term->tid, 0));
     $group .= form_select(t('Number of issues to display'), 'block_i'.$term->tid, variable_get('simplenews_block_i_'.$term->tid, 5), drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10)));
-    $group .= form_checkbox(t('Display link to RSS-feed'), 'block_r'.$term->tid, 1, variable_get('simplenews_block_r_'.$term->tid, 1));
+    $group .= form_checkbox(t('Display RSS-feed icon'), 'block_r'.$term->tid, 1, variable_get('simplenews_block_r_'.$term->tid, 1));
     
-    $output .= form_group_collapsible(drupal_ucfirst(t('%name block options', array('%name' => theme('placeholder', $term->name)))), $group, TRUE, t('Links (to overview page, RSS-feed and latest issues) are only displayed to users who have "view links in block" privileges.'));
-    $output .= '<br />';
+    $output .= form_group_collapsible(drupal_ucfirst(t('Block options')), $group, TRUE, t('Links (to overview page, RSS-feed and latest issues) are only displayed to users who have "view links in block" privileges.'));
     
     $group = form_textfield(t('From name'), 'from_name'.$term->tid, variable_get('simplenews_from_name_'.$term->tid, $name_default), 30, 35);
     $group .= form_textfield(t('From e-mail address'), 'from_address'.$term->tid, variable_get('simplenews_from_address_'.$term->tid, $address_default), 30, 35);
-    $output .= form_group_collapsible(drupal_ucfirst(t('%name sender information', array('%name' => theme('placeholder', $term->name)))), $group, TRUE);
+    $output .= form_group_collapsible(drupal_ucfirst(t('Sender information')), $group, TRUE);
+    
+    $options[0] = t('Append hyperlinks as a numbered reference list');
+    $options[1] = t('Display hyperlinks inline with the text');
+    $group = form_radios(t('Hyperlink conversion'), 'hyperlinks'.$term->tid, variable_get('simplenews_hyperlinks_'.$term->tid, 1), $options);
+    $output .= form_group_collapsible(drupal_ucfirst(t('HTML to text conversion')), $group, TRUE, t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'));
+
   }
   else {
     if ($_POST['op'] == t('Submit')) {
@@ -1364,17 +1487,14 @@ function simplenews_admin_settings($term = FALSE) {
     $options[1] = t('Send newsletter');
     $group .= form_radios(t('Default selection for sending newsletters'), 'send', variable_get('simplenews_send', 0), $options);
     $output .= form_group_collapsible(t('Default newsletter options'), $group, TRUE, t('These options will be the defaults for new newsletters, but can be overridden in the newsletter editing form.'));
-    $output .= '<br />';
     
     $group = form_textfield(t('Test e-mail address'), 'test_address', variable_get('simplenews_test_address', $address_default), 60, 128);
     $group .= form_checkbox(t('Allow test address override'), 'test_address_override', 1, variable_get('simplenews_test_address_override', 0));
     $output .= form_group_collapsible(drupal_ucfirst(t('Test addresses options')), $group, TRUE, t('Supply a comma-separated list of e-mail addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation.'));
-    $output .= '<br />';
     
     $group = form_textfield(t('From name'), 'from_name', variable_get('simplenews_from_name', $name_default), 30, 35);
     $group .= form_textfield(t('From e-mail address'), 'from_address', variable_get('simplenews_from_address', $address_default), 30, 35);
     $output .= form_group_collapsible(t('Sender information'), $group, TRUE, t('Default sender address that will only be used for confirmation e-mails. You can specify sender information for each newsletter separately on the newsletter\'s settings page.'));
-    $output .= '<br />';
     
     $max_time = array(0, 1, 2, 3, 4);
     for ($i = 5; $i < ini_get('max_execution_time'); $i=$i+5) {
@@ -1382,7 +1502,6 @@ function simplenews_admin_settings($term = FALSE) {
     }
     $group = form_select(t('Seconds'), 'time', variable_get('simplenews_time', 2), drupal_map_assoc($max_time));
     $output .= form_group_collapsible(t('Initial send time'), $group, TRUE, t('Sets the maximum time in seconds during which newsletters are sent. If not all recipients have been mailed within this time, sending is further handled as a cronjob.').' <br /> '.t('The highest value in the dropdown list is based on max_execution_time in your php.ini file. Note that if not all previous newletters have been sent to all recipients yet, these are sent first.'));
-    $output .= '<br />';
     
     $throttle = array(10=>10,20=>20,30=>30,40=>40,50=>50,100=>100,150=>150,200=>200,300=>300,400=>400,500=>500,999999=>t('Unlimited'));
     $group = form_select(t('Number of mails'), 'throttle', variable_get('simplenews_throttle', 20), $throttle);
@@ -1419,7 +1538,7 @@ function simplenews_get_vid() {
   // Check to see if a vocabulary exists, else create one
   $vid = db_result(db_query('SELECT vid FROM {vocabulary} WHERE vid = %d', $vid));
   if (!$vid) {
-    $edit = array('name' => t('Newsletter type'), 'multiple' => '0', 'required' => '0', 'hierarchy' => '0', 'relations' => '0', 'module' => 'simplenews', 'nodes' => array('simplenews'));
+    $edit = array('name' => t('Newsletter'), 'multiple' => '0', 'required' => '0', 'hierarchy' => '0', 'relations' => '0', 'module' => 'simplenews', 'nodes' => array('simplenews'));
     switch (taxonomy_save_vocabulary($edit)) {
       case SAVED_UPDATED:
         drupal_set_message(t('Updated vocabulary %name.', array('%name' => theme('placeholder', $edit['name']))));

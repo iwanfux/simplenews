@@ -318,7 +318,7 @@ return $result;
 //==============================================================================================
 function mkHeaders(){
 $this->headers["Mime-Version"]="1.0";
-$this->headers["Content-Type"]="text/$this->type; charset=\"$this->charset\"";
+$this->headers["Content-Type"]="text/".$this->type."; charset=".$this->charset."; format=flowed";
 $this->headers["Content-Transfer-Encoding"]="$this->encoding";
 	if ($this->mailfrom){
 		if ($this->mailfromname) $this->headers["From"] = $this->mailfromname." <".$this->mailfrom.">";
