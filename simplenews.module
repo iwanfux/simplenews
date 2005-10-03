@@ -366,7 +366,14 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       if ($category == 'account') {
         $query = "SELECT snid FROM {sn_subscriptions} WHERE uid = %d";
         if ($result = db_fetch_object(db_query($query, $account->uid))) {
-          db_query("UPDATE {sn_subscriptions} SET mail = '%s' WHERE snid = %d", $edit['mail'] ? $edit['mail'] : $account->mail, $result->snid);
+          db_query("DELETE FROM {sn_subscriptions} WHERE mail = '%s' AND uid = %d", $edit['mail'], 0);
+          db_query("UPDATE {sn_subscriptions} SET mail = '%s' WHERE snid = %d", $edit['mail'], $result->snid);
+        }
+        else {
+          $query = "SELECT snid FROM {sn_subscriptions} WHERE mail = '%s'";
+          if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
+            db_query("UPDATE {sn_subscriptions} SET uid = %d WHERE snid = %d", $account->uid, $result->snid);
+          }
         }
       }
       elseif ($category == 'newsletter' && user_access('subscribe to newsletters')) {
