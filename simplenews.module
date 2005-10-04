@@ -894,7 +894,7 @@ function sn_mail_send($mail) {
 function sn_html_to_text($txt, $inline) {
   $pattern = '@(<a href="(.\S+?)"[^>]*>(.+?)</a>)@ei';
   if ($inline) {
-    $txt = preg_replace($pattern, "'\\3 ['. _sn_mail_url('\\2') .']'", $txt);
+    $txt = preg_replace($pattern, "_sn_mail_uri('\\2', '\\3')", $txt);
   }
   else {
     $txt = preg_replace($pattern, "'\\3 ['. _sn_mail_urls('\\2') .']'", $txt);
@@ -915,6 +915,17 @@ function sn_html_to_text($txt, $inline) {
   $txt = strip_tags($txt);
   $txt = decode_entities($txt);
   return wordwrap($txt, 80);
+}
+
+function _sn_mail_uri($href, $link) {
+  $href = _sn_mail_url($href);
+  if ($href == $link) {
+    $output =  '['.$href.']';
+  }
+  else {
+    $output = $link.' ['.$href.']';
+  }
+  return $output;
 }
 
 function _sn_mail_url($url) {
