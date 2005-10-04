@@ -357,13 +357,15 @@ function simplenews_view(&$node, $teaser = FALSE) {
 function simplenews_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
-      $query = "SELECT snid FROM {sn_subscriptions} WHERE mail = '%s'";
-      if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-        db_query("UPDATE {sn_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+      if ($edit['mail']) {
+        $query = "SELECT snid FROM {sn_subscriptions} WHERE mail = '%s'";
+        if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
+          db_query("UPDATE {sn_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+        }
       }
     break;
     case 'update':
-      if ($category == 'account') {
+      if ($category == 'account' && $edit['mail']) {
         $query = "SELECT snid FROM {sn_subscriptions} WHERE uid = %d";
         if ($result = db_fetch_object(db_query($query, $account->uid))) {
           db_query("DELETE FROM {sn_subscriptions} WHERE mail = '%s' AND uid = %d", $edit['mail'], 0);
