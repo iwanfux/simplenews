@@ -919,6 +919,9 @@ function _sn_mail_url($url) {
   if (preg_match('@://@', $url)) {
     return $url;
   }
+  elseif (preg_match('!mailto:!i', $url)) {
+    return str_replace('mailto:', '', $url);
+  }
   else {
     return url($url, NULL, NULL, 1);
   }
@@ -958,8 +961,13 @@ function _sn_define_search() {
         '!</?(em|i)[^>]*>!i',                         // <em> and <i>
         '/(<ul[^>]*>|<\/ul>)/i',                      // <ul> and </ul>
         '/(<ol[^>]*>|<\/ol>)/i',                      // <ol> and </ol>
+        '/(<dl[^>]*>|<\/dl>)/i',                      // <dl> and </dl>
         '!<li[^>]*>!i',                               // <li>
         '!</li>!i',                                   // </li>
+        '!<dt[^>]*>!i',                               // <dt>
+        '!</dt>!i',                                   // </dt>
+        '!<dd[^>]*>!i',                               // <dd>
+        '!</dd>!i',                                   // </dd>
         '/<hr[^>]*>/i',                               // <hr>
         '/(<table[^>]*>|<\/table>)/i',                // <table> and </table>
         '/(<tr[^>]*>|<\/tr>)/i',                      // <tr> and </tr>
@@ -1012,8 +1020,13 @@ function _sn_define_replace() {
         '/',                                                              // <em> and <i>
         "\n\n",                                                           // <ul> and </ul>
         "\n\n",                                                           // <ol> and </ol>
-        "  * ",                                                            // <li>
-        "\n",                                                             //</li>
+        "\n\n",                                                           // <dl> and </dl>
+        "  * ",                                                           // <li>
+        "\n",                                                             // </li>
+        "  * ",                                                           // <dt>
+        "\n",                                                             // </dt>
+        "\t",                                                             // <dd>
+        "\n",                                                             // </dd>
         "\n-------------------------\n",                                  // <hr>
         "\n\n",                                                           // <table> and </table>
         "\n",                                                             // <tr> and </tr>
