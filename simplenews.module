@@ -969,7 +969,7 @@ function _sn_define_search() {
         '!<blockquote[^>]*>!i',                       // <blockquote>
         '!</blockquote>!i',                           // </blockquote>
         '!</?p[^>]*>!i',                              // <p>
-        '/<br[^>]*>/i',                               // <br>
+        "/<br[^>]*>\n?/i",                            // <br>
         '!</?(b|strong)[^>]*>!i',                     // <b> and <strong>
         '!</?(em|i)[^>]*>!i',                         // <em> and <i>
         '/(<ul[^>]*>|<\/ul>)/i',                      // <ul> and </ul>
