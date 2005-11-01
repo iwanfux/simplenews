@@ -228,8 +228,8 @@ return $out;
 //==============================================================================================
 // PRIVATE VARIABLES -> do not modify them on runtime, use the finctions instesd
 //==============================================================================================
-var $mailvers = "MMF Mailer";
-var $knownmail="james@ukmmf.net";
+var $mailvers = "activeMailLib PHP";
+var $knownmail="local@localhost.com";
 var $checkaddr=false;
 var $checkserv=false;
 var $type="plain";
