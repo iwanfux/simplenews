@@ -378,7 +378,7 @@ function simplenews_load($node) {
 function simplenews_taxonomy($op, $type, $object = NULL) {
   if ($type == 'term' && $op == 'delete' && $object->vid == simplenews_get_vid()) {
     db_query('DELETE FROM {sn_snid_tid} WHERE tid = %d', $object->tid);
-    db_query('DELETE FROM {blocks} WHERE module = "%s" AND delta = "%s"', 'simplenews', 'newsletter-'.$object->tid);
+    db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', 'newsletter-'.$object->tid);
     drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter'=>theme('placeholder', $object->name))));
   }
   elseif ($op == 'delete' && $type == 'vocabulary' && $object->vid == simplenews_get_vid())  {
@@ -1631,7 +1631,7 @@ function simplenews_admin_settings($term = FALSE) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'drupal');
   if ($term) {
-    $result = db_result(db_query('SELECT status FROM {blocks} WHERE module = "%s" AND delta = "%s"', 'simplenews', 'newsletter-'.$term->tid));
+    $result = db_result(db_query("SELECT status FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', 'newsletter-'.$term->tid));
     if (!$result) {
       drupal_set_message(t('The %block block is disabled. Click %here to enable this block.', array('%block' => theme('placeholder', $term->name), '%here' => l(t('here'), 'admin/block', array(), drupal_get_destination()))), 'error');
     }
