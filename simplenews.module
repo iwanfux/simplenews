@@ -456,7 +456,36 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       if (user_access('subscribe to newsletters')) {
         $output[] = array('name' => 'newsletter', 'title' => t('my newsletters'), 'weight' => 10);
       }
-    return $output;
+      return $output;
+    break;
+    case 'view':
+      global $user;
+      if ($user->uid == $account->uid || user_access('administer users')) {
+        $tree = taxonomy_get_tree(simplenews_get_vid());
+        foreach ($tree as $newsletter) {
+          if (db_num_rows(db_query('SELECT s.uid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE s.uid = %d AND t.tid = %d', $account->uid, $newsletter->tid))) {
+            $subscriptions[] = $newsletter->name;
+          }
+        }
+        if ($subscriptions) {
+          $subscriptions = implode(', ', $subscriptions);
+        }
+        else {
+          $subscriptions = t('Currently no subscriptions');
+        }
+        $form['newsletter_subscriptions'] = array(
+          '#type' => 'item',
+          '#title' => t('Current subcriptions'),
+          '#value' => $subscriptions,
+        );
+        $form['manage_subscription'] = array(
+          '#type' => 'item',
+          '#title' => t('Manage subscriptions'),
+          '#value' => l(t('my newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
+        );
+        return array(t('Newsletters') => array('newsletters' => drupal_get_form('newsletter_status', $form)));
+      }
+    break;
   }
 }
 
@@ -1948,7 +1977,7 @@ function simplenews_admin_types($edit = array()) {
     '#type' => 'textfield',
     '#title' => t('Newsletter name'),
     '#size' => 50,
-    '#maxlength' => 64,
+    '#maxlength' => 128,
     '#description' => t('This name is used to identify the newsletter.'),
     '#required' => TRUE,
     '#default_value' => $edit['name'],
