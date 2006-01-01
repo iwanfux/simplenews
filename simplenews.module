@@ -36,7 +36,6 @@ function simplenews_perm() {
  */
 function simplenews_access($op, $node) {
   global $user;
-  global $q;
   if ($op == 'create') {
     if (user_access('create newsletter') || user_access('administer newsletters')) {
       return TRUE;
@@ -63,7 +62,7 @@ function simplenews_menu($may_cache) {
   }
   
   //process subscriptions submitted through blocks before page content is processed
-  $result = db_query('SELECT delta FROM {blocks} WHERE module = "%s" AND status = %d', 'simplenews', 1);
+  $result = db_query("SELECT delta FROM {blocks} WHERE module = '%s' AND status = %d", 'simplenews', 1);
   while ($delta = db_fetch_object($result)) {
     list($type, $tid) = explode('-', $delta->delta);
     if ($_POST['sn_'.$tid] && user_access('subscribe to newsletters')) {
@@ -1253,7 +1252,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
           }
         }
         else {
-          $output .= simplenews_admin_types(object2array(taxonomy_get_term($op3)));
+          $output .= simplenews_admin_types((array)(taxonomy_get_term($op3)));
         }
         break;
       }
@@ -2099,9 +2098,13 @@ function sn_time() {
 }
 
 function simplenews_private_key() {
-  $key = variable_get('simplenews_private_key', FALSE);  if (!$key) {
-    //  This will create a 32 character identifier (a 128 bit hex number) that is extremely difficult to predict (dixit PHP-docs).
-    $key = md5(uniqid(rand()));    variable_set('simplenews_private_key', $key);  }  return $key;
+  $key = variable_get('simplenews_private_key', FALSE);
+    if (!$key) {
+      //  This will create a 32 character identifier (a 128 bit hex number) that is extremely difficult to predict
+      $key = md5(uniqid(rand()));
+      variable_set('simplenews_private_key', $key);
+    }
+    return $key;
 }
 
 function theme_sn_item_list($items = array(), $title = NULL) {
