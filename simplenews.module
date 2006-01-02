@@ -250,7 +250,8 @@ function simplenews_form(&$node) {
 /**
  * Implementation of hook_validate().
  */
-function simplenews_validate(&$node) {
+function simplenews_validate($node) {
+  global $valid_mails;
   node_validate_title($node);
   if ($node->taxonomy && $node->send == 1) {
     if (!simplenews_validate_taxonomy($node->taxonomy)) {
@@ -276,9 +277,16 @@ function simplenews_validate(&$node) {
         $valid_mails[] = $mail;
       }
     }
-    if ($valid_mails) {
-      $node->test_address = $valid_mails;
-    }
+  }
+}
+
+/**
+ * Implementation of hook_submit().
+ */
+function simplenews_submit(&$node) {
+  global $valid_mails;
+  if ($node->send == 2 && $valid_mails) {
+    $node->test_address = $valid_mails;
   }
 }
 
@@ -308,7 +316,6 @@ function simplenews_cron() {
  * and sends the newsletter, upon node creation
  */
 function simplenews_insert($node) {
-  $edit = $_POST['edit'];
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->sn_tid = $tid ? $tid[0] : 0;
@@ -324,7 +331,7 @@ function simplenews_insert($node) {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
     VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->sn_tid, 0, $node->s_format, $node->priority, $node->receipt);
   }
-  if ($edit['send'] == 2) {
+  if ($node->send == 2) {
     simplenews_send_test($node);
   }
 }
@@ -333,7 +340,6 @@ function simplenews_insert($node) {
  * Implementation of hook_update().
  */
 function simplenews_update($node) {
-  $edit = $_POST['edit'];
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->sn_tid = $tid ? $tid[0] : 0;
@@ -346,7 +352,7 @@ function simplenews_update($node) {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
     WHERE nid = %d", $node->sn_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
   }
-  if ($edit['send'] == 2) {
+  if ($node->send == 2) {
     simplenews_send_test($node);
   }
 }
@@ -977,7 +983,9 @@ function simplenews_send_test($input) {
   $recipients = $input->test_address;
   foreach ($recipients as $to) {
     $node->to = $to;
-    sn_mail_send($node);
+    if (sn_mail_send($node)) {
+      drupal_set_message(t('Test newsletter sent to %recipient', array('%recipient' => theme('placeholder', $to))));
+    }
   }
 }
 
