@@ -322,7 +322,7 @@ function simplenews_insert($node) {
   //tid is also saved in this table since it is needed by _sn_send(), and the term_node table is
   //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
   //since simplenews_cron() also calls _sn_send().
-  if ($edit['send'] == 1 && user_access('send newsletter')) {
+  if ($node->send == 1 && user_access('send newsletter')) {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
     VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt);
     _sn_send(TRUE);
@@ -343,7 +343,7 @@ function simplenews_update($node) {
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->sn_tid = $tid ? $tid[0] : 0;
-  if ($edit['send'] == 1 && user_access('send newsletter')) {
+  if ($node->send == 1 && user_access('send newsletter')) {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
     WHERE nid = %d", $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
     _sn_send(TRUE);
