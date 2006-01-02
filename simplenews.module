@@ -326,6 +326,7 @@ function simplenews_insert($node) {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
     VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt);
     _sn_send(TRUE);
+    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => theme('placeholder', $node->title))));
   }
   else {
     db_query("INSERT INTO {sn_newsletters} (nid, tid, s_status, s_format, priority, receipt)
@@ -347,6 +348,7 @@ function simplenews_update($node) {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
     WHERE nid = %d", $node->sn_tid, 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
     _sn_send(TRUE);
+    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => theme('placeholder', $node->title))));
   }
   else {
     db_query("UPDATE {sn_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
