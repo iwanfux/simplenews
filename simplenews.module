@@ -471,7 +471,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         $tree = taxonomy_get_tree(simplenews_get_vid());
         foreach ($tree as $newsletter) {
           if (db_num_rows(db_query('SELECT s.uid FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE s.uid = %d AND t.tid = %d', $account->uid, $newsletter->tid))) {
-            $subscriptions[] = $newsletter->name;
+            $subscriptions[] = l($newsletter->name, 'taxonomy/term/'. $newsletter->tid);
           }
         }
         if ($subscriptions) {
@@ -1979,7 +1979,7 @@ function simplenews_types_overview() {
 }
 
 function simplenews_admin_types($edit = array()) {
-  if (empty($edit)) {
+  if (!isset($edit['vid'])) {
     $edit['vid'] = simplenews_get_vid();
   }
   $form['name'] = array(
