@@ -545,7 +545,7 @@ function simplenews_block($op='list', $delta=0) {
           $block['content'] .= _simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_'.$tid, 5));
         }
         if (variable_get('simplenews_block_r_'.$tid, 1)) {
-          $block['content'] .= theme('sn_xml_icon', url('taxonomy/term/'.$tid.'/0/feed'));
+          $block['content'] .= theme('sn_feed_icon', url('taxonomy/term/'.$tid.'/0/feed'));
         }
       }
     }
@@ -2144,9 +2144,9 @@ function theme_sn_term_link($link, $title = NULL) {
   return $output;
 }
 
-function theme_sn_xml_icon($url) {
-  if ($image = theme('image', 'misc/xml.png', t('XML feed'), t('XML feed'))) {
-    return '<div class="sn-xml-icon"><a href="'. $url .'">'. $image. '</a></div>';
+function theme_sn_feed_icon($url) {
+  if ($image = theme('image', 'misc/feed.png', t('Syndicate content'), t('Syndicate content'))) {
+    return '<div class="sn-feed-icon"><a href="'. $url .'">'. $image. '</a></div>';
   }
 } 
 
