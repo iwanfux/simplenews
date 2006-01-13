@@ -2093,8 +2093,9 @@ function simplenews_confirm_add_user_self($mail, $newsletter) {
 }
 
 function simplenews_replace_vars($node, $teaser = TRUE) {
-  global $base_url, $user;
-  $variables = array('%site' => variable_get('site_name', 'drupal'), '%uri' => $base_url, '%uri_brief' => drupal_substr($base_url, drupal_strlen('http://')), '%mymail' => $user->mail, '%date' => format_date(time()), '%login_uri' => url('user/login', NULL, NULL, TRUE));
+  global $base_url;
+  $user_mail = db_result(db_query('SELECT mail FROM {users} WHERE uid = %d', $node->uid));
+  $variables = array('%site' => variable_get('site_name', 'drupal'), '%uri' => $base_url, '%uri_brief' => drupal_substr($base_url, drupal_strlen('http://')), '%mymail' => $user_mail, '%date' => format_date(time()), '%login_uri' => url('user/login', NULL, NULL, TRUE));
   $node->body = strtr($node->body, $variables);
   if ($teaser) {
     $node->teaser = strtr($node->teaser, $variables);
