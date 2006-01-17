@@ -75,44 +75,44 @@ function simplenews_menu($may_cache) {
   if ($may_cache) {
     $items[] = array('path' => 'node/add/simplenews', 'title' => t('newsletter'),
                      'access' => user_access('create newsletter'));
-    $items[] = array('path' => 'admin/simplenews', 'title' => t('newsletters'),
+    $items[] = array('path' => 'admin/newsletter', 'title' => t('newsletters'),
                      'access' => user_access('administer newsletters'),
                      'callback' => 'simplenews_admin');
                      
-    $items[] = array('path' => 'admin/simplenews/sent', 'title' => t('sent items'),
+    $items[] = array('path' => 'admin/newsletter/sent', 'title' => t('sent items'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_DEFAULT_LOCAL_TASK, 'weight' => -10);
-    $items[] = array('path' => 'admin/simplenews/outbox', 'title' => t('drafts'),
+    $items[] = array('path' => 'admin/newsletter/outbox', 'title' => t('drafts'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -9);
                      
-    $items[] = array('path' => 'admin/simplenews/types', 'title' => t('newsletters'),
+    $items[] = array('path' => 'admin/newsletter/types', 'title' => t('newsletters'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -8);
-    $items[] = array('path' => 'admin/simplenews/types/list', 'title' => t('list newsletters'),
+    $items[] = array('path' => 'admin/newsletter/types/list', 'title' => t('list newsletters'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_DEFAULT_LOCAL_TASK, 'weight' => -10);
-    $items[] = array('path' => 'admin/simplenews/types/add', 'title' => t('add newsletter'),
+    $items[] = array('path' => 'admin/newsletter/types/add', 'title' => t('add newsletter'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -9);
                      
-    $items[] = array('path' => 'admin/simplenews/users', 'title' => t('subscriptions'),
+    $items[] = array('path' => 'admin/newsletter/users', 'title' => t('subscriptions'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -7);
-    $items[] = array('path' => 'admin/simplenews/users/list', 'title' => t('list subscriptions'),
+    $items[] = array('path' => 'admin/newsletter/users/list', 'title' => t('list subscriptions'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_DEFAULT_LOCAL_TASK, 'weight' => -10);
-    $items[] = array('path' => 'admin/simplenews/users/add', 'title' => t('import subscriptions'),
+    $items[] = array('path' => 'admin/newsletter/users/add', 'title' => t('import subscriptions'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -9);
-    $items[] = array('path' => 'admin/simplenews/users/export', 'title' => t('export subscriptions'),
+    $items[] = array('path' => 'admin/newsletter/users/export', 'title' => t('export subscriptions'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -8);
                      
-    $items[] = array('path' => 'admin/simplenews/settings', 'title' => t('settings'),
+    $items[] = array('path' => 'admin/newsletter/settings', 'title' => t('settings'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_LOCAL_TASK, 'weight' => -6);
-    $items[] = array('path' => 'admin/simplenews/settings/general', 'title' => t('general'),
+    $items[] = array('path' => 'admin/newsletter/settings/general', 'title' => t('general'),
                      'access' => user_access('administer newsletters'),
                      'type' => MENU_DEFAULT_LOCAL_TASK, 'weight' => -10);
                      
@@ -130,7 +130,7 @@ function simplenews_menu($may_cache) {
     if ($tree) {
       $i = -9;
       foreach ($tree as $newsletter) {
-        $items[] = array('path' => 'admin/simplenews/settings/'.$newsletter->tid, 'title' => $newsletter->name,
+        $items[] = array('path' => 'admin/newsletter/settings/'.$newsletter->tid, 'title' => $newsletter->name,
                          'access' => user_access('administer newsletters'),
                          'type' => MENU_LOCAL_TASK, 'weight' => $i);
         $i++;
@@ -699,7 +699,7 @@ function _simplenews_subscription_manager($account = FALSE, $snid = FALSE, $pre_
       }
     }
     if ($pre_process_only) return;
-    if ($snid && $_POST['sn_update']) drupal_goto('admin/simplenews/users');
+    if ($snid && $_POST['sn_update']) drupal_goto('admin/newsletter/users');
     $output = '<div class="sn-manage-form">';
     if ($tree) {
       foreach ($tree as $newsletter) {
@@ -1238,7 +1238,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
           if ($_POST['op'] == t('Delete')) {
             if ($_POST['edit']['confirm']) {
               taxonomy_del_term($_POST['edit']['tid']);
-              drupal_goto('admin/simplenews/types');
+              drupal_goto('admin/newsletter/types');
             }
             else {
               $output .= _taxonomy_confirm_del_term($_POST['edit']['tid']);
@@ -1257,7 +1257,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
               drupal_set_message(t('Deleted term %name.', array('%name' => theme('placeholder', $deleted_name))));
               break;
             }
-            drupal_goto('admin/simplenews/types');
+            drupal_goto('admin/newsletter/types');
           }
           else {
             $output .= simplenews_types_overview();
@@ -1290,7 +1290,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
           drupal_set_message(t('The user %user was successfully deleted.', array('%user'=>theme('placeholder', $user->mail))));
           $watchdog = t('User %email deleted from the database.', array('%email'=>theme('placeholder', $user->mail)));
           watchdog('newsletter', $watchdog);
-          drupal_goto('admin/simplenews/users');
+          drupal_goto('admin/newsletter/users');
         }
         else {
           $output = simplenews_confirm_del_user($snid, $user);
@@ -1464,12 +1464,12 @@ function simplenews_admin_list() {
       $subs->name = t('Unregistered user');
     }
     if ($subs->a_status == 0) {
-      $activate = l(t('activate'), 'admin/simplenews/users/sna/'.$subs->snid);
+      $activate = l(t('activate'), 'admin/newsletter/users/sna/'.$subs->snid);
     }
     elseif ($subs->a_status == 1) {
-      $activate = l(t('inactivate'), 'admin/simplenews/users/sni/'.$subs->snid);
+      $activate = l(t('inactivate'), 'admin/newsletter/users/sni/'.$subs->snid);
     }
-    $rows[] = array($i, $subs->mail, ($subs->uid ? l($subs->name, 'user/'.$subs->uid) : $subs->name), theme('simplenews_status', $subs->a_status, 'published'), l(t('edit'), 'admin/simplenews/users/edit/'.$subs->snid),l(t('delete'), 'admin/simplenews/users/delete/'.$subs->snid), $activate);
+    $rows[] = array($i, $subs->mail, ($subs->uid ? l($subs->name, 'user/'.$subs->uid) : $subs->name), theme('simplenews_status', $subs->a_status, 'published'), l(t('edit'), 'admin/newsletter/users/edit/'.$subs->snid),l(t('delete'), 'admin/newsletter/users/delete/'.$subs->snid), $activate);
   }
   if ($pager = theme('pager', NULL, 15, 0)) {
     $rows[] = array(array('data' => $pager, 'colspan' => '7'));
@@ -1660,7 +1660,7 @@ function simplenews_confirm_del_user($snid, $user) {
   return confirm_form('simplenews_confirm_del_user',
                       $form,
                       t('Are you sure you want to remove %user from the subscription list?', array('%user'=>theme('placeholder', $user->mail))),
-                      'admin/simplenews/users',
+                      'admin/newsletter/users',
                       t('This action will only remove the user from the newsletter subscription list. If this user is registered at your site, his/her account information will remain unchanged.'),
                       t('Delete'),
                       t('Cancel'));
@@ -1971,7 +1971,7 @@ function simplenews_types_overview() {
   $tree = taxonomy_get_tree(simplenews_get_vid());
   if ($tree) {
     foreach ($tree as $term) {
-      $rows[] = array($term->name, l(t('edit newsletter'), "admin/simplenews/types/edit/$term->tid"));
+      $rows[] = array($term->name, l(t('edit newsletter'), "admin/newsletter/types/edit/$term->tid"));
     }
     if (!$rows) {
       $rows = array();
