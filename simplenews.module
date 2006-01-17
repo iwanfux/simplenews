@@ -158,10 +158,12 @@ function simplenews_form(&$node) {
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#default_value' => $node->body,
+    '#rows' => 20,
+    '#required' => TRUE,
     '#description' => t('This will be the body of your newsletter. Available variables are:') . ' %site ' . t('(the name of your website),') . ' %uri ' . t('(a link to your homepage),') . ' %uri_brief ' . t('(homepage link without the http://),') . ' %mymail ' . t('(your e-mail address),') . ' %date ' . t('(today\'s date),') . ' %login_uri ' . t('(link to login page).'),
   );
   
-  $form = array_merge($form, filter_form($node->format));
+  $form['format'] = filter_form($node->format);
   
   if (!$sel1 = $node->s_format) {
     $sel1 = variable_get('simplenews_format', 'plain');
