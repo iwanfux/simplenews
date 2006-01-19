@@ -1891,7 +1891,7 @@ function simplenews_admin_settings($term = FALSE) {
       '#title' => t('Initial send time'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => t('Sets the maximum time in seconds during which newsletters are sent. If not all recipients have been mailed within this time, sending is further handled as a cronjob.').' <br /> '.t('The highest value in the dropdown list is based on max_execution_time in your php.ini file. Note that if not all previous newletters have been sent to all recipients yet, these are sent first.'),
+      '#description' => t('Sets the maximum time in seconds during which newsletters are sent. If not all recipients have been mailed within this time, sending is further handled as a cronjob.').' <br /> '.t('The highest value in the dropdown list is based on max_execution_time in your php.ini file. Note that if not all previous newsletters have been sent to all recipients yet, these are sent first.'),
     );
     $max_time = array(0, 1, 2, 3, 4);
     for ($i = 5; $i < ini_get('max_execution_time'); $i=$i+5) {
