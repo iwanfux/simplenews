@@ -482,17 +482,17 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         else {
           $subscriptions = t('Currently no subscriptions');
         }
-        $form['newsletter_subscriptions'] = array(
-          '#type' => 'item',
-          '#title' => t('Current subcriptions'),
-          '#value' => $subscriptions,
+        $items[] = array(
+          'class' => 'item',
+          'title' => t('Current subcriptions'),
+          'value' => $subscriptions,
         );
-        $form['manage_subscription'] = array(
-          '#type' => 'item',
-          '#title' => t('Manage subscriptions'),
-          '#value' => l(t('my newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
+        $items[] = array(
+          'class' => 'item',
+          'title' => t('Manage subscriptions'),
+          'value' => l(t('my newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
         );
-        return array(t('Newsletters') => array('newsletters' => drupal_get_form('newsletter_status', $form)));
+        return array(t('Newsletters') => $items);
       }
     break;
   }
