@@ -788,7 +788,7 @@ function _simplenews_subscription_manager($account = FALSE, $snid = FALSE, $pre_
 
 // Todo: use node_title_list() instead? Disadvantage: not separately themable?
 function _simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
-  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, n.created FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid WHERE t.tid = %d ORDER BY n.created DESC'), $tid, 0, $count);
+  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, n.created FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {sn_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = 1 AND sn.s_status > 0) ORDER BY n.created DESC'), $tid, 0, $count);
   while ($item = db_fetch_object($result)) {
     $titles[] = l($item->title, 'node/'.$item->nid);
   }
