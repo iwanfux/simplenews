@@ -62,8 +62,7 @@ function simplenews_menu($may_cache) {
   }
   
   //process subscriptions submitted through blocks before page content is processed
-  global $user;
-  $result = db_query("SELECT delta FROM {blocks} WHERE (module = '%s' AND status = %d AND theme = '%s')", 'simplenews', 1, $user->theme);
+  $result = db_query("SELECT DISTINCT(delta) FROM {blocks} WHERE module = '%s' AND status = %d", 'simplenews', 1);
   while ($delta = db_fetch_object($result)) {
     list($type, $tid) = explode('-', $delta->delta);
     if ($_POST['sn_'.$tid] && user_access('subscribe to newsletters')) {
