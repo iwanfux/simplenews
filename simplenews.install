@@ -1,0 +1,5 @@
+<?php
+function simplenews_update_1() {
+  return _system_update_utf8(array('sn_subscriptions', 'sn_newsletters', 'sn_snid_tid'));
+}
+?>

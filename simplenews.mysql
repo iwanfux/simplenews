@@ -9,7 +9,7 @@ CREATE TABLE `sn_subscriptions` (
   `mail` varchar(64) NOT NULL default '',
   `uid` int(10) NOT NULL default '0',
   PRIMARY KEY  (`snid`)
-) TYPE=MyISAM;
+) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;
 
 #
 # Table structure for table `sn_newsletters`
@@ -23,7 +23,7 @@ CREATE TABLE `sn_newsletters` (
   `priority` int(2) NOT NULL default '0',
   `receipt` int(2) NOT NULL default '0',
   PRIMARY KEY  (`nid`)
-) TYPE=MyISAM;
+) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;
 
 #
 # Table structure for table `sn_snid_tid`
@@ -33,4 +33,4 @@ CREATE TABLE sn_snid_tid (
   snid int(10) NOT NULL default '0',
   tid int(10) NOT NULL default '0',
   PRIMARY KEY  (snid,tid)
-) TYPE=MyISAM;
+) TYPE=MyISAM /*!40100 DEFAULT CHARACTER SET utf8 */;
