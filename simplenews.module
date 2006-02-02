@@ -8,7 +8,7 @@ function simplenews_help($section='') {
   $output = '';
   switch ($section) {
     case 'admin/modules#description':
-      $output = t('Allows to send newsletters to subscribed e-mail addresses.');
+      $output = t('Send newsletters to subscribed e-mail addresses.');
       break;
     case 'node/add#simplenews':
       $output =  t('Send a newsletter to subscribed e-mail addresses.');
@@ -602,14 +602,14 @@ function simplenews_process_subscription($tid, $mail, $sub) {
         $body = t('We have received a request for subscription of your e-mail address, %mail, to the "%newsletter" newsletter from %site (%uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('%mail'=>$mail, '%newsletter'=>$newsletter->name, '%site'=>variable_get('simplenews_from_name', $name_default), '%uri'=>$base_url));
         $body .= "\n\n".t('If you do not wish to be subscribed to this list, please disregard this message.');
         sn_mail_confirm($mail, $body, $newsletter->name, $snid_obj->snid, $tid, 'subscribe');
-        simplenews_handle_messages(t('You will receive a confirmation e-mail shortly'), t('You will receive confirmation e-mails shortly'));
+        simplenews_handle_messages(t('You will receive a confirmation e-mail shortly.'), t('You will receive confirmation e-mails shortly.'));
       }
       else {
         $snid_tid = db_query("SELECT snid FROM {sn_snid_tid} WHERE snid = %d AND tid = %d", $snid_obj->snid, $tid);
         if (!db_num_rows($snid_tid)) {
           db_query("INSERT INTO {sn_snid_tid} (snid, tid) VALUES (%d, %d)", $snid_obj->snid, $tid);
         }
-        simplenews_handle_messages(t('The newsletter subscriptions have been updated'), t('The newsletter subscriptions have been updated'));
+        simplenews_handle_messages(t('The newsletter subscriptions have been updated.'), t('The newsletter subscriptions have been updated.'));
       }
     }
     elseif ($sub == 'Unsubscribe') {
@@ -627,13 +627,13 @@ function simplenews_process_subscription($tid, $mail, $sub) {
           $body .= "\n\n".t('If you do not wish to be subscribed to this list, please disregard this message.');
           sn_mail_confirm($mail, $body, $newsletter->name);
         }
-        simplenews_handle_messages(t('You will receive a confirmation e-mail shortly'), t('You will receive confirmation e-mails shortly'));
+        simplenews_handle_messages(t('You will receive a confirmation e-mail shortly.'), t('You will receive confirmation e-mails shortly.'));
       }
       else {
         if (db_num_rows($snid_result)) {
           $query = "DELETE FROM {sn_snid_tid} WHERE snid = %d AND tid = %d";
           if (db_affected_rows(db_query($query, $snid_obj->snid, $tid))) {
-            simplenews_handle_messages(t('The newsletter subscriptions have been updated'), t('The newsletter subscriptions have been updated'));
+            simplenews_handle_messages(t('Your newsletter subscriptions have been updated.'), t('Your newsletter subscriptions have been updated.'));
           }
           //Perform db cleanup tasks
           if (!db_num_rows(db_query('SELECT tid FROM {sn_snid_tid} WHERE snid = %d', $snid_obj->snid))) {
@@ -1004,7 +1004,7 @@ function sn_mail_confirm($email, $message, $newsletter, $snid = NULL, $tid = NUL
   $mail->from_address = variable_get('simplenews_from_address', $address_default);
   $mail->from_name = variable_get('simplenews_from_name', $name_default);
   $mail->to = $email;
-  $mail->title = t('Status confirmation for %newsletter from %site', array('%newsletter'=>$newsletter, '%site'=>variable_get('simplenews_from_name', $name_default)));
+  $mail->title = t('Confirmation for %newsletter from %site', array('%newsletter'=>$newsletter, '%site'=>variable_get('simplenews_from_name', $name_default)));
   $mail->message = t('This is a subscription status confirmation notice for the "%newsletter" newsletter.', array('%newsletter'=>$newsletter));
   $mail->message .= "\n\n".$message;
   if ($snid && $tid) {
