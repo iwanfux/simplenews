@@ -890,6 +890,10 @@ function simplenews_node_prepare($nid, $tid) {
   if ($node->s_format == 'plain') {
     $node->body = sn_html_to_text($node->body, variable_get('simplenews_hyperlinks_'.$tid, 1));
   }
+  else {
+    $pattern = '@(<a href=)"(.\S+?)"([^>]*>)@ei';
+    $node->body = preg_replace($pattern, "'\\1' . '\"' . _sn_mail_url('\\2') . '\"' . '\\3'", $node->body); 
+  }
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'drupal');
   if ($tid) {
