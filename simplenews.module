@@ -57,8 +57,7 @@ function simplenews_access($op, $node) {
 function simplenews_menu($may_cache) {
   //import simplenews stylesheet if necessary
   if (module_exist('simplenews')) {
-    $stylesheet = drupal_get_path('module', 'simplenews').'/simplenews.css';
-    drupal_set_html_head(theme('stylesheet_import', $stylesheet));
+    theme('add_style', drupal_get_path('module', 'simplenews').'/simplenews.css');
   }
   
   //process subscriptions submitted through blocks before page content is processed
