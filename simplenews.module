@@ -1423,12 +1423,12 @@ function simplenews_admin_news($sent) {
 
 function theme_simplenews_status($status, $source) {
   if ($source == 'published') {
-  $imgs = array(0 => 'sn-saved', 1 => 'sn-sent');
+    $imgs = array(0 => 'sn-saved', 1 => 'sn-sent');
   }
   elseif ($source == 'sent') {
-  $imgs = array(0 => 'sn-saved', 1 => 'sn-cron', 2 => 'sn-sent');
+    $imgs = array(0 => 'sn-saved', 1 => 'sn-cron', 2 => 'sn-sent');
   }
-  $path = drupal_get_path('module', 'simplenews').'/';
+  $path = base_path() . drupal_get_path('module', 'simplenews').'/';
   $output = '<img src="'.$path.$imgs[$status].'.png" width="15" height="15" alt="'.$status.'" border="0" />';
   return $output;
 }
