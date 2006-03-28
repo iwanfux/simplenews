@@ -253,7 +253,6 @@ function simplenews_form(&$node) {
  */
 function simplenews_validate($node) {
   global $valid_mails;
-  node_validate_title($node);
   if ($node->taxonomy && $node->send == 1) {
     if (!simplenews_validate_taxonomy($node->taxonomy)) {
       form_set_error('', t('You should select a newsletter if you want to send this newsletter.'));
