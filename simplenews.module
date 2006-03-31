@@ -1239,7 +1239,7 @@ function simplenews_admin($op = NULL, $op2 = NULL, $op3 = NULL) {
         if ($_POST['edit']) {
           if ($_POST['op'] == t('Delete')) {
             if ($_POST['edit']['confirm']) {
-              taxonomy_del_term($_POST['edit']['tid']);
+              taxonomy_del_term((int) $op3);
               drupal_goto('admin/newsletter/types');
             }
             else {
