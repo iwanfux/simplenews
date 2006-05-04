@@ -55,10 +55,7 @@ function simplenews_access($op, $node) {
  * Implementation of hook_menu().
  */
 function simplenews_menu($may_cache) {
-  //import simplenews stylesheet if necessary
-  if (module_exist('simplenews')) {
-    theme('add_style', drupal_get_path('module', 'simplenews').'/simplenews.css');
-  }
+  theme('add_style', drupal_get_path('module', 'simplenews').'/simplenews.css');
   
   //process subscriptions submitted through blocks before page content is processed
   $result = db_query("SELECT DISTINCT(delta) FROM {blocks} WHERE module = '%s' AND status = %d", 'simplenews', 1);
