@@ -1578,45 +1578,7 @@ function simplenews_admin_list_add() {
 }
 
 function simplenews_admin_list_export() {
-  $edit = $_POST['op'] ? $_POST['edit'] : array('active'=>1, 'inactive'=>0);
   $tree = taxonomy_get_tree(simplenews_get_vid());
-  if ($_POST['op'] == t('Export')) {
-    if ($edit['active'] == 1) {
-      $where[] = 's.a_status = 1';
-    }
-    if ($edit['inactive'] == 1) {
-      $where[] = 's.a_status = 0';
-    }
-    $where = $where ? implode(' OR ', $where) : NULL;
-    if ($tree) {
-      foreach ($tree as $newsletter) {
-        if ($edit['tid_'.$newsletter->tid]) {
-          $where_tid[] = 't.tid = '.$newsletter->tid;
-        }
-      }
-    }
-    $where_tid = $where_tid ? implode(' OR ', $where_tid) : NULL;
-    if ($where && $where_tid) {
-      $query = 'SELECT DISTINCT s.mail FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE ('.$where.') AND ('.$where_tid.')';
-      $result = db_query($query);
-      while ($mail = db_fetch_object($result)) {
-        $mails[] = $mail->mail;
-      }
-    }
-    $form['emails'] = array(
-      '#type' => 'textarea',
-      '#title' => t('E-mail addresses'),
-      '#cols' => 60,
-      '#rows' => 5,
-    );
-    if ($mails) {
-      $mails = implode(", ", $mails);
-      $form['emails']['#default_value'] = $mails;
-    }
-    else {
-      $form['emails']['#default_value'] = t('No addresses were found.');
-    }
-  }
   $form['sn_status'] = array(
     '#type' => 'fieldset',
     '#title' => t('Status'),
@@ -1648,12 +1610,59 @@ function simplenews_admin_list_export() {
       );
     }
   }
+  $form['emails'] = array(
+    '#type' => 'textarea',
+    '#title' => t('E-mail addresses'),
+    '#cols' => 60,
+    '#rows' => 5,
+    '#default_value' => t('No search performed'),
+  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Export'),
   );
+  $form['#after_build'] = array('simplenews_admin_export_after_build');
+  $form['#redirect'] = FALSE;
   return drupal_get_form('simplenews_admin_list_export', $form);
 }
+
+function simplenews_admin_export_after_build($form, $edit) {
+  $op = isset($_POST['op']) ? $_POST['op'] : '';
+  if ($op == t('Export')) {
+    $tree = taxonomy_get_tree(simplenews_get_vid());
+    if ($edit['active'] == 1) {
+      $where[] = 's.a_status = 1';
+    }
+    if ($edit['inactive'] == 1) {
+      $where[] = 's.a_status = 0';
+    }
+    $where = $where ? implode(' OR ', $where) : NULL;
+    if ($tree) {
+      foreach ($tree as $newsletter) {
+        if ($edit['tid_'.$newsletter->tid]) {
+          $where_tid[] = 't.tid = '.$newsletter->tid;
+        }
+      }
+    }
+    $where_tid = $where_tid ? implode(' OR ', $where_tid) : NULL;
+    if ($where && $where_tid) {
+      $query = 'SELECT DISTINCT s.mail FROM {sn_subscriptions} s INNER JOIN {sn_snid_tid} t ON s.snid = t.snid WHERE ('.$where.') AND ('.$where_tid.')';
+      $result = db_query($query);
+      while ($mail = db_fetch_object($result)) {
+        $mails[] = $mail->mail;
+      }
+    }
+    if ($mails) {
+      $exported_mails = implode(", ", $mails);
+    }
+    else {
+      $exported_mails = t('No addresses were found.');
+    }
+    $form['emails']['#value'] = $exported_mails;
+  }
+  return $form;
+}
+
 
 function simplenews_confirm_del_user($snid, $user) {
   return confirm_form('simplenews_confirm_del_user',
