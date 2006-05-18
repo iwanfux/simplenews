@@ -1,0 +1,843 @@
+# Swedish translation of simplenews
+# Copyright 2006 Hannes Lilljequist (zoo33) <webmaster@zoopeople.se>
+# Generated from file: simplenews.module,v 1.32 2006/01/17 20:42:56 driesk
+# 
+msgid ""
+""
+msgstr "Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-01-17 21:57+0100\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: zoo33 <webmaster@zoopeople.se>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: simplenews.module:11
+msgid "Allows to send newsletters to subscribed e-mail addresses."
+msgstr "Gör det möjligt att skicka nyhetsbrev till registrerade e-postadresser."
+
+#: simplenews.module:14
+msgid "Send a newsletter to subscribed e-mail addresses."
+msgstr "Skicka ett nyhetsbrev till en registrerad e-postadress."
+
+#: simplenews.module:24
+msgid "newsletter"
+msgstr "nyhetsbrev"
+
+#: simplenews.module:78
+msgid "newsletters"
+msgstr "nyhetsbrev"
+
+#: simplenews.module:82
+msgid "sent items"
+msgstr "skickat"
+
+#: simplenews.module:85
+msgid "drafts"
+msgstr "utkast"
+
+#: simplenews.module:92
+msgid "list newsletters"
+msgstr "lista nyhetsbrev"
+
+#: simplenews.module:95
+msgid "add newsletter"
+msgstr "lägg till nyhetsbrev"
+
+#: simplenews.module:99
+msgid "subscriptions"
+msgstr "prenumerationer"
+
+#: simplenews.module:102
+msgid "list subscriptions"
+msgstr "lista prenumerationer"
+
+#: simplenews.module:105
+msgid "import subscriptions"
+msgstr "importera prenumerationer"
+
+#: simplenews.module:108
+msgid "export subscriptions"
+msgstr "exportera prenumerationer"
+
+#: simplenews.module:112
+msgid "settings"
+msgstr "inställningar"
+
+#: simplenews.module:115
+msgid "general"
+msgstr "allmänt"
+
+#: simplenews.module:119
+msgid "confirm newsletter subscriptions"
+msgstr "godkänn prenumerationer"
+
+#: simplenews.module:123
+msgid "manage newsletter subscriptions"
+msgstr "hantera prenumerationer"
+
+#: simplenews.module:151
+msgid "Title"
+msgstr "Rubrik"
+
+#: simplenews.module:159
+msgid "Message"
+msgstr "Meddelande"
+
+#: simplenews.module:163
+msgid "This will be the body of your newsletter. Available variables are:"
+msgstr "Detta blir huvudtexten i ditt nyhetsbrev. Tillgängliga variabler är:"
+
+#: simplenews.module:163
+msgid "(the name of your website),"
+msgstr "(namnet på din webbplats),"
+
+#: simplenews.module:163
+msgid "(a link to your homepage),"
+msgstr "(en länk till din startsida),"
+
+#: simplenews.module:163
+msgid "(homepage link without the http://),"
+msgstr "(länk till startsidan utan http://),"
+
+#: simplenews.module:163
+msgid "(your e-mail address),"
+msgstr "(din e-postadress),"
+
+#: simplenews.module:163
+msgid "(today's date),"
+msgstr "(dagens datum),"
+
+#: simplenews.module:163
+msgid "(link to login page)."
+msgstr "(länk till inloggningssida)."
+
+#: simplenews.module:180
+msgid "Newsletter sending options"
+msgstr "Sändningsalternativ för nyhetsbrev"
+
+#: simplenews.module:186
+msgid "Format"
+msgstr "Format"
+
+#: simplenews.module:188
+msgid "plain"
+msgstr "vanligt"
+
+#: simplenews.module:188
+msgid "html"
+msgstr "html"
+
+#: simplenews.module:192
+msgid "Priority"
+msgstr "Prioritet"
+
+#: simplenews.module:194
+msgid "none"
+msgstr "ingen"
+
+#: simplenews.module:194
+msgid "highest"
+msgstr "högsta"
+
+#: simplenews.module:194
+msgid "high"
+msgstr "hög"
+
+#: simplenews.module:194
+msgid "normal"
+msgstr "normal"
+
+#: simplenews.module:194
+msgid "low"
+msgstr "låg"
+
+#: simplenews.module:194
+msgid "lowest"
+msgstr "lägsta"
+
+#: simplenews.module:198
+msgid "Request receipt"
+msgstr "Begär kvitto"
+
+#: simplenews.module:204
+msgid "Don't send now"
+msgstr "Skicka inte nu"
+
+#: simplenews.module:205
+msgid "Send one test newsletter to the test address"
+msgstr "Skicka ett testnyhetsbrev till testadressen"
+
+#: simplenews.module:206
+msgid "Send newsletter"
+msgstr "Skicka nyhetsbrev"
+
+#: simplenews.module:209
+msgid "Sending"
+msgstr "Sändning"
+
+#: simplenews.module:222
+msgid "You have no privileges to send this newsletter"
+msgstr "Du har inte behörighet att skicka detta nyhetsbrev"
+
+#: simplenews.module:228
+msgid "Test e-mail addresses"
+msgstr "Testadress"
+
+#: simplenews.module:233
+msgid "Supply a comma-separated list of e-mail addresses to be used as test addresses."
+msgstr "Skriv in en komma-separerad lista över e-postadresser som ska användas som testadresser."
+
+#: simplenews.module:240
+msgid "This newsletter has been sent"
+msgstr "Detta nyhetsbrev har skickats"
+
+#: simplenews.module:260
+msgid "You should select a newsletter if you want to send this newsletter."
+msgstr "Du bör välja ett nyhetsbrev om du vill skicka detta nyhetsbrev."
+
+#: simplenews.module:273
+msgid "Cannot send test newsletter: no valid test e-mail address specified."
+msgstr "Kan inte skicka testnyhetsbrev: ingen giltig testadress är angiven."
+
+#: simplenews.module:276
+msgid "Cannot send test newsletter to %mail: e-mail address invalid."
+msgstr "Kan inte skicka testnyhetsbrev till %mail: e-postadressen är ogiltig."
+
+#: simplenews.module:331
+msgid "Newsletter %newsletter is being sent"
+msgstr "Nyhetsbrevet %newsletter håller på att skickas"
+
+#: simplenews.module:371
+msgid "Newsletter %title was successfully deleted."
+msgstr "Nyhetsbrevet %title raderades."
+
+#: simplenews.module:391
+msgid "Deleted all subscriptions to newsletter %newsletter."
+msgstr "Raderade alla prenumeranter på nyhetsbrevet %newsletter."
+
+#: simplenews.module:452
+msgid "Current newsletter subscriptions"
+msgstr "Aktuella prenumerationer på nyhetsbrev"
+
+#: simplenews.module:466
+msgid "my newsletters"
+msgstr "mina nyhetsbrev"
+
+#: simplenews.module:483
+msgid "Currently no subscriptions"
+msgstr "Inga prenumerationer för närvarande"
+
+#: simplenews.module:487
+msgid "Current subcriptions"
+msgstr "Aktuella prenumerationer"
+
+#: simplenews.module:492
+msgid "Manage subscriptions"
+msgstr "Hantera prenumerationer"
+
+#: simplenews.module:495
+msgid "Newsletters"
+msgstr "Nyhetsbrev"
+
+#: simplenews.module:509
+msgid "Newsletter: %title"
+msgstr "Nyhetsbrev: %titel"
+
+#: simplenews.module:520
+msgid "Stay informed on our latest news!"
+msgstr "Håll dig informerad om våra senaste nyheter!"
+
+#: simplenews.module:535
+msgid "Manage my subscriptions"
+msgstr "Hantera mina prenumerationer"
+
+#: simplenews.module:541
+msgid "Previous issues"
+msgstr "Tidigare utgåvor"
+
+#: simplenews.module:574
+msgid "You have to supply an e-mail address"
+msgstr "Du måste ange en e-postadress"
+
+#: simplenews.module:577
+msgid "The e-mail address you supplied is not valid"
+msgstr "E-postadressen du angav är inte giltig"
+
+#: simplenews.module:597
+msgid "User %email added to the database."
+msgstr "Användaren %email lades till i databasen."
+
+#: simplenews.module:602
+msgid "We have received a request for subscription of your e-mail address, %mail, to the \"%newsletter\" newsletter from %site (%uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail."
+msgstr "Vi har mottagit en begäran om att lägga till din adress, %mail, som prenumerant på nyhetsbrevet \"%newsletter\" från %site (%uri). För att bekräfta att du vill läggas till i denna mejllista, besök bekräftelselänken som finns längst ner i detta brev."
+
+#: simplenews.module:603
+msgid "If you do not wish to be subscribed to this list, please disregard this message."
+msgstr "Om du inte vill prenumerera på denna lista kan du ignorera detta meddelande."
+
+#: simplenews.module:605
+msgid "You will receive a confirmation e-mail shortly"
+msgstr "Du kommer att få en bekräftelse per e-post inom kort"
+
+#: simplenews.module:605
+msgid "You will receive confirmation e-mails shortly"
+msgstr "Du kommer att få bekräftelser per e-post inom kort"
+
+#: simplenews.module:612
+msgid "The newsletter subscriptions have been updated"
+msgstr "Prenumerationerna har uppdaterats"
+
+#: simplenews.module:620
+msgid "We have received a request for the removal of your e-mail address, %mail, from the \"%newsletter\" newsletter from %site (%uri). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail."
+msgstr "Vi har mottagit en begäran om att ta bort din adress, %mail, från nyhetsbrevet \"%newsletter\" från %site (%uri). Om du vill sluta prenumerera, bekräfta genom att besöka länken som finns längst ner i detta brev."
+
+#: simplenews.module:621
+msgid "If you do not wish to be removed from this list, please disregard this message."
+msgstr "Om du inte vill tas bort från denna lista kan du ignorera detta meddelande."
+
+#: simplenews.module:626
+msgid "We have received a request for the removal of your e-mail address, %mail, from the \"%newsletter\" newsletter from %site (%uri). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail."
+msgstr "Vi har mottagit en begäran om att ta bort din adress, %mail, från nyhetsbrevet \"%newsletter\" från %site (%uri). Du är dock inte registrerad som prenumerant på detta nyhetsbrev. Om du vill börja prenumerera så kan du besöka vår webbplats med hjälp av länken som finns längst ner i detta brev."
+
+#: simplenews.module:641
+msgid "User %email deleted from the database."
+msgstr "Användaren %email raderades från databasen."
+
+#: simplenews.module:677
+msgid "Subscribe"
+msgstr "Prenumerera"
+
+#: simplenews.module:678
+msgid "Unsubscribe"
+msgstr "Sluta prenumerera"
+
+#: simplenews.module:687
+msgid "You should select at least one newsletter."
+msgstr "Du måste välja minst ett nyhetsbrev."
+
+#: simplenews.module:734
+msgid "E-mail"
+msgstr "E-post"
+
+#: simplenews.module:739
+msgid "Available newsletters"
+msgstr "Tillgängliga nyhetsbrev"
+
+#: simplenews.module:740
+msgid "Select the newsletter(s) to which you want to subscribe or unsubscribe."
+msgstr "Markera de nyhetsbrev som du vill prenumerera eller sluta prenumerera på."
+
+#: simplenews.module:758
+msgid "Subscriptions for %mail"
+msgstr "Prenumerationer för %mail"
+
+#: simplenews.module:764
+msgid "Select the newsletter(s) to which you want to be subscribed."
+msgstr "Markera de nyhetsbrev som du vill prenumerera på."
+
+#: simplenews.module:775
+msgid "Update"
+msgstr "Uppdatera"
+
+#: simplenews.module:824
+msgid "Submit"
+msgstr "Skicka"
+
+#: simplenews.module:933
+msgid "Click here to unsubscribe from this newsletter"
+msgstr "Klicka här för att sluta prenumerera på detta nyhetsbrev"
+
+#: simplenews.module:936
+msgid "Unsubscribe from this newsletter:"
+msgstr "Sluta prenumerera på detta nyhetsbrev:"
+
+#: simplenews.module:944
+msgid "Newsletter %title could not be sent to %email."
+msgstr "Nyhetsbrevet %title kunde inte skickas till %email."
+
+#: simplenews.module:986
+msgid "Footer will be appended here"
+msgstr "Sidfoten kommer att läggas till här"
+
+#: simplenews.module:991
+msgid "Test newsletter sent to %recipient"
+msgstr "Testnyhetsbrev skickades till %recipient"
+
+#: simplenews.module:1007
+msgid "Status confirmation for %newsletter from %site"
+msgstr "Statusbekräftelse för %newsletter från %site"
+
+#: simplenews.module:1008
+msgid "This is a subscription status confirmation notice for the \"%newsletter\" newsletter."
+msgstr "Detta är en statusbekräftelse för prenumerationen på nyhetsbrevet \"%newsletter\"."
+
+#: simplenews.module:1013
+msgid "Subscribe link:"
+msgstr "Prenumerera-länk:"
+
+#: simplenews.module:1016
+msgid "Unsubscribe link:"
+msgstr "Sluta prenumerera-länk:"
+
+#: simplenews.module:1021
+msgid "Visit our site:"
+msgstr "Besök vår webbplats:"
+
+#: simplenews.module:1235
+msgid "You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...)."
+msgstr "Du kan skapa olika nyhetsbrev (eller ämnen) för att kategorisera dina nyheter (exempelvis Kattnytt, Hundnytt osv.)."
+
+#: simplenews.module:1238
+msgid "Delete"
+msgstr "Radera"
+
+#: simplenews.module:1251
+msgid "Created new term %name."
+msgstr "Skapade nya termen %name."
+
+#: simplenews.module:1254
+msgid "Updated term %name."
+msgstr "Uppdaterade termen %name."
+
+#: simplenews.module:1257
+msgid "Deleted term %name."
+msgstr "Raderade termen %name."
+
+#: simplenews.module:1290
+msgid "The user %user was successfully deleted."
+msgstr "Användaren %user raderades."
+
+#: simplenews.module:1334
+msgid "all newsletters"
+msgstr "alla nyhetsbrev"
+
+#: simplenews.module:1337
+msgid "n/a"
+msgstr "ej tillgängligt"
+
+#: simplenews.module:1348
+msgid "Filter"
+msgstr "Filter"
+
+#: simplenews.module:1357
+msgid "Show issues from"
+msgstr "Visa utgåvor från"
+
+#: simplenews.module:1363
+msgid "Newsletter"
+msgstr "Nyhetsbrev"
+
+#: simplenews.module:1363
+msgid "Date created"
+msgstr "Skapat"
+
+#: simplenews.module:1363
+msgid "Published"
+msgstr "Publicerad"
+
+#: simplenews.module:1363
+msgid "Sent"
+msgstr "Skickad"
+
+#: simplenews.module:1363
+msgid "Edit"
+msgstr "Redigera"
+
+#: simplenews.module:1392
+msgid "edit"
+msgstr "redigera"
+
+#: simplenews.module:1398
+msgid "No newsletters available."
+msgstr "Inga nyhetsbrev tillgängliga."
+
+#: simplenews.module:1411
+msgid "Table key"
+msgstr "Tabellnyckel"
+
+#: simplenews.module:1412
+msgid "Not published/Not sent"
+msgstr "Inte publicerad/Inte skickad"
+
+#: simplenews.module:1413
+msgid "Published/Sent"
+msgstr "Publicerad/Skickad"
+
+#: simplenews.module:1414
+msgid "Currently sending by cron"
+msgstr "Skickas nu av cron"
+
+#: simplenews.module:1437
+msgid "Show subscriptions to"
+msgstr "Visa prenumerationer på"
+
+#: simplenews.module:1453
+msgid "Username"
+msgstr "Användarnamn"
+
+#: simplenews.module:1453
+msgid "Status"
+msgstr "Status"
+
+#: simplenews.module:1453
+msgid "Operations"
+msgstr "Operationer"
+
+#: simplenews.module:1464
+msgid "Unregistered user"
+msgstr "Oregistrerad användare"
+
+#: simplenews.module:1467
+msgid "activate"
+msgstr "aktivera"
+
+#: simplenews.module:1470
+msgid "inactivate"
+msgstr "avaktivera"
+
+#: simplenews.module:1472
+msgid "delete"
+msgstr "radera"
+
+#: simplenews.module:1478
+msgid "No subscriptions available."
+msgstr "Inga prenumerationer tillgängliga."
+
+#: simplenews.module:1483
+msgid "Inactive/No newsletters will be sent"
+msgstr "Inaktiv/Inga nyhetsbrev kommer att skickas"
+
+#: simplenews.module:1484
+msgid "Active/User will receive newsletters"
+msgstr "Aktiv/Användaren kommer att få nyhetsbrev"
+
+#: simplenews.module:1494
+msgid "Import"
+msgstr "Importera"
+
+#: simplenews.module:1535
+msgid "The following addresses were added or updated: %added."
+msgstr "Följande adresser lades till eller uppdaterades: %added."
+
+#: simplenews.module:1538
+msgid "No addresses were added."
+msgstr "Inga adresser lades till."
+
+#: simplenews.module:1542
+msgid "The following addresses were invalid: %invalid."
+msgstr "Följande adresser var ogiltiga: %invalid."
+
+#: simplenews.module:1548
+msgid "E-mail addresses"
+msgstr "E-postadresser"
+
+#: simplenews.module:1551
+msgid "Supply a comma separated list of e-mail addresses to be added to the list. Spaces between commas and addresses are allowed."
+msgstr "Skriv in en komma-separerad lista över e-postadresser som ska läggas till i listan. Mellanslag mellan kommatecken och adresser är tillåtet."
+
+#: simplenews.module:1555
+msgid "Subscribe imported addresses to"
+msgstr "Importerade adresser ska prenumerera på"
+
+#: simplenews.module:1571
+msgid "The addresses were subscribed to the following newsletters: %to."
+msgstr "Adresserna började prenumerera på följande nyhetsbrev: %to."
+
+#: simplenews.module:1584
+msgid "Export"
+msgstr "Exportera"
+
+#: simplenews.module:1618
+msgid "No addresses were found."
+msgstr "Inga adresser hittades."
+
+#: simplenews.module:1624
+msgid "Select at least 1 status"
+msgstr "Välj minst 1 status"
+
+#: simplenews.module:1629
+msgid "Active users"
+msgstr "Aktiva användare"
+
+#: simplenews.module:1634
+msgid "Inactive users"
+msgstr "Inaktiva användare"
+
+#: simplenews.module:1640
+msgid "Subscribed to"
+msgstr "Prenumererar på"
+
+#: simplenews.module:1641
+msgid "Select at least 1 newsletter"
+msgstr "Välj minst 1 nyhetsbrev"
+
+#: simplenews.module:1662
+msgid "Are you sure you want to remove %user from the subscription list?"
+msgstr "Är du säker på att du vill ta bort %user från prenumerantlistan?"
+
+#: simplenews.module:1664
+msgid "This action will only remove the user from the newsletter subscription list. If this user is registered at your site, his/her account information will remain unchanged."
+msgstr "Detta tar bara bort användaren från nyhetsbrevets prenumerantlista. Om denna användare är registrerad på din webbplats kommer hans eller hennes konto att vara oförändrat."
+
+#: simplenews.module:1666
+msgid "Cancel"
+msgstr "Avbryt"
+
+#: simplenews.module:1676
+msgid "The %block block is disabled. Click %here to enable this block."
+msgstr "Blocket %block är avstängt. Klicka %here för att aktivera detta block."
+
+#: simplenews.module:1676
+msgid "here"
+msgstr "här"
+
+#: simplenews.module:1691
+msgid "You have to supply a sender's e-mail address."
+msgstr "Du måste ange en avsändande e-postadress."
+
+#: simplenews.module:1694
+msgid "The sender's e-mail address you supplied is not valid."
+msgstr "Avsändarens e-postadress som du angav är inte giltig."
+
+#: simplenews.module:1698
+msgid "Your settings were saved."
+msgstr "Dina inställningar sparades."
+
+#: simplenews.module:1703
+msgid "Block options"
+msgstr "Block-inställningar."
+
+#: simplenews.module:1704
+msgid "Links (to overview page, RSS-feed and latest issues) are only displayed to users who have \"view links in block\" privileges."
+msgstr "Länkar (till överblicksidan, RSS-flöde och senaste utgåvor) visas bara för användare som har behörigheten \"visa länkar i block\"."
+
+#: simplenews.module:1710
+msgid "Display block message"
+msgstr "Visa block-meddelande"
+
+#: simplenews.module:1716
+msgid "Block message"
+msgstr "Block-meddelande"
+
+#: simplenews.module:1723
+msgid "Display subscription form"
+msgstr "Visa prenumerationsformulär"
+
+#: simplenews.module:1729
+msgid "Display link to archives"
+msgstr "Visa länk till arkiv"
+
+#: simplenews.module:1735
+msgid "Display latest issues"
+msgstr "Visa senaste utgåvor"
+
+#: simplenews.module:1741
+msgid "Number of issues to display"
+msgstr "Antalet utgåvor som ska visas"
+
+#: simplenews.module:1747
+msgid "Display RSS-feed icon"
+msgstr "Visa RSS-ikon"
+
+#: simplenews.module:1753
+msgid "Sender information"
+msgstr "Information om avsändare"
+
+#: simplenews.module:1759
+msgid "From name"
+msgstr "Från namn"
+
+#: simplenews.module:1766
+msgid "From e-mail address"
+msgstr "Från e-postadress"
+
+#: simplenews.module:1773
+msgid "HTML to text conversion"
+msgstr "HTML till text-konvertering"
+
+#: simplenews.module:1776
+msgid "When your newsletter is sent as plain text, these options will determine how the conversion to text is performed."
+msgstr "När ditt nyhetsbrev skickas som ren text kommer dessa inställningar att avgöra hur konverteringen till text utförs."
+
+#: simplenews.module:1778
+msgid "Append hyperlinks as a numbered reference list"
+msgstr "Lägg till länkar som en numrerad referenslista"
+
+#: simplenews.module:1779
+msgid "Display hyperlinks inline with the text"
+msgstr "Visa länkar direkt i texten"
+
+#: simplenews.module:1782
+msgid "Hyperlink conversion"
+msgstr "Konvertering av länkar"
+
+#: simplenews.module:1813
+msgid "Default newsletter options"
+msgstr "Standardinställningar för nyhetsbrev"
+
+#: simplenews.module:1816
+msgid "These options will be the defaults for new newsletters, but can be overridden in the newsletter editing form."
+msgstr "Dessa inställningar kommer att vara standard för nya nyhetsbrev, men de kan åsidosättas i nyhetsbrevens redigeringsformulär."
+
+#: simplenews.module:1822
+msgid "Select the default newsletter sending format."
+msgstr "Välj standardformat för utskick av nyhetsbrev."
+
+#: simplenews.module:1829
+msgid "Note that e-mail priority is ignored by a lot of e-mail programs."
+msgstr "Observera att e-postprioritet ignoreras av många e-postprogram."
+
+#: simplenews.module:1837
+msgid "Request a Read Receipt from your newsletters. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your newsletter."
+msgstr "Begär en Läsningsbekräftelse för dina nyhetsbrev. Många e-postprogram ignorerar detta så det kan inte användas som en säker indikation på hur många som läser dina nyhetsbrev."
+
+#: simplenews.module:1844
+msgid "Default selection for sending newsletters"
+msgstr "Standardval för utskick av nyhetsbrev"
+
+#: simplenews.module:1850
+msgid "Test addresses options"
+msgstr "Inställningar för testadresser"
+
+#: simplenews.module:1853
+msgid "Supply a comma-separated list of e-mail addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation."
+msgstr "Skriv in en komma-separerad lista över e-postadresser som ska användas som testadresser. Åsidosätt-funktionen låter dig åsidosätta dessa adresser när ett nytt nyhetsbrev skapas."
+
+#: simplenews.module:1857
+msgid "Test e-mail address"
+msgstr "Testadress"
+
+#: simplenews.module:1864
+msgid "Allow test address override"
+msgstr "Tillåt att testadresser åsidosätts"
+
+#: simplenews.module:1873
+msgid "Default sender address that will only be used for confirmation e-mails. You can specify sender information for each newsletter separately on the newsletter's settings page."
+msgstr "Standardadress för avsändare som bara kommer att användas för e-postbekräftelser. Du kan ange avsändarinformation för varje nyhetsbrev separat på nyhetsbrevets inställningssida."
+
+#: simplenews.module:1891
+msgid "Initial send time"
+msgstr "Första sändningstid"
+
+#: simplenews.module:1894
+msgid "Sets the maximum time in seconds during which newsletters are sent. If not all recipients have been mailed within this time, sending is further handled as a cronjob."
+msgstr "Anger den maximala tiden i sekunder under vilken nyhetsbrev kommer att skickas. Om inte alla mottagare har fått ett utskick under denna tid så hanteras sändningen fortsatt som ett cron-jobb."
+
+#: simplenews.module:1894
+msgid "The highest value in the dropdown list is based on max_execution_time in your php.ini file. Note that if not all previous newletters have been sent to all recipients yet, these are sent first."
+msgstr "Det högsta värdet i popup-menyn är baserat på max_execution_time i din php.ini-fil. Observera att om inte alla tidigare nyhetsbrev har skickats till alla mottagare än så skickas dessa först."
+
+#: simplenews.module:1902
+msgid "Seconds"
+msgstr "Sekunder"
+
+#: simplenews.module:1908
+msgid "Cron throttle"
+msgstr "Cron-strypning"
+
+#: simplenews.module:1911
+msgid "Sets the numbers of newsletters sent per cron run."
+msgstr "Anger antalet nyhetsbrev som skickas per cron-körning."
+
+#: simplenews.module:1913
+msgid "Unlimited"
+msgstr "Obegränsat"
+
+#: simplenews.module:1916
+msgid "Number of mails"
+msgstr "Antal mejl."
+
+#: simplenews.module:1957
+msgid "Updated vocabulary %name."
+msgstr "Uppdaterade vokabuläret %name."
+
+#: simplenews.module:1960
+msgid "Deleted vocabulary %name."
+msgstr "Raderade vokabuläret %name."
+
+#: simplenews.module:1970
+msgid "Newsletter name"
+msgstr "Nyhetsbrevets namn"
+
+#: simplenews.module:1974
+msgid "edit newsletter"
+msgstr "redigera nyhetsbrev"
+
+#: simplenews.module:1992
+msgid "This name is used to identify the newsletter."
+msgstr "Detta namn används för att identifiera nyhetsbrevet."
+
+#: simplenews.module:1998
+msgid "Description"
+msgstr "Beskrivning"
+
+#: simplenews.module:2001
+msgid "The description can be used to provide more information."
+msgstr "Beskrivningen kan användas för att ge mer information."
+
+#: simplenews.module:2006
+msgid "Weight"
+msgstr "Vikt"
+
+#: simplenews.module:2008
+msgid "In listings, the heavier (with a higher weight value) terms will sink and the lighter terms will be positioned nearer the top."
+msgstr "I listor kommer tyngre termer (med ett högre värde på vikt) att sjunka och lättare termer kommer att hamna högre upp."
+
+#: simplenews.module:2043
+msgid "%user was successfully removed from the %newsletter subscription list."
+msgstr "%user raderades från prenumerantlistan för %newsletter."
+
+#: simplenews.module:2062
+msgid "%user was successfully added to the %newsletter subscription list."
+msgstr "%user lades till i prenumerantlistan för %newsletter."
+
+#: simplenews.module:2080
+msgid "Are you sure you want to remove %user from the %newsletter subscription list?"
+msgstr "Är du säker på att du vill ta bort %user från prenumerantlistan för %newsletter?"
+
+#: simplenews.module:2082
+msgid "This action will only remove you from the newsletter subscription list. If you are registered at our site, your account information will remain unchanged."
+msgstr "Detta gör bara att du tas bort från nyhetsbrevets prenumerantlista. Om du är registrerad på webbplatsen kommer din kontoinformation att bevaras."
+
+#: simplenews.module:2090
+msgid "Are you sure you want to add %user to the %newsletter subscription list?"
+msgstr "Är du säker på att du vill lägga till %user i prenumerantlistan för %newsletter?"
+
+#: simplenews.module:2092
+msgid "You always have the possibility to unsubscribe later."
+msgstr "Du kan alltid sluta prenumerera senare."
+
+#: simplenews.module:2151
+msgid "Syndicate content"
+msgstr "Syndikera innehåll"
+
+#: simplenews.module:31
+msgid "view links in block"
+msgstr "visa länkar i block"
+
+#: simplenews.module:31
+msgid "create newsletter"
+msgstr "skapa nyhetsbrev"
+
+#: simplenews.module:31
+msgid "edit own newsletter"
+msgstr "redigera egna nyhetsbrev"
+
+#: simplenews.module:31
+msgid "administer newsletters"
+msgstr "administrera nyhetbrev"
+
+#: simplenews.module:31
+msgid "send newsletter"
+msgstr "skicka nyhetsbrev"
+
+#: simplenews.module:31
+msgid "subscribe to newsletters"
+msgstr "prenumerera på nyhetsbrev"
+
+#: simplenews.module:0
+msgid "simplenews"
+msgstr "simplenews"
