@@ -938,6 +938,8 @@ function _sn_send($timer = FALSE) {
       if(sn_mail_send($node)) {
         db_query('UPDATE {sn_subscriptions} SET s_status = %d WHERE snid = %d', 1, $mail->snid);
         $counter++;
+        // don't send mails too fast, servers may choke. Wait for 10 ms.
+        usleep(10000);
       }
       else {
         $message = t('Newsletter %title could not be sent to %email.', array('%title'=>theme('placeholder',$node->title), '%email'=>theme('placeholder',$mail->mail)));
@@ -1918,7 +1920,8 @@ function simplenews_admin_settings($term = FALSE) {
       '#collapsed' => TRUE,
       '#description' => t('Sets the numbers of newsletters sent per cron run.'),
     );
-    $throttle = array(10=>10,20=>20,30=>30,40=>40,50=>50,100=>100,150=>150,200=>200,300=>300,400=>400,500=>500,999999=>t('Unlimited'));
+    $throttle = drupal_map_assoc(array(10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000));
+    $throttle[999999] = t('Unlimited');
     $form['sn_cron_throttle']['throttle'] = array(
       '#type' => 'select',
       '#title' => t('Number of mails'),
