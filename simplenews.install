@@ -1,5 +1,77 @@
 <?php
+// $Id$
+
+function simplenews_install() {
+  drupal_set_message('Installing Simplenews');
+  $s = false;
+  switch ($GLOBALS['db_type']) {
+    case 'mysqli':
+    case 'mysql':
+      $s = db_query("CREATE TABLE if not exists {sn_subscriptions} (
+        snid int(10) NOT NULL auto_increment,
+        a_status int(2) NOT NULL default '0',
+        s_status int(2) NOT NULL default '0',
+        mail varchar(64) NOT NULL default '',
+        uid int(10) NOT NULL default '0',
+        PRIMARY KEY  (snid)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+
+      $s = $s && db_query("CREATE TABLE if not exists {sn_newsletters} (
+        nid int(10) NOT NULL default '0',
+        tid int(10) NOT NULL default '0',
+        s_status int(2) NOT NULL default '0',
+        s_format varchar(8) NOT NULL default '',
+        priority int(2) NOT NULL default '0',
+        receipt int(2) NOT NULL default '0',
+        PRIMARY KEY  (nid)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+
+      $s = $s && db_query("CREATE TABLE if not exists {sn_snid_tid} (
+        snid int(10) NOT NULL default '0',
+        tid int(10) NOT NULL default '0',
+        PRIMARY KEY  (snid,tid)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
+    
+    break;
+    case 'pgsql':
+      $s = db_query("CREATE TABLE {sn_subscriptions} (
+        snid SERIAL,
+        a_status smallint NOT NULL default '0',
+        s_status smallint NOT NULL default '0',
+        mail varchar(64) NOT NULL default '',
+        uid integer NOT NULL default '0',
+        PRIMARY KEY  (snid)
+        );");
+
+      $s = $s && db_query("CREATE TABLE {sn_newsletters} (
+        nid integer NOT NULL default '0',
+        tid integer NOT NULL default '0',
+        s_status smallint NOT NULL default '0',
+        s_format varchar(8) NOT NULL default '',
+        priority smallint NOT NULL default '0',
+        receipt smallint NOT NULL default '0',
+        PRIMARY KEY  (nid)
+        );");
+
+      $s = $s && db_query("CREATE TABLE {sn_snid_tid} (
+        snid integer NOT NULL default '0',
+        tid integer NOT NULL default '0',
+        PRIMARY KEY  (snid,tid)
+        );");
+    break;
+      
+    default:
+      break;
+  }
+
+  if ($s) {
+    drupal_set_message(t('Simplenesw module installed tables successfully.'));
+  }
+  else {
+    drupal_set_message(t('The installation of the Simplenews module was unsuccessful.'), 'error');
+  }
+}   
+
 function simplenews_update_1() {
   return _system_update_utf8(array('sn_subscriptions', 'sn_newsletters', 'sn_snid_tid'));
 }
-?>
