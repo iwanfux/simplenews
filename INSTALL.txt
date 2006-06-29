@@ -14,11 +14,10 @@ Requirements
 Installation
 ------------
 
-- Load the database definition file "simplenews.mysql" using the tool of your choice
-
 - Create a new directory "simplenews" in your "modules" directory
 
 - Copy the following files to this directory:
+  simplenews.install
   simplenews.module
   simplenews.css
   activeMailLib.php
