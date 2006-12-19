@@ -2,12 +2,11 @@
 // $Id$
 
 function simplenews_install() {
-  drupal_set_message('Installing Simplenews');
-  $s = false;
+  $result = array();
   switch ($GLOBALS['db_type']) {
     case 'mysqli':
     case 'mysql':
-      $s = db_query("CREATE TABLE if not exists {sn_subscriptions} (
+      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
         snid int(10) NOT NULL auto_increment,
         a_status int(2) NOT NULL default '0',
         s_status int(2) NOT NULL default '0',
@@ -16,7 +15,7 @@ function simplenews_install() {
         PRIMARY KEY  (snid)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
 
-      $s = $s && db_query("CREATE TABLE if not exists {sn_newsletters} (
+      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
         nid int(10) NOT NULL default '0',
         tid int(10) NOT NULL default '0',
         s_status int(2) NOT NULL default '0',
@@ -26,15 +25,15 @@ function simplenews_install() {
         PRIMARY KEY  (nid)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
 
-      $s = $s && db_query("CREATE TABLE if not exists {sn_snid_tid} (
+      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
         snid int(10) NOT NULL default '0',
         tid int(10) NOT NULL default '0',
         PRIMARY KEY  (snid,tid)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
-    
-    break;
+      break;
+
     case 'pgsql':
-      $s = db_query("CREATE TABLE {sn_subscriptions} (
+      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
         snid SERIAL,
         a_status smallint NOT NULL default '0',
         s_status smallint NOT NULL default '0',
@@ -43,7 +42,7 @@ function simplenews_install() {
         PRIMARY KEY  (snid)
         );");
 
-      $s = $s && db_query("CREATE TABLE {sn_newsletters} (
+      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
         nid integer NOT NULL default '0',
         tid integer NOT NULL default '0',
         s_status smallint NOT NULL default '0',
@@ -53,25 +52,52 @@ function simplenews_install() {
         PRIMARY KEY  (nid)
         );");
 
-      $s = $s && db_query("CREATE TABLE {sn_snid_tid} (
+      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
         snid integer NOT NULL default '0',
         tid integer NOT NULL default '0',
         PRIMARY KEY  (snid,tid)
         );");
-    break;
-      
-    default:
       break;
   }
 
-  if ($s) {
-    drupal_set_message(t('Simplenesw module installed tables successfully.'));
-  }
-  else {
+  if (count($result) != count(array_filter($result))) {
     drupal_set_message(t('The installation of the Simplenews module was unsuccessful.'), 'error');
   }
-}   
+}
+/**
+ * Implementation of hook_enable().
+ */
+function simplenews_enable() {
+  _simplenews_create_default_newsletter_term();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function simplenews_uninstall() {
+  db_query('DROP TABLE {simplenews_snid_tid}');
+  db_query('DROP TABLE {simplenews_newsletters}');
+  db_query('DROP TABLE {simplenews_subscriptions}');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
+}
 
 function simplenews_update_1() {
-  return _system_update_utf8(array('sn_subscriptions', 'sn_newsletters', 'sn_snid_tid'));
+  return _system_update_utf8(array('sn_snid_tid', 'sn_newsletters', 'sn_subscriptions'));
+}
+
+/**
+ * Rename sn_* tables to simplenews_* to avoid namespace conflicts.
+ */
+function simplenews_update_2() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+    case 'pgsql':
+      $ret[] = update_sql('ALTER TABLE {sn_snid_tid} RENAME TO {simplenews_snid_tid}');
+      $ret[] = update_sql('ALTER TABLE {sn_newsletters} RENAME TO {simplenews_newsletters}');
+      $ret[] = update_sql('ALTER TABLE {sn_subscriptions} RENAME TO {simplenews_subscriptions}');
+      break;
+  }
+  return $ret;
 }

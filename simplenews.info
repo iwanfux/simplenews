@@ -1,0 +1,4 @@
+; $Id$
+name = Simplenews
+description = "Send newsletters to subscribed e-mail addresses."
+version = "$Name$"

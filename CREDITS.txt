@@ -1,5 +1,0 @@
-simplenews.module
-CREDITS.txt
-
-Written by
-  - Dries Knapen <drieske AT hotmail DOT com>
