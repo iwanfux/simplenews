@@ -191,8 +191,7 @@ function simplenews_menu($may_cache) {
     $items[] = array('path' => 'newsletter/confirm',
       'title' => t('Confirm newsletter subscriptions'),
       'access' => user_access('access content'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('simplenews_confirm_subscription'),
+      'callback' => 'simplenews_confirm_subscription',
       'type' => MENU_CALLBACK,
     );
     $items[] = array('path' => 'newsletter/subscriptions',
@@ -2180,10 +2179,10 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
   if ($md5 == drupal_substr(md5($subs->mail . simplenews_private_key()), 0, 10)) {
     $newsletter = taxonomy_get_term($tid);
     if ($op1 == 'remove') {
-      return simplenews_confirm_removal_form($subs->mail, $newsletter);
+      return drupal_get_form('simplenews_confirm_removal_form', $subs->mail, $newsletter);
     }
     elseif ($op1 == 'add') {
-      return simplenews_confirm_add_form($subs->mail, $newsletter);
+      return drupal_get_form('simplenews_confirm_add_form', $subs->mail, $newsletter);
     }
   }
 
@@ -2200,8 +2199,7 @@ function simplenews_confirm_add_form($mail, $newsletter) {
   $form['mail'] = array('#type' => 'value', '#value' => $mail);
   $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
 
-  return confirm_form('simplenews_confirm_add_form',
-    $form,
+  return confirm_form($form,
     t('Are you sure you want to add %user to the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
     '',
     t('You always have the possibility to unsubscribe later.'),
@@ -2228,8 +2226,7 @@ function simplenews_confirm_removal_form($mail, $newsletter) {
   $form['mail'] = array('#type' => 'value', '#value' => $mail);
   $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
 
-  return confirm_form('simplenews_confirm_removal_form',
-    $form,
+  return confirm_form($form,
     t('Are you sure you want to remove %user from the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
     '',
     t('This action will only remove you from the newsletter subscription list. If you are registered at our site, your account information will remain unchanged.'),
@@ -2328,30 +2325,30 @@ function theme_simplenews_newsletter_confirmation($email, $newsletter, $snid, $o
   $mail->priority = 'none';
 
   $mail->to = $email;
-  $mail->subject = t('Confirmation for %newsletter from %site', array('%newsletter' => $newsletter->name, '%site' => $mail->from_name));
-  $mail->body = t('This is a subscription status confirmation notice for the %newsletter.', array('%newsletter' => $newsletter->name));
+  $mail->subject = t('Confirmation for @newsletter from @site', array('@newsletter' => $newsletter->name, '@site' => $mail->from_name));
+  $mail->body = t('This is a subscription status confirmation notice for the @newsletter.', array('@newsletter' => $newsletter->name));
   $mail->body .= "\n\n";
 
   $user_is_subscribed = simplenews_user_is_subscribed($email, $newsletter->tid);
   switch ($op) {
     case 'subscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, %mail, to the %newsletter from %site (%uri). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('%mail' => $email, '%newsletter' => $newsletter->name, '%site' => $mail->from_name, '%uri' => url('', NULL, NULL, TRUE)));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@uri). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', NULL, NULL, TRUE)));
       }
       else {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, %mail, to the %newsletter from %site (%uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('%mail' => $email, '%newsletter' => $newsletter->name, '%site' => $mail->from_name, '%uri' => url('', NULL, NULL, TRUE)));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', NULL, NULL, TRUE)));
         $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
         $footer = "\n\n-- \n". t('Subscribe link: @url', array('@url' => url('newsletter/confirm/add/'. $hash, NULL, NULL, TRUE)));
       }
       break;
     case 'unsubscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, %mail, from the %newsletter from %site (%uri). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('%mail' => $email, '%newsletter' => $newsletter->name, '%site'=> $mail->from_name, '%uri' => url('', NULL, NULL, TRUE)));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@uri). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site'=> $mail->from_name, '@uri' => url('', NULL, NULL, TRUE)));
         $mail->body .= "\n\n". t('If you did not make this request, please disregard this message.');
         $footer = "\n\n-- \n". t('Unsubscribe link: @url', array('@url' => url('newsletter/confirm/remove/'. $hash, NULL, NULL, TRUE)));
       }
       else {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, %mail, from the %newsletter from %site (%uri). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('%mail' => $email, '%newsletter' => $newsletter->name, '%site'=> $mail->from_name, '%uri' => url('', NULL, NULL, TRUE)));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@uri). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site'=> $mail->from_name, '@uri' => url('', NULL, NULL, TRUE)));
         $mail->body .= "\n\n".t('If you do not wish to be subscribed to this list, please disregard this message.');
       }
       break;
