@@ -581,16 +581,14 @@ function simplenews_block($op = 'list', $delta = 0) {
 }
 function theme_simplenews_block($newsletter) {
   $output = '';
+  if (variable_get('simplenews_block_m_status_'. $newsletter->tid, 1)) {
+    $output .= '<p>'. variable_get('simplenews_block_m_'. $newsletter->tid, t('Stay informed on our latest news!')) .'</p>';
+  }
   if (variable_get('simplenews_block_f_'. $newsletter->tid, 1) && user_access('subscribe to newsletters')) {
     $output .= drupal_get_form('simplenews_block_form', $newsletter->tid);
   }
-  else {
-    if (variable_get('simplenews_block_m_status_'. $newsletter->tid, 1)) {
-      $output .= '<p>'. variable_get('simplenews_block_m_'. $newsletter->tid, t('Stay informed on our latest news!')) .'</p>';
-    }
-    if (user_access('subscribe to newsletters')) {
-      $output .= l(t('Manage my subscriptions'), 'newsletter/subscriptions/');
-    }
+  if ((!variable_get('simplenews_block_f_'. $newsletter->tid, 1)) && (user_access('subscribe to newsletters')) ){
+    $output .= '<p>'. l(t('Manage my subscriptions'), 'newsletter/subscriptions/'). '</p>';
   }
   if (user_access('view links in block') || user_access('administer newsletters')) {
     if (variable_get('simplenews_block_l_'. $newsletter->tid, 1)) {
@@ -1483,7 +1481,7 @@ function simplenews_admin_news($action = 'sent') {
     '#type' => 'submit',
     '#value' => t('Filter'),
   );
-  
+
   $table = theme('table', $header, $rows);
   if ($key_table) {
     $key_header = array(array('data' => t('Table key'), 'colspan' => '2'));
@@ -1637,7 +1635,7 @@ function simplenews_admin_list_add_submit($form_id, $form_values) {
       $newsletter = taxonomy_get_term($tid);
       $newsletter_names[] = $newsletter->name;
     }
-    drupal_set_message(t('The addresses were subscribed to the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $newsletter_names))));    
+    drupal_set_message(t('The addresses were subscribed to the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $newsletter_names))));
   }
   else {
     drupal_set_message(t('No addresses were added.'));
@@ -1772,6 +1770,7 @@ function simplenews_admin_settings($tid = NULL) {
     $form['simplenews_block_options']['simplenews_block_f_'. $term->tid] = array('#type' => 'checkbox',
       '#title' => t('Display subscription form'),
       '#return_value' => 1,
+      '#description' => t('If selected a subscription form is displayed, if not selected a link to the subscription page is displayed.'),
       '#default_value' => variable_get('simplenews_block_f_'. $term->tid, 1),
     );
     $form['simplenews_block_options']['simplenews_block_l_'. $term->tid] = array('#type' => 'checkbox',
