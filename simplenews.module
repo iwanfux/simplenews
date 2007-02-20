@@ -986,7 +986,7 @@ function simplenews_node_prepare($nid, $tid) {
 
   // TODO: Probably should refactor the whole processing, but check here for
   // mimemail and don't mess with body if we're gonna pass it to mimemail().
-  if (!module_exists('mimemail')) {
+  if ($node->s_format == 'plain' || !module_exists('mimemail')) {
     $node->body = simplenews_html_to_text($node->body, variable_get('simplenews_hyperlinks_'. $tid, 1));
   }
 
