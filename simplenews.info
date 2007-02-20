@@ -1,4 +1,5 @@
 ; $Id$
 name = Simplenews
 description = "Send newsletters to subscribed e-mail addresses."
+dependencies = taxonomy
 version = "$Name$"
