@@ -766,7 +766,14 @@ function simplenews_subscription_manager_form($snid = NULL) {
     }
   }
   else {
-    $subscription = simplenews_get_subscription($user->mail);
+    $subscription = simplenews_get_user_subscription($user->mail);
+    // If current user is not subscribed to any newsletter set current user data.
+    if ($user->uid && !$subscription) {
+      $subscription = new StdClass();
+      $subscription->tids = array();
+      $subscription->uid = $user->uid;
+      $subscription->mail = $user->mail;
+    }
   }
 
   // If non-admin is trying to edit someone else's subscription, access denied.
@@ -774,7 +781,6 @@ function simplenews_subscription_manager_form($snid = NULL) {
     drupal_access_denied();
     return;
   }
-
   $form = _simplenews_subscription_manager_form($subscription);
   return $form;
 }
@@ -804,10 +810,6 @@ function _simplenews_subscription_manager_form($subscription) {
     $form['update'] = array('#type' => 'submit',
       '#value' => t('Update'),
       '#weight' => 20,
-    );
-    $form['delete'] = array('#type' => 'submit',
-      '#value' => t('Delete'),
-      '#weight' => 30,
     );
   }
   else {
@@ -839,7 +841,7 @@ function simplenews_subscription_manager_form_validate($form_id, $form_values) {
     form_set_error('mail', t('The e-mail address you supplied is not valid.'));
   }
   $checked_newsletters = array_filter($form_values['newsletters']);
-  if (!count($checked_newsletters)) {
+  if (!count($checked_newsletters) && !simplenews_get_user_subscription($form_values['mail'])) {
     form_set_error('newsletters', t('You must select at least one newsletter.'));
   }
 }
