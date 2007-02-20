@@ -2153,7 +2153,7 @@ function simplenews_admin_types_delete($tid = NULL) {
 /**
  * Forms API callback; handles submit for newsletter (term) delete form.
  */
-function simplenews_admin_types_delete_confirm_submit($form_id, $form_values) {
+function simplenews_admin_types_delete_submit($form_id, $form_values) {
   if ($form_values['confirm']) {
     $term = taxonomy_get_term($form_values['tid']);
     taxonomy_del_term($form_values['tid']);
