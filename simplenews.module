@@ -980,7 +980,15 @@ function simplenews_block_form_submit($form_id, $form_values) {
 function simplenews_node_prepare($nid, $tid) {
   $node = node_load(array('nid' => $nid), NULL, TRUE);
   $node = simplenews_replace_vars($node, FALSE);
-  $node = node_prepare($node);
+
+  // To play well with other modules that add content to the node,
+  // simplenews_node_prepare() must mimic node_view() as far as possible.
+  // Following is adapted from node_view().
+  $node = node_build_content($node, false, true);
+  $content = drupal_render($node->content);
+  $node->body = $content;
+  unset($node->teaser);
+  node_invoke_nodeapi($node, 'alter', false, true);
 
   $node = theme('simplenews_newsletter', $node, $tid);
 
