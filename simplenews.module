@@ -384,8 +384,7 @@ function simplenews_cron() {
 
 /**
  * Implementation of hook_insert().
- * Saves extra node content to module database table
- * and sends the newsletter, upon node creation
+ * Saves extra node content to module database table.
  */
 function simplenews_insert($node) {
   $term = simplenews_validate_taxonomy($node->taxonomy);
@@ -394,19 +393,9 @@ function simplenews_insert($node) {
   //tid is also saved in this table since it is needed by _simplenews_send(), and the term_node table is
   //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
   //since simplenews_cron() also calls _simplenews_send().
-  if ($node->send == 1 && user_access('send newsletter')) {
-    db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->simplenews_tid, 1, $node->s_format, $node->priority, $node->receipt);
-    _simplenews_send(TRUE);
-    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
-  }
-  else {
-    db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-    VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->simplenews_tid, 0, $node->s_format, $node->priority, $node->receipt);
-  }
-  if ($node->send == 2) {
-    simplenews_send_test($node);
-  }
+  $s_status = ($node->send == 1 && user_access('send newsletter')) ? 1 : 0;
+  db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
+		  VALUES (%d, %d, %d, '%s', %d, %d)", $node->nid, $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt);
 }
 
 /**
@@ -416,18 +405,23 @@ function simplenews_update($node) {
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->simplenews_tid = $tid ? $tid[0] : 0;
-  if ($node->send == 1 && user_access('send newsletter')) {
-    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-    WHERE nid = %d", $node->simplenews_tid, 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
-    _simplenews_send(TRUE);
-    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
-  }
-  else {
-    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
-    WHERE nid = %d", $node->simplenews_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
-  }
-  if ($node->send == 2) {
-    simplenews_send_test($node);
+  $s_status = ($node->send == 1 && user_access('send newsletter')) ? 1 : 0;
+  db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
+		  WHERE nid = %d", $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt, $node->nid);
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ */
+function simplenews_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
+  if ($node->type == 'simplenews' && ($op == 'update' || $op == 'insert')) {
+    if ($node->send == 1) {
+      _simplenews_send(TRUE);
+      drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
+    }
+    elseif ($node->send == 2) {
+      simplenews_send_test($node);
+    }
   }
 }
 
