@@ -2309,7 +2309,7 @@ function theme_simplenews_newsletter_footer($node, $hash) {
     $node->body .= '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter'), 'newsletter/confirm/remove/'. $hash, array(), NULL, NULL, TRUE) .'</p>';
   }
   else {
-    $email->body .= "\n\n-- \n". t('Unsubscribe from this newsletter: @url', array('@url' => url('newsletter/confirm/remove/'. $hash, NULL, NULL, TRUE)));
+    $node->body .= "\n\n-- \n". t('Unsubscribe from this newsletter: @url', array('@url' => url('newsletter/confirm/remove/'. $hash, NULL, NULL, TRUE)));
   }
   return $node;
 }
