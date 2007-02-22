@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: he\n"
 "POT-Creation-Date: 2007-01-06 07:51-0800\n"
-"PO-Revision-Date: 2007-01-11 11:07+0200\n"
+"PO-Revision-Date: 2007-01-15 01:03+0200\n"
 "Last-Translator: Yuval Hager <yuval@avramzon.net>\n"
 "Language-Team: Hebrew <he@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -823,7 +823,7 @@ msgstr "העלון %title נמחק בהצלחה."
 
 #: simplenews.module:2241
 msgid "Are you sure you want to add %user to the %newsletter subscription list?"
-msgstr "האמנם ברצונך להוסיף את %user לרשימת המנויים שך %newsletter?"
+msgstr "האמנם ברצונך להוסיף את %user לרשימת המנויים של %newsletter?"
 
 #: simplenews.module:2243
 msgid "You always have the possibility to unsubscribe later."
@@ -889,9 +889,8 @@ msgid ""
 "to this mailing list, simply visit the confirmation link at the bottom of "
 "this e-mail."
 msgstr ""
-"קיבלנו בקשה לרשום את כתובת הדואר שלך, %mail, לעלון %newsletter מאת %site "
-"(%uri. כדי לאשר שאכן רצונך להצטרף כמנוי, אנא בקר בקישור המופיע בתחתית הודעה "
-"זו."
+"קיבלנו בקשה לרשום את כתובת הדואר שלך, %mail, לעלון %newsletter מאת %site (%uri)."
+"כדי לאשר שאכן רצונך להצטרף כמנוי, אנא בקר בקישור המופיע בתחתית הודעה זו."
 
 #: simplenews.module:2379;2391
 msgid ""
@@ -909,8 +908,7 @@ msgid ""
 "from the %newsletter from %site (%uri). If you want to unsubscribe, simply "
 "visit the confirmation link at the bottom of this e-mail."
 msgstr ""
-"קיבלנו בקשה למחוק את כתובת הדואר שלך, %mail, מרשימת המנויים ל עלון %"
-"newsletter מאת %site (%uri. כדי לאשר שאכן רצונך לבטל  את הרישום, אנא בקר "
+"קיבלנו בקשה למחוק את כתובת הדואר שלך, %mail, מרשימת המנויים ל עלון %newsletter מאת %site (%uri). כדי לאשר שאכן רצונך לבטל  את הרישום, אנא בקר "
 "בקישור המופיע בתחתית הודעה זו."
 
 #: simplenews.module:2386
@@ -927,10 +925,7 @@ msgid ""
 "from the %newsletter from %site (%uri). However, you were not subscribed to "
 "this newsletter. If you want to subscribe, you can visit our website by "
 "using the link at the bottom of this e-mail."
-msgstr ""
-"קיבלנו בקשה למחוק את כתובת הדואר שלך, %mail, מרשימת המנויים לעלון %"
-"newsletter מאת %site (%uri. אולם אינך רשום כמנוי לעלון זה כלל.אם רצונך "
-"להרשם כמנוי לרשימה, אנא בקר בקישור המופיע בתחתית הודעה זו."
+msgstr "קיבלנו בקשה למחוק את כתובת הדואר שלך, %mail, מרשימת המנויים לעלון %newsletter מאת %site (%uri). אולם אינך רשום כמנוי לעלון זה כלל. אם רצונך להרשם כמנוי לרשימה, אנא בקר בקישור המופיע בתחתית הודעה זו."
 
 #: simplenews.module:2397
 msgid "Visit our site: @url"
