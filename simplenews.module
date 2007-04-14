@@ -405,9 +405,14 @@ function simplenews_update($node) {
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->simplenews_tid = $tid ? $tid[0] : 0;
-  $s_status = ($node->send == 1 && user_access('send newsletter')) ? 1 : 0;
-  db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-		  WHERE nid = %d", $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt, $node->nid);
+  if ($node->send == 1 && user_access('send newsletter')) {
+    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
+    WHERE nid = %d", $node->simplenews_tid, 1, $node->s_format, $node->priority, $node->receipt, $node->nid);
+  }
+  else {
+    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
+    WHERE nid = %d", $node->simplenews_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
+  }
 }
 
 /**
