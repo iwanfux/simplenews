@@ -1475,7 +1475,7 @@ function simplenews_admin_news($action = 'sent') {
     $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($node->nid, $vid, 'name'));
     $rows[] = array(l($node->title, 'node/'. $node->nid),
                     $terms[0] ? $terms[0] : t('n/a'),
-                    format_date($node->created, 'custom', 'm/d/Y'),
+                    format_date($node->created, 'small'),
                     theme('simplenews_status', $node->status, 'published'),
                     theme('simplenews_status', $node->s_status, 'sent'),
                     l(t('edit'), 'node/'. $node->nid .'/edit', array(), drupal_get_destination()));
