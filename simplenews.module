@@ -559,10 +559,12 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
           'title' => t('Current subscriptions'),
           'value' => $subscriptions,
         );
-        $items[] = array('class' => 'item',
-          'title' => t('Manage subscriptions'),
-          'value' => l(t('My newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
-        );
+        if (user_access('subscribe to newsletters')) {
+          $items[] = array('class' => 'item',
+            'title' => t('Manage subscriptions'),
+            'value' => l(t('My newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
+          );
+        }
         return array(t('Newsletters') => $items);
       }
       break;
