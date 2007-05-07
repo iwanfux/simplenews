@@ -478,9 +478,23 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
       if ($edit['mail']) {
-        $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
-        if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-          db_query("UPDATE {simplenews_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+        $mail = $edit['mail'];
+        if (is_array($edit['newsletters']) && !isset($edit['newsletters'][0])) {
+          //Delete possible existing subscriptions
+          $snids = db_fetch_object(db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'", $mail)); 
+          foreach ($snids as $snid) {
+            simplenews_delete_subscription($snid);
+          }
+          //Create subscriptions
+          foreach (array_filter($edit['newsletters']) as $tid) {
+            if ($tid > 0) {
+              simplenews_subscribe_user($mail, $tid, FALSE);
+            }
+          }
+          $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
+          if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
+            db_query("UPDATE {simplenews_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+          }
         }
       }
       break;
@@ -523,7 +537,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       break;
     case 'categories':
       if (user_access('subscribe to newsletters')) {
-        $output[] = array('name' => 'newsletter', 'title' => t('my newsletters'), 'weight' => 10);
+        $output[] = array('name' => 'newsletter', 'title' => t('My newsletters'), 'weight' => 10);
       }
       return $output;
     case 'view':
@@ -547,9 +561,33 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         );
         $items[] = array('class' => 'item',
           'title' => t('Manage subscriptions'),
-          'value' => l(t('my newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
+          'value' => l(t('My newsletters'), 'user/'. $account->uid .'/edit/newsletter'),
         );
         return array(t('Newsletters') => $items);
+      }
+      break;
+    case 'register':
+      if (variable_get('simplenews_user_subscription', 0) && user_access('subscribe to newsletters')) {
+      $tree = taxonomy_get_tree(_simplenews_get_vid());
+      if ($tree) {
+        $default = variable_get('simplenews_user_subscription_default', array());
+        $form['simplenews'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Newsletters'),
+          '#weight' => 1,
+        );
+        foreach( $tree as $newsletter ) {
+          $options[$newsletter->tid] = $newsletter->name;
+        }
+        $form['simplenews']['newsletters'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('You can subscribe to these newsletters'),
+          '#default_value' => variable_get('simplenews_user_subscription_default', array()),
+          '#options' => $options,
+          '#description' => t('You always have the possibility to unsubscribe later.'),
+        );
+      }
+      return $form;
       }
       break;
   }
@@ -2111,6 +2149,25 @@ function simplenews_admin_settings($tid = NULL) {
       '#title' => t('Default selection for sending newsletters'),
       '#options' => array(0 => t("Don't send now"), 2 => t('Send one test newsletter to the test address'), 1 => t('Send newsletter')),
       '#default_value' => variable_get('simplenews_send', 0),
+    );
+    $form['simplenews_subscription_options'] = array('#type' => 'fieldset',
+      '#title' => t('Default subscription options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#description' => t('This is the default newsletter where a new user is subscribed to.'),
+    );
+    $form['simplenews_subscription_options']['simplenews_user_subscription'] = array('#type' => 'checkbox',
+      '#title' => t('Allow new users to subscribe to a newsletter on the subscription page. Anonymous user access is required for "subscribe to newsletters".'),
+      '#return_value' => 1,
+      '#default_value' => variable_get('simplenews_user_subscription', 0),
+    );
+    foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+      $options[$newsletter->tid] = $newsletter->name;
+    }
+    $form['simplenews_subscription_options']['simplenews_user_subscription_default'] = array('#type' => 'checkboxes',
+     '#title' => t('Default subscription newsletter'),
+     '#default_value' => variable_get('simplenews_user_subscription_default', array()),
+     '#options' => $options,
     );
     $form['simplenews_test_address'] = array('#type' => 'fieldset',
       '#title' => t('Test addresses options'),
