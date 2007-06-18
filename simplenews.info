@@ -3,4 +3,4 @@ name = Simplenews
 description = "Send newsletters to subscribed e-mail addresses."
 dependencies = taxonomy
 package = Mail
-version = "$Name$"
+
