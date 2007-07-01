@@ -479,21 +479,18 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
     case 'insert':
       if ($edit['mail']) {
         $mail = $edit['mail'];
-        if (is_array($edit['newsletters']) && !isset($edit['newsletters'][0])) {
-          //Delete possible existing subscriptions
-          $snids = db_fetch_object(db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'", $mail)); 
-          foreach ($snids as $snid) {
-            simplenews_delete_subscription($snid);
-          }
-          //Create subscriptions
-          foreach (array_filter($edit['newsletters']) as $tid) {
-            if ($tid > 0) {
-              simplenews_subscribe_user($mail, $tid, FALSE);
-            }
-          }
-          $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
-          if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-            db_query("UPDATE {simplenews_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+
+        // Update existing anonymous subscription (if there is one)
+        // for this new user's email address to be for this user.  Do
+        // this before adding any registration subscriptions so we do
+        // not end up with multiple rows per email address.
+        db_query("UPDATE {simplenews_subscriptions} SET uid=%d WHERE uid=0 AND mail='%s'", $edit['uid'], $edit['mail']);
+
+        // Create subscriptions selected during registration.
+        if (isset($edit['newsletters']) && is_array($edit['newsletters'])) {
+          unset($edit['newsletters'][0]); // Remove key 0. This is not a valid newsletter
+          foreach (array_keys(array_filter($edit['newsletters'])) as $tid) {
+            simplenews_subscribe_user($mail, $tid, FALSE);
           }
         }
       }
@@ -581,10 +578,13 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         foreach( $tree as $newsletter ) {
           $options[$newsletter->tid] = $newsletter->name;
         }
+        $default = variable_get('simplenews_user_subscription_default', array());
+        // Remove 'nothing selected' flag
+        unset($default[0]);
         $form['simplenews']['newsletters'] = array(
           '#type' => 'checkboxes',
           '#title' => t('You can subscribe to these newsletters'),
-          '#default_value' => variable_get('simplenews_user_subscription_default', array()),
+          '#default_value' => $default,
           '#options' => $options,
           '#description' => t('You always have the possibility to unsubscribe later.'),
         );
@@ -2166,9 +2166,11 @@ function simplenews_admin_settings($tid = NULL) {
     foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
       $options[$newsletter->tid] = $newsletter->name;
     }
+    $default = variable_get('simplenews_user_subscription_default', array());
+    unset($default[0]); //Remove 'nothing selected' flag.
     $form['simplenews_subscription_options']['simplenews_user_subscription_default'] = array('#type' => 'checkboxes',
      '#title' => t('Default subscription newsletter'),
-     '#default_value' => variable_get('simplenews_user_subscription_default', array()),
+     '#default_value' => $default,
      '#options' => $options,
     );
     $form['simplenews_test_address'] = array('#type' => 'fieldset',
