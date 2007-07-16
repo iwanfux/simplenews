@@ -1271,10 +1271,10 @@ function simplenews_html_to_text($txt, $inline) {
 function _simplenews_mail_uri($href, $link) {
   $href = _simplenews_mail_url($href);
   if ($href == $link) {
-    $output =  '['. $href.']';
+    $output =  '[ '. $href.' ]';
   }
   else {
-    $output = $link.' ['. $href.']';
+    $output = $link.' [ '. $href.' ]';
   }
   return $output;
 }
