@@ -1,11 +1,11 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
+"Project-Id-Version: Simplenews\n"
 "POT-Creation-Date: 2006-01-19 01:13+0100\n"
-"PO-Revision-Date: 2007-09-24 20:02+0100\n"
-"Last-Translator: Marcello Testi <m.testi@gmail.com>\n"
-"Language-Team: Italian <m.testi@etabeta.it>\n"
+"PO-Revision-Date: 2007-10-22 15:05+0100\n"
+"Last-Translator: thePanz <thepanz@gmail.com>\n"
+"Language-Team: Italian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -200,7 +200,7 @@ msgstr "Non puoi inviare la newsletter di prova: non è stato specificato un ind
 
 #: simplenews.module:339
 msgid "Cannot send test newsletter to %mail: e-mail address invalid."
-msgstr "Impossibile mandare newsletter di prova a %mail: indirizzo non valido."
+msgstr "Impossibile inviare la newsletter di prova a %mail: indirizzo non valido."
 
 #: simplenews.module:418
 msgid "Newsletter %newsletter is being sent"
@@ -264,11 +264,11 @@ msgstr "Non posso caricare l'ID %id del termine per la newsletter"
 
 #: simplenews.module:830
 msgid "Select the newsletter(s) to which you want to subscribe or unsubscribe."
-msgstr "Scegli le newsletter a cui ci vuoi iscrivere o da cui cancellarti."
+msgstr "Scegli le newsletter a cui ti vuoi iscrivere o cancellare."
 
 #: simplenews.module:839
 msgid "Subscriptions for %mail"
-msgstr "Iscritti a %mail."
+msgstr "Iscrizioni di %mail."
 
 #: simplenews.module:842;885;1750
 msgid "Update"
