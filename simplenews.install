@@ -12,7 +12,8 @@ function simplenews_install() {
         s_status int(2) NOT NULL default '0',
         mail varchar(64) NOT NULL default '',
         uid int(10) NOT NULL default '0',
-        PRIMARY KEY  (snid)
+        PRIMARY KEY  (snid),
+        KEY mail (mail)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
 
       $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
@@ -41,6 +42,7 @@ function simplenews_install() {
         uid integer NOT NULL default '0',
         PRIMARY KEY  (snid)
         );");
+      $result[] = db_query('CREATE INDEX {simplenews_subscriptions}_mail_idx ON {simplenews_subscriptions} (mail)');
 
       $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
         nid integer NOT NULL default '0',
@@ -97,6 +99,21 @@ function simplenews_update_2() {
       $ret[] = update_sql('ALTER TABLE {sn_snid_tid} RENAME TO {simplenews_snid_tid}');
       $ret[] = update_sql('ALTER TABLE {sn_newsletters} RENAME TO {simplenews_newsletters}');
       $ret[] = update_sql('ALTER TABLE {sn_subscriptions} RENAME TO {simplenews_subscriptions}');
+      break;
+  }
+  return $ret;
+}
+
+/**
+ * Add index to simplenews_subscriptions
+ */
+function simplenews_update_5000() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+    case 'pgsql':
+      $ret[] = update_sql('CREATE INDEX {simplenews_subscriptions}_mail_idx ON {simplenews_subscriptions} (mail)');
       break;
   }
   return $ret;
