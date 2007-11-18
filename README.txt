@@ -4,13 +4,17 @@ $ Id: $
 Description
 ------------
 
-This module sends html or plain text newsletters to the subscription list. At the end
-of the newsletter, an unsubscribe link is provided. Subscription (and also
-unsubscription) is managed through a block, or by an admin on the module's admin pages.
-Sent newsletters are collected by taxonomy module, and a link to the term's page or the 
-associated rss-feed can be displayed in the block. Not-sent newsletters are kept in the
-Drafts folder. New newsletter types can be created to organize your newsletters. The
-subscription list can be managed. Sending of large mailings can be managed by cron.
+This module sends html or plain text newsletters to the subscription list. In the newsletter 
+footer an unsubscribe link is provided. Subscription and unsubscription are managed through 
+a block, a form or by the newsletter administrator on the module's admin pages.
+
+Individual newsletters are grouped in newsletters by a newsletter taxonomy term. Newsletters 
+can have a block with the ability of (un)subscription, listing of recent newsletters and an 
+associated rss-feed. 
+
+Send newsletters and not-sent newsletters are listed separately. The subscription list can be managed. 
+
+Sending of large mailings can be managed by cron.
 
 ------------
 Requirements
@@ -18,13 +22,16 @@ Requirements
 
 - Drupal 5
 
-- Taxonomy module should be enabled
+- Taxonomy module should be enabled.
 
-- For large mailing lists, cron is required
+- For large mailing lists, cron is required.
+
+- HTML-format newsletters and/or newsletters with file attachments require the mimemail module.
 
 ------------
-Uprgrading
+Upgrading
 ------------
+
 If you are upgrading from Drupal 4.6, please download the Drupal 4.7 version
 and upgrade to that first. Then, upgrade to this Drupal 5 version from 
 Drupal 4.7.
@@ -33,24 +40,69 @@ Drupal 4.7.
 Installation
 ------------
 
-- Create a new directory "simplenews" in your "modules" directory and place the
-  entire contents of this simplenews directory in it.
+- Create a new directory "simplenews" in the sites/all/modules directory and place the
+  entire contents of this simplenews folder in it.
 
-- Enable the module by navigating to Administer -> Site building -> Modules.
+- Enable the module on the Modules admin page:
+    Administer > Site building > Modules
 
-- Grant the proper access to user accounts under Administer -> User management
-  -> Access control. The most important setting is "access newsletters" for
-  all roles, including "anonymous user" if you want links to be displayed in
-  the Simplenews block to everyone.
+- Grant the proper access to user accounts at the Access control page:
+    Administer > User management > Access control. 
+  To enable users to (un)subscribe to a newsletter use the "subscribe to newsletters" 
+  permission. This will enable the Simplenews block where the user can (un)subscribe 
+  to a newsletter. 
+  Use the "view links in block" permission to enable the display of previous newsletters 
+  in the Simplenews block.
 
-- Enable the Simplenews block by navigating to Administer -> Site building ->
-  Blocks.
+- Enable the Simplenews block on the Administer blocks page:
+    Administer > Site building > Blocks.
+  One block is available for each newsletter you have on the website. Note that multiple 
+  newsletter blocks with subscription form does not work. This is a known bug in Drupal 5
+  version of Simplenews. See http://drupal.org/node/121479
 
-- Configure Simplenews by navigating to Administer -> Content Management ->
-  Newsletters -> Settings.
+- Configure Simplenews on the Simplenews admin pages:
+    Administer > Content Management > Newsletters > Settings.
+
+- Configure the Simplenews block on 
+    Administer > Content management > Newsletters > Settings > your newsletter > Block options.
+  Block content is controlled by these settings and the above described access permission.
+
+------------
+Collaboration with other modules
+------------
+
+- Taxonomy
+  The taxonomy module is required by Simplenews. Simplenews creates a 'Newsletter' vocabulary
+  which contains terms for each series of newsletters. Each newsletter node is tagged with one
+  of the terms to group it into one of the newsletter series.
+
+- Mimemail
+  By using Mimemail module simplenews can send HTML emails. Mime Mail takes care of the 
+  MIME-encoding of the email. 
+  Mime Mail is also required to be able to send emails with attachments, both plain text and 
+  HTML emails.
+
+- Simplenews_template
+  Simplenews Template provides a themable template with configurable header, footer and style. 
+  Header, footer and style are configurable for each newsletter independently.
+
+- Simplenews_roles
+  A helper module for the Simplenews module which automatically populates a newsletter 
+  subscription list with users from specified roles.
+
+- Category
+  Simplenews and Category module are currently NOT COMPATIBLE. See http://drupal.org/node/115693
+
+- Poormanscron
+  Cron jobs are required to send large mailing lists. Cron jobs can be triggered by Poormanscron 
+  or any other cron mechanisme such as crontab. Make shure that the number of newsletters send
+  per cron run will not exceed the interval time between two cron jobs. The number of newsletter 
+  per cron is set at:
+    Administer > Content Management > Newsletters > Settings > General
 
 ------------
 Credits
 ------------
-Written by
-  - Dries Knapen <drieske AT hotmail DOT com>
+
+Originally written by Dries Knapen.
+Currently maintained by RobRoy and Sutharsan.
