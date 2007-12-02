@@ -2595,6 +2595,27 @@ function simplenews_private_key() {
 }
 
 /**
+ * Implementation of hook_help
+ */
+function simplenews_help($section) {
+  switch ($section) {
+    case 'admin/help#simplenews':
+    $help  = "<p>". t('Simplenews sends html or plain text newsletters to the subscription list. Subscription and unsubscription are managed through a block, a form or by the newsletter administrator.') ."<br />\n";
+    $help .=        t('Individual newsletters are grouped by a newsletter taxonomy term. Newsletters can have a block with the ability of (un)subscription, listing of recent newsletters and an associated rss-feed.') ."<br />\n";
+    $help .=        t('Sending of large mailings can be managed by cron.') ."</p>\n";
+    $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="http://drupal.org/node/197057">Simplenews page</a>.') ."</p>\n";
+      return $help;
+    case 'node/add/simplenews':
+      $help = "<p>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list.') ."</p>\n";
+      $help .= "<p>". t('Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') ."</p>\n";
+      if (!module_exists('mimemail')) {
+        $help .= "<p>". t('Install Mime Mail module to send HTML emails. Mime Mail is also used to send emails with attachments, both plain text and HTML emails.') ."</p>\n";
+      }
+      return $help;
+  }
+}
+
+/**
  * Helper function to generate the hash key used for subscribe/unsubscribe link
  * in e-mail footer.
  */
