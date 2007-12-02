@@ -1082,12 +1082,12 @@ function _simplenews_send($timer = FALSE) {
       $user_node = theme('simplenews_newsletter_footer', $user_node, $hash);
 
       $user_node->to = $mail->mail;
+      $counter++;
       if (simplenews_mail_send($user_node)) {
         // TODO: This looks like it may choke if you were sending multiple
         // newsletters through cron. Should move s_status to snid_tid table
         // or somewhere else to see which newsletter has been sent.
         db_query('UPDATE {simplenews_subscriptions} SET s_status = %d WHERE snid = %d', 1, $mail->snid);
-        $counter++;
         // don't send mails too fast, servers may choke. Wait for 10 ms.
         usleep(10000);
       }
@@ -2228,7 +2228,7 @@ function simplenews_admin_settings($tid = NULL) {
       '#title' => t('Cron throttle'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => t('Sets the numbers of newsletters sent per cron run.'),
+      '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.'),
     );
     $throttle = drupal_map_assoc(array(10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000, 2000, 3000, 4000, 5000));
     $throttle[999999] = t('Unlimited');
