@@ -60,6 +60,33 @@ function simplenews_install() {
         PRIMARY KEY  (snid,tid)
         );");
       break;
+
+		case 'mssql':
+      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
+        snid int NOT NULL IDENTITY(1,1),
+        a_status int NOT NULL default '0',
+        s_status int NOT NULL default '0',
+        mail varchar(64) NOT NULL default '',
+        uid int NOT NULL default '0',
+        PRIMARY KEY (snid)
+        );");
+
+      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
+        nid int NOT NULL default '0',
+        tid int NOT NULL default '0',
+        s_status int NOT NULL default '0',
+        s_format varchar(8) NOT NULL default '',
+        priority int NOT NULL default '0',
+        receipt int NOT NULL default '0',
+        PRIMARY KEY (nid)
+        );");
+
+      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
+        snid int NOT NULL default '0',
+        tid int NOT NULL default '0',
+        PRIMARY KEY  (snid,tid)
+        );");
+      break;
   }
 
   if (count($result) != count(array_filter($result))) {
