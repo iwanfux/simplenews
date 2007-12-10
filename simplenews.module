@@ -2470,7 +2470,7 @@ function simplenews_confirm_add_form($mail, $newsletter) {
   return confirm_form($form,
     t('Are you sure you want to add %user to the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
     '',
-    t('You always have the possibility to unsubscribe later.'),
+    t('You always have the option of unsubscribing later.'),
     t('Subscribe'),
     t('Cancel')
   );
