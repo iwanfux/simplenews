@@ -560,25 +560,76 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
 /**
  * Implementation of hook_block().
  */
-function simplenews_block($op = 'list', $delta = 0) {
-  if ($op == 'list') {
-    $blocks = array();
-    foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
-      $blocks['newsletter-'. $newsletter->tid] = array('info' => t('Newsletter: @title', array('@title' => $newsletter->name)));
-    }
-    return $blocks;
-  }
-  elseif ($op == 'view') {
-    list($type, $tid) = explode('-', $delta);
-    if ($type == 'newsletter') {
-      if ($newsletter = taxonomy_get_term($tid)) {
-        $block['subject'] = check_plain($newsletter->name);
-        $block['content'] = theme('simplenews_block', $newsletter);
+function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
+  list($type, $tid) = explode('-', $delta);
+  
+  switch ($op) {
+    case 'list':
+      $blocks = array();
+      foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+        $blocks['newsletter-'. $newsletter->tid] = array('info' => t('Newsletter: @title', array('@title' => $newsletter->name)));
       }
-    }
-    return $block;
+      return $blocks;
+    case 'configure':
+      $form['simplenews_block_'. $delta]['simplenews_block_m_status_'. $tid] = array('#type' => 'checkbox',
+        '#title' => t('Display block message'),
+        '#return_value' => 1,
+        '#default_value' => variable_get('simplenews_block_m_status_'. $tid, 1),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_m_'. $tid] = array('#type' => 'textfield',
+        '#title' => t('Block message'),
+        '#size' => 60,
+        '#maxlength' => 128,
+        '#default_value' => variable_get('simplenews_block_m_'. $tid, t('Stay informed on our latest news!')),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_f_'. $tid] = array('#type' => 'checkbox',
+        '#title' => t('Display subscription form'),
+        '#return_value' => 1,
+        '#description' => t('If selected a subscription form is displayed, if not selected a link to the subscription page is displayed.'),
+        '#default_value' => variable_get('simplenews_block_f_'. $tid, 1),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_l_'. $tid] = array('#type' => 'checkbox',
+        '#title' => t('Display link to previous issues'),
+        '#return_value' => 1,
+        '#default_value' => variable_get('simplenews_block_l_'. $tid, 1),
+        '#description' => t('Links (to previous issues, previous issues and RSS-feed) are only displayed to users who have "view links in block" privileges.'),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_i_status_'. $tid] = array('#type' => 'checkbox',
+        '#title' => t('Display previous issues'),
+        '#return_value' => 1,
+        '#default_value' => variable_get('simplenews_block_i_status_'. $tid, 0),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_i_'. $tid] = array('#type' => 'select',
+        '#title' => t('Number of issues to display'),
+        '#options' => drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10)),
+        '#default_value' => variable_get('simplenews_block_i_'. $tid, 5),
+      );
+      $form['simplenews_block_'. $delta]['simplenews_block_r_'. $tid] = array('#type' => 'checkbox',
+        '#title' => t('Display RSS-feed icon'),
+        '#return_value' => 1,
+        '#default_value' => variable_get('simplenews_block_r_'. $tid, 1),
+      );
+      return $form;
+    case 'save':
+        variable_set('simplenews_block_m_status_'. $tid, $edit['simplenews_block_m_status_'. $tid]);
+        variable_set('simplenews_block_m_'. $tid, $edit['simplenews_block_m_'. $tid]);
+        variable_set('simplenews_block_f_'. $tid, $edit['simplenews_block_f_'. $tid]);
+        variable_set('simplenews_block_l_'. $tid, $edit['simplenews_block_l_'. $tid]);
+        variable_set('simplenews_block_i_status_'. $tid, $edit['simplenews_block_i_status_'. $tid]);
+        variable_set('simplenews_block_i_'. $tid, $edit['simplenews_block_i_'. $tid]);
+        variable_set('simplenews_block_r_'. $tid, $edit['simplenews_block_r_'. $tid]);
+        break;
+    case 'view':
+      if ($type == 'newsletter') {
+        if ($newsletter = taxonomy_get_term($tid)) {
+          $block['subject'] = check_plain($newsletter->name);
+        $block['content'] = theme('simplenews_block', $newsletter);
+        }
+      }
+      return $block;
   }
 }
+
 function theme_simplenews_block($newsletter) {
   $output = '';
   if (variable_get('simplenews_block_m_status_'. $newsletter->tid, 1)) {
@@ -2003,57 +2054,10 @@ function simplenews_admin_settings($tid = NULL) {
   $form['#validate']['simplenews_admin_settings_validate'] = array();
 
   if (isset($tid) && $term = taxonomy_get_term($tid)) {
-    $result = db_result(db_query("SELECT status FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', 'newsletter-'. $term->tid));
-    if (!$result) {
-      drupal_set_message(t('The %block block is disabled. Click !here to enable this block.', array('%block' => $term->name, '!here' => l(t('here'), 'admin/build/block', array(), drupal_get_destination()))), 'error');
-    }
 
     // Add the term ID as an argument to the settings validation function.
     $form['#validate']['simplenews_admin_settings_validate'][] = $term->tid;
 
-    $form['simplenews_block_options'] = array('#type' => 'fieldset',
-      '#title' => t('Block options'),
-      '#description' => t('Links (to overview page, RSS-feed and latest issues) are only displayed to users who have "view links in block" privileges.'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['simplenews_block_options']['simplenews_block_m_status_'. $term->tid] = array('#type' => 'checkbox',
-      '#title' => t('Display block message'),
-      '#return_value' => 1,
-      '#default_value' => variable_get('simplenews_block_m_status_'. $term->tid, 1),
-    );
-    $form['simplenews_block_options']['simplenews_block_m_'. $term->tid] = array('#type' => 'textfield',
-      '#title' => t('Block message'),
-      '#size' => 60,
-      '#maxlength' => 128,
-      '#default_value' => variable_get('simplenews_block_m_'. $term->tid, t('Stay informed on our latest news!')),
-    );
-    $form['simplenews_block_options']['simplenews_block_f_'. $term->tid] = array('#type' => 'checkbox',
-      '#title' => t('Display subscription form'),
-      '#return_value' => 1,
-      '#description' => t('If selected a subscription form is displayed, if not selected a link to the subscription page is displayed.'),
-      '#default_value' => variable_get('simplenews_block_f_'. $term->tid, 1),
-    );
-    $form['simplenews_block_options']['simplenews_block_l_'. $term->tid] = array('#type' => 'checkbox',
-      '#title' => t('Display link to archives'),
-      '#return_value' => 1,
-      '#default_value' => variable_get('simplenews_block_l_'. $term->tid, 1),
-    );
-    $form['simplenews_block_options']['simplenews_block_i_status_'. $term->tid] = array('#type' => 'checkbox',
-      '#title' => t('Display latest issues'),
-      '#return_value' => 1,
-      '#default_value' => variable_get('simplenews_block_i_status_'. $term->tid, 0),
-    );
-    $form['simplenews_block_options']['simplenews_block_i_'. $term->tid] = array('#type' => 'select',
-      '#title' => t('Number of issues to display'),
-      '#options' => drupal_map_assoc(array(1,2,3,4,5,6,7,8,9,10)),
-      '#default_value' => variable_get('simplenews_block_i_'. $term->tid, 5),
-    );
-    $form['simplenews_block_options']['simplenews_block_r_'. $term->tid] = array('#type' => 'checkbox',
-      '#title' => t('Display RSS-feed icon'),
-      '#return_value' => 1,
-      '#default_value' => variable_get('simplenews_block_r_'. $term->tid, 1),
-    );
     $form['simplenews_sender_information'] = array('#type' => 'fieldset',
       '#title' => t('Sender information'),
       '#collapsible' => TRUE,
