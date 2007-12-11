@@ -1511,7 +1511,7 @@ function simplenews_admin_news($action = 'sent') {
       '#options' => $names,
       '#default_value' => $_SESSION['simplenews_newsletters_filter'],
     );
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_newsletters_filter']]." ORDER BY n.created DESC";
+    $query = "SELECT DISTINCT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_newsletters_filter']]." ORDER BY n.created DESC";
     $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d".$queries[$_SESSION['simplenews_newsletters_filter']];
   }
   else {
