@@ -195,17 +195,21 @@ function simplenews_menu($may_cache) {
       'type' => MENU_CALLBACK,
     );
   }
-  elseif (arg(0) == 'admin' && arg(1) == 'content' && arg(2) == 'newsletters' && arg(3) == 'settings') {
-    $tree = taxonomy_get_tree(_simplenews_get_vid());
-    if ($tree) {
-      $weight = -9;
-      foreach ($tree as $newsletter) {
-        $items[] = array('path' => 'admin/content/newsletters/settings/'. $newsletter->tid,
-          'title' => $newsletter->name,
-          'access' => $administer,
-          'type' => MENU_LOCAL_TASK,
-          'weight' => $weight++,
-        );
+  else {
+    drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', FALSE);
+  
+    if (arg(0) == 'admin' && arg(1) == 'content' && arg(2) == 'newsletters' && arg(3) == 'settings') {
+      $tree = taxonomy_get_tree(_simplenews_get_vid());
+      if ($tree) {
+        $weight = -9;
+        foreach ($tree as $newsletter) {
+          $items[] = array('path' => 'admin/content/newsletters/settings/'. $newsletter->tid,
+            'title' => $newsletter->name,
+            'access' => $administer,
+            'type' => MENU_LOCAL_TASK,
+            'weight' => $weight++,
+          );
+        }
       }
     }
   }
@@ -623,37 +627,63 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       if ($type == 'newsletter') {
         if ($newsletter = taxonomy_get_term($tid)) {
           $block['subject'] = check_plain($newsletter->name);
-        $block['content'] = theme('simplenews_block', $newsletter);
+          $block['content'] = theme('simplenews_block', _simplenews_block($newsletter->tid));
         }
       }
       return $block;
   }
 }
 
-function theme_simplenews_block($newsletter) {
-  $output = '';
-  if (variable_get('simplenews_block_m_status_'. $newsletter->tid, 1)) {
-    $output .= '<p>'. variable_get('simplenews_block_m_'. $newsletter->tid, t('Stay informed on our latest news!')) .'</p>';
-  }
-  if (variable_get('simplenews_block_f_'. $newsletter->tid, 1) && user_access('subscribe to newsletters')) {
-    $output .= drupal_get_form('simplenews_block_form', $newsletter->tid);
-  }
-  if ((!variable_get('simplenews_block_f_'. $newsletter->tid, 1)) && (user_access('subscribe to newsletters')) ){
-    $output .= '<p>'. l(t('Manage my subscriptions'), 'newsletter/subscriptions/'). '</p>';
+/**
+ * Helper function: generate block content before theming
+ * Collects data and applies access restriction
+ */
+function _simplenews_block($tid) {
+  global $user;
+  $block = array();
+  $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_'. $tid, 5));
+  
+  $block['subscribed'] = (simplenews_user_is_subscribed($user->mail, $tid) == TRUE);
+  $block['user'] = !empty($user->uid);
+  $block['tid'] = $tid;
+  $block['message'] = check_plain(variable_get('simplenews_block_m_'. $tid, t('Stay informed on our latest news!')));
+  if (user_access('subscribe to newsletters')) {
+    $block['form'] = drupal_get_form('simplenews_block_form', $tid);
+    $block['subscription-link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions'); 
   }
   if (user_access('view links in block') || user_access('administer newsletters')) {
-    if (variable_get('simplenews_block_l_'. $newsletter->tid, 1)) {
-      $output .= l(t('Previous issues'), 'taxonomy/term/'. $newsletter->tid);
-    }
-    elseif (variable_get('simplenews_block_i_status_'. $newsletter->tid, 0)) {
-      $output .= t('Previous issues');
-    }
-    if (variable_get('simplenews_block_i_status_'. $newsletter->tid, 0)) {
-      $output .= simplenews_recent_newsletters($newsletter->tid, variable_get('simplenews_block_i_'. $newsletter->tid, 5));
-    }
-    if (variable_get('simplenews_block_r_'. $newsletter->tid, 1)) {
-      $output .= theme('feed_icon', url('taxonomy/term/'. $newsletter->tid .'/0/feed'));
-    }
+    $block['newsletter-link'] = l(t('Previous issues'), 'taxonomy/term/'. $tid);
+    $block['itemlist'] = theme('item_list', $recent, t('Previous issues'), 'ul');
+    $block['rssfeed'] = theme('feed_icon', url('taxonomy/term/'. $tid .'/0/feed'));
+  }
+
+  return $block;
+}
+
+/**
+ * Simplenews themed block
+ *   Access restrictions have been applied.
+ *   $block contains all available data. See: _simplenews_block()
+ */
+function theme_simplenews_block($block) {
+  $output = ''; 
+  if (variable_get('simplenews_block_m_status_'. $block['tid'], 1) && isset($block['message'])) {
+    $output .= "<p>". $block['message'] ."</p>\n";
+  }
+  if (variable_get('simplenews_block_f_'. $block['tid'], 1)) {
+    $output .= $block['form'];
+  }
+  elseif (isset($block['subscription-link'])) {
+    $output .= "<p>". $block['subscription-link']. "</p>\n";
+  }
+  if (variable_get('simplenews_block_l_'. $block['tid'], 1) && isset($block['newsletter-link'])) {
+    $output .= '<div class="issues-link">'. $block['newsletter-link'] ."</div>\n";
+  }
+  if (variable_get('simplenews_block_i_status_'. $block['tid'], 0) && isset($block['itemlist'])) {
+    $output .= '<div class="issues-list">'. $block['itemlist'] ."</div>\n";
+  }
+  if (variable_get('simplenews_block_r_'. $block['tid'], 1)) {
+    $output .= $block['rssfeed'] ."\n";
   }
   return $output;
 }
@@ -928,14 +958,13 @@ function simplenews_subscription_manager_form_submit($form_id, $form_values) {
 }
 
 function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
-  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, n.created FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = 1 AND sn.s_status > 0) ORDER BY n.created DESC'), $tid, 0, $count);
+  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = 1) ORDER BY n.created DESC'), $tid, 0, $count);
   $titles = array();
   while ($item = db_fetch_object($result)) {
-    $titles[] = l($item->title, 'node/'. $item->nid);
+    $titles[$item->nid]['data'] = l($item->title, 'node/'. $item->nid);
+    $titles[$item->nid]['class'] = ($item->s_status == 0) ? 'newsletter-created' : 'newsletter-send';
   }
-  if ($titles) {
-    return theme('item_list', $titles, $title);
-  }
+  return $titles;  
 }
 
 /**
@@ -1703,8 +1732,6 @@ function simplenews_subscription_filter_form_submit($form_id, $form_values) {
  * Menu callback: subscription administration.
  */
 function simplenews_subscription_admin() {
-  drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', FALSE);
-  
   // Deleting subscriptions requires delete confirmation. This is handled with a different form
   if ($_POST['operation'] == 'delete' && $_POST['snids']) {
     if ($_REQUEST['destination']) {

@@ -63,6 +63,10 @@ Installation
 - Configure Simplenews on the Simplenews admin pages:
     Administer > Content Management > Newsletters > Settings.
 
+------------
+Simplenews block
+------------
+
 - Configure the Simplenews block on the block configuration page. On the Block admin page
   (Administer > Site building > Blocks) click the Configure link of the appropriate
   simplenews block.
@@ -71,6 +75,12 @@ Installation
   in the simplenews block or to view the link to the subscription form.
   Links in the simplenews block (to previous issues, previous issues and RSS-feed) are only
   displayed to users who have "view links in block" privileges.
+
+- More control over the content of simplenews blocks is possible using the block 
+  theming. Additional variables are available for custom features:
+    $block['subscribed'] is TRUE if user is subscribed to the newsletter
+    $block['user'] is TRUE if the user is logged in (authenticated)
+    $block['tid'] is the term id number of the newsletter
 
 ------------
 Collaboration with other modules
