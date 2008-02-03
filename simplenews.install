@@ -1,98 +1,131 @@
 <?php
 // $Id$
 
+function simplenews_schema() {
+  $schema['simplenews_subscriptions'] = array(
+    'description' => t(''),
+    'fields' => array(
+       'snid' => array(
+        'description' => t(''),
+        'type' => 'serial',
+        'not null' => true,
+      ),
+      'activated' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'default' => 0,
+      ),
+      'is_send' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'default' => 0,
+      ),
+      'mail' => array(
+        'description' => t(''),
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => true,
+        'default' => '',
+      ),
+      'uid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'mail' => array('mail'),
+    ),
+    'primary key' => array('snid'),
+  );
+
+  $schema['simplenews_newsletters'] = array(
+    'description' => t(''),
+    'fields' => array(
+      'nid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+      'tid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+      's_status' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'default' => 0,
+      ),
+      's_format' => array(
+        'description' => t(''),
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => true,
+        'default' => '',
+      ),
+      'priority' => array(
+        'description' => t(''),
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => true,
+        'default' => '',
+      ),
+      'receipt' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  $schema['simplenews_snid_tid'] = array(
+    'description' => t(''),
+    'fields' => array(
+       'snid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+       'tid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('snid', 'tid'),
+  );
+  return $schema;
+}
+
+//TODO: contact MSSQL tester (issue ...)
+
+/**
+ * Implementation of hook_install
+ */
 function simplenews_install() {
-  $result = array();
-  switch ($GLOBALS['db_type']) {
-    case 'mysqli':
-    case 'mysql':
-      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
-        snid int(10) NOT NULL auto_increment,
-        a_status int(2) NOT NULL default '0',
-        s_status int(2) NOT NULL default '0',
-        mail varchar(64) NOT NULL default '',
-        uid int(10) NOT NULL default '0',
-        PRIMARY KEY  (snid),
-        KEY mail (mail)
-        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
-
-      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
-        nid int(10) NOT NULL default '0',
-        tid int(10) NOT NULL default '0',
-        s_status int(2) NOT NULL default '0',
-        s_format varchar(8) NOT NULL default '',
-        priority int(2) NOT NULL default '0',
-        receipt int(2) NOT NULL default '0',
-        PRIMARY KEY  (nid)
-        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
-
-      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
-        snid int(10) NOT NULL default '0',
-        tid int(10) NOT NULL default '0',
-        PRIMARY KEY  (snid,tid)
-        ) /*!40100 DEFAULT CHARACTER SET utf8 */;");
-      break;
-
-    case 'pgsql':
-      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
-        snid SERIAL,
-        a_status smallint NOT NULL default '0',
-        s_status smallint NOT NULL default '0',
-        mail varchar(64) NOT NULL default '',
-        uid integer NOT NULL default '0',
-        PRIMARY KEY  (snid)
-        );");
-      $result[] = db_query('CREATE INDEX {simplenews_subscriptions}_mail_idx ON {simplenews_subscriptions} (mail)');
-
-      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
-        nid integer NOT NULL default '0',
-        tid integer NOT NULL default '0',
-        s_status smallint NOT NULL default '0',
-        s_format varchar(8) NOT NULL default '',
-        priority smallint NOT NULL default '0',
-        receipt smallint NOT NULL default '0',
-        PRIMARY KEY  (nid)
-        );");
-
-      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
-        snid integer NOT NULL default '0',
-        tid integer NOT NULL default '0',
-        PRIMARY KEY  (snid,tid)
-        );");
-      break;
-
-		case 'mssql':
-      $result[] = db_query("CREATE TABLE {simplenews_subscriptions} (
-        snid int NOT NULL IDENTITY(1,1),
-        a_status int NOT NULL default '0',
-        s_status int NOT NULL default '0',
-        mail varchar(64) NOT NULL default '',
-        uid int NOT NULL default '0',
-        PRIMARY KEY (snid)
-        );");
-
-      $result[] = db_query("CREATE TABLE {simplenews_newsletters} (
-        nid int NOT NULL default '0',
-        tid int NOT NULL default '0',
-        s_status int NOT NULL default '0',
-        s_format varchar(8) NOT NULL default '',
-        priority int NOT NULL default '0',
-        receipt int NOT NULL default '0',
-        PRIMARY KEY (nid)
-        );");
-
-      $result[] = db_query("CREATE TABLE {simplenews_snid_tid} (
-        snid int NOT NULL default '0',
-        tid int NOT NULL default '0',
-        PRIMARY KEY  (snid,tid)
-        );");
-      break;
+  if (drupal_install_schema('simplenews')) {
+    drupal_set_message(t('Simplenews module succesfully installed.'));
   }
-
-  if (count($result) != count(array_filter($result))) {
+  else {
     drupal_set_message(t('The installation of the Simplenews module was unsuccessful.'), 'error');
   }
 }
+
 /**
  * Implementation of hook_enable().
  */
@@ -104,14 +137,8 @@ function simplenews_enable() {
  * Implementation of hook_uninstall().
  */
 function simplenews_uninstall() {
-  db_query('DROP TABLE {simplenews_snid_tid}');
-  db_query('DROP TABLE {simplenews_newsletters}');
-  db_query('DROP TABLE {simplenews_subscriptions}');
+  drupal_uninstall_schema('simplenews');
   db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
-}
-
-function simplenews_update_1() {
-  return _system_update_utf8(array('sn_snid_tid', 'sn_newsletters', 'sn_subscriptions'));
 }
 
 /**
@@ -119,15 +146,9 @@ function simplenews_update_1() {
  */
 function simplenews_update_2() {
   $ret = array();
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-    case 'pgsql':
-      $ret[] = update_sql('ALTER TABLE {sn_snid_tid} RENAME TO {simplenews_snid_tid}');
-      $ret[] = update_sql('ALTER TABLE {sn_newsletters} RENAME TO {simplenews_newsletters}');
-      $ret[] = update_sql('ALTER TABLE {sn_subscriptions} RENAME TO {simplenews_subscriptions}');
-      break;
-  }
+  db_rename_table($ret, 'sn_snid_tid', 'simplenews_snid_tid');
+  db_rename_table($ret, 'sn_newsletters', 'simplenews_snid_tid');
+  db_rename_table($ret, 'sn_subscriptions', 'simplenews_subscriptions');
   return $ret;
 }
 
@@ -136,12 +157,51 @@ function simplenews_update_2() {
  */
 function simplenews_update_5000() {
   $ret = array();
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-    case 'pgsql':
-      $ret[] = update_sql('CREATE INDEX {simplenews_subscriptions}_mail_idx ON {simplenews_subscriptions} (mail)');
-      break;
+  db_add_index($ret, 'simplenews_subscriptions', 'indexes', array('mail'));
+  return $ret;
+}
+
+/**
+ * Add index to simplenews_subscriptions
+ */
+function simplenews_update_6000() {
+  $ret = array();
+
+  // Convert the block delta: remove 'newsletter-' prefix from the delta.
+  $result = db_query("SELECT module, delta FROM {blocks} WHERE module = 'simplenews' AND delta LIKE 'newsletter-%'");
+  while ($data = db_fetch_object($result)) {
+    $delta = strtr($data->delta, array('newsletter-' => ''));
+    $ret[] = update_sql("UPDATE {blocks} SET delta = $delta WHERE module = 'simplenews' AND delta = 'newsletter-$delta'");
   }
+  $result = db_query("SELECT module, delta FROM {blocks_roles} WHERE module = 'simplenews' AND delta LIKE 'newsletter-%'");
+  while ($data = db_fetch_object($result)) {
+    $delta = strtr($data->delta, array('newsletter-' => ''));
+    $ret[] = update_sql("UPDATE {blocks_roles} SET delta = $delta WHERE module = 'simplenews' AND delta = 'newsletter-$delta'");
+  }
+  
+  // Convert newsletter priority: change field type int to string
+  db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
+    'type' => 'varchar',
+    'length' => 8,
+    'not null' => true,
+    'default' => '',
+    )
+  );
+  // Convert subscription field name: change a_status to activated
+  db_change_field($ret, 'simplenews_subscriptions', 'a_status', 'activated', array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => true,
+    'default' => 0,
+    )
+  );
+  // Convert subscription field name: change s_status to is_send
+  db_change_field($ret, 'simplenews_subscriptions', 's_status', 'is_send', array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => true,
+    'default' => 0,
+    )
+  );
   return $ret;
 }
