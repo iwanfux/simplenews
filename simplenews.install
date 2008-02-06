@@ -1,6 +1,7 @@
 <?php
 // $Id$
 
+//TODO: Add table and field comments
 function simplenews_schema() {
   $schema['simplenews_subscriptions'] = array(
     'description' => t(''),
@@ -130,7 +131,45 @@ function simplenews_install() {
  * Implementation of hook_enable().
  */
 function simplenews_enable() {
-  _simplenews_create_default_newsletter_term();
+  if ($vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''))) {
+    // Existing install. Add back newsletter node type, if the forums
+    // vocabulary still exists. Keep all other node types intact there.
+    $vocabulary = (array) $vocabulary;
+    $vocabulary['nodes']['simplenews'] = 1;
+    taxonomy_save_vocabulary($vocabulary);
+  }
+  else {
+    // Create the simplenews vocabulary if it does not exist.
+    $vocabulary = array(
+      'name' => t('Newsletter'),
+      'multiple' => '0',
+      'required' => '0',
+      'hierarchy' => '0',
+      'relations' => '0',
+      'module' => 'simplenews',
+      'nodes' => array('simplenews' => 1)
+    );
+    taxonomy_save_vocabulary($vocabulary);
+    variable_set('simplenews_vid', $vocabulary['vid']);
+  }
+
+  // Check to see if at least 1 term exists, else create one
+  $tid = db_result(db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vocabulary['vid']));
+  if (!$tid) {
+    $form_values = array(
+      'name' => variable_get('site_name', 'Drupal') .' '. t('newsletter'),
+      'vid' => $vocabulary['vid'],
+      'weight' => 0,
+    );
+    switch (taxonomy_save_term($form_values)) {
+      case SAVED_UPDATED:
+        drupal_set_message(t('Updated term %name.', array('%name' => $form_values['name'])));
+        break;
+      case SAVED_DELETED:
+        drupal_set_message(t('Deleted term %name.', array('%name' => $form_values['name'])));
+        break;
+    }
+  }
 }
 
 /**
