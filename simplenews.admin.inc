@@ -7,8 +7,8 @@
 //TODO: consider split into content-admin, subscription-admin(?) and settings
 
 function simplenews_admin_news(&$form_state, $action = 'sent') {
-  _simplenews_create_default_newsletter_term();
-  $vid = _simplenews_get_vid();
+  //_simplenews_create_default_newsletter_term();
+  $vid = variable_get('simplenews_vid', '');
   $form = array();
   $form['simplenews_issue_filter'] = array(
     '#type' => 'fieldset',
@@ -96,7 +96,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     $term = taxonomy_get_term($tid);
 
     // If the given term is not a newsletter, don't allow editing.
-    if (_simplenews_get_vid() != $term->vid) {
+    if (variable_get('simplenews_vid', '') != $term->vid) {
       drupal_not_found();
       return;
     }
@@ -109,7 +109,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   }
   else {
     // Add form so choose simplenews vocabulary.
-    $term = (object)array('vid' => _simplenews_get_vid());
+    $term = (object)array('vid' => variable_get('simplenews_vid', ''));
   }
 
   //TODO: move info text to hook_help. Add help for newsletter settings after submitting the newsletter.
@@ -189,7 +189,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   );
   $form['vid'] = array(
     '#type' => 'hidden',
-    '#value' => isset($term->vid) ? $term->vid : _simplenews_get_vid(),
+    '#value' => isset($term->vid) ? $term->vid : variable_get('simplenews_vid', ''),
   );
 
   // If we are editing a newsletter term, show delete option. When the submit
@@ -343,7 +343,7 @@ function simplenews_subscription_list_add() {
     '#description' => t('Supply a comma separated list of e-mail addresses to be added to the list. Spaces between commas and addresses are allowed.'),
   );
   $newsletters = array();
-  foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $newsletters[$newsletter->tid] = $newsletter->name;
   }
   $form['newsletters'] = array(
@@ -370,7 +370,7 @@ function simplenews_subscription_list_add_validate($form, &$form_state) {
 }
 
 function simplenews_subscription_list_add_submit($form, &$form_state) {
-  $tree = taxonomy_get_tree(_simplenews_get_vid());
+  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $added = array();
   $invalid = array();
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
@@ -410,7 +410,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
 }
 
 function simplenews_subscription_list_export() {
-  $tree = taxonomy_get_tree(_simplenews_get_vid());
+  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $form['simplenews_status'] = array(
     '#type' => 'fieldset',
     '#title' => t('Status'),
@@ -460,7 +460,7 @@ function simplenews_subscription_list_export() {
 
 function simplenews_admin_export_after_build($form, $form_element) {
   if (isset($form_element['values']['op']) && $form_element['values']['op'] == t('Export')) {
-    $tree = taxonomy_get_tree(_simplenews_get_vid());
+    $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
     if (isset($form_element['values']['active']) && $form_element['values']['active'] == 1) {
       $where[] = 's.activated = 1';
     }
@@ -784,7 +784,7 @@ function simplenews_admin_users_delete_submit($form, &$form_state) {
  * @param $snid array of snid's
  */
 function simplenews_activate_subscription($snid) {
-  db_query('UPDATE {simplenews_subscriptions} SET activated = 1 WHERE snid IN(%s)', implode(',', $snid));
+  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN(%s)', 1, implode(',', $snid));
 }
 
 /**
@@ -793,7 +793,7 @@ function simplenews_activate_subscription($snid) {
  * @param $snid array of snid's
  */
 function simplenews_inactivate_subscription($snid) {
-  db_query('UPDATE {simplenews_subscriptions} SET activated = 0 WHERE snid IN(%s)', implode(',', $snid));
+  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN(%s)', 0, implode(',', $snid));
 }
 
 /**
@@ -813,7 +813,7 @@ function simplenews_get_filter($type, $na = TRUE) {
     $queries['na'] = ' AND s.tid = 0';
   }
   // Data for each newsletter
-  foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $names[$newsletter->tid] = $newsletter->name;
     $queries[$newsletter->tid] = ' AND s.tid = '. $newsletter->tid;
   }
@@ -831,7 +831,7 @@ function simplenews_subscription_filters() {
       'all'   => t('All newsletters'),
     ),
   );
-  foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $filters['newsletter']['options']['tid-'. $newsletter->tid] = $newsletter->name;
   }
   
