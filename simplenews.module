@@ -1,15 +1,15 @@
 <?php
 // $Id$
 
-//TODO: (issue) multiple subscription block (#121479)
+//DONE: (issue) multiple subscription block (#121479) 
 //TODO: (issue) improved handling of sending by cron (#165412, #125865, ...)
 //TODO: (issue) compatibility with category module
 //TODO: Compatibilty with Views
 //TODO: Compatibilty with Actions
 //TODO: Compatibilty with Token
-//TODO: Compatibilty with CCK (#180831)
-//TODO: compatebility with mail backends (See Mailing List Manager)
-//TODO: Make vocabulary selectable
+//TODO: Compatibilty with CCK: able to add CCK fields to newsletter and provide (basic) theming (#180831)
+//TODO: Compatibility with mail backends (See Mailing List Manager)
+//TODO: Make vocabulary selectable. > > Why?? < <
 //TODO: User language sensitive newsletters (also when sending by cron)
 //TODO: (issue) Special characters in email address (#181081)
 //TODO: (issue)Test newsletter with links: <a href="/nl/foo">a link</a>, "http://www.mysite.com/...", "<a href="mailto:name@some.com">name</a>"(#159125) both on-screen as in-mail
@@ -58,7 +58,7 @@ function simplenews_node_info() {
       'name' => t('Newsletter issue'),
       'module' => 'simplenews',
       'description' => t('A newsletter issue to be sent to subscribed e-mail addresses.'),
-    ),
+    )
   );
 }
 
@@ -220,7 +220,7 @@ function simplenews_menu() {
   );
   //TODO build this menu more efficiently or change the whole menu/navigation setup
   if (arg(0) == 'admin' && arg(1) == 'content' && arg(2) == 'newsletters' && arg(3) == 'settings') {
-    $tree = taxonomy_get_tree(_simplenews_get_vid());
+    $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
     if ($tree) {
       $weight = -9;
       foreach ($tree as $newsletter) {
@@ -253,11 +253,105 @@ function simplenews_menu() {
 }
 
 /**
- * Implementation of hook_form().
+ * Implementation of hook_nodeapi().
  */
+function simplenews_nodeapi(&$node, $op, $teaser, $page) {
+  // We are going to return if $node->type is not one of the node
+  // types assigned to the newsletter vocabulary. If simplenews_vid
+  // is undefined or the vocabulary does not exist, it clearly cannot
+  // be assigned to $node->type, so return to avoid E_ALL warnings.
+  $vid = variable_get('simplenews_vid', '');
+  $vocabulary = taxonomy_vocabulary_load($vid);
+  if (empty($vocabulary)) {
+    return;
+  }
+
+  // Operate only on node types assigned to the newsletter vocabulary.
+  if (!in_array($node->type, $vocabulary->nodes)) {
+    return;
+  }
+
+  switch ($op) {
+    case 'view':
+      $node = simplenews_replace_vars($node, TRUE);
+      // $node = node_prepare($node, $teaser);
+      break;
+    case 'prepare':
+      //if (empty($node->simplenews)) {
+      //  $node->simplenews = _simplenews_form($node);
+      //}
+      break;
+    case 'validate':
+      global $_simplenews_valid_mails;
+      if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
+        if (!isset($node->taxonomy)) {
+          form_set_error('', t('You should assign content type %content_type to the !newsletter_vocabulary before you can send this newsletter.', array('%content_type' => $node->type, '!newsletter_vocabulary' => l(t('Newsletter vocabulary'), 'admin/content/taxonomy'))));
+        }
+        elseif (!simplenews_validate_taxonomy($node->taxonomy)) {
+          form_set_error('taxonomy', t('You should select a newsletter before you can send this newsletter issue.'));
+        }
+      }
+      elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
+        $mails = explode(',', $node->test_address);
+        foreach ($mails as $mail) {
+          $mail = trim($mail);
+          //TEST: error directed to right e-mail address field (even when hidden)
+          if ($mail == '') {
+            form_set_error('test_address', t('Cannot send test newsletter: no valid test e-mail address specified.'));
+          }
+          elseif (!valid_email_address($mail)) {
+            form_set_error('test_address', t('Cannot send test newsletter to %mail: e-mail address invalid.', array('%mail' => $mail)));
+          }
+        }
+      }
+      break;
+    case 'presave':
+      $term = simplenews_validate_taxonomy($node->taxonomy);
+      $tid = is_array($term) ? array_values($term) : FALSE;
+      $node->simplenews_tid = $tid ? $tid[0] : 0;
+      //TODO: can simplenews_validate_taxonomy() be placed here? Should be called before 'insert' and 'update'
+      break;
+    case 'insert':
+      //$term = simplenews_validate_taxonomy($node->taxonomy);
+      //$tid = is_array($term) ? array_values($term) : FALSE;
+      //$node->simplenews_tid = $tid ? $tid[0] : 0;
+      //tid is also saved in this table since it is needed by _simplenews_send(), and the term_node table is
+      //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
+      //since simplenews_cron() also calls _simplenews_send().
+      $s_status = ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
+      db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
+                      VALUES (%d, %d, %d, '%s', %s, %d)", $node->nid, $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt);
+      _simplenews_send_node($node);
+      break;
+    case 'update':
+      //$term = simplenews_validate_taxonomy($node->taxonomy);
+      //$tid = is_array($term) ? array_values($term) : FALSE;
+      //$node->simplenews_tid = $tid ? $tid[0] : 0;
+      if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) {
+        db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %s, receipt = %d
+        WHERE nid = %d", $node->simplenews_tid, SIMPLENEWS_STATUS_SEND_PENDING, $node->s_format, $node->priority, $node->receipt, $node->nid);
+      }
+      else {
+        db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %s, receipt = %d
+        WHERE nid = %d", $node->simplenews_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
+      }
+      _simplenews_send_node($node);
+      break;
+    case 'delete':
+      $result = db_query('DELETE FROM {simplenews_newsletters} WHERE nid = %d', $node->nid);
+      if ($result) {
+        drupal_set_message(t('Newsletter %title was successfully deleted.', array('%title' => $node->title)));
+      }
+      break;
+    case 'load':
+      return db_fetch_object(db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = %d', $node->nid));
+      break;
+  }
+}
+
 function simplenews_form(&$node) {
   $type = node_get_types('type', $node);
-  _simplenews_create_default_newsletter_term();
+//  _simplenews_create_default_newsletter_term();
   global $user;
 
   if ($type->has_title) {
@@ -374,33 +468,6 @@ function simplenews_form(&$node) {
 }
 
 /**
- * Implementation of hook_validate().
- */
-function simplenews_validate($node) {
-  global $_simplenews_valid_mails;
-  if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
-    if (!isset($node->taxonomy)) {
-      form_set_error('', t('You should assign content type %content_type to the !newsletter_vocabulary before you can send this newsletter.', array('%content_type' => $node->type, '!newsletter_vocabulary' => l(t('Newsletter vocabulary'), 'admin/content/taxonomy'))));
-    }
-    elseif (!simplenews_validate_taxonomy($node->taxonomy)) {
-      form_set_error('taxonomy', t('You should select a newsletter before you can send this newsletter issue.'));
-    }
-  }
-  elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
-    $mails = explode(',', $node->test_address);
-    foreach ($mails as $mail) {
-      $mail = trim($mail);
-      if ($mail == '') {
-        form_set_error('', t('Cannot send test newsletter: no valid test e-mail address specified.'));
-      }
-      elseif (!valid_email_address($mail)) {
-        form_set_error('', t('Cannot send test newsletter to %mail: e-mail address invalid.', array('%mail' => $mail)));
-      }
-    }
-  }
-}
-
-/**
  * Validate if term is Newsletter taxonomy term
  *
  * @return
@@ -408,7 +475,7 @@ function simplenews_validate($node) {
  *   FALSE: no Newsletter term is selected
  */
 function simplenews_validate_taxonomy($taxonomy) {
-  $vid = _simplenews_get_vid();
+  $vid = variable_get('simplenews_vid', '');
   $result = db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid);
   while ($tid = db_fetch_object($result)) {
     $tids[] = $tid->tid;
@@ -425,75 +492,47 @@ function simplenews_validate_taxonomy($taxonomy) {
 }
 
 /**
+ * Implementation of hook_form_alter().
+ */
+function simplenews_form_alter(&$form, $form_state, $form_id) {
+  $vid = variable_get('simplenews_vid', '');
+  if (isset($form['vid']) && $form['vid']['#value'] == $vid) {
+    // Hide critical options from forum vocabulary.
+    if ($form_id == 'taxonomy_form_vocabulary') {
+      $form['help_forum_vocab'] = array(
+        '#value' => t('This is the designated simplenews vocabulary. This vocabulary can not be deleted.'),
+        '#weight' => -1,
+      );
+      $form['content_types']['nodes']['#required'] = TRUE;
+      //$form['hierarchy'] = array('#type' => 'value', '#value' => 1);
+      //TODO: perhaps make newsletter term required
+      //$form['settings']['required'] = array('#type' => 'value', '#value' => FALSE);
+      //$form['settings']['relations'] = array('#type' => 'value', '#value' => FALSE);
+      //$form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
+      //TODO: depending on ability to enable newsletter for multiple selection
+      //$form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
+      
+      // Prevent the vocabulary gets deleted
+      unset($form['delete']);
+    }
+ }
+}
+
+/**
  * Implementation of hook_cron().
  */
 function simplenews_cron() {
   _simplenews_send(FALSE);
 }
 
-/**
- * Implementation of hook_insert().
- * Saves extra node content to module database table.
- */
-function simplenews_insert($node) {
-  $term = simplenews_validate_taxonomy($node->taxonomy);
-  $tid = is_array($term) ? array_values($term) : FALSE;
-  $node->simplenews_tid = $tid ? $tid[0] : 0;
-  //tid is also saved in this table since it is needed by _simplenews_send(), and the term_node table is
-  //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
-  //since simplenews_cron() also calls _simplenews_send().
-  $s_status = ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
-  db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-		  VALUES (%d, %d, %d, '%s', %s, %d)", $node->nid, $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt);
-}
-
-/**
- * Implementation of hook_update().
- */
-function simplenews_update($node) {
-  $term = simplenews_validate_taxonomy($node->taxonomy);
-  $tid = is_array($term) ? array_values($term) : FALSE;
-  $node->simplenews_tid = $tid ? $tid[0] : 0;
-  if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) {
-    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %s, receipt = %d
-    WHERE nid = %d", $node->simplenews_tid, SIMPLENEWS_STATUS_SEND_PENDING, $node->s_format, $node->priority, $node->receipt, $node->nid);
+function _simplenews_send_node($node) {
+  if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
+    _simplenews_send(TRUE);
+    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
   }
-  else {
-    db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %s, receipt = %d
-    WHERE nid = %d", $node->simplenews_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
+  elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
+    simplenews_send_test($node);
   }
-}
-
-/**
- * Implementation of hook_nodeapi().
- */
-function simplenews_nodeapi(&$node, $op, $a3 = NULL, $a4 = NULL) {
-  if ($node->type == 'simplenews' && ($op == 'update' || $op == 'insert')) {
-    if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
-      _simplenews_send(TRUE);
-      drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
-    }
-    elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
-      simplenews_send_test($node);
-    }
-  }
-}
-
-/**
- * Implementation of hook_delete().
- */
-function simplenews_delete($node) {
-  $result = db_query('DELETE FROM {simplenews_newsletters} WHERE nid = %d', $node->nid);
-  if ($result) {
-    drupal_set_message(t('Newsletter %title was successfully deleted.', array('%title' => $node->title)));
-  }
-}
-
-/**
- * Implementation of hook_load().
- */
-function simplenews_load($node) {
-  return db_fetch_object(db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = %d', $node->nid));
 }
 
 /**
@@ -502,24 +541,19 @@ function simplenews_load($node) {
  * Deletes subscriptions to term when term is deleted, and cleans the blocks
  * table.
  */
-function simplenews_taxonomy($op, $type, $array = NULL) {
-  if ($type == 'term' && $op == 'delete' && $array['vid'] == _simplenews_get_vid()) {
-    db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $array['tid']);
-    db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $array['tid']);
-    drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter' => $array['name'])));
+function simplenews_taxonomy($op, $type, $term = NULL) {
+  if ($op == 'delete' && $term['vid'] == variable_get('simplenews_vid', '')) {
+    switch ($term) {
+      case 'term':
+        db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $array['tid']);
+        db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
+        drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter' => $term['name'])));
+        break;
+      case 'vocabulary':
+        variable_del('simplenews_vid');
+        break;
+    }
   }
-  elseif ($op == 'delete' && $type == 'vocabulary' && $array['vid'] == _simplenews_get_vid())  {
-    variable_del('simplenews_vid');
-  }
-}
-
-/**
- * Implementation of hook_view().
- */
-function simplenews_view(&$node, $teaser = FALSE) {
-  $node = simplenews_replace_vars($node, TRUE);
-  $node = node_prepare($node, $teaser);
-  return $node;
 }
 
 /**
@@ -589,7 +623,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
           '#type' => 'user_profile_category',
           '#title' => t('Newsletters'),
         );
-        $tree = taxonomy_get_tree(_simplenews_get_vid());
+        $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
         foreach ($tree as $newsletter) {
           if (db_result(db_query('SELECT COUNT(s.uid) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.uid = %d AND t.tid = %d', $account->uid, $newsletter->tid))) {
             $subscriptions[] = l($newsletter->name, 'taxonomy/term/'. $newsletter->tid);
@@ -626,8 +660,12 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
       $blocks = array();
-      foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
-        $blocks[$newsletter->tid] = array('info' => t('Newsletter: @title', array('@title' => $newsletter->name)));
+      foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+        //TODO: 1. without form -> by role; 2. with form -> user caching with refresh on subscribe/unsubscribe (option as setting) or no caching
+        $blocks[$newsletter->tid] = array(
+          'info' => t('Newsletter: @title', array('@title' => $newsletter->name)),
+          'cache' => variable_get('simplenews_block_f_'. $newsletter->tid, 1) ? BLOCK_NO_CACHE : BLOCK_CACHE_PER_ROLE,
+        );
       }
       return $blocks;
     case 'configure':
@@ -757,7 +795,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
   // If user is not subscribed to ANY newsletter, add basic info first.
   if (!$subscription) {
     $account = _simplenews_user_load($mail);
-    db_query("INSERT INTO {simplenews_subscriptions} (mail, uid, activated) VALUES ('%s', %d, 1)", $mail, $account->uid);
+    db_query("INSERT INTO {simplenews_subscriptions} (mail, uid, activated) VALUES ('%s', %d, %d)", $mail, $account->uid, 1);
     $subscription = simplenews_get_user_subscription($mail);
   }
 
@@ -911,7 +949,7 @@ function _simplenews_subscription_manager_form($subscription) {
   $form = array();
   
   $options = array();
-  foreach (taxonomy_get_tree(_simplenews_get_vid()) as $newsletter) {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $options[$newsletter->tid] = $newsletter->name;
     $default_value[$newsletter->tid] = false;
   }
@@ -1011,7 +1049,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
 }
 
 function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
-  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = 1) ORDER BY n.created DESC'), $tid, 0, $count);
+  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 0, $count, 1);
   $titles = array();
   while ($item = db_fetch_object($result)) {
     $titles[$item->nid]['data'] = l($item->title, 'node/'. $item->nid);
@@ -1057,9 +1095,11 @@ function simplenews_block_form(&$form_state, $tid) {
       '#options' => array('subscribe' => t('Subscribe'), 'unsubscribe' => t('Unsubscribe')),
     );
   }
-
-  $form['tid'] = array('#type' => 'value', '#value' => $tid);
-  $form['submit'] = array('#type' => 'submit', '#value' => isset($submit_text) ? $submit_text : t('Submit'));
+  $form['#tid'] = $tid;
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => isset($submit_text) ? $submit_text : t('Submit')
+  );
   return $form;
 }
 
@@ -1077,6 +1117,7 @@ function simplenews_block_form_validate($form, &$form_state) {
  */
 function simplenews_block_form_submit($form, &$form_state) {
   global $user;
+  $tid = $form['#tid'];
   $account = _simplenews_user_load($form_state['values']['mail']);
 
   // If e-mail belongs to the current registered user, don't send confirmation.
@@ -1084,7 +1125,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 
   switch ($form_state['values']['action']) {
     case 'subscribe':
-      simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['tid'], $confirm);
+      simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm);
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
@@ -1093,7 +1134,7 @@ function simplenews_block_form_submit($form, &$form_state) {
       }
       break;
     case 'unsubscribe':
-      simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['tid'], $confirm);
+      simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm);
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete the unsubscription process.'));
       }
@@ -1524,55 +1565,11 @@ function _simplenews_define_replace() {
     return $replace;
 }
 
-function _simplenews_create_default_newsletter_term() {
-  $edit = isset($_POST['edit']) ? $_POST['edit'] : NULL;;
-  // Get vid or create vocabulary
-  $vid = _simplenews_get_vid();
-  // Check to see if at least 1 term exists, else create one
-  $tid = db_result(db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid));
-  if (!$tid) {
-    $edit['name'] = variable_get('site_name', 'Drupal') .' '. t('newsletter');
-    $edit['vid'] = $vid;
-    $edit['weight'] = 0;
-    switch (taxonomy_save_term($edit)) {
-      case SAVED_UPDATED:
-        drupal_set_message(t('Updated term %name.', array('%name' => $edit['name'])));
-        break;
-      case SAVED_DELETED:
-        drupal_set_message(t('Deleted term %name.', array('%name' => $edit['name'])));
-        break;
-    }
-  }
-}
-
-function _simplenews_get_vid() {
-  $vid = variable_get('simplenews_vid', '');
-  if (empty($vid)) {
-    // Check to see if a newsletter vocabulary exists
-    $vid = db_result(db_query("SELECT vid FROM {vocabulary} WHERE module = 'simplenews'"));
-    if (!$vid) {
-      $vocabulary = array('name' => t('Newsletter'), 'multiple' => '0', 'required' => '0', 'hierarchy' => '0', 'relations' => '0', 'module' => 'simplenews', 'nodes' => array('simplenews' => 1));
-      switch (taxonomy_save_vocabulary($vocabulary)) {
-        case SAVED_UPDATED:
-          drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
-          break;
-        case SAVED_NEW:
-          drupal_set_message(t('Created vocabulary %name.', array('%name' => $vocabulary['name'])));
-          break;
-      }
-      $vid = $vocabulary['vid'];
-    }
-    variable_set('simplenews_vid', $vid);
-  }
-
-  return $vid;
-}
-
 function simplenews_types_overview() {
   $rows = array();
   $header = array(t('Newsletter name'), t('Operations'));
 
-  foreach (taxonomy_get_tree(_simplenews_get_vid()) as $term) {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $term) {
     $rows[] = array($term->name, l(t('edit newsletter'), 'admin/content/newsletters/types/edit/'. $term->tid));
   }
 
