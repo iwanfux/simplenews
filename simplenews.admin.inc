@@ -175,16 +175,19 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
       '#collapsed' => TRUE,
       '#description' => t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'),
     );
+/*
+    Support for inline links removed. Restoring this function will depend on user requests.
     $form['simplenews_hyperlinks']['simplenews_hyperlinks_'. $term->tid] = array(
       '#type' => 'radios',
       '#title' => t('Hyperlink conversion'),
       '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
       '#default_value' => variable_get('simplenews_hyperlinks_'. $term->tid, 1),
     );
+*/
   }
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Save'),
     '#weight' => 25,
   );
   $form['vid'] = array(
@@ -247,7 +250,7 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
     $tid = $form_state['values']['simplenews_newsletter'];
     variable_set('simplenews_from_name_'. $tid, $form_state['values']['simplenews_from_name_'. $tid]);
     variable_set('simplenews_from_address_'. $tid, $form_state['values']['simplenews_from_address_'. $tid]);
-    variable_set('simplenews_hyperlinks_'. $tid, $form_state['values']['simplenews_hyperlinks_'. $tid]);
+    //variable_set('simplenews_hyperlinks_'. $tid, $form_state['values']['simplenews_hyperlinks_'. $tid]);
   }
 }
 
@@ -947,6 +950,7 @@ function simplenews_build_subscription_filter_query() {
  
   return array('where' => $where, 'join' => $join, 'args' => $args);
 }
+
 
 /**
  * Theme subscription administration overview.
