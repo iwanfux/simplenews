@@ -729,59 +729,6 @@ function simplenews_admin_settings_validate($form, &$form_state) {
 }
 
 /**
- * Menu callback; handles the edit/delete subscription page and a subscription
- * page for anonymous users.
- */
-function simplenews_admin_users_form(&$form_state, $snid = NULL) {
-/*
-  if (isset($snid) && $_POST['op'] == t('Delete')) {
-    // Kill destination redirect.
-    unset($_REQUEST['destination']);
-    drupal_goto('admin/content/newsletters/users/delete/'. $snid);
-  }
-*/
-  $form = simplenews_subscription_manager_form($snid);
-  $form['#redirect'] = 'admin/content/newsletters/users';
-  return $form;
-}
-
-/**
- * Forms API callback; delete user subscription form. Form to delete user from
- * all newsletters.
- */
-function simplenews_admin_users_delete(&$form_state, $snid = NULL) {
-  if (!isset($snid)) {
-    drupal_not_found();
-    return;
-  }
-
-  $subscription = simplenews_get_subscription($snid);
-  $form = array();
-  $form['snid'] = array('#type' => 'value', '#value' => $snid);
-
-  return confirm_form($form,
-    t('Are you sure you want to remove %mail from all newsletter subscription lists?', array('%mail' => $subscription->mail)),
-    'admin/content/newsletters/users',
-    t('This action will remove %mail from all newsletter subscription lists. To unsubscribe this user from a particular newsletter, press Cancel and edit this user.', array('%mail' => $subscription->mail)),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-/**
- * Forms API callback; delete user subscription submit.
- */
-function simplenews_admin_users_delete_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $form_state['values']['snid']));
-    simplenews_delete_subscription($form_state['values']['snid']);
-    drupal_set_message(t('The user %user was successfully deleted from the subscription list.', array('%user' => $account->mail)));
-    // TODO: move redirect to simplenews_admin_users_delete()
-    $form_state['redirect'] = 'admin/content/newsletters/users';
-  }
-}
-
-/**
  * Callback function to activate the specified subscriptions.
  * 
  * @param $snid array of snid's
@@ -951,7 +898,6 @@ function simplenews_build_subscription_filter_query() {
   return array('where' => $where, 'join' => $join, 'args' => $args);
 }
 
-
 /**
  * Theme subscription administration overview.
  */
@@ -992,21 +938,31 @@ function theme_simplenews_subscription_list($form) {
   return $output;
 }
 
-function theme_simplenews_status($status, $source) {
-  switch ($source) {
+/**
+ * Process variables to format the simplenews status indication.
+ *
+ * $variables contains:
+ * - $source
+ * - $status
+ *
+ * @see simplenews-status.tpl.php
+ * @see theme_simplenews_status()
+ */
+function template_preprocess_simplenews_status(&$variables) {
+  switch ($variables['source']) {
     case 'published':
-      $imgs = array(0 => 'sn-saved', 1 => 'sn-sent');
+      $imgs = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
       $title = array(0 => t('Not published'), 1 => t('Published'));
       break;
     case 'activated':
-      $imgs = array(0 => 'sn-saved', 1 => 'sn-sent');
+      $imgs = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
       $title = array(0 => t('Inactive: no newsletters will be sent'), 1 => t('Active: user will receive newsletters'));
       break;
     case 'sent':
       $imgs = array(
-        SIMPLENEWS_STATUS_SEND_NOT => 'sn-saved',
-        SIMPLENEWS_STATUS_SEND_PENDING => 'sn-cron',
-        SIMPLENEWS_STATUS_SEND_READY => 'sn-sent'
+        SIMPLENEWS_STATUS_SEND_NOT => 'sn-saved.png',
+        SIMPLENEWS_STATUS_SEND_PENDING => 'sn-cron.png',
+        SIMPLENEWS_STATUS_SEND_READY => 'sn-sent.png'
       );
       $title = array(
         SIMPLENEWS_STATUS_SEND_NOT => t('Not sent'),
@@ -1015,7 +971,8 @@ function theme_simplenews_status($status, $source) {
       );
       break;
   }
-  $path = base_path() . drupal_get_path('module', 'simplenews') .'/';
-  $output = '<img src="'. $path . $imgs[$status] .'.png" width="15" height="15" alt="'. $status .'" border="0" title="'. $title[$status] .'" />';
-  return $output;
+  
+  // Build the variables
+  $variables['image'] = base_path() . drupal_get_path('module', 'simplenews') .'/'. $imgs[$variables['status']];
+  $variables['alt'] = $variables['title'] = $title[$variables['status']];
 }
