@@ -1,25 +1,27 @@
 <?php
 // $Id$
 
-//DONE: (issue) multiple subscription block (#121479) 
+//DONE: (issue) multiple subscription block (#121479)
+//DONE: (issue) #221346 solution by lilou: simplenews.css not aggregated
 //TODO: (issue) improved handling of sending by cron (#165412, #125865, ...)
 //TODO: (issue) compatibility with category module
-//TODO: Compatibilty with Views
-//TODO: Compatibilty with Actions
-//TODO: Compatibilty with Token
-//TODO: Compatibilty with CCK: able to add CCK fields to newsletter and provide (basic) theming (#180831)
+//TODO: Compatibilty with Views [Waiting for D6 Views module]
+//DONE: Compatibilty with Actions (see #219544)
+//DONE: Compatibilty with Token
+//DONE: Compatibilty with CCK: provide selectable node type and ability to add CCK fields to newsletter
 //TODO: Compatibility with mail backends (See Mailing List Manager)
-//TODO: Make vocabulary selectable. > > Why?? < <
+//TODO: Can template_preprocess_HOOK be used?
 //TODO: User language sensitive newsletters (also when sending by cron)
 //TODO: (issue) Special characters in email address (#181081)
 //TODO: (issue)Test newsletter with links: <a href="/nl/foo">a link</a>, "http://www.mysite.com/...", "<a href="mailto:name@some.com">name</a>"(#159125) both on-screen as in-mail
-//TODO: (issue) Improve the difference between newsletter (group) and newsletter 
-//TODO: The current text "-- Footer will be appended here" causes some confusion. Replace by more realistic text and additional comment that the link is just for testing and is not working.
 //TODO: Theming of email body, footer as last step before sending. (#202840, #215638)
 //TODO: Include the "newsletter/subscriptions" link in documentation and help
 //TODO: Add more (doxygen) comment
+//TODO: Nice to have: The current text "-- Footer will be appended here" causes some confusion. Replace by more realistic text and additional comment that the link is just for testing and is not working.
+//TODO: Nice to have: (issue) Improve the difference between newsletter (group) and newsletter 
+//TODO: Nice to have: provide basic theming for CCK node fields (#180831)
 //TODO: Nice to have: Integration with Workflow(_ng)
-//TODO: Nice to have: Improved debugging (option) for mail sending (#147510, ...)
+//TODO: Nice to have: Improved debugging (option) for mail sending (#147510, ...) use watchdog(... 'WATCHDOG_DEBUG')
 //TODO: Nice to have: enable multiple newsletter terms per node
 //TODO: Nice to have: Improved handling of images (in combination with Mime Mail)
 //TODO: Nice to have: Integration with OG
@@ -93,7 +95,7 @@ function simplenews_access($op, $node) {
  * Implementation of hook_init
  */
 function simplenews_init() {
-  drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', FALSE);
+  drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
 }
 
 /**
@@ -270,20 +272,17 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
   if (!in_array($node->type, $vocabulary->nodes)) {
     return;
   }
+//dpm($op);
+//dpm($node);
 
   switch ($op) {
     case 'view':
       $node = simplenews_replace_vars($node, TRUE);
       // $node = node_prepare($node, $teaser);
       break;
-    case 'prepare':
-      //if (empty($node->simplenews)) {
-      //  $node->simplenews = _simplenews_form($node);
-      //}
-      break;
     case 'validate':
       global $_simplenews_valid_mails;
-      if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
+      if ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
         if (!isset($node->taxonomy)) {
           form_set_error('', t('You should assign content type %content_type to the !newsletter_vocabulary before you can send this newsletter.', array('%content_type' => $node->type, '!newsletter_vocabulary' => l(t('Newsletter vocabulary'), 'admin/content/taxonomy'))));
         }
@@ -291,8 +290,8 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
           form_set_error('taxonomy', t('You should select a newsletter before you can send this newsletter issue.'));
         }
       }
-      elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
-        $mails = explode(',', $node->test_address);
+      elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
+        $mails = explode(',', $node->simplenews['test_address']);
         foreach ($mails as $mail) {
           $mail = trim($mail);
           //TEST: error directed to right e-mail address field (even when hidden)
@@ -308,8 +307,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
     case 'presave':
       $term = simplenews_validate_taxonomy($node->taxonomy);
       $tid = is_array($term) ? array_values($term) : FALSE;
-      $node->simplenews_tid = $tid ? $tid[0] : 0;
-      //TODO: can simplenews_validate_taxonomy() be placed here? Should be called before 'insert' and 'update'
+      $node->simplenews['tid'] = $tid ? $tid[0] : 0;
       break;
     case 'insert':
       //$term = simplenews_validate_taxonomy($node->taxonomy);
@@ -318,22 +316,22 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       //tid is also saved in this table since it is needed by _simplenews_send(), and the term_node table is
       //only updated after the execution of simplenews_insert(). It cannot be passed by a variable
       //since simplenews_cron() also calls _simplenews_send().
-      $s_status = ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
+      $s_status = ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
       db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-                      VALUES (%d, %d, %d, '%s', %s, %d)", $node->nid, $node->simplenews_tid, $s_status, $node->s_format, $node->priority, $node->receipt);
+                VALUES (%d, %d, %d, '%s', %s, %d)", $node->nid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
       _simplenews_send_node($node);
       break;
     case 'update':
       //$term = simplenews_validate_taxonomy($node->taxonomy);
       //$tid = is_array($term) ? array_values($term) : FALSE;
       //$node->simplenews_tid = $tid ? $tid[0] : 0;
-      if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) {
+      if ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter')) {
         db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = %s, receipt = %d
-        WHERE nid = %d", $node->simplenews_tid, SIMPLENEWS_STATUS_SEND_PENDING, $node->s_format, $node->priority, $node->receipt, $node->nid);
+        WHERE nid = %d", $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
       }
       else {
         db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %s, receipt = %d
-        WHERE nid = %d", $node->simplenews_tid, $node->s_format, $node->priority, $node->receipt, $node->nid);
+        WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
       }
       _simplenews_send_node($node);
       break;
@@ -344,15 +342,17 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       }
       break;
     case 'load':
-      return db_fetch_object(db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = %d', $node->nid));
+      $node->simplenews = db_fetch_array(db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = %d', $node->nid));
+//dpm($node->simplenews);
       break;
   }
 }
 
+/**
+ * Implementation of hook_form
+ */
 function simplenews_form(&$node) {
   $type = node_get_types('type', $node);
-//  _simplenews_create_default_newsletter_term();
-  global $user;
 
   if ($type->has_title) {
     $form['title'] = array(
@@ -367,103 +367,10 @@ function simplenews_form(&$node) {
 
   if ($type->has_body) {
     $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
-    $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') . ' %site ' . t('(the name of your website),') . ' %uri ' . t('(a link to your homepage),') . ' %uri_brief ' . t('(homepage link without the http://),') . ' %mymail ' . t('(your e-mail address),') . ' %date ' . t('(today\'s date),') . ' %login_uri ' . t('(link to login page).');
+    //TODO: these are (almost) now available from user_mail_tokens()
+    $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') . ' %site ' . t('(the name of your website),') . ' %uri ' . t('(a link to your homepage),') . ' %uri_brief ' . t('(homepage link without the http://),') . ' %mymail ' . t('(your e-mail address),') . ' %date ' . t('(today\'s date),') . ' %login_url ' . t('(link to login page).');
   }
 
-  $form['sending_options'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Newsletter sending options'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-  );
-  // Hide format selection if there is nothing to choose
-  if (count(_simplenews_format_options()) > 1) {
-    $form['sending_options']['s_format'] = array(
-      '#type' => 'select',
-      '#title' => t('Format'),
-      '#default_value' => isset($node->s_format) ? $node->s_format : variable_get('simplenews_format', 'plain'),
-      '#options' => _simplenews_format_options(),
-    );
-    }
-  else {
-    $form['sending_options']['s_format'] = array(
-      '#type' => 'hidden',
-      '#value' => variable_get('simplenews_format', 'plain'),
-    );
-  }
-  
-  $form['sending_options']['priority'] = array(
-    '#type' => 'select',
-    '#title' => t('Priority'),
-    '#default_value' => isset($node->priority) ? $node->priority : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-    '#options' => array(
-      SIMPLENEWS_PRIORITY_NONE => t('none'),
-      SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
-      SIMPLENEWS_PRIORITY_HIGH => t('high'),
-      SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
-      SIMPLENEWS_PRIORITY_LOW => t('low'),
-      SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
-    ),
-  );
-  $form['sending_options']['receipt'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Request receipt'),
-    '#return_value' => 1,
-    '#default_value' => isset($node->receipt) ? $node->receipt : variable_get('simplenews_receipt', 0),
-  );
-  if (!isset($node->s_status) || (isset($node->s_status) && $node->s_status == SIMPLENEWS_STATUS_SEND_NOT)) {
-    if (user_access('send newsletter')) {
-      $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
-      $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
-      $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
-      $form['sending_options']['send'] = array(
-        '#type' => 'radios',
-        '#title' => t('Sending'),
-        '#default_value' => isset($node->send) ? $node->send : variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE),
-        '#options' => $options,
-      );
-    }
-    else {
-      $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
-      $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
-      $form['sending_options']['send'] = array(
-        '#type' => 'radios',
-        '#title' => t('Sending'),
-        '#default_value' => isset($node->send) ? $node->send : SIMPLENEWS_COMMAND_SEND_NONE,
-        '#options' => $options,
-        '#description' => t('You have no privileges to send this newsletter'),
-      );
-    }
-    $address_default = variable_get('site_mail', ini_get('sendmail_from'));
-    if (variable_get('simplenews_test_address_override', 0)) {
-      $form['sending_options']['test_address'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Test e-mail addresses'),
-        '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses.'),
-        '#default_value' => isset($node->test_address) ? $node->test_address : variable_get('simplenews_test_address', $address_default),
-        '#size' => 60,
-        '#maxlength' => 128,
-      );
-    }
-    else {
-      $form['sending_options']['test_address'] = array(
-        '#type' => 'hidden',
-        '#value' => variable_get('simplenews_test_address', $address_default),
-      );
-    }
-  }
-  else {
-    $form['sending_options']['none'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('This newsletter has been sent'),
-      '#return_value' => 0,
-      '#attributes' => array('checked' => 'checked', 'disabled' => 'disabled'),
-    );
-  }
-  $form['s_status'] = array(
-    '#type' => 'hidden',
-    '#value' => isset($node->s_status) ? $node->s_status : SIMPLENEWS_STATUS_SEND_NOT,
-  );
   return $form;
 }
 
@@ -496,26 +403,129 @@ function simplenews_validate_taxonomy($taxonomy) {
  */
 function simplenews_form_alter(&$form, $form_state, $form_id) {
   $vid = variable_get('simplenews_vid', '');
-  if (isset($form['vid']) && $form['vid']['#value'] == $vid) {
+  
+  // Newsletter vocabulary form
+  if ($form_id == 'taxonomy_form_vocabulary' && isset($form['vid']) && $form['vid']['#value'] == $vid) {
     // Hide critical options from forum vocabulary.
-    if ($form_id == 'taxonomy_form_vocabulary') {
-      $form['help_forum_vocab'] = array(
-        '#value' => t('This is the designated simplenews vocabulary. This vocabulary can not be deleted.'),
-        '#weight' => -1,
-      );
-      $form['content_types']['nodes']['#required'] = TRUE;
-      //$form['hierarchy'] = array('#type' => 'value', '#value' => 1);
-      //TODO: perhaps make newsletter term required
-      //$form['settings']['required'] = array('#type' => 'value', '#value' => FALSE);
-      //$form['settings']['relations'] = array('#type' => 'value', '#value' => FALSE);
-      //$form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
-      //TODO: depending on ability to enable newsletter for multiple selection
-      //$form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
-      
-      // Prevent the vocabulary gets deleted
-      unset($form['delete']);
+    $form['help_forum_vocab'] = array(
+      '#value' => t('This is the designated simplenews vocabulary. This vocabulary can not be deleted.'),
+      '#weight' => -1,
+    );
+    $form['content_types']['nodes']['#required'] = TRUE;
+    $form['content_types']['nodes']['#description'] = t('Select content type(s) to be used as newsletter');
+    //$form['hierarchy'] = array('#type' => 'value', '#value' => 1);
+    //TODO: perhaps make newsletter term required
+    //$form['settings']['required'] = array('#type' => 'value', '#value' => FALSE);
+    //$form['settings']['relations'] = array('#type' => 'value', '#value' => FALSE);
+    //$form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
+    //TODO: depending on ability to enable newsletter for multiple selection
+    $form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
+    
+    // Prevent the vocabulary gets deleted
+    unset($form['delete']);
+  }
+  
+  // Simplenews newsletter node form 
+  elseif (strpos($form_id, '_node_form') && isset($form['taxonomy'][$vid])) {
+    if (isset($form['#node']->simplenews)) {
+      $simplenews_values = (object) $form['#node']->simplenews;
     }
- }
+    $form['simplenews'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Newsletter sending options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      '#tree' => TRUE,
+    );
+    // Hide format selection if there is nothing to choose
+    if (count(_simplenews_format_options()) > 1) {
+      $form['simplenews']['s_format'] = array(
+        '#type' => 'select',
+        '#title' => t('Format'),
+        '#default_value' => $simplenews_values->s_format,
+        '#options' => _simplenews_format_options(),
+      );
+    }
+    else {
+      $form['simplenews']['s_format'] = array(
+        '#type' => 'hidden',
+        '#value' => variable_get('simplenews_format', 'plain'),
+      );
+    }
+
+    $form['simplenews']['priority'] = array(
+      '#type' => 'select',
+      '#title' => t('Priority'),
+      '#default_value' => isset($simplenews_values->priority) ? $simplenews_values->priority : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
+      '#options' => array(
+        SIMPLENEWS_PRIORITY_NONE => t('none'),
+        SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
+        SIMPLENEWS_PRIORITY_HIGH => t('high'),
+        SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
+        SIMPLENEWS_PRIORITY_LOW => t('low'),
+        SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
+      ),
+    );
+    $form['simplenews']['receipt'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Request receipt'),
+      '#return_value' => 1,
+      '#default_value' => isset($simplenews_values->receipt) ? $simplenews_values->receipt : variable_get('simplenews_receipt', 0),
+    );
+    if (!isset($simplenews_values->s_status) || (isset($simplenews_values->s_status) && $simplenews_values->s_status == SIMPLENEWS_STATUS_SEND_NOT)) {
+      if (user_access('send newsletter')) {
+        $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
+        $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
+        $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
+        $form['simplenews']['send'] = array(
+          '#type' => 'radios',
+          '#title' => t('Sending'),
+          '#default_value' => isset($simplenews_values->send) ? $simplenews_values->send : variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE),
+          '#options' => $options,
+        );
+      }
+      else {
+        $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
+        $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
+        $form['simplenews']['send'] = array(
+          '#type' => 'radios',
+          '#title' => t('Sending'),
+          '#default_value' => isset($simplenews_values->send) ? $simplenews_values->send : SIMPLENEWS_COMMAND_SEND_NONE,
+          '#options' => $options,
+          '#description' => t('You have no privileges to send this newsletter'),
+        );
+      }
+      $address_default = variable_get('site_mail', ini_get('sendmail_from'));
+      if (variable_get('simplenews_test_address_override', 0)) {
+        $form['simplenews']['test_address'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Test e-mail addresses'),
+          '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses.'),
+          '#default_value' => isset($simplenews_values->test_address) ? $simplenews_values->test_address : variable_get('simplenews_test_address', $address_default),
+          '#size' => 60,
+          '#maxlength' => 128,
+        );
+      }
+      else {
+        $form['simplenews']['test_address'] = array(
+          '#type' => 'hidden',
+          '#value' => variable_get('simplenews_test_address', $address_default),
+        );
+      }
+    }
+    else {
+      $form['simplenews']['none'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('This newsletter has been sent'),
+        '#return_value' => 0,
+        '#attributes' => array('checked' => 'checked', 'disabled' => 'disabled'),
+      );
+    }
+    $form['simplenews']['s_status'] = array(
+      '#type' => 'hidden',
+      '#value' => isset($simplenews_values->s_status) ? $simplenews_values->s_status : SIMPLENEWS_STATUS_SEND_NOT,
+    );
+  }
 }
 
 /**
@@ -526,11 +536,13 @@ function simplenews_cron() {
 }
 
 function _simplenews_send_node($node) {
-  if ($node->send == SIMPLENEWS_COMMAND_SEND_NOW) {
+//dpm("_simplenews_send_node()");
+//dpm($node);
+  if ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
     _simplenews_send(TRUE);
     drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $node->title)));
   }
-  elseif ($node->send == SIMPLENEWS_COMMAND_SEND_TEST) {
+  elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node);
   }
 }
@@ -549,8 +561,8 @@ function simplenews_taxonomy($op, $type, $term = NULL) {
         db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
         drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter' => $term['name'])));
         break;
-      case 'vocabulary':
-        variable_del('simplenews_vid');
+//      case 'vocabulary':
+//        variable_del('simplenews_vid');
         break;
     }
   }
@@ -1049,7 +1061,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
 }
 
 function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
-  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.nid = t.nid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 0, $count, 1);
+  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.vid = t.vid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 1, 0, $count);
   $titles = array();
   while ($item = db_fetch_object($result)) {
     $titles[$item->nid]['data'] = l($item->title, 'node/'. $item->nid);
@@ -1098,7 +1110,7 @@ function simplenews_block_form(&$form_state, $tid) {
   $form['#tid'] = $tid;
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => isset($submit_text) ? $submit_text : t('Submit')
+    '#value' => isset($submit_text) ? $submit_text : t('Save')
   );
   return $form;
 }
@@ -1150,6 +1162,8 @@ function simplenews_block_form_submit($form, &$form_state) {
 */
 function simplenews_node_prepare($nid, $tid) {
   $node = node_load(array('nid' => $nid), NULL, TRUE);
+//dpm("simplenews_node_prepare()");
+//dpm($node);
   $node = simplenews_replace_vars($node, FALSE);
 
   // To play well with other modules that add content to the node,
@@ -1165,9 +1179,11 @@ function simplenews_node_prepare($nid, $tid) {
 
   // TODO: Probably should refactor the whole processing, but check here for
   // mimemail and don't mess with body if we're gonna pass it to mimemail().
-  if ($node->s_format == 'plain' || !module_exists('mimemail')) {
+  
+// TODO: mimemail support waiting for D6 version of this module
+//  if ($node->simplenews['s_format'] == 'plain' || !module_exists('mimemail')) {
     $node->body = simplenews_html_to_text($node->body, variable_get('simplenews_hyperlinks_'. $tid, 1));
-  }
+//  }
 
   simplenews_set_from($node, $tid);
   return $node;
@@ -1210,7 +1226,7 @@ function _simplenews_send($timer = FALSE) {
   $result = db_query(db_rewrite_sql('SELECT n.nid, s.tid, n.created FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d ORDER BY n.created ASC'), SIMPLENEWS_STATUS_SEND_PENDING);
   while ($nid = db_fetch_object($result)) {
     $term = taxonomy_get_term($nid->tid);
-    $node = simplenews_node_prepare($nid->nid, $nid->tid);
+    $node = simplenews_node_prepare($nid->nid, $nid->tid);  //TODO check if $nid->tid or $term->vid must be used here
 
     $result2 = db_query('SELECT s.mail, s.snid FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.is_send = %d AND s.activated = %d AND t.tid = %d ORDER BY s.snid ASC', 0, 1, $nid->tid);
     while ($mail = db_fetch_object($result2)) {
@@ -1218,11 +1234,14 @@ function _simplenews_send($timer = FALSE) {
 
       // Add themable footer to message as this changes per user.
       $user_node = drupal_clone($node);
+//dpm($user_node);
+//dpm($node);
       $user_node = theme('simplenews_newsletter_footer', $user_node, $hash);
 
       $user_node->to = $mail->mail;
       $counter++;
       if (simplenews_mail_send($user_node)) {
+        watchdog('newsletter', 'Newsletter %title sent to %email.', array('%title' => $user_node->title, '%email' => $mail->mail), WATCHDOG_DEBUG);
         // TODO: This looks like it may choke if you were sending multiple
         // newsletters through cron. Should move is_send to snid_tid table
         // or somewhere else to see which newsletter has been sent.
@@ -1278,7 +1297,7 @@ function simplenews_send_test($input) {
     $recipients[] = trim($mail);
   } 
   foreach ($recipients as $to) {
-    $node->to = $to;
+    $node->simplenews['to'] = $to;
     if (simplenews_mail_send($node)) {
       drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $to)));
     }
@@ -1316,26 +1335,27 @@ function simplenews_mail_confirm($email, $newsletter, $snid = NULL, $op = NULL) 
  *   An object with at least $mail->to, $mail->subject, and $mail->message.
  */
 function simplenews_mail_send($mail) {
-  $to = $mail->to;
+  $to = $mail->simplenews['to'];
   $language = language_default();
-  $from = isset($mail->from_address) ? $mail->from_address : variable_get('site_mail', ini_get('sendmail_from'));
+  $from = isset($mail->simplenews['from_address']) ? $mail->simplenews['from_address'] : variable_get('site_mail', ini_get('sendmail_from'));
   $params = array(
-    'priority' => $mail->priority,
-    'from_name' => $mail->from_name,
-    'receipt' => $mail->receipt,
-    's_format' => $mail->s_format,
+    'priority' => $mail->simplenews['priority'],
+    'from_name' => $mail->simplenews['from_name'],
+    'receipt' => $mail->simplenews['receipt'],
+    's_format' => $mail->simplenews['s_format'],
     'context' => array(
-      'subject' => isset($mail->subject) ? $mail->subject : $mail->title,
+      'subject' => isset($mail->simplenews['subject']) ? $mail->simplenews['subject'] : $mail->title,
       'message' => $mail->body,
     ),
   );
-  return drupal_mail('simplenews', 'mail', $to, $language->language, $params, $from);
+  return drupal_mail('simplenews', 'mail', $to, $language, $params, $from);
 }
 
 /**
  * Implementation of hook_mail
  */
 function simplenews_mail($key, &$message, $params) {
+  $headers = array();
   $context = $params['context'];
   
   // If receipt is requested, add headers.
@@ -1383,105 +1403,27 @@ function simplenews_mail($key, &$message, $params) {
 }
 
 /**
-* Other module-specific functions
-*/
-function simplenews_html_to_text($txt, $inline) {
-  $pattern = '@(<a href="(.\S+?)"[^>]*>(.+?)</a>)@ei';
-  if ($inline) {
-    $txt = preg_replace($pattern, "_simplenews_mail_uri('\\2', '\\3')", $txt);
-  }
-  else {
-    $txt = preg_replace($pattern, "'\\3 ['. _simplenews_mail_urls('\\2') .']'", $txt);
-    $urls = _simplenews_mail_urls();
-    if (count($urls)) {
-      $txt .= "\n";
-      $i = 0;
-      for ($max = count($urls); $i < $max; $i++) {
-        $txt .= '['. ($i + 1) .'] '. $urls[$i] ."\n";
-      }
-    }
-    _simplenews_mail_urls(0, TRUE);
-  }
-
-  // some basic html to text conversion
-  //TODO: replace by drupal_html_to_text? http://api.drupal.org/api/function/drupal_html_to_text/6
-  $txt = preg_replace(_simplenews_define_search(), _simplenews_define_replace(), $txt);
-  $txt = preg_replace("/\n\s+\n/", "\n\n", $txt);
-  $txt = strip_tags($txt);
-  $txt = decode_entities($txt);
-  return wordwrap($txt, 80);
-}
-
-function _simplenews_mail_uri($href, $link) {
-  $href = _simplenews_mail_url($href);
-  if ($href == $link) {
-    $output =  '[ '. $href .' ]';
-  }
-  else {
-    $output = $link .' [ '. $href .' ]';
-  }
-  return $output;
-}
-
-function _simplenews_mail_url($url) {
-  if (preg_match('@://@', $url)) {
-    return $url;
-  }
-  elseif (preg_match('!mailto:!i', $url)) {
-    return str_replace('mailto:', '', $url);
-  }
-  else {
-    return url($url, array('absolute' => true));
-  }
-}
-
-function _simplenews_mail_urls($url = 0, $refresh = FALSE) {
-  static $urls = array();
-  if ($refresh) {
-    $urls = array();
-  }
-  if ($url) {
-    $urls[] = _simplenews_mail_url($url);
-    return count($urls);
-  }
-  return $urls;
+ * HTML to text conversion for HTML and special characters
+ * Converts some special HTMLcharacters in addition to drupal_html_to_text()
+ *
+ * @param $text = source text
+ * @param @inline = true: hyperlinks will be replaced in-line
+ *                  flase: hyperlinks will be placed as reference at the end of the message
+ */
+function simplenews_html_to_text($text, $inline = false) {
+  //TODO add support for inline links
+  // Replace some special characters before performing the drupal standard conversion
+  $text = preg_replace(_simplenews_define_search(), _simplenews_define_replace(), $text);
+  return drupal_html_to_text($text);
 }
 
 /**
  *  List of preg* regular expression patterns to search for,
- *  used in conjunction with $replace.
- *  Based on / modified from html2txt.module
+ *  used in conjunction with _simplenews_define_replace().
  */
 function _simplenews_define_search() {
 
     $search = array(
-        "/\r/",                                       // Non-legal carriage return
-        "/[\t]+/",                                    // tabs
-        '/<script[^>]*>.*?<\/script>/i',              // <script>s -- which strip_tags supposedly has problems with
-        '!<h[12][^>]*>(.+?)</h[12]>!ie',              // H1 - H2
-        '/<h3[^>]*>(.+?)<\/h3>/ie',                   // H3
-        '/<h[456][^>]*>(.+?)<\/h[456]>/ie',           // H4 - H6
-        '!<blockquote[^>]*>!i',                       // <blockquote>
-        '!</blockquote>!i',                           // </blockquote>
-        '!</?p[^>]*>!i',                              // <p>
-        "/<br[^>]*>\n?/i",                            // <br>
-        '!</?(b|strong)[^>]*>!i',                     // <b> and <strong>
-        '!</?(em|i)[^>]*>!i',                         // <em> and <i>
-        '/(<ul[^>]*>|<\/ul>)/i',                      // <ul> and </ul>
-        '/(<ol[^>]*>|<\/ol>)/i',                      // <ol> and </ol>
-        '/(<dl[^>]*>|<\/dl>)/i',                      // <dl> and </dl>
-        '!<li[^>]*>!i',                               // <li>
-        '!</li>!i',                                   // </li>
-        '!<dt[^>]*>!i',                               // <dt>
-        '!</dt>!i',                                   // </dt>
-        '!<dd[^>]*>!i',                               // <dd>
-        '!</dd>!i',                                   // </dd>
-        '/<hr[^>]*>/i',                               // <hr>
-        '/(<table[^>]*>|<\/table>)/i',                // <table> and </table>
-        '/(<tr[^>]*>|<\/tr>)/i',                      // <tr> and </tr>
-        '/<td[^>]*>(.+?)<\/td>/i',                    // <td> and </td>
-        '/<th[^>]*>(.+?)<\/th>/i',                    // <th> and </th>
-        '/&nbsp;/i',
         '/&quot;/i',
         '/&gt;/i',
         '/&lt;/i',
@@ -1501,46 +1443,17 @@ function _simplenews_define_search() {
         '/&#149;/',
         '/&reg;/i',
         '/&bull;/i',
-        '/&[&;]+;/i'
+        '/&euro;/i',
     );
-
     return $search;
 }
 
 /**
  *  List of pattern replacements corresponding to patterns searched.
- *  Based on / modified from html2txt.module
  */
 function _simplenews_define_replace() {
 
     $replace = array(
-        '',                                                               // Non-legal carriage return
-        ' ',                                                              // Tabs
-        '',                                                               // <script>s -- which strip_tags supposedly has problems with
-        "\"\n------------\" .strtoupper('\\1'). \"------------\n\n\"",    // H1 - H2
-        "\"\n\" . strtoupper('\\1') . \"\n\n\"",                          // H3
-        "ucwords(\"\n\n\\1\n\n\")",                                       // H4 - H6
-        "\n\n\t",                                                         // <blockquote>
-        "\n\n",                                                           // </blockquote>
-        "\n\n",                                                           // <p>
-        "\n",                                                             // <br>
-        '*',                                                              // <b> and <strong>
-        '/',                                                              // <em> and <i>
-        "\n\n",                                                           // <ul> and </ul>
-        "\n\n",                                                           // <ol> and </ol>
-        "\n\n",                                                           // <dl> and </dl>
-        "  * ",                                                           // <li>
-        "\n",                                                             // </li>
-        "  * ",                                                           // <dt>
-        "\n",                                                             // </dt>
-        "\t",                                                             // <dd>
-        "\n",                                                             // </dd>
-        "\n-------------------------\n",                                  // <hr>
-        "\n\n",                                                           // <table> and </table>
-        "\n",                                                             // <tr> and </tr>
-        "\t\t\\1\n",                                                      // <td> and </td>
-        "strtoupper(\"\t\t\\1\n\")",                                      // <th> and </th>
-        ' ',
         '"',
         '>',
         '<',
@@ -1560,7 +1473,7 @@ function _simplenews_define_replace() {
         '*',
         '(R)',
         '*',
-        ''
+        'Euro '
     );
     return $replace;
 }
@@ -1675,7 +1588,7 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
 function simplenews_replace_vars($node, $teaser = TRUE) {
   global $base_url;
   $user_mail = db_result(db_query('SELECT mail FROM {users} WHERE uid = %d', $node->uid));
-  $variables = array('%site' => variable_get('site_name', 'drupal'), '%uri' => $base_url, '%uri_brief' => drupal_substr($base_url, drupal_strlen('http://')), '%mymail' => $user_mail, '%date' => format_date(time()), '%login_uri' => url('user/login', array('absolute' => true)));
+  $variables = array('%site' => variable_get('site_name', 'drupal'), '%uri' => $base_url, '%uri_brief' => drupal_substr($base_url, drupal_strlen('http://')), '%mymail' => $user_mail, '%date' => format_date(time()), '%login_url' => url('user/login', array('absolute' => true)));
   $node->body = strtr($node->body, $variables);
   if ($teaser) {
     $node->teaser = strtr($node->teaser, $variables);
@@ -1734,6 +1647,7 @@ function _simplenews_generate_hash($mail, $snid, $tid) {
  */
 function _simplenews_format_options() {
   $options = array('plain' => t('plain'));
+//dpm('FOR TEST: Mime Mail is ON');
   if (module_exists('mimemail')) {
     $options['html'] = t('html');
   }
@@ -1746,7 +1660,8 @@ function _simplenews_format_options() {
 function simplenews_theme() {
   return array(
     'simplenews_block' => array(
-      'arguments' => array('block' => NULL),
+      'template' => 'simplenews-block',
+      'arguments' => array('tid' => NULL),
     ),
     'simplenews_status' => array(
       'arguments' => array('status' => NULL, 'source' => NULL),
@@ -1809,7 +1724,9 @@ function theme_simplenews_newsletter($node, $tid) {
  * Theme the footer.
  */
 function theme_simplenews_newsletter_footer($node, $hash) {
-  if ($node->s_format == 'html') {
+//dpm($node);
+  //TODO !! object or array
+  if ($node->simplenews->s_format == 'html') {
     $node->body .= '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter'), 'newsletter/confirm/remove/'. $hash, array('html' => true)) .'</p>';
   }
   else {
@@ -1825,11 +1742,11 @@ function theme_simplenews_newsletter_confirmation($email, $newsletter, $snid, $o
   $mail = new stdClass();
   simplenews_set_from($mail, $newsletter->tid);
 
-  $mail->s_format = 'plain';
-  $mail->priority = 'none';
+  $mail->simplenews['s_format'] = 'plain';
+  $mail->simplenews['priority'] = 'none';
 
-  $mail->to = $email;
-  $mail->subject = t('Confirmation for @newsletter from @site', array('@newsletter' => $newsletter->name, '@site' => $mail->from_name));
+  $mail->simplenews['to'] = $email;
+  $mail->simplenews['subject'] = t('Confirmation for @newsletter from @site', array('@newsletter' => $newsletter->name, '@site' => $mail->from_name));
   $mail->body = t('This is a subscription status confirmation notice for the @newsletter.', array('@newsletter' => $newsletter->name));
   $mail->body .= "\n\n";
 
@@ -1837,22 +1754,22 @@ function theme_simplenews_newsletter_confirmation($email, $newsletter, $snid, $o
   switch ($op) {
     case 'subscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@uri). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@url' => url('', array('absolute' => true))));
       }
       else {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@uri). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (@url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@url' => url('', array('absolute' => true))));
         $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
         $footer = "\n\n-- \n". t('Subscribe link: @url', array('@url' => url('newsletter/confirm/add/'. $hash, array('absolute' => true))));
       }
       break;
     case 'unsubscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@uri). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@url' => url('', array('absolute' => true))));
         $mail->body .= "\n\n". t('If you did not make this request, please disregard this message.');
         $footer = "\n\n-- \n". t('Unsubscribe link: @url', array('@url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => true))));
       }
       else {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@uri). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@uri' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (@url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '@url' => url('', array('absolute' => true))));
         $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
       }
       break;
