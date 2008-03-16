@@ -10,25 +10,10 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
   global $user;
 
   if (isset($snid)) {
-    $subscription = simplenews_get_subscription($snid);
-
-    //TODO: include below defaults in simplenews_get_subscription()
-    // If we couldn't load subscription set defaults.
-    if (!$subscription) {
-      $subscription = new stdClass();
-      $subscription->tids = array();
-    }
+    $subscription = simplenews_get_subscription(array('snid' => $snid));
   } 
   else {
-    $subscription = simplenews_get_user_subscription($user->mail);
-    //TODO: include below default in simplenews_get_user_subscription()
-    // If current user is not subscribed to any newsletter set current user data.
-    if ($user->uid && !$subscription) {
-      $subscription = new stdClass();
-      $subscription->tids = array();
-      $subscription->uid = $user->uid;
-      $subscription->mail = $user->mail;
-    }
+    $subscription = simplenews_get_subscription((array)$user);
   }
 
   // If non-admin is trying to edit someone else's subscription, access denied.
@@ -53,7 +38,8 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
     form_set_error('mail', t('The e-mail address you supplied is not valid.'));
   }
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  if (!count($checked_newsletters) && !simplenews_get_user_subscription($form_state['values']['mail'])) {
+  $account['mail'] = $form_state['values']['mail'];
+  if (!count($checked_newsletters) && !simplenews_get_user_subscription($account)) {
     form_set_error('newsletters', t('You must select at least one newsletter.'));
   }
 }
@@ -203,7 +189,7 @@ function simplenews_admin_users_delete(&$form_state, $snid = NULL) {
     return;
   }
 
-  $subscription = simplenews_get_subscription($snid);
+  $subscription = simplenews_get_subscription(array('snid' => $snid));
   $form = array();
   $form['snid'] = array('#type' => 'value', '#value' => $snid);
 
