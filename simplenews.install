@@ -18,13 +18,6 @@ function simplenews_schema() {
         'not null' => true,
         'default' => 0,
       ),
-      'is_send' => array(
-        'description' => t(''),
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => true,
-        'default' => 0,
-      ),
       'mail' => array(
         'description' => t(''),
         'type' => 'varchar',
@@ -76,10 +69,10 @@ function simplenews_schema() {
       ),
       'priority' => array(
         'description' => t(''),
-        'type' => 'varchar',
-        'length' => 8,
+        'type' => 'int',
+        'size' => 'tiny',
         'not null' => true,
-        'default' => '',
+        'default' => 0,
       ),
       'receipt' => array(
         'description' => t(''),
@@ -109,6 +102,60 @@ function simplenews_schema() {
       ),
     ),
     'primary key' => array('snid', 'tid'),
+  );
+  $schema['simplenews_mail_cache'] = array(
+    'description' => t(''),
+    'fields' => array(
+      'mcid' => array(
+        'description' => t('The primary identifier for a mail cache record.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      'tid' => array(
+        'description' => t('The {term_data}.tid this newsletter issue belongs to.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'subject' => array(
+        'description' => t('The subject of this mail message.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mail' => array(
+        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'timestamp' => array(
+        'description' => t('The time status was set or changed.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'message' => array(
+        'description' => t('The mail message array.'),
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('mcid'),
+    'indexes' => array('tid' => array('tid'), 'status' => array('status')),
   );
   return $schema;
 }
@@ -240,6 +287,79 @@ function simplenews_update_6000() {
     'size' => 'tiny',
     'not null' => true,
     'default' => 0,
+    )
+  );
+  return $ret;
+}
+
+function simplenews_update_6001() {
+    $schema['simplenews_mail_cache'] = array(
+    'description' => t(''),
+    'fields' => array(
+      'mcid' => array(
+        'description' => t('The primary identifier for a mail cache record.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      'tid' => array(
+        'description' => t('The {term_data}.tid this newsletter issue belongs to.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'subject' => array(
+        'description' => t('The subject of this mail message.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mail' => array(
+        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'timestamp' => array(
+        'description' => t('The time status was set or changed.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'message' => array(
+        'description' => t('The mail message array.'),
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('mcid'),
+    'indexes' => array('tid' => array('tid'), 'status' => array('status')),
+  );
+  $ret = array();
+  // New table to buffer mail messages during sending
+  db_create_table($ret, 'simplenews_mail_cache', $schema['simplenews_mail_cache']);
+
+  // Remove is_send field. No longer required by the introduction of simplenews_mail_cache table
+  db_drop_field($ret, 'simplenews_subscriptions', 'is_send');
+  
+    // Convert newsletter priority: change field type string back to int
+  db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
+      'type' => 'int',
+      'size' => 'tiny',
+      'not null' => true,
+      'default' => 0,
     )
   );
   return $ret;
