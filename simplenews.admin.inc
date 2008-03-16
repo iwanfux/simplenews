@@ -86,6 +86,19 @@ function _simplenews_set_filter($type, $values) {
   }
 }
 
+function simplenews_types_overview() {
+  $rows = array();
+  $header = array(t('Newsletter name'), t('Operations'));
+
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $term) {
+    $rows[] = array($term->name, l(t('edit newsletter'), 'admin/content/newsletters/types/edit/'. $term->tid));
+  }
+
+  if (count($rows) == 0) {
+    $rows[] = array(array('data' => t('There are currently no newsletter series.'), 'colspan' => 2));
+  }
+  return theme('table', $header, $rows);
+}
 
 /**
  * Forms API callback; displays newsletter (term) add/edit form.
@@ -951,15 +964,15 @@ function theme_simplenews_subscription_list($form) {
 function template_preprocess_simplenews_status(&$variables) {
   switch ($variables['source']) {
     case 'published':
-      $imgs = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
+      $images = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
       $title = array(0 => t('Not published'), 1 => t('Published'));
       break;
     case 'activated':
-      $imgs = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
+      $images = array(0 => 'sn-saved.png', 1 => 'sn-sent.png');
       $title = array(0 => t('Inactive: no newsletters will be sent'), 1 => t('Active: user will receive newsletters'));
       break;
     case 'sent':
-      $imgs = array(
+      $images = array(
         SIMPLENEWS_STATUS_SEND_NOT => 'sn-saved.png',
         SIMPLENEWS_STATUS_SEND_PENDING => 'sn-cron.png',
         SIMPLENEWS_STATUS_SEND_READY => 'sn-sent.png'
@@ -973,6 +986,6 @@ function template_preprocess_simplenews_status(&$variables) {
   }
   
   // Build the variables
-  $variables['image'] = base_path() . drupal_get_path('module', 'simplenews') .'/'. $imgs[$variables['status']];
+  $variables['image'] = base_path() . drupal_get_path('module', 'simplenews') .'/'. $images[$variables['status']];
   $variables['alt'] = $variables['title'] = $title[$variables['status']];
 }
