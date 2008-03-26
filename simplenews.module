@@ -1382,36 +1382,37 @@ function simplenews_mail_send($timer = FALSE) {
   }
 
   // Get pending messages from database cache
-  $messages = simplenews_mail_cache_get(SIMPLENEWS_CACHE_PENDING, variable_get('simplenews_throttle', 20));
-  foreach($messages as $key => $message) {
-
-    $counter++;
-    if (drupal_mail_send($message)) {
-      watchdog('simplenews', 'Newsletter sent to %recipient.', array('%recipient' => $message['to']), WATCHDOG_DEBUG);
-      simplenews_mail_cache_update($key, SIMPLENEWS_CACHE_SEND);
-
-      // don't send mails too fast, servers may choke. Wait for 10 ms.
-      usleep(10000);
-    }
-    else {
-      watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
-    }
-    //
-    if ($timer) {
-      $int_time = simplenews_time();
-    }
-    else {
-      if ($counter < $throttle) {
-        $int_time = $start_time;
+  if ($messages = simplenews_mail_cache_get(SIMPLENEWS_CACHE_PENDING, variable_get('simplenews_throttle', 20))) {
+    foreach($messages as $key => $message) {
+  
+      $counter++;
+      if (drupal_mail_send($message)) {
+        watchdog('simplenews', 'Newsletter sent to %recipient.', array('%recipient' => $message['to']), WATCHDOG_DEBUG);
+        simplenews_mail_cache_update($key, SIMPLENEWS_CACHE_SEND);
+  
+        // don't send mails too fast, servers may choke. Wait for 10 ms.
+        usleep(10000);
       }
-      // Throttle count reached
       else {
+        watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
+      }
+      //
+      if ($timer) {
+        $int_time = simplenews_time();
+      }
+      else {
+        if ($counter < $throttle) {
+          $int_time = $start_time;
+        }
+        // Throttle count reached
+        else {
+          return;
+        }
+      }
+      // Max time elapsed
+      if (!($int_time - $start_time < $max_time)) {
         return;
       }
-    }
-    // Max time elapsed
-    if (!($int_time - $start_time < $max_time)) {
-      return;
     }
   }
 }
