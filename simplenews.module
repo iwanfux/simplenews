@@ -928,6 +928,16 @@ function simplenews_get_subscription($account) {
 }
 
 /**
+ * Deletes every subscription for the given subscription ID.
+ */
+function simplenews_delete_subscription($snid) {
+  $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
+  db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
+  db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
+  watchdog('newsletter', t('User %email deleted from the subscription list.', array('%email' => $account->mail)), WATCHDOG_NOTICE);
+}
+
+/**
  * Helper function to build subscription manager form, also used in user edit.
  */
 function _simplenews_subscription_manager_form($subscription) {
