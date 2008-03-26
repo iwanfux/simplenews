@@ -934,7 +934,7 @@ function simplenews_delete_subscription($snid) {
   $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
   db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
   db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
-  watchdog('newsletter', t('User %email deleted from the subscription list.', array('%email' => $account->mail)), WATCHDOG_NOTICE);
+  watchdog('simplenews', 'User %email deleted from the subscription list.', array('%email' => $account->mail), WATCHDOG_NOTICE);
 }
 
 /**
