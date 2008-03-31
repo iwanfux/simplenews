@@ -38,7 +38,7 @@ function simplenews_admin_news(&$form_state, $action = 'sent') {
     $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queries[$filter] ." ORDER BY n.created DESC";
     $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queries[$filter];
   }
-  $result = pager_query(db_rewrite_sql($query, SIMPLENEWS_STATUS_SEND_NOT), 10, 0, db_rewrite_sql($count_query, SIMPLENEWS_STATUS_SEND_NOT), 0);
+  $result = pager_query(db_rewrite_sql($query, 'n', 'nid', array(SIMPLENEWS_STATUS_SEND_NOT)), 10, 0, db_rewrite_sql($count_query, 'n', 'nid', array(SIMPLENEWS_STATUS_SEND_NOT)), 0);
   $rows = array();
   while ($node = db_fetch_object($result)) {
     $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($node, $vid, 'name'));
