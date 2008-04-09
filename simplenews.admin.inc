@@ -732,6 +732,20 @@ function simplenews_admin_settings(&$form_state) {
     '#options' => $throttle,
     '#default_value' => variable_get('simplenews_throttle', 20),
   );
+  $form['simplenews_debug_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Debugging'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('Log outgoing emails in the system log.'),
+  );
+  $form['simplenews_debug_options']['simplenews_debug'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Log outgoing Simplenews emails'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('simplenews_debug', 0),
+    '#description' => t('When checked all outgoing simplenews emails are logged. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
+  );
   return system_settings_form($form);
 }
 
