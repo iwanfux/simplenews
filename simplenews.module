@@ -350,9 +350,10 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       // When translation module is activated all translated modules share the send status
       //TODO Share all states, not only send state
       if (module_exists('translation') && $send_with_permission) {
-        $translations = translation_node_get_translations($node->tnid);
-        foreach ($translations as $translation) {
-          db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_READY, $translation->nid);
+        if ($translations = translation_node_get_translations($node->tnid))  {
+          foreach ($translations as $translation) {
+            db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_READY, $translation->nid);
+          }
         }
       }
 
