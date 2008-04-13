@@ -11,15 +11,15 @@
 */
 function simplenews_action_info() {
   return array(
-//    'simplenews_send_newsletter_action' => array(
-//      'description' => t('(Re)send single simplenews newsletter'),
-//      'type' => 'simplenews',
-//      'configurable' => TRUE,
-//      'hooks' => array(
-//        'cron' => array('run'),
-//        'user' => array('insert'),
-//      ),
-//    ),
+    'simplenews_send_newsletter_action' => array(
+      'description' => t('Send single simplenews newsletter'),
+      'type' => 'simplenews',
+      'configurable' => TRUE,
+      'hooks' => array(
+        'cron' => array('run'),
+        'user' => array('insert'),
+      ),
+    ),
     'simplenews_cron_action' => array(
       'description' => t('Send pending simplenews newsletters'),
       'type' => 'simplenews',
@@ -47,113 +47,137 @@ function simplenews_action_info() {
   );
 }
 
-
 /**
- * Implementation of a Drupal action.
- * Send a simplenews newsletter.
- *   op = cron: Send newsletter tid to all users
- *      = user: Send newsletter tid to current user
+ * A configurable Drupal action. Send a simplenews newsletter.
+ *   hook = cron: Send a newsletter to all subscribers.
+ *   hook = user: Send a newsletter to the user who triggered the action.
+ *
+ *   Available context:
+ *    $context['nid']     newsletter id
+ *    $context['title']   newsletter title
+ *    $context['resend']  allow resending of a previously send newsletter
+ *
+ *   @see simplenews_send_newsletter_action_form()
+ *   @see simplenews_send_newsletter_action_submit
  */
-//function simplenews_send_newsletter_action(&$object, $context = array()) {
-//  if ($contect['op'] == 'cron' || $contect['op'] == 'user') {
-//    $mail = array();
-//    if ($contect['op'] == 'user') {
-//      global $user;
-//      $mail = array($user->mail);
-//    }
-//    //TODO: needs modification of _simplenews_send()
-//    //TODO: include 'resend' option
-//    if (isset($object->nid)) {
-//      $object->simplenews['send'] = SIMPLENEWS_COMMAND_SEND_NOW;
-//      $object->simplenews['s_status'] = SIMPLENEWS_STATUS_SEND_PENDING;
-//      //TODO: Save node with status. Use node_save($node) ??
-//      //TODO: this sending is non-selective. All pending newsletters are send!!!!!
-//      _simplenews_send(FALSE);
-//      watchdog('action', 'Newsletter issue %title being send.', array('%title' => check_plain($object->title)));
-//    }
-//  }
-//}
+function simplenews_send_newsletter_action(&$object, $context = array()) {
+  if ($context['hook'] == 'cron' || $context['hook'] == 'user') {
+
+    // Determine newsletter receipients
+    $accounts = array();
+    if ($context['hook'] == 'user') {
+      $accounts[] = $context['account'];
+    }
+
+    // Get send status of this newsletter. The global newsletter send status is used not the send status of individual e-mails.
+    $s_status = db_result(db_query("SELECT s_status FROM {simplenews_newsletters} WHERE nid = %d", $context['nid']));
+
+    // Send newsletter if resend is allowed OR newsletter is not yet send.
+    if ($context['resend'] OR $s_status == SIMPLENEWS_STATUS_SEND_NOT) {
+      if ($context['hook'] == 'cron') {
+        // Set newsletter send status to pending if send by cron.
+        db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_PENDING, $context['nid']);
+      }
+      simplenews_send_node($context['nid'], $accounts);
+    }
+    watchdog('action', 'Simplenews newsletter %title send.', array('%title' => $context['title']));
+  }
+}
 
 /**
  * Implementation of a configurable Drupal action. Send newsletter
  */
-//function simplenews_send_newsletter_action_form($context) {
+function simplenews_send_newsletter_action_form($context) {
+//TODO improve usability by adding a pre-selection of newsletters before the newsletter issue selection
+//     Requires AHAH function to select newsletters issues based on selected newsletter
+//
 //  if (!isset($context['newsletter'])) {
 //    $context['newsletter'] = array();
 //  }
-//  if (!isset($context['newsletter_issue'])) {
-//    $context['newsletter_issue'] = array();
-//  }
-//  
-//  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-//  $terms = array();
-//  foreach ($tree as $newsletter) {
-//    $terms[$newsletter->tid] = check_plain($newsletter->name);
-//  }
+  if (!isset($context['newsletter_issue'])) {
+    $context['newsletter_issue'] = array();
+  }
+  if (!isset($context['resend'])) {
+    $context['resend'] = FALSE;
+  }
+  
+  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
+  $terms = array();
+  foreach ($tree as $newsletter) {
+    $terms[$newsletter->tid] = check_plain($newsletter->name);
+  }
 //  $form['newsletter'] = array(
 //    '#title' => t('Newsletter'),
 //    '#type' => 'select',
 //    '#options' => $terms,
+//    '#default_value' => $context['newsletter'],
 //    '#description' => t('The newsletter series'),
 //  );
-//  //TODO: AHAH function to fead above selection result into below $tid
-//  $result = taxonomy_select_nodes(array_keys($terms));
-//  $nids = array();
-//  while ($node = db_fetch_object($result)) {
-//    $nids[$node->nid] = check_plain($node->title);
-//  }
-//  $form['newsletter_issue'] = array(
-//    '#title' => t('Newsletter issue'),
-//    '#type' => 'select',
-//    '#options' => $nids,
-//    '#description' => t('The newsletter issue to (re)send'),
-//  );
-//  $form['resend'] = array(
-//    '#title' => t('Resend newsletter'),
-//    '#type' => 'checkbox',
-//    '#default_value' => FALSE,
-//    '#description' => t('Send the newsletter when already sended. When not checked a previously send newsletter will not be send.'),
-//  );
-//  
-//  return $form;
-//}
+  $result = taxonomy_select_nodes(array_keys($terms));
+  $nids = array();
+  while ($node = db_fetch_object($result)) {
+    $nids[$node->nid] = check_plain($node->title);
+  }
+  $form['newsletter_issue'] = array(
+    '#title' => t('Newsletter issue'),
+    '#type' => 'select',
+    '#options' => $nids,
+    '#default_value' => $context['newsletter_issue'],
+    '#description' => t('The newsletter issue to send'),
+  );
+  $form['resend'] = array(
+    '#title' => t('Allow to resend newsletter'),
+    '#type' => 'checkbox',
+    '#default_value' => $context['resend'],
+    '#description' => t('When checked a newsletter will be send even when already send before. The newsletter send status is checked, not the status of individual e-mail addresses. Use this for repeated (e.g. monthly) newsletters.'),
+  );
+  
+  return $form;
+}
 
 /**
  * Validate simplenews_send_newsletter_action form submissions.
  */
-//function simplenews_send_newsletter_action_validate($form, $form_state) {
-//  $form_values = $form_state['values'];
-//  // Validate the send newsletter form.
-//  if (empty($form_values['newsletter_issue'])) {
-//    form_set_error('newsletter_issue', t('Please select newsletter issue (after selecting a newsletter).'));
-//  }
-//}
+function simplenews_send_newsletter_action_validate($form, $form_state) {
+  $form_values = $form_state['values'];
+  // Validate the send newsletter form.
+  if (empty($form_values['newsletter_issue'])) {
+    form_set_error('newsletter_issue', t('Please select a newsletter issue.'));
+  }
+}
 
 /**
  * Process simplenews_send_newsletter_action form submissions.
  */
-//function simplenews_send_newsletter_action_submit($form, $form_state) {
-//  $form_values = $form_state['values'];
-//
-//  $params = array(
-//    'nid' => $form_values['newsletter_issue'],
-//    'title' => $form['newsletter_issue']['#options'][$form_values['newsletter_issue']],
-//  );
-//  return $params;
-//}
+function simplenews_send_newsletter_action_submit($form, $form_state) {
+  $form_values = $form_state['values'];
+
+  $params = array(
+    'nid' => $form_values['newsletter_issue'],
+    'title' => $form['newsletter_issue']['#options'][$form_values['newsletter_issue']],
+    'resend' => $form_values['resend'],
+  );
+  return $params;
+}
 
 /**
- * Implementation of a Drupal action.
- * Simplenews cron handling
+ * Implementation of a Drupal action. Send pending simplenews newsletters.
  */
 function simplenews_cron_action(&$object, $context = array()) {
-  _simplenews_send(FALSE);
+  simplenews_mail_send(FALSE);
   watchdog('action', 'Simplenews cron executed.');
 }
 
 /**
- * Implementation of a Drupal action.
- * Subscribe the user to a newsletter
+ * A configurable Drupal action. Subscribe the user to a newsletter
+ *   hook = user: Subscribe this user to selected newsletter
+ *
+ *   Available context:
+ *    $context['tid']     newsletter tid
+ *    $context['name']   newsletter name
+ *
+ *   @see simplenews_subscribe_user_action_form()
+ *   @see simplenews_subscribe_user_action_submit()
  */
 function simplenews_subscribe_user_action(&$object, $context = array()) {
   if ($context['hook'] == 'user') {
@@ -161,8 +185,8 @@ function simplenews_subscribe_user_action(&$object, $context = array()) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
       simplenews_subscribe_user($account->mail, $context['tid'], FALSE);
-      drupal_set_message(t('You have been subscribed to newsletter %newsletter.', array('%newsletter' => check_plain($context['name']))));
-      watchdog('action', 'User %name subscribed to newsletter %newsletter.', array('%name' => check_plain($account->name), '%newsletter' => check_plain($context['name'])));
+      drupal_set_message(t('You have been subscribed to newsletter %newsletter.', array('%newsletter' => $context['name'])));
+      watchdog('action', 'User %name subscribed to newsletter %newsletter.', array('%name' => $account->name, '%newsletter' => $context['name']));
     }
   }
 }
@@ -203,8 +227,15 @@ function simplenews_subscribe_user_action_submit($form, $form_state) {
 }
 
 /**
- * Implementation of a Drupal action.
- * Unsubscribe the user from a newsletter
+ * A configurable Drupal action. Unsubscribe the user from a newsletter
+ *   hook = user: Unsubscribe this user from selected newsletter
+ *
+ *   Available context:
+ *    $context['tid']     newsletter tid
+ *    $context['name']   newsletter name
+ *
+ *   @see simplenews_unsubscribe_user_action_form()
+ *   @see simplenews_unsubscribe_user_action_submit()
  */
 function simplenews_unsubscribe_user_action(&$object, $context = array()) {
   if ($context['hook'] == 'user') {
