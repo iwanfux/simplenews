@@ -10,10 +10,12 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
   global $user;
 
   if (isset($snid)) {
-    $subscription = simplenews_get_subscription(array('snid' => $snid));
+    $account = new stdClass();
+    $account->snid = $snid;
+    $subscription = simplenews_get_subscription($account);
   } 
   else {
-    $subscription = simplenews_get_subscription((array)$user);
+    $subscription = simplenews_get_subscription($user);
   }
 
   // If non-admin is trying to edit someone else's subscription, access denied.
@@ -38,8 +40,9 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
     form_set_error('mail', t('The e-mail address you supplied is not valid.'));
   }
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  $account['mail'] = $form_state['values']['mail'];
-  if (!count($checked_newsletters) && !simplenews_get_user_subscription($account)) {
+  $account = new stdClass();
+  $account->mail = $form_state['values']['mail'];
+  if (!count($checked_newsletters) && !simplenews_get_subscription($account)) {
     form_set_error('newsletters', t('You must select at least one newsletter.'));
   }
 }
@@ -167,13 +170,6 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
  * page for anonymous users.
  */
 function simplenews_admin_users_form(&$form_state, $snid = NULL) {
-/*
-  if (isset($snid) && $_POST['op'] == t('Delete')) {
-    // Kill destination redirect.
-    unset($_REQUEST['destination']);
-    drupal_goto('admin/content/newsletters/users/delete/'. $snid);
-  }
-*/
   $form = simplenews_subscription_manager_form($snid);
   $form['#redirect'] = 'admin/content/newsletters/users';
   return $form;
@@ -188,10 +184,12 @@ function simplenews_admin_users_delete(&$form_state, $snid = NULL) {
     drupal_not_found();
     return;
   }
-
-  $subscription = simplenews_get_subscription(array('snid' => $snid));
+  $account = new stdClass();
+  $account->snid = $snid;
+  $subscription = simplenews_get_subscription($account);
   $form = array();
   $form['snid'] = array('#type' => 'value', '#value' => $snid);
+  $form['#redirect'] = 'admin/content/newsletters/users';
 
   return confirm_form($form,
     t('Are you sure you want to remove %mail from all newsletter subscription lists?', array('%mail' => $subscription->mail)),
@@ -210,8 +208,6 @@ function simplenews_admin_users_delete_submit($form, &$form_state) {
     $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $form_state['values']['snid']));
     simplenews_delete_subscription($form_state['values']['snid']);
     drupal_set_message(t('The user %user was successfully deleted from the subscription list.', array('%user' => $account->mail)));
-    // TODO: move redirect to simplenews_admin_users_delete()
-    $form_state['redirect'] = 'admin/content/newsletters/users';
   }
 }
 
