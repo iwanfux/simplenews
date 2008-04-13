@@ -1,19 +1,6 @@
 <?php
 // $Id$
 
-//DONE: (issue) multiple subscription block (#121479)
-//DONE: (issue) #221346 solution by lilou: simplenews.css not aggregated
-//DONE: Compatibilty with Actions (see #219544)
-//DONE: Compatibilty with CCK: provide selectable node type and ability to add CCK fields to newsletter
-//DONE: Can template_preprocess_HOOK be used?
-//DONE: Nice to have: The current text "-- Footer will be appended here" causes some confusion. Replace by more realistic text and additional comment that the link is just for testing and is not working.
-//DONE: User language sensitive newsletters (also when sending by cron)
-//DONE: (issue) improved handling of sending by cron (#165412, #125865, ...)
-//DONE: (issue) Special characters in translated footer (#181081)
-//DONE: Theming of email body, footer as last step before sending.
-//DONE: Compatibilty with Views [Waiting for D6 Views module]
-//DONE: Nice to have: Improved debugging (option) for mail sending (#147510, ...) use watchdog(... 'WATCHDOG_DEBUG')
-
 //TODO: Compatibilty with Token module
 //TODO: (issue) compatibility with Category module
 //TODO: Compatibility with mail backends (See Mailing List Manager)
