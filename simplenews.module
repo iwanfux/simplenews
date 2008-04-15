@@ -784,6 +784,9 @@ function _simplenews_user_load($mail) {
  * @param boolean $confirm TRUE = send confirmation mail; FALSE = subscribe immediate to the newsletter
  */
 function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
+  //Prevent mismatches from accidental capitals in mail address
+  $mail = strtolower($mail);
+
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
   
@@ -828,6 +831,9 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
  * @param boolean $confirm TRUE = send confirmation mail; FALSE = unsubscribe immediate from the newsletter
  */
 function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
+  //Prevent mismatches from accidental capitals in mail address
+  $mail = strtolower($mail);
+
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
 
