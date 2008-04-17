@@ -1673,6 +1673,7 @@ function simplenews_theme() {
     ),
     'simplenews_status' => array(
       'template' => 'simplenews-status',
+      'file' => 'simplenews.admin.inc',
       'arguments' => array('status' => NULL, 'source' => NULL),
     ),
     'simplenews_newsletter' => array(
@@ -1697,6 +1698,7 @@ function simplenews_theme() {
       'arguments' => array('email' => NULL, 'newsletter' => NULL, 'snid' => NULL, 'op' => NULL, 'hash' => NULL),
     ),
     'simplenews_subscription_list' => array(
+      'file' => 'simplenews.admin.inc',
       'arguments' => array('form' => NULL),
     ),
   );
