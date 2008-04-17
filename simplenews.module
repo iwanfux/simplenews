@@ -1356,7 +1356,8 @@ function simplenews_mail($key, &$message, $params) {
   }
 
   // Debug message to check for outgoing emails messages.
-  if (variable_get('simplenews_debug', FALSE)) {
+  // Newsletters ($key = 'node') are not send now. Debugging will take place in simplenews_mail_send() when the newsletters are send
+  if (variable_get('simplenews_debug', FALSE) && $key != 'node') {
     watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
   }
 
@@ -1394,10 +1395,12 @@ function simplenews_mail_send($timer = FALSE) {
     foreach($messages as $key => $message) {
   
       $counter++;
+      if (variable_get('simplenews_debug', FALSE)) {
+        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+      }
       if (drupal_mail_send($message)) {
-        watchdog('simplenews', 'Newsletter sent to %recipient.', array('%recipient' => $message['to']), WATCHDOG_DEBUG);
         simplenews_mail_cache_update($key, SIMPLENEWS_CACHE_SEND);
-  
+
         // don't send mails too fast, servers may choke. Wait for 10 ms.
         usleep(10000);
       }
