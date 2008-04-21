@@ -47,6 +47,12 @@ function simplenews_schema() {
         'not null' => true,
         'default' => 0,
       ),
+      'vid' => array(
+        'description' => t(''),
+        'type' => 'int',
+        'not null' => true,
+        'default' => 0,
+      ),
       'tid' => array(
         'description' => t(''),
         'type' => 'int',
@@ -112,6 +118,12 @@ function simplenews_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
         ),
+      'nid' => array(
+        'description' => t('The {node}.nid of this newsletter.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'tid' => array(
         'description' => t('The {term_data}.tid this newsletter issue belongs to.'),
         'type' => 'int',
@@ -362,5 +374,12 @@ function simplenews_update_6001() {
       'default' => 0,
     )
   );
+  return $ret;
+}
+
+function simplenews_update_6002() {
+  $ret = array();
+  db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => true, 'default' => 0));
+  db_add_field($ret, 'simplenews_mail_cache', 'nid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
   return $ret;
 }

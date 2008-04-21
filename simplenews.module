@@ -318,15 +318,15 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
       if ($op == 'insert') {
         // Insert node
-        $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_READY : SIMPLENEWS_STATUS_SEND_NOT;
-        db_query("INSERT INTO {simplenews_newsletters} (nid, tid, s_status, s_format, priority, receipt)
-                  VALUES (%d, %d, %d, '%s', '%s', %d)", $node->nid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
+        $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
+        db_query("INSERT INTO {simplenews_newsletters} (nid, vid, tid, s_status, s_format, priority, receipt)
+                  VALUES (%d, %d, %d, %d, '%s', '%s', %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
         }
       else {
         // Update node
         if ($send_with_permission) {
-          db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_status = %d, s_format = '%s', priority = '%s', receipt = %d
-          WHERE nid = %d", $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_READY, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
+          db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = '%s', receipt = %d
+          WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
         }
         else {
           db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = '%s', receipt = %d
@@ -339,7 +339,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       if (module_exists('translation') && $send_with_permission) {
         if ($translations = translation_node_get_translations($node->tnid))  {
           foreach ($translations as $translation) {
-            db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_READY, $translation->nid);
+            db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_PENDING, $translation->nid);
           }
         }
       }
@@ -1390,19 +1390,27 @@ function simplenews_mail_send($timer = FALSE) {
     static $counter = 0;
   }
 
-  // Get pending messages from database cache
+  // Send pending messages from database cache
   if ($messages = simplenews_mail_cache_get(SIMPLENEWS_CACHE_PENDING, variable_get('simplenews_throttle', 20))) {
+
+    // The id of succesfull send messages are stored.
+    // At completion all these messages are removed from the mail cache table.
+    $mail_send = array();
+
     foreach($messages as $key => $message) {
-  
       $counter++;
+
       if (variable_get('simplenews_debug', FALSE)) {
         watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
       }
       if (drupal_mail_send($message)) {
-        simplenews_mail_cache_update($key, SIMPLENEWS_CACHE_SEND);
+        $mail_send[] = $key;
 
-        // don't send mails too fast, servers may choke. Wait for 10 ms.
-        usleep(10000);
+        //TODO Still required??
+        if (variable_get('simplenews_transmit_interval', 1)) {
+          // don't send mails too fast, servers may choke. Wait for 10 ms.
+          usleep(10000);
+        }
       }
       else {
         watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
@@ -1417,14 +1425,17 @@ function simplenews_mail_send($timer = FALSE) {
         }
         // Throttle count reached
         else {
-          return;
+          break;
         }
       }
       // Max time elapsed
       if (!($int_time - $start_time < $max_time)) {
-        return;
+        break;
       }
     }
+
+    // All succesfull send messages are removed from the mail cache.
+    simplenews_mail_cache_clear($mail_send);
   }
 }
 
@@ -1435,9 +1446,10 @@ function simplenews_mail_send($timer = FALSE) {
  */
 function simplenews_mail_cache_set($message) {
   $tid = $message['params']['context']['node']->simplenews['tid'];
+  $nid = $message['params']['context']['node']->nid;
   unset($message['params']);
-  db_query("INSERT INTO {simplenews_mail_cache} (tid, subject, mail, status, timestamp, message)
-            VALUES (%d, '%s', '%s', %d, %d, %b)", $tid, $message['subject'], $message['to'], SIMPLENEWS_CACHE_PENDING, time(), serialize($message));
+  db_query("INSERT INTO {simplenews_mail_cache} (nid, tid, subject, mail, status, timestamp, message)
+            VALUES (%d, %d, '%s', '%s', %d, %d, %b)", $nid, $tid, $message['subject'], $message['to'], SIMPLENEWS_CACHE_PENDING, time(), serialize($message));
 }
 
 /**
@@ -1457,23 +1469,35 @@ function simplenews_mail_cache_get($status, $limit = 999999) {
 }
 
 /**
- * Update status of mail data in cache table
- * time stamp of the $mcid record is set to current time
+ * Count data in mail cache table
+ * 
+ * @param integer $nid newsletter node id
+ * @param string $status email send status
  *
- * @param integer $mcid Mail cache id of record to be updated
- * @param string $status New status (0 = hold, 1 = pending, 2 = send)
+ * @return array Mail message array
  */
-function simplenews_mail_cache_update($mcid, $status) {
-  db_query("UPDATE {simplenews_mail_cache} SET status = %d, timestamp = %d WHERE mcid = %d", $status, time(), $mcid);
+function simplenews_mail_cache_count($nid, $status = SIMPLENEWS_CACHE_PENDING) {
+  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_cache} c WHERE c.nid = %d AND c.status = %d", $nid, $status));
 }
 
 /**
- * Remove single record from mail cache table
+ * Update status of mail data in cache table
+ * time stamp is set to current time
  *
- * @param integer $mcid Mail cache id of record to be deleted
+ * @param array $array Mail cache id of record to be updated
+ * @param string $status New status (0 = hold, 1 = pending, 2 = send)
  */
-function simplenews_mail_cache_clear($mcid) {
-  $result = db_query('DELETE FROM {simplenews_mail_cache} WHERE mcid = %d', $mcid);
+function simplenews_mail_cache_update($array, $status) {
+  db_query("UPDATE {simplenews_mail_cache} SET status = %d, timestamp = %d WHERE mcid IN ('%s')", $status, time(), $implode("','", $array));
+}
+
+/**
+ * Remove records from mail cache table
+ *
+ * @param array $array Mail cache ids of records to be deleted
+ */
+function simplenews_mail_cache_clear($array) {
+  $result = db_query("DELETE FROM {simplenews_mail_cache} WHERE mcid IN ('%s')", implode("','", $array));
 }
 
 /**
