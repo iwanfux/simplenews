@@ -7,7 +7,20 @@
 //TODO: consider split into content-admin, subscription-admin(?) and settings
 
 function simplenews_admin_news(&$form_state, $action = 'sent') {
-  //_simplenews_create_default_newsletter_term();
+
+  // Update status of pending newsletters.
+  // Pending newsletters with no records in the cache are marked send.
+  $result = db_query("SELECT s.nid, s.tid FROM {simplenews_newsletters} s WHERE s.s_status = %d", SIMPLENEWS_STATUS_SEND_PENDING);
+  $nids = array();
+  while ($newsletter = db_fetch_object($result)) {
+    if (!simplenews_mail_cache_count($newsletter->nid)) {
+      $nids[] = $newsletter->nid;
+    }
+    if (!empty($nids)) {
+      db_query("UPDATE {simplenews_newsletters} SET s_status = '%s' WHERE nid IN ('%s')", SIMPLENEWS_STATUS_SEND_READY, implode("','", array_values($nids)));
+    }
+  }
+
   $vid = variable_get('simplenews_vid', '');
   $form = array();
   $form['simplenews_issue_filter'] = array(
