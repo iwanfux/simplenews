@@ -381,5 +381,6 @@ function simplenews_update_6002() {
   $ret = array();
   db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => true, 'default' => 0));
   db_add_field($ret, 'simplenews_mail_cache', 'nid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
+  variable_del('simplenews_time');
   return $ret;
 }

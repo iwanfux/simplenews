@@ -1156,17 +1156,21 @@ function simplenews_send_node($node, $accounts = array()) {
       $accounts = $subscriptions;
     }
 
-    // Mail is not send by drupal_mail, but stored in simplenews_mail_cache
-    // After caching, simplenews_mail_send() sends mail from cache
+    // Mail is send directly (simplenews_use_cron = FALSE) or stored in a mail cache (simplenews_use_cron = TRUE)
+    // Cached emails are send by simplenews_mail_send() on each cron run
     foreach ($accounts as $account) {
       $params['context']['account'] = $account;
-      $message = drupal_mail('simplenews', 'node', $account->mail, $account->language, $params, $from['formatted'], false);
-      // Chache newsletter mail messages
-      simplenews_mail_cache_set($message);
+      $message = drupal_mail('simplenews', 'node', $account->mail, $account->language, $params, $from['formatted'], !variable_get('simplenews_use_cron', TRUE));
+      if (variable_get('simplenews_use_cron', TRUE)) {
+        // Chache newsletter mail messages
+        simplenews_mail_cache_set($message);
+      }
+      else {
+        if (variable_get('simplenews_debug', FALSE)) {
+          watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+        }
+      }
     }
-    // Send mails from cache
-    simplenews_mail_send(TRUE);
-    drupal_set_message(t('Newsletter %newsletter is being sent', array('%newsletter' => $message['node']->title)));
   }
 }
 
@@ -1368,69 +1372,36 @@ function simplenews_mail($key, &$message, $params) {
  * Mailing 'backend' for simplenews newsletters
  *
  * Newsletters are formatted and buffered per recipient in database cache.
- * Sending is initiated by newsletter form submission or by cron
- * When called data is retreived from the database cache and send one by one
- * If sending is succesful the status of each mail is recorded in the database cache.
- *
- * @param boolean $time TRUE = max sending time is used; FALSE = max sending time is ignored
+ * Sending is initiated by cron
+ * Messages are retreived from the database cache and send one by one
+ * If sending is succesful the message is removed from the database cache.
  */
-function simplenews_mail_send($timer = FALSE) {
-
-  // TODO: Explain here the time and throttle mechanism
-  $max_time = variable_get('simplenews_time', 5);
-  if ($timer && $max_time == 0) {
-    return;
-  }
-  if ($max_time == 0) {
-    $max_time = 1;
-  }
-  $max_time = $max_time - 0.5;
-  $start_time = simplenews_time();
-  if (!$timer) {
-    $throttle = variable_get('simplenews_throttle', 20);
-    static $counter = 0;
-  }
+function simplenews_mail_send() {
 
   // Send pending messages from database cache
+  // A limited number of mails is send each time simplenews_mail_send() called
   if ($messages = simplenews_mail_cache_get(SIMPLENEWS_CACHE_PENDING, variable_get('simplenews_throttle', 20))) {
 
-    // The id of succesfull send messages are stored.
-    // At completion all these messages are removed from the mail cache table.
-    $mail_send = array();
+    // The id of succesfully sent messages are stored.
+    // At completion these messages are removed from the mail cache table.
+    $mail_sent = array();
 
     foreach($messages as $key => $message) {
       $counter++;
-
       if (variable_get('simplenews_debug', FALSE)) {
         watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
       }
+
       if (drupal_mail_send($message)) {
-        $mail_send[] = $key;
+        $mail_sent[] = $key;
       }
       else {
         watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
       }
-      //
-      if ($timer) {
-        $int_time = simplenews_time();
-      }
-      else {
-        if ($counter < $throttle) {
-          $int_time = $start_time;
-        }
-        // Throttle count reached
-        else {
-          break;
-        }
-      }
-      // Max time elapsed
-      if (!($int_time - $start_time < $max_time)) {
-        break;
-      }
     }
 
-    // All succesfull send messages are removed from the mail cache.
-    simplenews_mail_cache_clear($mail_send);
+    // All succesfully sent messages are removed from the mail cache.
+    simplenews_mail_cache_clear($mail_sent);
   }
 }
 
