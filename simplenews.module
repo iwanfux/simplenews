@@ -1405,12 +1405,6 @@ function simplenews_mail_send($timer = FALSE) {
       }
       if (drupal_mail_send($message)) {
         $mail_send[] = $key;
-
-        //TODO Still required??
-        if (variable_get('simplenews_transmit_interval', 1)) {
-          // don't send mails too fast, servers may choke. Wait for 10 ms.
-          usleep(10000);
-        }
       }
       else {
         watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
