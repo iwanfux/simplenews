@@ -189,11 +189,11 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -7,
   );
-  $items['admin/content/newsletters/users/edit'] = array(
+  $items['admin/content/newsletters/users/edit/%'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_users_form'),
+    'page arguments' => array('simplenews_admin_users_form', 5),
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.subscription.inc',
     );
@@ -947,9 +947,7 @@ function simplenews_delete_subscription($snid) {
  * Helper function to build subscription manager form, also used in user edit.
  */
 function _simplenews_subscription_manager_form($subscription) {
-  global $user;
   $form = array();
-
   $options = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $options[$newsletter->tid] = $newsletter->name;
@@ -966,11 +964,11 @@ function _simplenews_subscription_manager_form($subscription) {
     '#default_value' => array_merge($default_value, (array)$subscription->tids),
   );
 
-  // If current user is an authenticated, just display e-mail. Anonymous users
-  // see an e-mail box and will receive confirmations
-  if ($user->uid) {
-    $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $user->mail));
-    $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $user->mail);
+  // If current user is logged in, just display e-mail.
+  // Anonymous users see an e-mail box and will receive confirmations
+  if ($subscription->mail) {
+    $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $subscription->mail));
+    $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $subscription->mail);
     $form['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
