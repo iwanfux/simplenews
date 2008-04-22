@@ -1332,6 +1332,7 @@ function simplenews_mail($key, &$message, $params) {
       else {
         $hash = '';
       }
+      $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => true)) .'>';
       $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $langcode);
       break;
     case 'subscribe':
@@ -1568,6 +1569,10 @@ function _simplenews_headers($node, $from) {
       $headers['X-MSMail-Priority'] = 'Lowest';
       break;
   }
+  
+  // Add general headers
+  $headers['Precedence'] = 'bulk';
+  
   return $headers;
 }
 
