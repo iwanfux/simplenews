@@ -85,7 +85,7 @@ function simplenews_admin_news_submit($form, &$form_state) {
 
 /**
  * Store filter values in session var
- * 
+ *
  * @param $type identification string
  * @param $form_values array of values to be stored
  */
@@ -235,7 +235,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
       '#value' => $term->tid,
     );
   }
-  
+
   // Return to Newsletter list page after submit
   $form['#redirect'] = 'admin/content/newsletters/types';
 
@@ -331,9 +331,9 @@ function simplenews_subscription_multiple_delete_confirm() {
   foreach (array_filter($snids) as $snid => $value) {
     $mail = db_result(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
     $form['snids'][$snid] = array(
-      '#type' => 'hidden', 
-      '#value' => $snid, 
-      '#prefix' => '<li>', 
+      '#type' => 'hidden',
+      '#value' => $snid,
+      '#prefix' => '<li>',
       '#suffix' => check_plain($mail) ."</li>\n"
     );
   }
@@ -449,12 +449,10 @@ function simplenews_subscription_list_export() {
   $form['simplenews_status']['active'] = array(
     '#type' => 'checkbox',
     '#title' => t('Active users'),
-    '#return_value' => 1,
   );
   $form['simplenews_status']['inactive'] = array(
     '#type' => 'checkbox',
     '#title' => t('Inactive users'),
-    '#return_value' => 1,
   );
   if ($tree) {
     $form['simplenews_newsletter'] = array(
@@ -467,7 +465,6 @@ function simplenews_subscription_list_export() {
       $form['simplenews_newsletter']['tid_'. $newsletter->tid] = array(
         '#type' => 'checkbox',
         '#title' => $newsletter->name,
-        '#return_value' => 1,
       );
     }
   }
@@ -532,9 +529,9 @@ function simplenews_subscription_admin($form_state) {
     $destination = drupal_get_destination();
     $_SESSION['simplenews_subscriptions_delete'] = $form_state['post']['snids'];
     // Note: we redirect from admin/content/newsletters/users to admin/content/newsletters/subscriptions/delete to make the tabs disappear.
-    drupal_goto("admin/content/newsletters/subscriptions/delete", $destination);  
+    drupal_goto("admin/content/newsletters/subscriptions/delete", $destination);
   }
-  
+
   $form = simplenews_subscription_filter_form();
   $form['admin'] = simplenews_subscription_list_form();
 
@@ -547,7 +544,7 @@ function simplenews_subscription_list_form() {
   // Table header. Used as tablesort default
   $header = array(
     array('data' => t('E-mail'), 'field' => 'ss.mail', 'sort' => 'asc'),
-    array('data' => t('Username'), 'field' => 'u.name'), 
+    array('data' => t('Username'), 'field' => 'u.name'),
     array('data' => t('Status'), 'field' => 'ss.activated'),
     t('Operations')
   );
@@ -560,7 +557,7 @@ function simplenews_subscription_list_form() {
   $count_query = preg_replace('/SELECT.*FROM /', 'SELECT COUNT(DISTINCT ss.mail) FROM ', $query);
   $query .= tablesort_sql($header);
   $result = pager_query($query, 30, 0, $count_query);
-  
+
   // Update options
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -569,19 +566,19 @@ function simplenews_subscription_list_form() {
     '#suffix' => '</div>',
   );
   $form['options']['operation'] = array(
-    '#type' => 'select', 
+    '#type' => 'select',
     '#options' => array(
       'activate' => 'Activate',
       'inactivate' => 'Inactivate',
       'delete' => 'Delete',
-    ),  
+    ),
     '#default_value' => 'activate');
   $form['options']['submit'] = array(
-    '#type' => 'submit', 
+    '#type' => 'submit',
     '#value' => t('Update'),
     '#submit' => array('simplenews_subscription_list_form_submit'),
   );
-  
+
   $snids = array();
   // Subscription table and table pager
   while ($subscription = db_fetch_object($result)) {
@@ -661,7 +658,6 @@ function simplenews_admin_settings(&$form_state) {
   $form['simplenews_default_options']['simplenews_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
-    '#return_value' => 1,
     '#default_value' => variable_get('simplenews_receipt', 0),
     '#description' => t('Request a Read Receipt from your newsletters. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your newsletter.'),
   );
@@ -688,7 +684,6 @@ function simplenews_admin_settings(&$form_state) {
   $form['simplenews_test_address']['simplenews_test_address_override'] = array(
     '#type' => 'checkbox',
     '#title' => t('Allow test address override'),
-    '#return_value' => 1,
     '#default_value' => variable_get('simplenews_test_address_override', 0),
   );
   $form['simplenews_sender_info'] = array(
@@ -756,7 +751,7 @@ function simplenews_admin_settings_validate($form, &$form_state) {
 
 /**
  * Callback function to activate the specified subscriptions.
- * 
+ *
  * @param $snid array of snid's
  */
 function simplenews_activate_subscription($snid) {
@@ -765,7 +760,7 @@ function simplenews_activate_subscription($snid) {
 
 /**
  * Callback function to inactivate the specified subscriptions.
- * 
+ *
  * @param $snid array of snid's
  */
 function simplenews_inactivate_subscription($snid) {
@@ -774,10 +769,10 @@ function simplenews_inactivate_subscription($snid) {
 
 /**
  * Built filter selection box options and filter query where clause
- * 
+ *
  * @param $type identification string
  * @param $na TRUE for orphaned newsletters
- * 
+ *
  * @return array of filter selection box options and related query where clause
  */
 function simplenews_get_filter($type, $na = TRUE) {
@@ -810,12 +805,12 @@ function simplenews_subscription_filters() {
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $filters['newsletter']['options']['tid-'. $newsletter->tid] = $newsletter->name;
   }
-  
+
   // E-mail filter
   $filters['email'] = array(
     'title' => t('E-mail address'),
   );
-  
+
   return $filters;
 }
 
@@ -836,7 +831,7 @@ function simplenews_subscription_filter_form() {
     '#prefix' => '<div class="simplenews-subscription-filter">',
     '#suffix' => '</div>',
   );
-  
+
   // Filter values are default
   $form['filters']['newsletter'] = array(
     '#type' => 'select',
@@ -857,12 +852,12 @@ function simplenews_subscription_filter_form() {
   // Add Reset button if filter is in use
   if ($session != _simplenews_subscription_filter_default()) {
     $form['filters']['reset'] = array(
-      '#type' => 'submit', 
+      '#type' => 'submit',
       '#value' => t('Reset')
     );
   }
   $form['#submit'][] = 'simplenews_subscription_filter_form_submit';
-  
+
   return $form;
 }
 
@@ -888,16 +883,16 @@ function simplenews_subscription_filter_form_submit($form, &$form_state) {
 }
 
 /**
- * Build query for subscription filters based on session var content. 
- * 
- * @return array of SQL query parts 
+ * Build query for subscription filters based on session var content.
+ *
+ * @return array of SQL query parts
  *   array('where' => $where, 'join' => $join, 'args' => $args)
  */
 function simplenews_build_subscription_filter_query() {
   // Variables $args and $join are currently not used but left in for future extensions
   $where = $args = array();
   $join = '';
-  
+
   // Build query
   if (isset($_SESSION['simplenews_subscriptions_filter'])) {
     foreach ($_SESSION['simplenews_subscriptions_filter'] as $key => $value) {
@@ -917,10 +912,10 @@ function simplenews_build_subscription_filter_query() {
       $args[] = $value;
     }
   }
-  
+
   // All conditions are combined with AND
   $where = empty($where) ? '' : ' AND '. implode(' AND ', $where);
- 
+
   return array('where' => $where, 'join' => $join, 'args' => $args);
 }
 
@@ -930,13 +925,13 @@ function simplenews_build_subscription_filter_query() {
 function theme_simplenews_subscription_list($form) {
   // Subscription table header
   $header = array(
-    theme('table_select_header_cell'), 
+    theme('table_select_header_cell'),
     array('data' => t('E-mail'), 'field' => 'ss.mail', 'sort' => 'asc'),
-    array('data' => t('Username'), 'field' => 'u.name'), 
+    array('data' => t('Username'), 'field' => 'u.name'),
     array('data' => t('Status'), 'field' => 'ss.activated'),
     t('Operations')
   );
-    
+
   // Subscription table
   $output = drupal_render($form['options']);
   if (isset($form['mail']) && is_array($form['mail'])) {
@@ -997,7 +992,7 @@ function template_preprocess_simplenews_status(&$variables) {
       );
       break;
   }
-  
+
   // Build the variables
   $variables['image'] = base_path() . drupal_get_path('module', 'simplenews') .'/'. $images[$variables['status']];
   $variables['alt'] = $variables['title'] = $title[$variables['status']];

@@ -7,7 +7,7 @@
 //TODO: (issue)Test newsletter with links: <a href="/nl/foo">a link</a>, "http://www.mysite.com/...", "<a href="mailto:name@some.com">name</a>"(#159125) both on-screen as in-mail
 //TODO: Include the "newsletter/subscriptions" link in documentation and help
 //TODO: Add more (doxygen) comment
-//TODO: Nice to have: (issue) Improve the difference between newsletter (group) and newsletter 
+//TODO: Nice to have: (issue) Improve the difference between newsletter (group) and newsletter
 //TODO: Nice to have: provide basic theming for CCK node fields (#180831)
 //TODO: Nice to have: Integration with Workflow(_ng)
 //TODO: Nice to have: enable multiple newsletter terms per node
@@ -444,7 +444,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
     unset($form['delete']);
   }
 
-  // Simplenews newsletter node form 
+  // Simplenews newsletter node form
   elseif (strpos($form_id, '_node_form') && isset($form['taxonomy'][$vid])) {
     if (isset($form['#node']->simplenews)) {
       $simplenews_values = $form['#node']->simplenews;
@@ -672,7 +672,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
 /**
  * Implementation of hook_block().
  */
-function simplenews_block($op = 'list', $delta = 0, $edit = array()) { 
+function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
     case 'list':
       $blocks = array();
@@ -777,7 +777,7 @@ function _simplenews_user_load($mail) {
  * The $confirm parameter determines the action:
  *   FALSE = The user is subscribed
  *   TRUE  = User receives an email to verify the address and complete the subscription
- * A new subscription account is created when the user is subscribed to the first newsletter 
+ * A new subscription account is created when the user is subscribed to the first newsletter
  *
  * @param string $mail The e-mail address to subscribe to the newsletter.
  * @param integer $tid The term ID of the newsletter.
@@ -789,7 +789,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
 
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
-  
+
   // If user is not subscribed to ANY newsletter, create a subscription account
   if ($subscription->snid == 0) {
     // To subscribe a user:
@@ -821,10 +821,10 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
 /**
  * Unsubscribes a user from a newsletter or send a confirmation mail
  *
- * The $confirm parameter determines the action: 
+ * The $confirm parameter determines the action:
  *   FALSE = The user is unsubscribed
  *   TRUE  = User receives an email to verify the address and complete the unsubscription
- * The subscription account is deleted when the user is unsubscribed to the last newsletter 
+ * The subscription account is deleted when the user is unsubscribed to the last newsletter
  *
  * @param string $mail The e-mail address to unsubscribe from the newsletter.
  * @param integer $tid The term ID of the newsletter.
@@ -844,7 +844,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
   }
 
   if ($confirm) {
-    // Send confirmation e-mail to user to complete unsubscription 
+    // Send confirmation e-mail to user to complete unsubscription
     // or to tell them that he or she is not subscribed
     // Confirmation mail is in the user preferred language.
     $params['from'] = _simplenews_set_from();
@@ -871,7 +871,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
  *
  * @param string $mail email address
  * @param integer @tid newsletter term id
- * 
+ *
  * @return boolean TRUE = email address is subscribed to given newsletter term id
  */
 function simplenews_user_is_subscribed($mail, $tid) {
@@ -887,7 +887,7 @@ function simplenews_user_is_subscribed($mail, $tid) {
  *    mail :  e-mail address
  *    uid  :  user id
  *  )
- *                  
+ *
  * @return subscription object or FALSE if account is not subscribed
  *   object(
  *     snid :  subscription id. 0 if no subscription record exists
@@ -923,7 +923,7 @@ function simplenews_get_subscription($account) {
   else {
     // Account is unknown in subscription table. Create default subscription object
     $subscription = new stdClass();
-    $subscription->name = '';  
+    $subscription->name = '';
     $subscription->uid = isset($account->uid) ? $account->uid : 0;
     $subscription->mail = isset($account->mail) ? $account->mail : '';
     $subscription->language = language_default();
@@ -1018,7 +1018,7 @@ function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
     $titles[$item->nid]['data'] = l($item->title, 'node/'. $item->nid);
     $titles[$item->nid]['class'] = ($item->s_status == SIMPLENEWS_STATUS_SEND_NOT) ? 'newsletter-created' : 'newsletter-send';
   }
-  return $titles;  
+  return $titles;
 }
 
 /**
@@ -1110,19 +1110,19 @@ function simplenews_block_form_submit($form, &$form_state) {
 
 /**
  * Send newsletter node to subcribers
- * 
+ *
  * @param integer or object $node Newsletter node to be send. integer = nid; object = node object
- * @param array $accounts  account objects to send the newsletter to. 
+ * @param array $accounts  account objects to send the newsletter to.
  *   account = object (
  *     snid     = subscription id. 0 if no subscription record exists
  *     tids     = array(tid) array of newsletter tid's
  *     uid      = user id. 0 if subscriber is anonymous user.
- *     mail     = user e-mail address. 
+ *     mail     = user e-mail address.
  *     name     = <empty>. Added for compatebility with user account object
  *     language = language object. User preferred of default language
  *   )
  *   NOTE: either snid, mail or uid is required.
-*/
+ */
 function simplenews_send_node($node, $accounts = array()) {
   if (is_numeric($node)) {
     $node = node_load($node);
@@ -1130,7 +1130,7 @@ function simplenews_send_node($node, $accounts = array()) {
   if (is_object($node)) {
     $from = _simplenews_set_from($node);
     $params['context']['node'] = $node;
-    $params['from'] = $from;  
+    $params['from'] = $from;
 
     if (empty($accounts)) {
       // No accounts specified. Send message to all accounts subscribed to this newsletter.
@@ -1174,9 +1174,9 @@ function simplenews_send_node($node, $accounts = array()) {
 
 /**
  * Send test version of newsletter
- * 
+ *
  * @param integer or object $node Newsletter node to be send. Integer = nid; Object = node object
- * @param array $accounts account objects to send the test newsletter to. 
+ * @param array $accounts account objects to send the test newsletter to.
  *                  account = object(
  *                    mail : e-mail address of recipient
  *                  )
@@ -1188,7 +1188,7 @@ function simplenews_send_test($node, $accounts = array()) {
   if (is_object($node)) {
     $from = _simplenews_set_from($node);
     $params['context']['node'] = $node;
-    $params['from'] = $from;  
+    $params['from'] = $from;
 
     // If no account is specified the test newsletter is send to the test address(es) specified in the node.
     if (empty($accounts)) {
@@ -1196,13 +1196,13 @@ function simplenews_send_test($node, $accounts = array()) {
       $mails = explode(',', $node->simplenews['test_address']);
       foreach ($mails as $mail) {
         $account['mail'] = trim($mail);
-        $accounts[] = (object)$account; 
-      } 
+        $accounts[] = (object)$account;
+      }
     }
 
     // Test emails are send directly by drupal_mail(). This in contrast to simplenews_send_node() which send via a buffer.
     foreach ($accounts as $account) {
-      $subscription = simplenews_get_subscription($account); 
+      $subscription = simplenews_get_subscription($account);
       $params['context']['account'] = $subscription;
       $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['formatted']);
       if ($result['result']) {
@@ -1252,7 +1252,7 @@ function simplenews_mail($key, &$message, $params) {
       if (module_exists('translation')) {
 
         // If the node has translations and a translation is required
-        // the equivalent of the node in the required langugage is used 
+        // the equivalent of the node in the required langugage is used
         // or the base node (tnid) is used
         if ($tnid = $context['node']->tnid) {
           if ($langcode != $context['node']->language) {
@@ -1275,24 +1275,24 @@ function simplenews_mail($key, &$message, $params) {
             }
           }
         }
-  
+
         // If a different node is selected and this node is not available in
         // the message buffer, the selected node load will replace the original.
         if ($nid != $context['node']->nid && !isset($messages[$nid][$langcode])) {
           $context['node'] = node_load($nid);
-        }  
+        }
       }
 
       if (!isset($messages[$nid][$langcode])) {
         $node = $context['node'];
-        
+
         // Add simplenews specific header data
         $headers = array_merge($message['headers'], _simplenews_headers($node, $params['from']['address']));
         $message['headers'] = $messages[$nid][$langcode]['headers'] = $headers;
 
         // Build message subject
-        if ($tid = $node->simplenews['tid']) { 
-          $term = taxonomy_get_term($tid); 
+        if ($tid = $node->simplenews['tid']) {
+          $term = taxonomy_get_term($tid);
           $name = check_plain($term->name);
         }
         else {
@@ -1310,10 +1310,10 @@ function simplenews_mail($key, &$message, $params) {
         unset($node->teaser);
         node_invoke_nodeapi($node, 'alter', false, true);
         $node = node_prepare($node);
-        
+
         $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $langcode);
         $messages[$nid][$langcode]['body'] = $body;
-        
+
       }
       else {
         // Retreived headers, subject and raw body from the buffer
@@ -1354,7 +1354,7 @@ function simplenews_mail($key, &$message, $params) {
       $subject = theme('simplenews_newsletter_confirmation_subject', $params['newsletter'], variable_get('simplenews_from_name', $name_default), $langcode);
       $message['subject'] = str_replace(array("\r", "\n"), '', $subject);
 
-      $message['body'] = theme('simplenews_newsletter_confirmation_body', $context['account']->mail, $params['newsletter'], $key, $hash, $langcode);      
+      $message['body'] = theme('simplenews_newsletter_confirmation_body', $context['account']->mail, $params['newsletter'], $key, $hash, $langcode);
       break;
   }
 
@@ -1405,7 +1405,7 @@ function simplenews_mail_send() {
 
 /**
  * Store mail message in mail cache table
- * 
+ *
  * @param array $message Mail message array
  */
 function simplenews_mail_cache_set($message) {
@@ -1418,7 +1418,7 @@ function simplenews_mail_cache_set($message) {
 
 /**
  * Retreive data from mail cache table
- * 
+ *
  * @param string $status Status of data to be retreived (0 = hold, 1 = pending, 2 = send)
  * @param integer $limit the maximum number of mails loaded from the cache
  *
@@ -1434,7 +1434,7 @@ function simplenews_mail_cache_get($status, $limit = 999999) {
 
 /**
  * Count data in mail cache table
- * 
+ *
  * @param integer $nid newsletter node id
  * @param string $status email send status
  *
@@ -1498,7 +1498,7 @@ function _simplenews_set_from($node = NULL) {
  *
  * @param $node: node object
  * @param $from: from e-mail address
- * 
+ *
  * @return Header array with priority and receipt confirmation info
  */
 function _simplenews_headers($node, $from) {
@@ -1538,10 +1538,10 @@ function _simplenews_headers($node, $from) {
       $headers['X-MSMail-Priority'] = 'Lowest';
       break;
   }
-  
+
   // Add general headers
   $headers['Precedence'] = 'bulk';
-  
+
   return $headers;
 }
 
@@ -1717,7 +1717,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['message'] = check_plain(variable_get('simplenews_block_m_'. $tid, t('Stay informed on our latest news!')));
   if (user_access('subscribe to newsletters')) {
     $variables['form'] = drupal_get_form('simplenews_block_form', $tid);
-    $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions'); 
+    $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions');
   }
   if (user_access('view links in block') || user_access('administer newsletters')) {
     $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/'. $tid);
@@ -1761,7 +1761,7 @@ function theme_simplenews_newsletter_subject($name, $title, $langcode) {
  * Theme the newsletter message body.
  */
 function theme_simplenews_newsletter_body($body, $title, $langcode) {
-  $output = '<h2>'. $title ."</h2>\n"; 
+  $output = '<h2>'. $title ."</h2>\n";
   $output .= $body;
   return $output;
 }

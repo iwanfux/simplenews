@@ -13,7 +13,7 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
     $account = new stdClass();
     $account->snid = $snid;
     $subscription = simplenews_get_subscription($account);
-  } 
+  }
   else {
     $subscription = simplenews_get_subscription($user);
   }
@@ -146,7 +146,7 @@ function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   $form['mail'] = array('#type' => 'value', '#value' => $mail);
   $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
   $form['#redirect'] = '';
-  
+
   return confirm_form($form,
     t('Are you sure you want to remove %user from the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
     '',
@@ -210,8 +210,3 @@ function simplenews_admin_users_delete_submit($form, &$form_state) {
     drupal_set_message(t('The user %user was successfully deleted from the subscription list.', array('%user' => $account->mail)));
   }
 }
-
-
-
-
-?>

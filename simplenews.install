@@ -269,14 +269,14 @@ function simplenews_update_6000() {
   $result = db_query("SELECT module, delta FROM {blocks} WHERE module = 'simplenews' AND delta LIKE 'newsletter-%'");
   while ($data = db_fetch_object($result)) {
     $delta = strtr($data->delta, array('newsletter-' => ''));
-    $ret[] = update_sql("UPDATE {blocks} SET delta = $delta WHERE module = 'simplenews' AND delta = 'newsletter-$delta'");
+    $ret[] = update_sql("UPDATE {blocks} SET delta = '%s' WHERE module = 'simplenews' AND delta = 'newsletter-%s'", $delta, $delta);
   }
   $result = db_query("SELECT module, delta FROM {blocks_roles} WHERE module = 'simplenews' AND delta LIKE 'newsletter-%'");
   while ($data = db_fetch_object($result)) {
     $delta = strtr($data->delta, array('newsletter-' => ''));
-    $ret[] = update_sql("UPDATE {blocks_roles} SET delta = $delta WHERE module = 'simplenews' AND delta = 'newsletter-$delta'");
+    $ret[] = update_sql("UPDATE {blocks_roles} SET delta = '%s WHERE module = 'simplenews' AND delta = 'newsletter-%s'", $delta, $delta);
   }
-  
+
   // Convert newsletter priority: change field type int to string
   db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
     'type' => 'varchar',
@@ -365,7 +365,7 @@ function simplenews_update_6001() {
 
   // Remove is_send field. No longer required by the introduction of simplenews_mail_cache table
   db_drop_field($ret, 'simplenews_subscriptions', 'is_send');
-  
+
     // Convert newsletter priority: change field type string back to int
   db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
       'type' => 'int',
