@@ -1452,7 +1452,7 @@ function simplenews_mail_cache_count($nid, $status = SIMPLENEWS_CACHE_PENDING) {
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
  */
 function simplenews_mail_cache_update($array, $status) {
-  db_query("UPDATE {simplenews_mail_cache} SET status = %d, timestamp = %d WHERE mcid IN ('%s')", $status, time(), $implode("','", $array));
+  db_query("UPDATE {simplenews_mail_cache} SET status = %d, timestamp = %d WHERE mcid IN (%s)", $status, time(), $implode(',', $array));
 }
 
 /**
@@ -1461,7 +1461,7 @@ function simplenews_mail_cache_update($array, $status) {
  * @param array $array Mail cache ids of records to be deleted
  */
 function simplenews_mail_cache_clear($array) {
-  $result = db_query("DELETE FROM {simplenews_mail_cache} WHERE mcid IN ('%s')", implode("','", $array));
+  $result = db_query("DELETE FROM {simplenews_mail_cache} WHERE mcid IN (%s)", implode(',', $array));
 }
 
 /**
