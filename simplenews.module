@@ -604,7 +604,15 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
           }
         }
       }
-      elseif ($category == 'newsletter' && user_access('subscribe to newsletters')) {
+
+       // Activate/deactivate subscription when account is blocked/unblocked
+       if ($category == 'account' && isset($edit['status'])) {
+         if (variable_get('simplenews_sync_account', TRUE)) {
+           db_query("UPDATE {simplenews_subscriptions} SET a_status = %d WHERE uid = %d", $edit['status'], $account->uid);
+         }
+       }
+
+       if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
         foreach ($edit['newsletters'] as $tid => $checked) {
           if ($checked) {
             simplenews_subscribe_user($account->mail, $tid, FALSE);
@@ -615,8 +623,17 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         }
       }
       break;
-    case 'delete':
-      db_query("UPDATE {simplenews_subscriptions} SET uid = 0 WHERE uid = %d", $account->uid);
+    case 'delete':     
+      if (variable_get('simplenews_sync_account', TRUE)) {
+        // Delete subscription and all newsletter subscriptions when account is removed
+        $subscription = simplenews_get_user_subscription($account->mail);
+        db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $subscription->snid);
+        db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $subscription->snid);        
+      }
+      else {
+        // Only remove uid from subscription data when account is removed
+        db_query("UPDATE {simplenews_subscriptions} SET uid = 0 WHERE uid = %d", $account->uid);
+      }
       break;
     case 'form':
       if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
@@ -1056,6 +1073,18 @@ function simplenews_block_form(&$form_state, $tid) {
       '#type' => 'radios',
       '#default_value' => 'subscribe',
       '#options' => array('subscribe' => t('Subscribe'), 'unsubscribe' => t('Unsubscribe')),
+    );
+    $form['simplenews_subscription'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Subscription options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['simplenews_subscription']['simplenews_sync_account'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Synchronize with account'),
+      '#default_value' => variable_get('simplenews_sync_account', TRUE),
+      '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
     );
   }
   $form['#tid'] = $tid;
