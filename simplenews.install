@@ -1,34 +1,33 @@
 <?php
 // $Id$
 
-//TODO: Add table and field comments
 function simplenews_schema() {
   $schema['simplenews_subscriptions'] = array(
-    'description' => t(''),
+    'description' => t('Subscribers to {simplenews_newsletters}.'),
     'fields' => array(
        'snid' => array(
-        'description' => t(''),
+        'description' => t('Primary key: Unique subscription ID.'),
         'type' => 'serial',
-        'not null' => true,
+        'not null' => TRUE,
       ),
       'activated' => array(
-        'description' => t(''),
+        'description' => t('Boolean indicating the status of the subscription.'),
         'type' => 'int',
         'size' => 'tiny',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       'mail' => array(
-        'description' => t(''),
+        'description' => t('The subscription email address.'),
         'type' => 'varchar',
         'length' => 64,
-        'not null' => true,
+        'not null' => TRUE,
         'default' => '',
       ),
       'uid' => array(
-        'description' => t(''),
+        'description' => t('The {users}.uid that has the same email address.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
     ),
@@ -39,52 +38,52 @@ function simplenews_schema() {
   );
 
   $schema['simplenews_newsletters'] = array(
-    'description' => t(''),
+    'description' => t('Simplenews newsletter data.'),
     'fields' => array(
       'nid' => array(
-        'description' => t(''),
+        'description' => t('{node} that is used as newsletter.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       'vid' => array(
-        'description' => t(''),
+        'description' => t('The {node}.vid that identifies the version used as newsletter.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       'tid' => array(
-        'description' => t(''),
+        'description' => t('The {term_data}.tid (= newsletter series) this issue belongs to.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       's_status' => array(
-        'description' => t(''),
+        'description' => t('Send status of the newsletter issue (0 = not send; 1 = pending; 2 = send). '),
         'type' => 'int',
         'size' => 'tiny',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       's_format' => array(
-        'description' => t(''),
+        'description' => t('Format of the newsletter (plain or html).'),
         'type' => 'varchar',
         'length' => 8,
-        'not null' => true,
+        'not null' => TRUE,
         'default' => '',
       ),
       'priority' => array(
-        'description' => t(''),
+        'description' => t('E-mail priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).'),
         'type' => 'int',
         'size' => 'tiny',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
       'receipt' => array(
-        'description' => t(''),
+        'description' => t('Boolean indicating request for e-mail receipt confirmation according to RFC 2822.'),
         'type' => 'int',
         'size' => 'tiny',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
     ),
@@ -92,18 +91,18 @@ function simplenews_schema() {
   );
 
   $schema['simplenews_snid_tid'] = array(
-    'description' => t(''),
+    'description' => t('Newsletter series subscription data.'),
     'fields' => array(
        'snid' => array(
-        'description' => t(''),
+        'description' => t('The {simplenews_subscriptions}.snid who is subscribed.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
        'tid' => array(
-        'description' => t(''),
+        'description' => t('The newsletter series ({term_data}.tid) the subscriber is subscribed to.'),
         'type' => 'int',
-        'not null' => true,
+        'not null' => TRUE,
         'default' => 0,
       ),
     ),
@@ -171,8 +170,6 @@ function simplenews_schema() {
   );
   return $schema;
 }
-
-//TODO: contact MSSQL tester (issue ...)
 
 /**
  * Implementation of hook_install
@@ -281,7 +278,7 @@ function simplenews_update_6000() {
   db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
     'type' => 'varchar',
     'length' => 8,
-    'not null' => true,
+    'not null' => TRUE,
     'default' => '',
     )
   );
@@ -289,7 +286,7 @@ function simplenews_update_6000() {
   db_change_field($ret, 'simplenews_subscriptions', 'a_status', 'activated', array(
     'type' => 'int',
     'size' => 'tiny',
-    'not null' => true,
+    'not null' => TRUE,
     'default' => 0,
     )
   );
@@ -297,13 +294,19 @@ function simplenews_update_6000() {
   db_change_field($ret, 'simplenews_subscriptions', 's_status', 'is_send', array(
     'type' => 'int',
     'size' => 'tiny',
-    'not null' => true,
+    'not null' => TRUE,
     'default' => 0,
     )
   );
   return $ret;
 }
 
+/**
+ * Addition of simplenews_mail_cache table.
+ * Related to this new table: the removal of simplenews_subscriptions is_send
+ * status.
+ * Correction of simplenews_newsletters priority field type.
+ */
 function simplenews_update_6001() {
     $schema['simplenews_mail_cache'] = array(
     'description' => t(''),
@@ -370,16 +373,22 @@ function simplenews_update_6001() {
   db_change_field($ret, 'simplenews_newsletters', 'priority', 'priority', array(
       'type' => 'int',
       'size' => 'tiny',
-      'not null' => true,
+      'not null' => TRUE,
       'default' => 0,
     )
   );
   return $ret;
 }
 
+/**
+ * Addition of node version to simplenews_newsletters in order to record the
+ * node version which is being send.
+ * Addition of nid to simplenews_mail_cache to be able to check the newsletter
+ * send status.
+ */
 function simplenews_update_6002() {
   $ret = array();
-  db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => true, 'default' => 0));
+  db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => TRUE, 'default' => 0));
   db_add_field($ret, 'simplenews_mail_cache', 'nid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
   variable_del('simplenews_time');
   return $ret;
