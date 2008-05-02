@@ -608,7 +608,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
        // Activate/deactivate subscription when account is blocked/unblocked
        if ($category == 'account' && isset($edit['status'])) {
          if (variable_get('simplenews_sync_account', TRUE)) {
-           db_query("UPDATE {simplenews_subscriptions} SET a_status = %d WHERE uid = %d", $edit['status'], $account->uid);
+           db_query("UPDATE {simplenews_subscriptions} SET activated = %d WHERE uid = %d", $edit['status'], $account->uid);
          }
        }
 
