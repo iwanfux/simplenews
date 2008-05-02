@@ -2,11 +2,19 @@
 //$Id$
 
 /**
- * Generates the subscription form for users.
+ * @file
+ * (Un)subscription and (un)subscription confirmation
+ *
+ * @ingroup simplenews
+ */
+
+/**
+ * Menu callback: Generates the subscription form for users.
+ *
+ * @see simplenews_subscription_manager_form_validate()
+ * @see simplenews_subscription_manager_form_submit()
  */
 function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
-//TODO: make this function call suitable for selected range of newsletters $range = array(snid, snid, snid)
-//TODO: (nice to have) make this form suitable for single/multi select
   global $user;
 
   if (isset($snid)) {
@@ -31,9 +39,6 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
   return $form;
 }
 
-/**
- * Forms API callback; validates the settings form.
- */
 function simplenews_subscription_manager_form_validate($form, &$form_state) {
   $valid_email = valid_email_address($form_state['values']['mail']);
   if (!$valid_email) {
@@ -47,9 +52,6 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
   }
 }
 
-/**
- * Forms API callback; submit handler for subscription form.
- */
 function simplenews_subscription_manager_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Update'):
@@ -83,8 +85,14 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
 }
 
 /**
- * Menu callback; confirm the user's (un)subscription request when they click
- * on the confirm link in the e-mail footer.
+ * Menu callback: confirm the user's (un)subscription request
+ *
+ * This function is called by clicking the confirm link in the confirmation
+ * e-mail or the unsubscribe link in the footer of the newsletter. It handles
+ * both subscription and unsubscription.
+ *
+ * @see simplenews_confirm_add_form()
+ * @see simplenews_confirm_removal_form()
  */
 function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
   $md5 = drupal_substr($op2, 0, 10);
@@ -112,7 +120,9 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
 }
 
 /**
- * Generate the confirm add form.
+ * Generate the confirm subscription form.
+ *
+ * @see simplenews_confirm_add_form_submit()
  */
 function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   $form = array();
@@ -130,17 +140,15 @@ function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   );
 }
 
-/**
- * Forms API callback; handles form submission for a user confirming subscribe
- * request.
- */
 function simplenews_confirm_add_form_submit($form, &$form_state) {
   simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
   drupal_set_message(t('%user was successfully added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
 /**
- * Generate the confirm remove form.
+ * Generate the confirm unsubscription form.
+ *
+ * @see simplenews_confirm_removal_form_submit()
  */
 function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   $form = array();
@@ -158,57 +166,17 @@ function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   );
 }
 
-/**
- * Forms API callback; handles form submission for a user confirming unsubscribe
- * request.
- */
 function simplenews_confirm_removal_form_submit($form, &$form_state) {
   simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
   drupal_set_message(t('%user was successfully removed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
 /**
- * Menu callback; handles the edit/delete subscription page and a subscription
+ * Menu callback: handle the edit subscription page and a subscription
  * page for anonymous users.
  */
 function simplenews_admin_users_form(&$form_state, $snid = NULL) {
   $form = simplenews_subscription_manager_form($form_state, $snid);
   $form['#redirect'] = 'admin/content/newsletters/users';
   return $form;
-}
-
-/**
- * Forms API callback; delete user subscription form. Form to delete user from
- * all newsletters.
- */
-function simplenews_admin_users_delete(&$form_state, $snid = NULL) {
-  if (!isset($snid)) {
-    drupal_not_found();
-    return;
-  }
-  $account = new stdClass();
-  $account->snid = $snid;
-  $subscription = simplenews_get_subscription($account);
-  $form = array();
-  $form['snid'] = array('#type' => 'value', '#value' => $snid);
-  $form['#redirect'] = 'admin/content/newsletters/users';
-
-  return confirm_form($form,
-    t('Are you sure you want to remove %mail from all newsletter mailing lists?', array('%mail' => $subscription->mail)),
-    'admin/content/newsletters/users',
-    t('This action will remove %mail from all newsletter mailing lists. To unsubscribe this user from a particular newsletter, press Cancel and edit this user.', array('%mail' => $subscription->mail)),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-/**
- * Forms API callback; delete user subscription submit.
- */
-function simplenews_admin_users_delete_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $form_state['values']['snid']));
-    simplenews_delete_subscription($form_state['values']['snid']);
-    drupal_set_message(t('The user %user was successfully deleted from the mailing list.', array('%user' => $account->mail)));
-  }
 }
