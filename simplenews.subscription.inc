@@ -116,12 +116,13 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
  */
 function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   $form = array();
+  $form['question'] = array('#value' => '<p>'. t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) ."<p>\n");
   $form['mail'] = array('#type' => 'value', '#value' => $mail);
   $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
   $form['#redirect'] = '';
 
   return confirm_form($form,
-    t('Are you sure you want to add %user to the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
+    t('Confirm subscription'),
     '',
     t('You always have the option of unsubscribing later.'),
     t('Subscribe'),
@@ -135,7 +136,7 @@ function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
  */
 function simplenews_confirm_add_form_submit($form, &$form_state) {
   simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
-  drupal_set_message(t('%user was successfully added to the %newsletter subscription list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+  drupal_set_message(t('%user was successfully added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
 /**
@@ -143,14 +144,15 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
  */
 function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   $form = array();
+  $form['question'] = array('#value' => '<p>'. t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) ."<p>\n");
   $form['mail'] = array('#type' => 'value', '#value' => $mail);
   $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
   $form['#redirect'] = '';
 
   return confirm_form($form,
-    t('Are you sure you want to remove %user from the %newsletter subscription list?', array('%user' => $mail, '%newsletter' => $newsletter->name)),
+    t('Confirm unsubscription'),
     '',
-    t('This action will only remove you from the newsletter subscription list. If you are registered at our site, your account information will remain unchanged.'),
+    t('This action will only remove you from the newsletter mailing list. If you are registered at our site, your account information will remain unchanged.'),
     t('Unsubscribe'),
     t('Cancel')
   );
@@ -162,7 +164,7 @@ function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
  */
 function simplenews_confirm_removal_form_submit($form, &$form_state) {
   simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
-  drupal_set_message(t('%user was successfully removed from the %newsletter subscription list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+  drupal_set_message(t('%user was successfully removed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
 /**
@@ -192,9 +194,9 @@ function simplenews_admin_users_delete(&$form_state, $snid = NULL) {
   $form['#redirect'] = 'admin/content/newsletters/users';
 
   return confirm_form($form,
-    t('Are you sure you want to remove %mail from all newsletter subscription lists?', array('%mail' => $subscription->mail)),
+    t('Are you sure you want to remove %mail from all newsletter mailing lists?', array('%mail' => $subscription->mail)),
     'admin/content/newsletters/users',
-    t('This action will remove %mail from all newsletter subscription lists. To unsubscribe this user from a particular newsletter, press Cancel and edit this user.', array('%mail' => $subscription->mail)),
+    t('This action will remove %mail from all newsletter mailing lists. To unsubscribe this user from a particular newsletter, press Cancel and edit this user.', array('%mail' => $subscription->mail)),
     t('Delete'),
     t('Cancel')
   );
@@ -207,6 +209,6 @@ function simplenews_admin_users_delete_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $form_state['values']['snid']));
     simplenews_delete_subscription($form_state['values']['snid']);
-    drupal_set_message(t('The user %user was successfully deleted from the subscription list.', array('%user' => $account->mail)));
+    drupal_set_message(t('The user %user was successfully deleted from the mailing list.', array('%user' => $account->mail)));
   }
 }

@@ -940,7 +940,7 @@ function simplenews_delete_subscription($snid) {
   $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
   db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
   db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
-  watchdog('simplenews', 'User %email deleted from the subscription list.', array('%email' => $account->mail), WATCHDOG_NOTICE);
+  watchdog('simplenews', 'User %email deleted from the mailing list.', array('%email' => $account->mail), WATCHDOG_NOTICE);
 }
 
 /**
@@ -1619,7 +1619,7 @@ function simplenews_private_key() {
 function simplenews_help($path, $arg) {
   switch ($path) {
     case 'admin/help#simplenews':
-      $help  = "<p>". t('Simplenews sends html or plain text newsletters to the subscription list. Subscription and unsubscription are managed through a block, a form or by the newsletter administrator.') ."<br />\n";
+      $help  = "<p>". t('Simplenews sends html or plain text newsletters to the mailing list. Subscription and unsubscription are managed through a block, a form or by the newsletter administrator.') ."<br />\n";
       $help .=        t('Individual newsletters are grouped by a newsletter taxonomy term. Newsletters can have a block with the ability of (un)subscription, listing of recent newsletters and an associated rss-feed.') ."<br />\n";
       $help .=        t('Sending of large mailings can be managed by cron.') ."</p>\n";
       $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="@handbook">Simplenews page</a>.', array('@handbook','http://drupal.org/node/197057')) ."</p>\n";
