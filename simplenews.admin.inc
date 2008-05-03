@@ -1,11 +1,18 @@
 <?php
-// $Id $
+// $Id$
+
 /**
- * @file simplenews.admin.inc
+ * @file
+ * Newsletter admin, subscription admin, simplenews settings
+ *
+ * @ingroup simplenews
  */
 
-//TODO: consider split into content-admin, subscription-admin(?) and settings
-
+/**
+ * Menu callback: Admin form for sent and draft newsletters.
+ *
+ * @see simplenews_admin_news_submit()
+ */
 function simplenews_admin_news(&$form_state, $action = 'sent') {
 
   // Update status of pending newsletters.
@@ -99,6 +106,9 @@ function _simplenews_set_filter($type, $values) {
   }
 }
 
+/**
+ * Menu callback: newsletter admin form with list of available newsletter series.
+ */
 function simplenews_types_overview() {
   $rows = array();
   $header = array(t('Newsletter name'), t('Operations'));
@@ -114,7 +124,10 @@ function simplenews_types_overview() {
 }
 
 /**
- * Forms API callback; displays newsletter (term) add/edit form.
+ * Menu callback: newsletter admin form for newsletter add/edit.
+ *
+ * @see simplenews_admin_types_form_validate()
+ * @see simplenews_admin_types_form_submit()
  */
 //TODO rework this form to be able to set newsletter options when creating the newsletter.
 function simplenews_admin_types_form(&$form_state, $tid = NULL) {
@@ -253,9 +266,6 @@ function simplenews_admin_types_form_validate($form, &$form_state) {
   }
 }
 
-/**
- * Forms API callback; handles newsletter (term) form submit.
- */
 function simplenews_admin_types_form_submit($form, &$form_state) {
     // Redirect on a delete operation for posterity's sake.
     if (isset($form_state['post']['op']) && $form_state['post']['op'] == t('Delete')) {
@@ -281,7 +291,9 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
 }
 
 /**
- * Forms API callback; newsletter (term) delete form.
+ * Menu callback: Delete newsletter series.
+ *
+ * @see simplenews_admin_types_delete_submit()
  */
 function simplenews_admin_types_delete(&$form_state, $tid = NULL) {
   if (!isset($tid)) {
@@ -308,9 +320,6 @@ function simplenews_admin_types_delete(&$form_state, $tid = NULL) {
   );
 }
 
-/**
- * Forms API callback; handles submit for newsletter (term) delete form.
- */
 function simplenews_admin_types_delete_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
     $term = taxonomy_get_term($form_state['values']['tid']);
@@ -320,7 +329,9 @@ function simplenews_admin_types_delete_submit($form, &$form_state) {
 }
 
 /**
- * Delete multiple subscriptions
+ * Menu callback: Delete multiple subscriptions.
+ *
+ * @see simplenews_subscription_multiple_delete_confirm_submit()
  */
 function simplenews_subscription_multiple_delete_confirm() {
   // Subscriptions to be deleted are passed via session var.
@@ -363,6 +374,12 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
   return '';
 }
 
+/**
+ * Menu callback: Add newsletter series.
+ *
+ * @see simplenews_subscription_list_add_validate()
+ * @see simplenews_subscription_list_add_submit()
+ */
 function simplenews_subscription_list_add() {
   $form['emails'] = array(
     '#type' => 'textarea',
@@ -438,6 +455,11 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Menu callback: Export email address of subscriptions.
+ *
+ * @see simplenews_admin_export_after_build()
+ */
 function simplenews_subscription_list_export() {
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $form['simplenews_status'] = array(
@@ -538,9 +560,16 @@ function simplenews_subscription_admin($form_state) {
   return $form;
 }
 
+/**
+ * Build the form for admin subscription.
+ *
+ * Form consists of a filter fieldset, an operation fieldset and a list of
+ * subscriptions maching the filter criteria.
+ *
+ * @see simplenews_subscription_list_form_validate()
+ * @see simplenews_subscription_list_form_submit()
+ */
 function simplenews_subscription_list_form() {
-//  global $form_values;
-
   // Table header. Used as tablesort default
   $header = array(
     array('data' => t('E-mail'), 'field' => 'ss.mail', 'sort' => 'asc'),
@@ -603,9 +632,6 @@ function simplenews_subscription_list_form_validate($form, &$form_state) {
   }
 }
 
-/**
- * Submit the subscription administration update form.
- */
 function simplenews_subscription_list_form_submit($form, &$form_state) {
   if (isset($form_state['values']['operation'])) {
     $snids = array_filter($form_state['values']['snids']);
@@ -624,7 +650,9 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
 }
 
 /**
- * Generate settings form.
+ * Menu callback: Admin newsletter settings.
+ *
+ * @see simplenews_admin_export_after_build()
  */
 function simplenews_admin_settings(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
@@ -816,6 +844,8 @@ function simplenews_subscription_filters() {
 
 /**
  * Return form for subscription filters.
+ *
+ * @see simplenews_subscription_filter_form_submit()
  */
 function simplenews_subscription_filter_form() {
   // Current filter selections in $session var; stored at form submission
