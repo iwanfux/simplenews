@@ -1,7 +1,9 @@
+/* $Id$ */
+
 .simplenews-subscription-filter .form-item { 
   clear: both;
-  line-height:1.75em;
-  margin:0pt 1em 0pt 0pt;
+  line-height: 1.75em;
+  margin: 0pt 1em 0pt 0pt;
 }
 
 .simplenews-subscription-filter .form-item label { 
@@ -13,7 +15,8 @@
   margin-left: 12em;  
 }
 
-.simplenews-subscription-filter .form-select, .simplenews-subscription-filter .form-text {
+.simplenews-subscription-filter .form-select, 
+.simplenews-subscription-filter .form-text {
   width: 14em;
 }
 
