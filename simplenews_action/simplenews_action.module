@@ -3,7 +3,9 @@
 
 /**
  * @file simplenews_action.inc
- * Interface between simplenews.module and action.module.
+ * Provide actions for simplenews.
+ *
+ * @ingroup simplenews
  */
 
 /*

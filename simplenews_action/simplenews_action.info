@@ -1,0 +1,6 @@
+; $Id$
+name = Simplenews action
+description = Provide actions for Simplenews.
+dependencies[] = simplenews
+package = Mail
+core = 6.x

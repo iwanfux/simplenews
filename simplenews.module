@@ -95,8 +95,6 @@ function simplenews_access($op, $node) {
  */
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
-  //TODO: simplenews_actions as separate module?
-  include_once(drupal_get_path('module', 'simplenews') .'/simplenews_action.inc');
 
   if (module_exists('views')) {
     include_once(drupal_get_path('module', 'simplenews') .'/simplenews_views.inc');
