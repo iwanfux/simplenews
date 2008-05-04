@@ -1064,18 +1064,6 @@ function simplenews_block_form(&$form_state, $tid) {
       '#default_value' => 'subscribe',
       '#options' => array('subscribe' => t('Subscribe'), 'unsubscribe' => t('Unsubscribe')),
     );
-    $form['simplenews_subscription'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Subscription options'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['simplenews_subscription']['simplenews_sync_account'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Synchronize with account'),
-      '#default_value' => variable_get('simplenews_sync_account', TRUE),
-      '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
-    );
   }
   $form['#tid'] = $tid;
   $form['submit'] = array(
@@ -1571,9 +1559,15 @@ function _simplenews_headers($node, $from) {
  * @return string Target text with HTML and special characters replaced
  */
 function simplenews_html_to_text($text) {
+  // Remove in-page links
+  $pattern = '@<a[^>]+?href="#[^"]*"[^>]*?>(.+?)</a>@i';
+  $text = preg_replace($pattern, '$1', $text);
+
   // Replace some special characters before performing the drupal standard conversion
   $preg = _simplenews_html_replace();
-  $text = preg_replace(array_keys($preg), array_values($preg), $text);
+  $text = preg_replace(array_keys($preg), array_values($preg), $text); 
+  
+  // Perform standard drupal html to text conversion
   return drupal_html_to_text($text);
 }
 

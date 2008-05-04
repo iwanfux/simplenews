@@ -651,8 +651,6 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
 
 /**
  * Menu callback: Admin newsletter settings.
- *
- * @see simplenews_admin_export_after_build()
  */
 function simplenews_admin_settings(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
@@ -767,6 +765,18 @@ function simplenews_admin_settings(&$form_state) {
     '#title' => t('Log emails'),
     '#default_value' => variable_get('simplenews_debug', FALSE),
     '#description' => t('When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
+  );
+  $form['simplenews_subscription'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Subscription options'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['simplenews_subscription']['simplenews_sync_account'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Synchronize with account'),
+    '#default_value' => variable_get('simplenews_sync_account', TRUE),
+    '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
   );
   return system_settings_form($form);
 }
