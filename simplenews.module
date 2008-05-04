@@ -1,19 +1,18 @@
 <?php
 // $Id$
 
-//TODO: Compatibilty with Token module
-//TODO: (issue) compatibility with Category module
-//TODO: Compatibility with mail backends (See Mailing List Manager)
-//TODO: (issue)Test newsletter with links: <a href="/nl/foo">a link</a>, "http://www.mysite.com/...", "<a href="mailto:name@some.com">name</a>"(#159125) both on-screen as in-mail
-//TODO: Include the "newsletter/subscriptions" link in documentation and help
-//TODO: Add more (doxygen) comment
-//TODO: Nice to have: (issue) Improve the difference between newsletter (group) and newsletter
-//TODO: Nice to have: provide basic theming for CCK node fields (#180831)
-//TODO: Nice to have: Integration with Workflow(_ng)
-//TODO: Nice to have: enable multiple newsletter terms per node
-//TODO: Nice to have: Improved handling of images (in combination with Mime Mail)
-//TODO: Nice to have: Integration with OG
-//TODO: Nice to have: Integration with Services
+/**
+ * @defgroup simplenews
+ * Enable nodes to be used as newsletter, manage subscriptions and sent
+ * email newsletter to subscribers.
+ */
+ 
+/**
+ * @file
+ * Simplnews node handling, sent email, newsletter block and general hooks
+ *
+ * @ingroup simplenews
+ */
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -92,7 +91,7 @@ function simplenews_access($op, $node) {
 }
 
 /**
- * Implementation of hook_init
+ * Implementation of hook_init().
  */
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
@@ -197,14 +196,6 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.subscription.inc',
     );
-  $items['admin/content/newsletters/users/delete'] = array(
-    'title' => 'Subscriptions',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_users_delete'),
-    'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.subscription.inc',
-  );
   $items['admin/content/newsletters/users/list'] = array(
     'title' => 'List subscriptions',
     'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -283,7 +274,6 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
   switch ($op) {
     case 'view':
       $node = simplenews_replace_vars($node, TRUE);
-      // $node = node_prepare($node, $teaser);
       break;
     case 'validate':
       global $_simplenews_valid_mails;
@@ -367,7 +357,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
 }
 
 /**
- * Implementation of hook_form
+ * Implementation of hook_form().
  */
 function simplenews_form(&$node) {
   $type = node_get_types('type', $node);
@@ -394,7 +384,7 @@ function simplenews_form(&$node) {
 }
 
 /**
- * Validate if term is Newsletter taxonomy term
+ * Validate if term is Newsletter taxonomy term.
  *
  * @return
  *   Array of selected Newsletter terms. Example: array(4, 12)
@@ -425,19 +415,13 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
 
   // Newsletter vocabulary form
   if ($form_id == 'taxonomy_form_vocabulary' && isset($form['vid']) && $form['vid']['#value'] == $vid) {
-    // Hide critical options from forum vocabulary.
+    // Hide critical options from newsletter vocabulary.
     $form['help_forum_vocab'] = array(
       '#value' => t('This is the designated simplenews vocabulary. This vocabulary can not be deleted.'),
       '#weight' => -1,
     );
     $form['content_types']['nodes']['#required'] = TRUE;
     $form['content_types']['nodes']['#description'] = t('Select content type(s) to be used as newsletter');
-    //$form['hierarchy'] = array('#type' => 'value', '#value' => 1);
-    //TODO: perhaps make newsletter term required
-    //$form['settings']['required'] = array('#type' => 'value', '#value' => FALSE);
-    //$form['settings']['relations'] = array('#type' => 'value', '#value' => FALSE);
-    //$form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
-    //TODO: depending on ability to enable newsletter for multiple selection
     $form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
 
     // Prevent the vocabulary gets deleted
@@ -769,13 +753,13 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 /**
- * Helper function for API functions; loads a user or creates a dummy anonymous
- * user with uid = 0 and $mail equal to the input param.
+ * Load a user or creates a dummy anonymous user.
  *
- * @return account = object (
- *                    mail,   required e-mail address
- *                    uid,    uid or 0 for anonymous
- *                   )
+ * @return account
+ *   object (
+ *     mail,   e-mail address
+ *     uid,    uid or 0 for anonymous
+ *   )
  */
 function _simplenews_user_load($mail) {
   $account = user_load(array('mail' => $mail));
@@ -789,7 +773,7 @@ function _simplenews_user_load($mail) {
 }
 
 /**
- * Subscribes a user to a newsletter or send a confirmation mail
+ * Subscribe a user to a newsletter or send a confirmation mail.
  *
  * The $confirm parameter determines the action:
  *   FALSE = The user is subscribed
@@ -836,7 +820,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
 }
 
 /**
- * Unsubscribes a user from a newsletter or send a confirmation mail
+ * Unsubscribe a user from a newsletter or send a confirmation mail.
  *
  * The $confirm parameter determines the action:
  *   FALSE = The user is unsubscribed
@@ -883,11 +867,10 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
 }
 
 /**
- * API function; returns if the user's e-mail address is subscribed to the given
- * newsletter.
+ * Check if the e-mail address is subscribed to the given newsletter.
  *
  * @param string $mail email address
- * @param integer @tid newsletter term id
+ * @param integer $tid newsletter term id
  *
  * @return boolean TRUE = email address is subscribed to given newsletter term id
  */
@@ -896,23 +879,27 @@ function simplenews_user_is_subscribed($mail, $tid) {
 }
 
 /**
- * API function; returns the subscription for the given subscriber ID (snid) or given e-mail address.
+ * Get the subscription object for the given account.
  *
- * @param object $account account details
+ * Account is defined by (in order of preference) snid, e-mail address or uid.
+ * If the account is not subscribed a default subscription object is returned
+ * containing all available account info.
+ *
+ * @param object $account account details. Containing one or none of these items:
  *  object(
  *    snid :  subscription id
  *    mail :  e-mail address
  *    uid  :  user id
  *  )
  *
- * @return subscription object or FALSE if account is not subscribed
+ * @return subscription object
  *   object(
- *     snid :  subscription id. 0 if no subscription record exists
- *     tids :  array(tid) array of newsletter tid's
- *     uid  :  user id. 0 if subscriber is anonymous user
- *     mail :  user e-mail address
- *     name : <empty>. Added for compatebility with user account object
- *     language : language object. User preferred of default language
+ *     snid :  subscription id. 0 if account is not subscribed
+ *     tids :  array of newsletter tid's
+ *     uid  :  user id. 0 if account is anonymous user
+ *     mail :  user e-mail address. empty if e-mail is unknown
+ *     name :  always empty. Added for compatebility with user account object
+ *     language : language object. User preferred or default language
  *   )
  */
 function simplenews_get_subscription($account) {
@@ -951,7 +938,9 @@ function simplenews_get_subscription($account) {
 }
 
 /**
- * Deletes every subscription for the given subscription ID.
+ * Delete every subscription for the given subscription ID.
+ *
+ * @param integer $snid subscription id
  */
 function simplenews_delete_subscription($snid) {
   $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
@@ -961,14 +950,16 @@ function simplenews_delete_subscription($snid) {
 }
 
 /**
- * Helper function to build subscription manager form, also used in user edit.
+ * Build subscription manager form.
+ *
+ * @param object $subscription subscription object
  */
 function _simplenews_subscription_manager_form($subscription) {
   $form = array();
   $options = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
     $options[$newsletter->tid] = $newsletter->name;
-    $default_value[$newsletter->tid] = false;
+    $default_value[$newsletter->tid] = FALSE;
   }
 
   $form['subscriptions'] = array(
@@ -1016,19 +1007,13 @@ function _simplenews_subscription_manager_form($subscription) {
   return $form;
 }
 
-function simplenews_handle_messages($one, $two_or_more, $type = 'status') {
-  if (isset($_SESSION['messages'][$type])) $msg = $_SESSION['messages'][$type];
-  else $msg = array();
-  $key = array_search($one, $msg);
-  if ($key || $key === 0) {
-    $_SESSION['messages'][$type][$key] = $two_or_more;
-  }
-  elseif (!in_array($two_or_more, $msg)) {
-    drupal_set_message($one, $type);
-  }
-}
-
-function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
+/**
+ * Create a list of recent newsletters.
+ *
+ * @param integer $tid term id of selected newsletter
+ * @param integer $count number of newsletters in the list
+ */
+function simplenews_recent_newsletters($tid, $count = 5) {
   $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.vid = t.vid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 1, 0, $count);
   $titles = array();
   while ($item = db_fetch_object($result)) {
@@ -1039,7 +1024,12 @@ function simplenews_recent_newsletters($tid, $count = 5, $title = NULL) {
 }
 
 /**
- * Block form callback function
+ * Newsletter (un)subscription form for authenticated and anonymous users.
+ *
+ * @param $tid term id of selected newsletter.
+ *
+ * @see simplenews_block_form_validate()
+ * @see simplenews_block_form_submit()
  */
 function simplenews_block_form(&$form_state, $tid) {
   global $user;
@@ -1095,18 +1085,12 @@ function simplenews_block_form(&$form_state, $tid) {
   return $form;
 }
 
-/**
- * Forms API callback; handles block form (un)subscribe validation.
- */
 function simplenews_block_form_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['mail'])) {
     form_set_error('mail', t("The e-mail address you supplied is not valid."));
   }
 }
 
-/**
- * Forms API callback; handles block form (un)subscribe submissions.
- */
 function simplenews_block_form_submit($form, &$form_state) {
   global $user;
   $tid = $form['#tid'];
@@ -1138,7 +1122,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 }
 
 /**
- * Send newsletter node to subcribers
+ * Send newsletter node to subcribers.
  *
  * @param integer or object $node Newsletter node to be send. integer = nid; object = node object
  * @param array $accounts  account objects to send the newsletter to.
@@ -1202,7 +1186,7 @@ function simplenews_send_node($node, $accounts = array()) {
 }
 
 /**
- * Send test version of newsletter
+ * Send test version of newsletter.
  *
  * @param integer or object $node Newsletter node to be send. Integer = nid; Object = node object
  * @param array $accounts account objects to send the test newsletter to.
@@ -1242,7 +1226,8 @@ function simplenews_send_test($node, $accounts = array()) {
 }
 
 /**
- * Implementation of hook_mail
+ * Implementation of hook_mail.
+ * 
  * Send simplenews mails using drupal mail API
  * @see drupal_mail()
  *
@@ -1333,14 +1318,15 @@ function simplenews_mail($key, &$message, $params) {
 
         // Build message body
         // Processing node body mimics node_view() with full node view
-        $node = node_build_content($node, false, true);
+        $node = node_build_content($node, FALSE, TRUE);
         $content = drupal_render($node->content);
         $node->body = $content;
         unset($node->teaser);
-        node_invoke_nodeapi($node, 'alter', false, true);
+        node_invoke_nodeapi($node, 'alter', FALSE, TRUE);
         $node = node_prepare($node);
-
         $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $langcode);
+
+        // Buffer body text node and language specific
         $messages[$nid][$langcode]['body'] = $body;
 
       }
@@ -1363,7 +1349,7 @@ function simplenews_mail($key, &$message, $params) {
       else {
         $hash = '';
       }
-      $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => true)) .'>';
+      $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
       $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $langcode);
       break;
     case 'subscribe':
@@ -1396,7 +1382,7 @@ function simplenews_mail($key, &$message, $params) {
 }
 
 /**
- * Mailing 'backend' for simplenews newsletters
+ * Mailing 'backend' for simplenews newsletters.
  *
  * Newsletters are formatted and buffered per recipient in database cache.
  * Sending is initiated by cron
@@ -1433,7 +1419,7 @@ function simplenews_mail_send() {
 }
 
 /**
- * Store mail message in mail cache table
+ * Store mail message in mail cache table.
  *
  * @param array $message Mail message array
  */
@@ -1462,7 +1448,7 @@ function simplenews_mail_cache_get($status, $limit = 999999) {
 }
 
 /**
- * Count data in mail cache table
+ * Count data in mail cache table.
  *
  * @param integer $nid newsletter node id
  * @param string $status email send status
@@ -1474,8 +1460,9 @@ function simplenews_mail_cache_count($nid, $status = SIMPLENEWS_CACHE_PENDING) {
 }
 
 /**
- * Update status of mail data in cache table
- * time stamp is set to current time
+ * Update status of mail data in cache table.
+ *
+ * Time stamp is set to current time.
  *
  * @param array $array Mail cache id of record to be updated
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
@@ -1485,7 +1472,7 @@ function simplenews_mail_cache_update($array, $status) {
 }
 
 /**
- * Remove records from mail cache table
+ * Remove records from mail cache table.
  *
  * @param array $array Mail cache ids of records to be deleted
  */
@@ -1494,7 +1481,7 @@ function simplenews_mail_cache_clear($array) {
 }
 
 /**
- * Helper function to build formatted from name and e-mail for a mail object.
+ * Build formatted from-name and e-mail for a mail object.
  *
  * Each newsletter (serie; tid) can have a different from address.
  * The from name and address depend on the newsletter term tid which is included in the $node object
@@ -1523,7 +1510,7 @@ function _simplenews_set_from($node = NULL) {
 }
 
 /**
- * Build header array with priority and receipt confirmation settings
+ * Build header array with priority and receipt confirmation settings.
  *
  * @param $node: node object
  * @param $from: from e-mail address
@@ -1575,7 +1562,8 @@ function _simplenews_headers($node, $from) {
 }
 
 /**
- * HTML to text conversion for HTML and special characters
+ * HTML to text conversion for HTML and special characters.
+ * 
  * Converts some special HTMLcharacters in addition to drupal_html_to_text()
  *
  * @param string $text Source text with HTML and special characters
@@ -1617,6 +1605,9 @@ function _simplenews_html_replace() {
     );
 }
 
+/**
+ * Replace tokens in node body/teaser with user specific variables.
+ */
 function simplenews_replace_vars($node, $teaser = TRUE) {
   global $user;
   $variables = user_mail_tokens($user, $user->language);
@@ -1627,11 +1618,9 @@ function simplenews_replace_vars($node, $teaser = TRUE) {
   return $node;
 }
 
-function simplenews_time() {
-   list($usec, $sec) = explode(" ", microtime());
-   return ((float)$usec + (float)$sec);
-}
-
+/**
+ * Create a 32 character identifier.
+ */
 function simplenews_private_key() {
   $key = variable_get('simplenews_private_key', FALSE);
   if (!$key) {
@@ -1643,7 +1632,7 @@ function simplenews_private_key() {
 }
 
 /**
- * Implementation of hook_help
+ * Implementation of hook_help.
  */
 function simplenews_help($path, $arg) {
   switch ($path) {
@@ -1667,16 +1656,16 @@ function simplenews_help($path, $arg) {
 }
 
 /**
- * Helper function to generate the hash key used for subscribe/unsubscribe link
- * in e-mail footer.
+ * Generate the hash key used for subscribe/unsubscribe link.
  */
 function _simplenews_generate_hash($mail, $snid, $tid) {
   return drupal_substr(md5($mail . simplenews_private_key()), 0, 10) . $snid .'t'. $tid;
 }
 
 /**
- * Helper function to determine possible mail format options. The mimemodule
- * module must be installed to send HTML mails.
+ * Determine possible mail format options.
+ *
+ * The mime_mail module must be installed to send HTML mails.
  */
 function _simplenews_format_options() {
   $options = array('plain' => t('plain'));
@@ -1687,7 +1676,7 @@ function _simplenews_format_options() {
 }
 
 /**
- * Implementation of hook_theme
+ * Implementation of hook_theme.
  */
 function simplenews_theme() {
   return array(
@@ -1730,7 +1719,8 @@ function simplenews_theme() {
 
 /**
  * Process variables to format the simplenews block.
- * Collects data and applies access restriction
+ * 
+ * Collect data and apply access restrictions.
  *
  * $variables contains:
  * - $tid
@@ -1780,7 +1770,7 @@ function theme_simplenews_newsletter($node, $tid) {
 }
 
 /**
- * Theme the newsletter e-mail subject
+ * Theme the newsletter e-mail subject.
  */
 function theme_simplenews_newsletter_subject($name, $title, $langcode) {
   return  '['. $name .'] '. $title;
@@ -1800,10 +1790,10 @@ function theme_simplenews_newsletter_body($body, $title, $langcode) {
  */
 function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $langcode) {
   if ($format == 'html') {
-    $output = '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter'), 'newsletter/confirm/remove/'. $hash, array('html' => true), $langcode) .'</p>';
+    $output = '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter'), 'newsletter/confirm/remove/'. $hash, array('html' => TRUE), $langcode) .'</p>';
   }
   else {
-    $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => true))), $langcode);
+    $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))), $langcode);
   }
 
   if ($test) {
@@ -1827,25 +1817,25 @@ function theme_simplenews_newsletter_confirmation_body($email, $newsletter, $op,
   switch ($op) {
     case 'subscribe':
       if ($user_is_subscribed) {
-        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))), $langcode);
-        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => true))), $langcode);
+        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
+        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))), $langcode);
       }
       else {
-        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))), $langcode);
+        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
         $body[] = "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.', array(), $langcode);
-        $body[]  = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => true))), $langcode);
+        $body[]  = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE))), $langcode);
       }
       break;
     case 'unsubscribe':
       if ($user_is_subscribed) {
-        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))), $langcode);
+        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
         $body[] = "\n\n". t('If you did not make this request, please disregard this message.', array(), $langcode);
-        $body[]  = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => true))), $langcode);
+        $body[]  = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))), $langcode);
       }
       else {
-        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))), $langcode);
+        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
         $body[] = "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.', array(), $langcode);
-        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => true))), $langcode);
+        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))), $langcode);
       }
       break;
   }
@@ -1871,29 +1861,29 @@ function theme_simplenews_newsletter_confirmation($email, $newsletter, $snid, $o
   switch ($op) {
     case 'subscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
       }
       else {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
         $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
-        $footer = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => true))));
+        $footer = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE))));
       }
       break;
     case 'unsubscribe':
       if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
         $mail->body .= "\n\n". t('If you did not make this request, please disregard this message.');
-        $footer = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => true))));
+        $footer = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))));
       }
       else {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => true))));
+        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
         $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
       }
       break;
   }
 
   if (!isset($footer)) {
-    $footer = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => true))));
+    $footer = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))));
   }
 
   $mail->body .= $footer;
