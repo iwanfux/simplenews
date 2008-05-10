@@ -608,7 +608,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
     case 'delete':     
       if (variable_get('simplenews_sync_account', TRUE)) {
         // Delete subscription and all newsletter subscriptions when account is removed
-        $subscription = simplenews_get_user_subscription($account->mail);
+        $subscription = simplenews_get_subscription($account);
         db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $subscription->snid);
         db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $subscription->snid);        
       }
