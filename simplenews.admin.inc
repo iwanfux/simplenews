@@ -597,9 +597,9 @@ function simplenews_subscription_list_form() {
   $form['options']['operation'] = array(
     '#type' => 'select',
     '#options' => array(
-      'activate' => 'Activate',
-      'inactivate' => 'Inactivate',
-      'delete' => 'Delete',
+      'activate' => t('Activate'),
+      'inactivate' => t('Inactivate'),
+      'delete' => t('Delete'),
     ),
     '#default_value' => 'activate');
   $form['options']['submit'] = array(
