@@ -17,12 +17,12 @@
 /**
  * NEWSLETTER MAIL PRIORITY
  */
-define('SIMPLENEWS_PRIORITY_NONE', '0');
-define('SIMPLENEWS_PRIORITY_HIGHEST', '1');
-define('SIMPLENEWS_PRIORITY_HIGH', '2');
-define('SIMPLENEWS_PRIORITY_NORMAL', '3');
-define('SIMPLENEWS_PRIORITY_LOW', '4');
-define('SIMPLENEWS_PRIORITY_LOWEST', '5');
+define('SIMPLENEWS_PRIORITY_NONE', 0);
+define('SIMPLENEWS_PRIORITY_HIGHEST', 1);
+define('SIMPLENEWS_PRIORITY_HIGH', 2);
+define('SIMPLENEWS_PRIORITY_NORMAL', 3);
+define('SIMPLENEWS_PRIORITY_LOW', 4);
+define('SIMPLENEWS_PRIORITY_LOWEST', 5);
 
 /**
  * NEWSLETTER SEND COMMAND
@@ -308,16 +308,16 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
         // Insert node
         $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
         db_query("INSERT INTO {simplenews_newsletters} (nid, vid, tid, s_status, s_format, priority, receipt)
-                  VALUES (%d, %d, %d, %d, '%s', '%s', %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
+                  VALUES (%d, %d, %d, %d, '%s', %d, %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
         }
       else {
         // Update node
         if ($send_with_permission) {
-          db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = '%s', receipt = %d
+          db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
           WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
         }
         else {
-          db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = '%s', receipt = %d
+          db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
           WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
         }
       }
