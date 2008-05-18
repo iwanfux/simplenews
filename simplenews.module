@@ -1426,7 +1426,7 @@ function simplenews_mail_cache_set($message) {
  * @return array Mail message array
  */
 function simplenews_mail_cache_get($status, $limit = 999999) {
-  $result = db_query("SELECT c.mcid, c.message FROM {simplenews_mail_cache} c WHERE c.status = %d ORDER BY c.timestamp ASC LIMIT 0, %d", $status, $limit);
+  $result = db_query_range("SELECT c.mcid, c.message FROM {simplenews_mail_cache} c WHERE c.status = %d ORDER BY c.timestamp ASC", $status, 0, $limit);
   while ($data = db_fetch_object($result)) {
     $messages[$data->mcid] = unserialize($data->message);
   }
