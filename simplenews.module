@@ -427,105 +427,108 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
   }
 
   // Simplenews newsletter node form
-  elseif (strpos($form_id, '_node_form') && isset($form['taxonomy'][$vid])) {
-    if (isset($form['#node']->simplenews)) {
-      $simplenews_values = $form['#node']->simplenews;
-    }
-    $form['simplenews'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Newsletter sending options'),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-      '#tree' => TRUE,
-    );
-    // Hide format selection if there is nothing to choose
-    if (count(_simplenews_format_options()) > 1) {
-      $form['simplenews']['s_format'] = array(
-        '#type' => 'select',
-        '#title' => t('Format'),
-        '#default_value' => $simplenews_values['s_format'],
-        '#options' => _simplenews_format_options(),
+  elseif (strpos($form_id, '_node_form')) {
+    $vocabulary = taxonomy_vocabulary_load($vid);
+    if (in_array('simplenews', $vocabulary->nodes)) {
+      if (isset($form['#node']->simplenews)) {
+        $simplenews_values = $form['#node']->simplenews;
+      }
+      $form['simplenews'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Newsletter sending options'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+        '#tree' => TRUE,
       );
-    }
-    else {
-      $form['simplenews']['s_format'] = array(
-        '#type' => 'hidden',
-        '#value' => variable_get('simplenews_format', 'plain'),
-      );
-    }
-
-    $form['simplenews']['priority'] = array(
-      '#type' => 'select',
-      '#title' => t('Priority'),
-      '#default_value' => isset($simplenews_values['priority']) ? $simplenews_values['priority'] : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-      '#options' => array(
-        SIMPLENEWS_PRIORITY_NONE => t('none'),
-        SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
-        SIMPLENEWS_PRIORITY_HIGH => t('high'),
-        SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
-        SIMPLENEWS_PRIORITY_LOW => t('low'),
-        SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
-      ),
-    );
-    $form['simplenews']['receipt'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Request receipt'),
-      '#return_value' => 1,
-      '#default_value' => isset($simplenews_values['receipt']) ? $simplenews_values['receipt'] : variable_get('simplenews_receipt', 0),
-    );
-    if (!isset($simplenews_values['s_status']) || (isset($simplenews_values['s_status']) && $simplenews_values['s_status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
-      if (user_access('send newsletter')) {
-        $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
-        $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
-        $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
-        $form['simplenews']['send'] = array(
-          '#type' => 'radios',
-          '#title' => t('Sending'),
-          '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE),
-          '#options' => $options,
+      // Hide format selection if there is nothing to choose
+      if (count(_simplenews_format_options()) > 1) {
+        $form['simplenews']['s_format'] = array(
+          '#type' => 'select',
+          '#title' => t('Format'),
+          '#default_value' => $simplenews_values['s_format'],
+          '#options' => _simplenews_format_options(),
         );
       }
       else {
-        $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
-        $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
-        $form['simplenews']['send'] = array(
-          '#type' => 'radios',
-          '#title' => t('Sending'),
-          '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : SIMPLENEWS_COMMAND_SEND_NONE,
-          '#options' => $options,
-          '#description' => t('You have no privileges to send this newsletter'),
-        );
-      }
-      $address_default = variable_get('site_mail', ini_get('sendmail_from'));
-      if (variable_get('simplenews_test_address_override', 0)) {
-        $form['simplenews']['test_address'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Test e-mail addresses'),
-          '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses.'),
-          '#default_value' => isset($simplenews_values['test_address']) ? $simplenews_values['test_address'] : variable_get('simplenews_test_address', $address_default),
-          '#size' => 60,
-          '#maxlength' => 128,
-        );
-      }
-      else {
-        $form['simplenews']['test_address'] = array(
+        $form['simplenews']['s_format'] = array(
           '#type' => 'hidden',
-          '#value' => variable_get('simplenews_test_address', $address_default),
+          '#value' => variable_get('simplenews_format', 'plain'),
         );
       }
-    }
-    else {
-      $form['simplenews']['none'] = array(
+  
+      $form['simplenews']['priority'] = array(
+        '#type' => 'select',
+        '#title' => t('Priority'),
+        '#default_value' => isset($simplenews_values['priority']) ? $simplenews_values['priority'] : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
+        '#options' => array(
+          SIMPLENEWS_PRIORITY_NONE => t('none'),
+          SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
+          SIMPLENEWS_PRIORITY_HIGH => t('high'),
+          SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
+          SIMPLENEWS_PRIORITY_LOW => t('low'),
+          SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
+        ),
+      );
+      $form['simplenews']['receipt'] = array(
         '#type' => 'checkbox',
-        '#title' => t('This newsletter has been sent'),
-        '#return_value' => 0,
-        '#attributes' => array('checked' => 'checked', 'disabled' => 'disabled'),
+        '#title' => t('Request receipt'),
+        '#return_value' => 1,
+        '#default_value' => isset($simplenews_values['receipt']) ? $simplenews_values['receipt'] : variable_get('simplenews_receipt', 0),
+      );
+      if (!isset($simplenews_values['s_status']) || (isset($simplenews_values['s_status']) && $simplenews_values['s_status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
+        if (user_access('send newsletter')) {
+          $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
+          $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
+          $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
+          $form['simplenews']['send'] = array(
+            '#type' => 'radios',
+            '#title' => t('Sending'),
+            '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE),
+            '#options' => $options,
+          );
+        }
+        else {
+          $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
+          $options[SIMPLENEWS_COMMAND_SEND_TEST] = t('Send one test newsletter to the test address');
+          $form['simplenews']['send'] = array(
+            '#type' => 'radios',
+            '#title' => t('Sending'),
+            '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : SIMPLENEWS_COMMAND_SEND_NONE,
+            '#options' => $options,
+            '#description' => t('You have no privileges to send this newsletter'),
+          );
+        }
+        $address_default = variable_get('site_mail', ini_get('sendmail_from'));
+        if (variable_get('simplenews_test_address_override', 0)) {
+          $form['simplenews']['test_address'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Test e-mail addresses'),
+            '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses.'),
+            '#default_value' => isset($simplenews_values['test_address']) ? $simplenews_values['test_address'] : variable_get('simplenews_test_address', $address_default),
+            '#size' => 60,
+            '#maxlength' => 128,
+          );
+        }
+        else {
+          $form['simplenews']['test_address'] = array(
+            '#type' => 'hidden',
+            '#value' => variable_get('simplenews_test_address', $address_default),
+          );
+        }
+      }
+      else {
+        $form['simplenews']['none'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('This newsletter has been sent'),
+          '#return_value' => 0,
+          '#attributes' => array('checked' => 'checked', 'disabled' => 'disabled'),
+        );
+      }
+      $form['simplenews']['s_status'] = array(
+        '#type' => 'hidden',
+        '#value' => isset($simplenews_values['s_status']) ? $simplenews_values['s_status'] : SIMPLENEWS_STATUS_SEND_NOT,
       );
     }
-    $form['simplenews']['s_status'] = array(
-      '#type' => 'hidden',
-      '#value' => isset($simplenews_values['s_status']) ? $simplenews_values['s_status'] : SIMPLENEWS_STATUS_SEND_NOT,
-    );
   }
 }
 
