@@ -61,6 +61,10 @@ INSTALLATION
     Configure Simplenews on the Simplenews admin pages:
       Administer > Content Management > Newsletters > Settings.
 
+    You can select the content type used by Simplenews for it's newsletters.
+    Select the taxonomy term Simplenews uses to determine different newsletter
+    series.
+
  6. CONFIGURE SIMPLENEWS BLOCK
 
     Configure the Simplenews block on the Block configuration page. You reach

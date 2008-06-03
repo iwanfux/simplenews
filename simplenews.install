@@ -188,8 +188,8 @@ function simplenews_install() {
  */
 function simplenews_enable() {
   if ($vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''))) {
-    // Existing install. Add back newsletter node type, if the forums
-    // vocabulary still exists. Keep all other node types intact there.
+    // Existing install. Add back newsletter content type, if the simplenews
+    // vocabulary still exists. All other content type settings unchanged.
     $vocabulary = (array) $vocabulary;
     $vocabulary['nodes']['simplenews'] = 1;
     taxonomy_save_vocabulary($vocabulary);

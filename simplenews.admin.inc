@@ -653,9 +653,38 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
  * Menu callback: Admin newsletter settings.
  */
 function simplenews_admin_settings(&$form_state) {
+  $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
+  $form['simplenews_general_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+    $form['simplenews_general_settings']['simplenews_content_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Newsletter content types'),
+    '#required' => TRUE,
+    '#options' => array_map('check_plain', node_get_types('names')),
+    '#default_value' => variable_get('simplenews_content_types', array('simplenews')),
+    '#description' => t('Select content type(s) to be used as newsletter.'),
+  );
+  $vocabulary_options = array();
+  if ($vocabularies = taxonomy_get_vocabularies()) {
+    foreach ($vocabularies as $key => $object) {
+      $vocabulary_options[$key] = $object->name;
+    }
+  }
+  $form['simplenews_general_settings']['simplenews_vid'] = array(
+    '#type' => 'select',
+    '#title' => t('Newsletter taxonomy'),
+    '#options' =>  $vocabulary_options,
+    '#required' => TRUE,
+    '#description' => t('Select the taxonomy used to identify newsletter series. Note that changing the newsletter taxonomy will affect existing newsletter issues.'),
+    '#default_value' => variable_get('simplenews_vid', ''),
+  );
   $form['simplenews_default_options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Default newsletter options'),
@@ -778,13 +807,33 @@ function simplenews_admin_settings(&$form_state) {
     '#default_value' => variable_get('simplenews_sync_account', TRUE),
     '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
   );
-  return system_settings_form($form);
+  
+  // Node type settings require pre-processing before calling system_settings_form_submit().
+  // Therefore the submit is handled by simplenews_admin_settings_submit()
+  $form = system_settings_form($form);
+  $form['#submit'][] = 'simplenews_admin_settings_submit';
+  return $form;
 }
 
 function simplenews_admin_settings_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['simplenews_from_address'])) {
     form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
   }
+}
+
+function simplenews_admin_settings_submit($form, &$form_state) {
+  // Newsletter vocabulary is updated using node type settings.
+  $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
+  $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
+  $vocabulary['nodes'] = array_merge($vocabulary['nodes'], $form_state['values']['simplenews_content_types']);
+
+  taxonomy_save_vocabulary($vocabulary);
+  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
+  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/'. $form_state['values']['vid']));
+
+  // After handling node type and taxonomy settings the remaining
+  // settings are passed on to system_settings_form_submit();
+  system_settings_form_submit($form, &$form_state);
 }
 
 /**

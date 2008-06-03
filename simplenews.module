@@ -254,18 +254,8 @@ function simplenews_menu() {
  * Implementation of hook_nodeapi().
  */
 function simplenews_nodeapi(&$node, $op, $teaser, $page) {
-  // We are going to return if $node->type is not one of the node
-  // types assigned to the newsletter vocabulary. If simplenews_vid
-  // is undefined or the vocabulary does not exist, it clearly cannot
-  // be assigned to $node->type, so return to avoid E_ALL warnings.
-  $vid = variable_get('simplenews_vid', '');
-  $vocabulary = taxonomy_vocabulary_load($vid);
-  if (empty($vocabulary)) {
-    return;
-  }
-
-  // Operate only on node types assigned to the newsletter vocabulary.
-  if (!in_array($node->type, $vocabulary->nodes)) {
+  // Operate only on node types set in 'simplenews_content_types' variable.
+  if (!in_array($node->type, variable_get('simplenews_content_types', array('simplenews')))) {
     return;
   }
 
@@ -414,24 +404,24 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
   // Newsletter vocabulary form
   if ($form_id == 'taxonomy_form_vocabulary' && isset($form['vid']) && $form['vid']['#value'] == $vid) {
     // Hide critical options from newsletter vocabulary.
-    $form['help_forum_vocab'] = array(
-      '#value' => t('This is the designated simplenews vocabulary. This vocabulary can not be deleted.'),
+    $form['help_simplenews_vocab'] = array(
+      '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
     $form['content_types']['nodes']['#required'] = TRUE;
     $form['content_types']['nodes']['#description'] = t('Select content type(s) to be used as newsletter');
-    $form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
-
-    // Prevent the vocabulary gets deleted
-    unset($form['delete']);
   }
 
   // Simplenews newsletter node form
   elseif (strpos($form_id, '_node_form')) {
-    $vocabulary = taxonomy_vocabulary_load($vid);
-    if (in_array('simplenews', $vocabulary->nodes)) {
+    if (in_array($form['type']['#value'], variable_get('simplenews_content_types', array('simplenews')))) {
       if (isset($form['#node']->simplenews)) {
         $simplenews_values = $form['#node']->simplenews;
+      }
+      $vid = variable_get('simplenews_vid', '');
+      if (!isset($form['taxonomy'][$vid]) && !isset($form['taxonomy']['tag'][$vid])) {
+        $vocabulary = taxonomy_vocabulary_load($vid);
+        drupal_set_message(t('Content type %type requires to be assigned to vocabulary %name. Please change the vocabulary settings.', array('%type' => $form['type']['#value'], '%name' => $vocabulary->name)), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
