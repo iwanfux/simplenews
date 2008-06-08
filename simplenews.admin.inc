@@ -801,6 +801,7 @@ function simplenews_admin_settings(&$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
+  
   $form['simplenews_subscription']['simplenews_sync_account'] = array(
     '#type' => 'checkbox',
     '#title' => t('Synchronize with account'),
@@ -808,11 +809,52 @@ function simplenews_admin_settings(&$form_state) {
     '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
   );
   
-  // Node type settings require pre-processing before calling system_settings_form_submit().
-  // Therefore the submit is handled by simplenews_admin_settings_submit()
-  $form = system_settings_form($form);
+  // These email tokens are shared for all settings, so just define
+  // the list once to help ensure they stay in sync.
+  $email_token_help = t('Available variables are:') .' !site, !uri, !uri_brief, !mailto, !date, !newsletter, !confirmation_url.';
+
+  $form['simplenews_subscription']['subscription_mail'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Subscription confirmation emails'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('Customize the confimation email which is sent to (un)subscribing visitors.') .' '. $email_token_help,
+  );
+  $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subject'),
+    '#maxlength' => 180,
+  );
+  $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_unsubscribed'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body text of subscribe email'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_unsubscribed'),
+    '#rows' => 5,
+  );
+  $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subscribed'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body text for already subscribed visitor'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subscribed'),
+    '#rows' => 5,
+  );
+  $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_subscribed'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body text of unsubscribe email'),
+    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_subscribed'),
+    '#rows' => 5,
+  );
+  $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_unsubscribed'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body text for not yet subscribed visitor'),
+    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_unsubscribed'),
+    '#rows' => 5,
+  );
+
+  // Node type settings require pre-processing.
+  // simplenews_admin_settings_submit() is called before system_settings_form_submit().
   $form['#submit'][] = 'simplenews_admin_settings_submit';
-  return $form;
+  return system_settings_form($form);
 }
 
 function simplenews_admin_settings_validate($form, &$form_state) {
@@ -830,10 +872,6 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   taxonomy_save_vocabulary($vocabulary);
   drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
   watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/'. $form_state['values']['vid']));
-
-  // After handling node type and taxonomy settings the remaining
-  // settings are passed on to system_settings_form_submit();
-  system_settings_form_submit($form, &$form_state);
 }
 
 /**

@@ -1332,7 +1332,9 @@ function simplenews_mail($key, &$message, $params) {
       $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $langcode);
       break;
     case 'subscribe':
-    case 'unsubscribe':
+      // Replace default site address with formatted simplenews from address
+      $message['headers']['From'] = $message['headers']['Reply-To'] = $params['from']['formatted'];
+
       if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
         $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
       }
@@ -1340,15 +1342,42 @@ function simplenews_mail($key, &$message, $params) {
         $hash = NULL;
       }
 
+      $variables =  user_mail_tokens($context['account'], $context['account']->language);
+      $variables += array('!confirmation_url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE)));
+      $variables += array('!newsletter' => $params['newsletter']->name);
+
+      $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
+      
+      if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
+        $message['body'] = _simplenews_subscription_confirmation_text('subscribe_subscribed', $context['account']->language, $variables);
+      }
+      else {
+        $message['body'] = _simplenews_subscription_confirmation_text('subscribe_unsubscribed', $context['account']->language, $variables);
+      }
+      break;
+    case 'unsubscribe':
       // Replace default site address with formatted simplenews from address
       $message['headers']['From'] = $message['headers']['Reply-To'] = $params['from']['formatted'];
 
-      //TODO: Too much logic in this theme function! Split it or move the text here without theming. Additional variable replacement needed.
-      $langcode = $context['account']->language->language;
-      $subject = theme('simplenews_newsletter_confirmation_subject', $params['newsletter'], variable_get('simplenews_from_name', $name_default), $langcode);
-      $message['subject'] = str_replace(array("\r", "\n"), '', $subject);
+      if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
+        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
+      }
+      else {
+        $hash = NULL;
+      }
 
-      $message['body'] = theme('simplenews_newsletter_confirmation_body', $context['account']->mail, $params['newsletter'], $key, $hash, $langcode);
+      $variables =  user_mail_tokens($context['account'], $context['account']->language);
+      $variables += array('!confirmation_url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)));
+      $variables += array('!newsletter' => $params['newsletter']->name);
+
+      $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
+      
+      if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
+        $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_subscribed', $context['account']->language, $variables);
+      }
+      else {
+        $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_unsubscribed', $context['account']->language, $variables);
+      }
       break;
   }
 
@@ -1661,6 +1690,37 @@ function _simplenews_format_options() {
 }
 
 /**
+ * Generate default and custom subscription confirmation email text.
+ *
+ * @param string $key text identification key
+ * @param object $language language object
+ * @param array $variables array of variables as used by t()
+ */
+function _simplenews_subscription_confirmation_text($key, $language = NULL, $variables = array()) {
+  $langcode = isset($language) ? $language->language : NULL;
+
+  if ($admin_setting = variable_get('simplenews_confirm_'. $key, FALSE)) {
+    // An admin setting overrides the default string.
+    return strtr($admin_setting, $variables);
+  }
+  else {
+    // No override, return default string.
+    switch ($key) {
+      case 'subscribe_unsubscribed':
+        return t("We have received a request for subscription of !mailto to the !newsletter on !site website at !uri. To confirm this subscription please use the link below.\n\n!confirmation_url", $variables, $langcode);
+      case 'subscribe_subscribed':
+        return t("We have received a request for subscription of !mailto to the !newsletter on !site website at !uri. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: !uri", $variables, $langcode);
+      case 'unsubscribe_subscribed':
+        return t("We have received a request to unsubscribe !mailto from the !newsletter on !site website at !uri. To confirm this unsubscription please use the link below.\n\n!confirmation_url", $variables, $langcode);
+      case 'unsubscribe_unsubscribed':
+        return t("We have received a request to unsubscribe !mailto from the !newsletter from on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
+      case 'subscribe_subject':
+        return t("Confirmation for !newsletter from !site", $variables, $langcode);
+    }
+  }
+}
+
+/**
  * Implementation of hook_theme.
  */
 function simplenews_theme() {
@@ -1685,12 +1745,6 @@ function simplenews_theme() {
     ),
     'simplenews_newsletter_footer' => array(
       'arguments' => array('format' => NULL, 'hash' => NULL, 'test' => NULL, 'langcode' => NULL),
-    ),
-    'simplenews_newsletter_confirmation_subject' => array(
-      'arguments' => array('newsletter' => NULL, 'site_name' => NULL, 'langcode' => NULL),
-    ),
-    'simplenews_newsletter_confirmation_body' => array(
-      'arguments' => array('email' => NULL, 'newsletter' => NULL, 'op' => NULL, 'hash' => NULL, 'langcode' => NULL)
     ),
     'simplenews_newsletter_confirmation' => array(
       'arguments' => array('email' => NULL, 'newsletter' => NULL, 'snid' => NULL, 'op' => NULL, 'hash' => NULL),
@@ -1785,47 +1839,6 @@ function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $lang
     $output .= "\n- - - ". t('This is a test version of the newsletter. The above unsubscribe link does not work!', array(), $langcode) .' - - -';
   }
   return $output;
-}
-
-function theme_simplenews_newsletter_confirmation_subject($newsletter, $site_name, $langcode) {
-  return t('Confirmation for @newsletter from @site', array('@newsletter' => $newsletter->name, '@site' => $site_name), $langcode);
-}
-
-/**
- * Construct the themable newsletter confirmation email.
- */
-function theme_simplenews_newsletter_confirmation_body($email, $newsletter, $op, $hash, $langcode) {
-  $body[] = t('This is a subscription status confirmation notice for the @newsletter.', array('@newsletter' => $newsletter->name), $langcode);
-  $body[] = "\n\n";
-
-  $user_is_subscribed = simplenews_user_is_subscribed($email, $newsletter->tid);
-  switch ($op) {
-    case 'subscribe':
-      if ($user_is_subscribed) {
-        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
-        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))), $langcode);
-      }
-      else {
-        $body[] = t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
-        $body[] = "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.', array(), $langcode);
-        $body[]  = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE))), $langcode);
-      }
-      break;
-    case 'unsubscribe':
-      if ($user_is_subscribed) {
-        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
-        $body[] = "\n\n". t('If you did not make this request, please disregard this message.', array(), $langcode);
-        $body[]  = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))), $langcode);
-      }
-      else {
-        $body[] = t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))), $langcode);
-        $body[] = "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.', array(), $langcode);
-        $body[] = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))), $langcode);
-      }
-      break;
-  }
-
-   return $body;
 }
 
 /**
