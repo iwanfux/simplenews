@@ -1713,7 +1713,7 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
       case 'unsubscribe_subscribed':
         return t("We have received a request to unsubscribe !mailto from the !newsletter on !site website at !uri. To confirm this unsubscription please use the link below.\n\n!confirmation_url", $variables, $langcode);
       case 'unsubscribe_unsubscribed':
-        return t("We have received a request to unsubscribe !mailto from the !newsletter from on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
+        return t("We have received a request to unsubscribe !mailto from the !newsletter on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
       case 'subscribe_subject':
         return t("Confirmation for !newsletter from !site", $variables, $langcode);
     }
