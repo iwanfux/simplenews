@@ -547,7 +547,7 @@ function simplenews_admin_export_after_build($form, $form_element) {
  */
 function simplenews_subscription_admin($form_state) {
   // Delete subscriptions requires delete confirmation. This is handled with a different form
-  if (isset($form_state['post']['operation']) && $form_state['post']['operation'] == 'delete') {
+  if (isset($form_state['post']['operation']) && $form_state['post']['operation'] == 'delete' && isset($form_state['post']['snids'])) {
     $destination = drupal_get_destination();
     $_SESSION['simplenews_subscriptions_delete'] = $form_state['post']['snids'];
     // Note: we redirect from admin/content/newsletters/users to admin/content/newsletters/subscriptions/delete to make the tabs disappear.
@@ -606,6 +606,7 @@ function simplenews_subscription_list_form() {
     '#type' => 'submit',
     '#value' => t('Update'),
     '#submit' => array('simplenews_subscription_list_form_submit'),
+    '#validate' => array('simplenews_subscription_list_form_validate'),
   );
 
   $snids = array();
