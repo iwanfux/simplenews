@@ -33,6 +33,7 @@ function simplenews_schema() {
     ),
     'indexes' => array(
       'mail' => array('mail'),
+      'uid' => array('uid'),
     ),
     'primary key' => array('snid'),
   );
@@ -252,7 +253,7 @@ function simplenews_update_2() {
  */
 function simplenews_update_5000() {
   $ret = array();
-  db_add_index($ret, 'simplenews_subscriptions', 'indexes', array('mail'));
+  db_add_index($ret, 'simplenews_subscriptions', 'mail', array('mail'));
   return $ret;
 }
 
@@ -397,5 +398,14 @@ function simplenews_update_6002() {
   $ret = array();
   db_add_field($ret, 'simplenews_mail_cache', 'nid', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
   variable_del('simplenews_time');
+  return $ret;
+}
+
+/**
+ * Addition of index to uid in simplenews_subscriptions
+ */
+function simplenews_update_6003() {
+  $ret = array();
+  db_add_index($ret, 'simplenews_subscriptions', 'uid', array('uid'));
   return $ret;
 }
