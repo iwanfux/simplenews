@@ -902,7 +902,7 @@ function simplenews_get_subscription($account) {
   elseif (isset($account->mail)) {
     $subscription = db_fetch_object(db_query("SELECT s.*, u.language FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.mail = '%s'", $account->mail));
   }
-  elseif (isset($account->uid)) {
+  elseif (isset($account->uid) && $account->uid > 0) {
     $subscription = db_fetch_object(db_query("SELECT s.*, u.language FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
   }
 
