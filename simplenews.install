@@ -109,17 +109,30 @@ function simplenews_schema() {
     ),
     'primary key' => array('snid', 'tid'),
   );
-  $schema['simplenews_mail_cache'] = array(
-    'description' => t(''),
+  $schema['simplenews_mail_spool'] = array(
+    'description' => t('Spool for temporary storage of newsletter emails.'),
     'fields' => array(
-      'mcid' => array(
-        'description' => t('The primary identifier for a mail cache record.'),
+      'msid' => array(
+        'description' => t('The primary identifier for a mail spool record.'),
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
         ),
+      'mail' => array(
+        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
       'nid' => array(
         'description' => t('The {node}.nid of this newsletter.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'vid' => array(
+        'description' => t('The {node}.vid of this newsletter.'),
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -129,20 +142,6 @@ function simplenews_schema() {
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'subject' => array(
-        'description' => t('The subject of this mail message.'),
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'mail' => array(
-        'description' => t('The formatted e-mail address of mail message receipient.'),
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
       ),
       'status' => array(
         'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
@@ -158,12 +157,6 @@ function simplenews_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-      ),
-      'message' => array(
-        'description' => t('The mail message array.'),
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
       ),
     ),
     'primary key' => array('mcid'),
@@ -407,5 +400,70 @@ function simplenews_update_6002() {
 function simplenews_update_6003() {
   $ret = array();
   db_add_index($ret, 'simplenews_subscriptions', 'uid', array('uid'));
+  return $ret;
+}
+
+/**
+ * Add spool table.
+ * Remove cache table.
+ */
+function simplenews_update_6004() {
+  $schema['simplenews_mail_spool'] = array(
+    'description' => t('Spool for temporary storage of newsletter emails.'),
+    'fields' => array(
+      'msid' => array(
+        'description' => t('The primary identifier for a mail spool record.'),
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
+      'mail' => array(
+        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'nid' => array(
+        'description' => t('The {node}.nid of this newsletter.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'vid' => array(
+        'description' => t('The {node}.vid of this newsletter.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'tid' => array(
+        'description' => t('The {term_data}.tid this newsletter issue belongs to.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'timestamp' => array(
+        'description' => t('The time status was set or changed.'),
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('msid'),
+    'indexes' => array('tid' => array('tid'), 'status' => array('status')),
+  );
+  $ret = array();
+  // New table to buffer mail messages during sending
+  db_create_table($ret, 'simplenews_mail_spool', $schema['simplenews_mail_spool']);
+  db_drop_table($ret, 'simplenews_mail_cache');
   return $ret;
 }

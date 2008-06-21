@@ -38,9 +38,12 @@ define('SIMPLENEWS_STATUS_SEND_NOT', 0);
 define('SIMPLENEWS_STATUS_SEND_PENDING', 1);
 define('SIMPLENEWS_STATUS_SEND_READY', 2);
 
-define('SIMPLENEWS_CACHE_HOLD', 0);
-define('SIMPLENEWS_CACHE_PENDING', 1);
-define('SIMPLENEWS_CACHE_SEND', 2);
+/**
+ * MAIL SPOOL SEND STATUS
+ */
+define('SIMPLENEWS_SPOOL_HOLD', 0);
+define('SIMPLENEWS_SPOOL_PENDING', 1);
+define('SIMPLENEWS_SPOOL_SEND', 2);
 
 /**
  * Implementation of hook_node_info().
@@ -527,6 +530,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
  */
 function simplenews_cron() {
   simplenews_mail_send();
+  simplenews_clear_spool();
 }
 
 /**
@@ -1116,6 +1120,8 @@ function simplenews_block_form_submit($form, &$form_state) {
  *   NOTE: either snid, mail or uid is required.
  */
 function simplenews_send_node($node, $accounts = array()) {
+  $mails = array();
+  
   if (is_numeric($node)) {
     $node = node_load($node);
   }
@@ -1124,42 +1130,36 @@ function simplenews_send_node($node, $accounts = array()) {
     $params['context']['node'] = $node;
     $params['from'] = $from;
 
+    $node_data['tid'] = $node->simplenews['tid'];
+    $node_data['nid'] = $node->nid;
+    $node_data['vid'] = $node->vid;
+    
+
     if (empty($accounts)) {
-      // No accounts specified. Send message to all accounts subscribed to this newsletter.
-      // Account data is taken directly from simplenews_subscriptions table. simplenews_get_subscription() is not used because it is not (yet) optimized for multiple subscribers.
-      // Name and language are added because this data is not (yet) in the table.
-      $tid = $node->simplenews['tid'];
-      $result = db_query('SELECT s.mail, s.snid, u.language FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid INNER JOIN {users} u ON s.uid = u.uid WHERE s.activated = %d AND t.tid = %d ORDER BY s.snid ASC', 1, $tid);
+      // No accounts specified. Get email address of all accounts subscribed to this newsletter.
+      $result = db_query('SELECT s.mail FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.activated = %d AND t.tid = %d', 1, $node_data['tid']);
       while ($account = db_fetch_object($result)) {
-        // Add values to account which currently do not exist in the simplenews_subscription table to match the $user account object
-        $account->name = '';
-        $account->language = user_preferred_language($account);
-        $accounts[] = $account;
+        $mails[] = array('mail' => $account->mail);
       }
     }
     else {
-      // Send newsletter to specified accounts.
-      // Account data is gathered based on the supplied uid or email address.
+      // Get email address of specified accounts.
       foreach ($accounts as $account) {
-        $subscriptions[] = simplenews_get_subscription($account);
+        $account = simplenews_get_subscription($account);
+        $mails[] = array('mail' => $account->mail);
       }
-      $accounts = $subscriptions;
     }
 
-    // Mail is send directly (simplenews_use_cron = FALSE) or stored in a mail cache (simplenews_use_cron = TRUE)
-    // Cached emails are send by simplenews_mail_send() on each cron run
-    foreach ($accounts as $account) {
-      $params['context']['account'] = $account;
-      $message = drupal_mail('simplenews', 'node', $account->mail, $account->language, $params, $from['formatted'], !variable_get('simplenews_use_cron', TRUE));
-      if (variable_get('simplenews_use_cron', TRUE)) {
-        // Chache newsletter mail messages
-        simplenews_mail_cache_set($message);
-      }
-      else {
-        if (variable_get('simplenews_debug', FALSE)) {
-          watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
-        }
-      }
+    // When cron is not used (simplenews_use_cron = FALSE) the spool content
+    // is send immediately after filling the spool. When cron is used spooled
+    // emails are send on each cron run.
+    foreach ($mails as $mail) {
+      $data = array_merge($node_data, $mail);
+      simplenews_mail_spool_set($data);
+    }
+    if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
+      simplenews_mail_send($node_data['nid'], $node_data['vid'], 999999);
+      simplenews_clear_spool();
     }
   }
 }
@@ -1390,102 +1390,136 @@ function simplenews_mail($key, &$message, $params) {
 }
 
 /**
- * Mailing 'backend' for simplenews newsletters.
+ * Send simplenews newsletters from the spool.
  *
- * Newsletters are formatted and buffered per recipient in database cache.
- * Sending is initiated by cron
- * Messages are retreived from the database cache and send one by one
- * If sending is succesful the message is removed from the database cache.
+ * Iindividual newsletter emails are stored in database spool.
+ * Sending is triggered by cron or immediately when the node is saved.
+ * Mail data is retreived from the spool, rendered and send one by one
+ * If sending is succesful the message is marked as send in the spool.
  */
-function simplenews_mail_send() {
+function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 
   // Send pending messages from database cache
-  // A limited number of mails is send each time simplenews_mail_send() called
-  if ($messages = simplenews_mail_cache_get(SIMPLENEWS_CACHE_PENDING, variable_get('simplenews_throttle', 20))) {
-
-    // The id of succesfully sent messages are stored.
-    // At completion these messages are removed from the mail cache table.
+  // A limited number of mails is retrieved from the spool
+  $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
+  if ($messages = simplenews_mail_spool_get(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $mail_sent = array();
 
     foreach($messages as $key => $message) {
-      $counter++;
-      if (variable_get('simplenews_debug', FALSE)) {
-        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
-      }
+      // Get subscription data for recipient and language
+      $account = new stdClass();
+      $account->mail = $message['mail'];    
+      $subscription = simplenews_get_subscription($account);
+      $params['context']['account'] = $subscription;
 
-      if (drupal_mail_send($message)) {
+      // Get node data for the mail
+      $node = node_load(array('nid' => $message['nid'], 'vid' => $message['vid']));
+      $params['from'] = _simplenews_set_from($node);
+      $params['context']['node'] = $node;
+  
+      // Send mail
+      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], TRUE);
+  
+      if (variable_get('simplenews_debug', FALSE)) {
+        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+      }
+  
+      // Succesfull mail messages are marked in the spool with status send.
+      // Succesfull mail are recorded with their spool id.
+      if ($message['result']) {
         $mail_sent[] = $key;
       }
-      else {
-        watchdog('error', 'Error sending newsletter to %recipient.', array('%recipient' => $message['to']), WATCHDOG_ERROR);
-      }
     }
-
-    // All succesfully sent messages are removed from the mail cache.
-    simplenews_mail_cache_clear($mail_sent);
+    // Mark messages in the spool as sent.
+    if (!empty($mail_sent)) {
+      simplenews_mail_spool_update($mail_sent, SIMPLENEWS_SPOOL_SEND);
+    }
   }
 }
 
 /**
  * Store mail message in mail cache table.
  *
+ * @param array $message data array to be stored
+ *  $message['mail']
+ *  $message['nid']
+ *  $message['vid']
+ *  $message['tid']
+ *  $message['status']  (Default: 1 = pending)
+ *  $message['time']    (default: current unix timestamp)
+
  * @param array $message Mail message array
  */
-function simplenews_mail_cache_set($message) {
-  $tid = $message['params']['context']['node']->simplenews['tid'];
-  $nid = $message['params']['context']['node']->nid;
-  unset($message['params']);
-  db_query("INSERT INTO {simplenews_mail_cache} (nid, tid, subject, mail, status, timestamp, message)
-            VALUES (%d, %d, '%s', '%s', %d, %d, %b)", $nid, $tid, $message['subject'], $message['to'], SIMPLENEWS_CACHE_PENDING, time(), serialize($message));
+function simplenews_mail_spool_set($message) {
+  $status = isset($message['status']) ? $message['status'] : SIMPLENEWS_SPOOL_PENDING;
+  $time = isset($message['time']) ? $message['time'] : time();
+
+  db_query("INSERT INTO {simplenews_mail_spool} (mail, nid, vid, tid, status, timestamp)
+            VALUES ('%s', %d, %d, %d, %d, %d)", $message['mail'], $message['nid'], $message['vid'], $message['tid'], $status, $time);
 }
 
 /**
- * Retreive data from mail cache table
+ * Retreive data from mail spool
  *
- * @param string $status Status of data to be retreived (0 = hold, 1 = pending, 2 = send)
- * @param integer $limit the maximum number of mails loaded from the cache
+ * @param string  $status Status of data to be retreived (0 = hold, 1 = pending, 2 = send)
+ * @param integer $nid node id
+ * @param integer $vid node version id
+ * @param integer $limit The maximum number of mails to load from the spool
  *
  * @return array Mail message array
- */
-function simplenews_mail_cache_get($status, $limit = 999999) {
-  $result = db_query_range("SELECT c.mcid, c.message FROM {simplenews_mail_cache} c WHERE c.status = %d ORDER BY c.timestamp ASC", $status, 0, $limit);
-  while ($data = db_fetch_object($result)) {
-    $messages[$data->mcid] = unserialize($data->message);
+ *  $message['msid']
+ *  $message['mail']
+ *  $message['nid']
+ *  $message['vid']
+ *  $message['tid']
+ *  $message['status']
+ *  $message['time']
+*/
+function simplenews_mail_spool_get($status, $nid = NULL, $vid = NULL, $limit = 999999) {
+  $result = db_query_range("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = %d ORDER BY s.timestamp ASC", $status, 0, $limit);
+  while ($data = db_fetch_array($result)) {
+    $message = array();
+    foreach ($data as $key => $value) {
+      $message[$key] = $value;
+    }
+    $messages[$data['msid']] = $message;
   }
   return $messages;
 }
 
 /**
- * Count data in mail cache table.
+ * Update status of mail data in spool table.
+ *
+ * Time stamp is set to current time.
+ *
+ * @param array $msids Mail spool id of record to be updated
+ * @param string $status New status (0 = hold, 1 = pending, 2 = send)
+ */
+function simplenews_mail_spool_update($msids, $status) {
+  db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN (%s)", $status, time(), implode(',', $msids));
+}
+
+/**
+ * Count data in mail spool table.
  *
  * @param integer $nid newsletter node id
  * @param string $status email send status
  *
  * @return array Mail message array
  */
-function simplenews_mail_cache_count($nid, $status = SIMPLENEWS_CACHE_PENDING) {
-  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_cache} c WHERE c.nid = %d AND c.status = %d", $nid, $status));
+function simplenews_mail_spool_count($nid, $status = SIMPLENEWS_SPOOL_PENDING) {
+  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_spool} c WHERE c.nid = %d AND c.status = %d", $nid, $status));
 }
 
 /**
- * Update status of mail data in cache table.
+ * Remove records from mail spool table.
  *
- * Time stamp is set to current time.
- *
- * @param array $array Mail cache id of record to be updated
- * @param string $status New status (0 = hold, 1 = pending, 2 = send)
+ * All records with status 'send' and time stamp before the expiration date
+ * are removed from the spool.
  */
-function simplenews_mail_cache_update($array, $status) {
-  db_query("UPDATE {simplenews_mail_cache} SET status = %d, timestamp = %d WHERE mcid IN (%s)", $status, time(), $implode(',', $array));
-}
-
-/**
- * Remove records from mail cache table.
- *
- * @param array $array Mail cache ids of records to be deleted
- */
-function simplenews_mail_cache_clear($array) {
-  $result = db_query("DELETE FROM {simplenews_mail_cache} WHERE mcid IN (%s)", implode(',', $array));
+function simplenews_clear_spool() {
+  $expiration_time = time() - variable_get('simplenews_spool_expire', 0) * 86400;
+  db_query("DELETE FROM {simplenews_mail_spool} WHERE status = %d AND timestamp <= %d", SIMPLENEWS_SPOOL_SEND, $expiration_time);
 }
 
 /**

@@ -20,7 +20,7 @@ function simplenews_admin_news(&$form_state, $action = 'sent') {
   $result = db_query("SELECT s.nid, s.tid FROM {simplenews_newsletters} s WHERE s.s_status = %d", SIMPLENEWS_STATUS_SEND_PENDING);
   $nids = array();
   while ($newsletter = db_fetch_object($result)) {
-    if (!simplenews_mail_cache_count($newsletter->nid)) {
+    if (!simplenews_mail_spool_count($newsletter->nid)) {
       $nids[] = $newsletter->nid;
     }
     if (!empty($nids)) {
@@ -789,6 +789,13 @@ function simplenews_admin_settings(&$form_state) {
     '#options' => $throttle,
     '#default_value' => variable_get('simplenews_throttle', 20),
     '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.'),
+  );
+  $form['simplenews_mail_backend']['simplenews_spool_expire'] = array(
+    '#type' => 'select',
+    '#title' => t('Mail spool expiration'),
+    '#options' => array(0 => t('Immediate'), 1 => t('1 day'), 7 => t('1 week'), 14 => t('2 weeks')),
+    '#default_value' => variable_get('simplenews_spool_expire', 0),
+    '#description' => t('Newsletter mails are spooled. How long must messages be retained in the spool after successfull sending. Keeping the message in the spool allows mail statistics (which is not yet implemented). If cron is not used, immediate expiration is advised.'),
   );
   $form['simplenews_mail_backend']['simplenews_debug'] = array(
     '#type' => 'checkbox',
