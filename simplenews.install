@@ -159,7 +159,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
     ),
-    'primary key' => array('mcid'),
+    'primary key' => array('msid'),
     'indexes' => array('tid' => array('tid'), 'status' => array('status')),
   );
   return $schema;
