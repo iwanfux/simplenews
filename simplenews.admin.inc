@@ -375,7 +375,7 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
 }
 
 /**
- * Menu callback: Add newsletter series.
+ * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_add_validate()
  * @see simplenews_subscription_list_add_submit()
@@ -386,7 +386,7 @@ function simplenews_subscription_list_add() {
     '#title' => t('E-mail addresses'),
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('Supply a comma separated list of e-mail addresses to be added to the list. Spaces between commas and addresses are allowed.'),
+    '#description' => t('Supply a comma separated list of email addresses to be subscribed.'),
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
@@ -394,7 +394,7 @@ function simplenews_subscription_list_add() {
   }
   $form['newsletters'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Subscribe imported addresses to the following newsletter(s)'),
+    '#title' => t('Subscribe the addresses to the following newsletter(s)'),
     '#collapsible' => FALSE,
   );
   $form['newsletters']['newsletters'] = array(
@@ -403,7 +403,7 @@ function simplenews_subscription_list_add() {
   );
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Import'),
+    '#value' => t('Subscribe'),
   );
   return $form;
 }
@@ -490,13 +490,9 @@ function simplenews_subscription_list_export() {
       );
     }
   }
-  $form['emails'] = array(
-    '#type' => 'textarea',
-    '#title' => t('E-mail addresses'),
-    '#cols' => 60,
-    '#rows' => 5,
-    '#default_value' => t('No search performed'),
-  );
+  // Emails item is initially empty. It serves as place holder. Data is added by
+  // simplenews_admin_export_after_build(). 
+  $form['emails'] = array();
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Export'),
@@ -531,15 +527,103 @@ function simplenews_admin_export_after_build($form, $form_element) {
         $mails[] = $mail->mail;
       }
     }
+
     if (isset($mails)) {
       $exported_mails = implode(", ", $mails);
     }
     else {
       $exported_mails = t('No addresses were found.');
     }
-    $form['emails']['#value'] = $exported_mails;
+    $form['emails'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Export results'),
+      '#cols' => 60,
+      '#rows' => 5,
+      '#value' => $exported_mails,
+    );
   }
   return $form;
+}
+
+/**
+ * Menu callback: Mass subscribe to newsletters.
+ *
+ * @see simplenews_subscription_list_remove_validate()
+ * @see simplenews_subscription_list_remove_submit()
+ */
+function simplenews_subscription_list_remove() {
+  $form['emails'] = array(
+    '#type' => 'textarea',
+    '#title' => t('E-mail addresses'),
+    '#cols' => 60,
+    '#rows' => 5,
+    '#description' => t('Supply a comma separated list of email addresses to be unsubscribed. Email addresses which are no longer subscribed to any newsletter, will be removed from the database.'),
+  );
+  $newsletters = array();
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+    $newsletters[$newsletter->tid] = $newsletter->name;
+  }
+  $form['newsletters'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Unsubscribe the addresses from the following newsletter(s)'),
+    '#collapsible' => FALSE,
+  );
+  $form['newsletters']['newsletters'] = array(
+    '#type' => 'checkboxes',
+    '#options' => $newsletters,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Unsubscribe'),
+  );
+  return $form;
+}
+
+function simplenews_subscription_list_remove_validate($form, &$form_state) {
+  $checked_newsletters = array_filter($form_state['values']['newsletters']);
+  if (!$checked_newsletters) {
+    form_set_error('newsletters', t('You must select at least one newsletter.'));
+  }
+}
+
+function simplenews_subscription_list_remove_submit($form, &$form_state) {
+  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
+  $removed = array();
+  $invalid = array();
+  $checked_newsletters = array_filter($form_state['values']['newsletters']);
+
+  $emails = explode(",", $form_state['values']['emails']);
+  foreach ($emails as $email) {
+    $email = trim($email);
+    if (valid_email_address($email)) {
+      foreach ($checked_newsletters as $tid) {
+        $newsletter = taxonomy_get_term($tid);
+        simplenews_unsubscribe_user($email, $newsletter->tid, FALSE);
+        $removed[] = $email;
+      }
+    }
+    else {
+      $invalid[] = $email;
+    }
+  }
+  if ($removed) {
+    $removed = implode(", ", $removed);
+    drupal_set_message(t('The following addresses were unsubscribed or removed: %removed.', array('%removed' => $removed)));
+
+    $newsletter_names = array();
+    foreach ($checked_newsletters as $tid) {
+      $newsletter = taxonomy_get_term($tid);
+      $newsletter_names[] = $newsletter->name;
+    }
+    drupal_set_message(t('The addresses were unsubscribed from the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $newsletter_names))));
+  }
+  else {
+    drupal_set_message(t('No addresses were removed.'));
+  }
+  if ($invalid) {
+    $invalid = implode(", ", $invalid);
+    drupal_set_message(t('The following addresses were invalid: %invalid.', array('%invalid' => $invalid)), 'error');
+  }
 }
 
 /**
