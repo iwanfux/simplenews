@@ -282,7 +282,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
           form_set_error('', t('You should assign content type %content_type to the !newsletter_vocabulary before you can send this newsletter.', array('%content_type' => $node->type, '!newsletter_vocabulary' => l(t('Newsletter vocabulary'), 'admin/content/taxonomy'))));
         }
         elseif (!simplenews_validate_taxonomy($node->taxonomy)) {
-          form_set_error('taxonomy', t('You should select a newsletter before you can send this newsletter issue.'));
+          form_set_error('taxonomy', t('You should select a newsletter term before you can send this newsletter issue.'));
         }
       }
       elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
