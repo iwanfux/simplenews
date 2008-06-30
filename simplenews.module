@@ -819,6 +819,9 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
   elseif (!isset($subscription->tids[$tid])) {
     // OR add user to newsletter relationship if not already subscribed.
     db_query("INSERT INTO {simplenews_snid_tid} (snid, tid) VALUES (%d, %d)", $subscription->snid, $tid);
+
+    // Execute simplenews subscribe trigger.
+    simplenews_call_actions('subscribe', $subscription);
   }
   return TRUE;
 }
@@ -865,7 +868,10 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
     if (!db_result(db_query("SELECT COUNT(*) FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid))) {
       db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $subscription->snid);
     }
-  }
+
+    // Execute simplenews unsubscribe trigger
+    simplenews_call_actions('unsubscribe', $subscription);
+    }
 
   return TRUE;
 }
@@ -1529,6 +1535,27 @@ function simplenews_mail_spool_count($nid, $status = SIMPLENEWS_SPOOL_PENDING) {
 function simplenews_clear_spool() {
   $expiration_time = time() - variable_get('simplenews_spool_expire', 0) * 86400;
   db_query("DELETE FROM {simplenews_mail_spool} WHERE status = %d AND timestamp <= %d", SIMPLENEWS_SPOOL_SEND, $expiration_time);
+}
+
+/**
+ * Call simplenews actions
+ *
+ * @see simplenews_hook_info()
+ */
+function simplenews_call_actions($op, $subscription) {
+  // Only call actions when the simplenews_action module is enabled.
+  if (!module_exists('simplenews_action')) {
+    return;
+  }
+  $aids = _trigger_get_hook_aids('simplenews', $op);
+  $context = array(
+    'hook' => 'simplenews',
+    'op' => $op,
+    'account' => $subscription,
+  );
+  foreach ($aids as $aid => $action_info) {
+    actions_do($aid, $subscription, $context);
+  }
 }
 
 /**

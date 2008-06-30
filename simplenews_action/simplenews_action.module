@@ -20,6 +20,7 @@ function simplenews_action_info() {
       'hooks' => array(
         'cron' => array('run'),
         'user' => array('insert'),
+        'simplenews' => array('subscribe'),
       ),
     ),
     'simplenews_cron_action' => array(
@@ -63,11 +64,11 @@ function simplenews_action_info() {
  *   @see simplenews_send_newsletter_action_submit
  */
 function simplenews_send_newsletter_action(&$object, $context = array()) {
-  if ($context['hook'] == 'cron' || $context['hook'] == 'user') {
+  if ($context['hook'] == 'cron' || $context['hook'] == 'user' || $context['hook'] == 'simplenews') {
 
     // Determine newsletter receipients
     $accounts = array();
-    if ($context['hook'] == 'user') {
+    if ($context['hook'] == 'user' || $context['hook'] == 'simplenews') {
       $accounts[] = $context['account'];
     }
 
@@ -292,4 +293,22 @@ function simplenews_unsubscribe_user_action_submit($form, $form_state) {
     'name' => $form['newsletter']['#options'][$form_values['newsletter']],
   );
   return $params;
+}
+
+/**
+ * Implementation of hook_hook_info().
+ */
+function simplenews_hook_info() {
+  return array(
+    'simplenews' => array(
+      'simplenews' => array(
+        'subscribe' => array(
+          'runs when' => t('After a user has been subscribed'),
+        ),
+        'unsubscribe' => array(
+          'runs when' => t('After a user has been unsubscribed'),
+        ),
+      ),
+    ),
+  );
 }
