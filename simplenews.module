@@ -613,10 +613,12 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       break;
     case 'delete':     
       if (variable_get('simplenews_sync_account', TRUE)) {
-        // Delete subscription and all newsletter subscriptions when account is removed
-        $subscription = simplenews_get_subscription($account);
-        db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $subscription->snid);
-        db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $subscription->snid);        
+        // Delete subscription and all newsletter subscriptions when account is removed.
+        // We don't use simplenews_get_subscription() here because the user is already 
+        // deleted from the {user} table.
+        $snid = db_result(db_query("SELECT s.snid FROM {simplenews_subscriptions} s WHERE s.mail = '%s'", $account->mail));
+        db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
+        db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);        
       }
       else {
         // Only remove uid from subscription data when account is removed
