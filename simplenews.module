@@ -1340,7 +1340,7 @@ function simplenews_mail($key, &$message, $params) {
 
       // Build message footer
       if ($key == 'node' && isset($context['account']->snid)) {
-        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $node->newsletter['tid']);
+        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $context['node']->simplenews['tid']);
       }
       else {
         $hash = '';
