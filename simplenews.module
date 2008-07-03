@@ -62,7 +62,7 @@ function simplenews_node_info() {
  * Implementation of hook_perm().
  */
 function simplenews_perm() {
-  return array('view links in block', 'create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'send newsletter', 'subscribe to newsletters');
+  return array('view links in block', 'create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
 }
 
 /**
@@ -108,16 +108,16 @@ function simplenews_init() {
  * Implementation of hook_menu().
  */
 function simplenews_menu() {
-  $items['admin/content/newsletters'] = array(
+  $items['admin/content/simplenews'] = array(
     'title' => 'Newsletters',
-    'description' => 'Manage newsletters, subscriptions, and configuration options.',
+    'description' => 'Manage newsletters and subscriptions.',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_news'),
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/newsletters/sent'] = array(
+  $items['admin/content/simplenews/sent'] = array(
     'title' => 'Sent issues',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'page arguments' => array('simplenews_admin_news'),
@@ -125,7 +125,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -10,
   );
-  $items['admin/content/newsletters/notsent'] = array(
+  $items['admin/content/simplenews/notsent'] = array(
     'title' => 'Drafts',
     'type' => MENU_LOCAL_TASK,
     'page arguments' => array('simplenews_admin_news', 'notsent'),
@@ -133,7 +133,7 @@ function simplenews_menu() {
     'weight' => -9,
   );
 
-  $items['admin/content/newsletters/types'] = array(
+  $items['admin/content/simplenews/types'] = array(
     'title' => 'Newsletters',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'simplenews_types_overview',
@@ -141,7 +141,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -8,
   );
-  $items['admin/content/newsletters/types/edit/%'] = array(
+  $items['admin/content/simplenews/types/edit/%'] = array(
     'title' => 'Newsletters',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -149,7 +149,7 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/newsletters/types/delete/%'] = array(
+  $items['admin/content/simplenews/types/delete/%'] = array(
     'title' => 'Newsletters',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -157,13 +157,13 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/newsletters/types/list'] = array(
+  $items['admin/content/simplenews/types/list'] = array(
     'title' => 'List newsletters',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'file' => 'simplenews.admin.inc',
     'weight' => -10,
   );
-  $items['admin/content/newsletters/types/add'] = array(
+  $items['admin/content/simplenews/types/add'] = array(
     'title' => 'Add newsletter',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -172,7 +172,8 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -9,
   );
-  $items['admin/content/newsletters/subscriptions/delete'] = array(
+
+  $items['admin/content/simplenews/subscriptions/delete'] = array(
     'title' => 'Delete',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -180,7 +181,7 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/newsletters/users'] = array(
+  $items['admin/content/simplenews/users'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -189,7 +190,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -7,
   );
-  $items['admin/content/newsletters/users/edit/%'] = array(
+  $items['admin/content/simplenews/users/edit/%'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -197,12 +198,12 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.subscription.inc',
     );
-  $items['admin/content/newsletters/users/list'] = array(
+  $items['admin/content/simplenews/users/list'] = array(
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['admin/content/newsletters/users/import'] = array(
+  $items['admin/content/simplenews/users/import'] = array(
     'title' => 'Mass subscribe',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -211,7 +212,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -9,
   );
-  $items['admin/content/newsletters/users/unsubscribe'] = array(
+  $items['admin/content/simplenews/users/unsubscribe'] = array(
     'title' => 'Mass unsubscribe',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -220,7 +221,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -8,
   );
-  $items['admin/content/newsletters/users/export'] = array(
+  $items['admin/content/simplenews/users/export'] = array(
     'title' => 'Export',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -230,18 +231,46 @@ function simplenews_menu() {
     'weight' => -7,
   );
 
-  $items['admin/content/newsletters/settings'] = array(
-    'title' => 'Settings',
-    'type' => MENU_LOCAL_TASK,
+  $items['admin/settings/simplenews'] = array(
+    'title' => 'Simplenews settings',
+    'description' => 'Manage simplenews configuration.',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings'),
-    'access arguments' => array('administer newsletters'),
-    'weight' => -6,
+    'access arguments' => array('administer simplenews settings'),
+    'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/newsletters/settings/general'] = array(
+
+  $items['admin/settings/simplenews/general'] = array(
     'title' => 'General',
     'type' => MENU_DEFAULT_LOCAL_TASK,
+    'page arguments' => array('simplenews_admin_settings'),
+    'access arguments' => array('administer simplenews settings'),
+    'file' => 'simplenews.admin.inc',
     'weight' => -10,
   );
+  $items['admin/settings/simplenews/newsletter'] = array(
+    'title' => 'Newsletter',
+    'type' => MENU_LOCAL_TASK,
+    'page arguments' => array('simplenews_admin_settings_newsletter'),
+    'access arguments' => array('administer simplenews settings'),
+    'weight' => -9,
+  );
+  $items['admin/settings/simplenews/subscription'] = array(
+    'title' => 'Subscription',
+    'type' => MENU_LOCAL_TASK,
+    'page arguments' => array('simplenews_admin_settings_subscription'),
+    'access arguments' => array('administer simplenews settings'),
+    'weight' => -8,
+  );
+  $items['admin/settings/simplenews/mail'] = array(
+    'title' => 'Mail backend',
+    'type' => MENU_LOCAL_TASK,
+    'page arguments' => array('simplenews_admin_settings_mail'),
+    'access arguments' => array('administer simplenews settings'),
+    'weight' => -7,
+  );
+  
   $items['newsletter/confirm'] = array(
     'title' => 'Confirm newsletter subscriptions',
     'type' => MENU_CALLBACK,
@@ -1735,8 +1764,8 @@ function simplenews_help($path, $arg) {
         $help .= "<p>". t('Install Mime Mail module to send HTML emails. Mime Mail is also used to send emails with attachments, both plain text and HTML emails.') ."</p>\n";
       }
       return $help;
-    case 'admin/content/newsletters/settings':
-      $help = '<p>'. t('Newsletter specific settings can be found at the <a href="@page">Newsletters settings page</a>.', array('@page' => url('admin/content/newsletters/types'))) ."</p>\n";
+    case 'admin/content/simplenews/settings':
+      $help = '<p>'. t('Newsletter specific settings can be found at the <a href="@page">Newsletters settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) ."</p>\n";
       return $help;
   }
 }

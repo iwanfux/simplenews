@@ -177,6 +177,6 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
  */
 function simplenews_admin_users_form(&$form_state, $snid = NULL) {
   $form = simplenews_subscription_manager_form($form_state, $snid);
-  $form['#redirect'] = 'admin/content/newsletters/users';
+  $form['#redirect'] = 'admin/content/simplenews/users';
   return $form;
 }
