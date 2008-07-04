@@ -787,6 +787,22 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 /**
+ * Implementation of hook_forms
+ *
+ * All form blocks are build using simplenews_block_form().
+ * hook_forms() is required to provide unique form id for each block form.
+ */
+function simplenews_forms() {
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+    $forms['simplenews_block_form_'. $newsletter->tid] = array(
+      'callback' => 'simplenews_block_form',
+      'callback arguments' => array($newsletter->tid),
+    );
+  }
+  return $forms;
+}
+
+/**
  * Load a user or creates a dummy anonymous user.
  *
  * @return account
@@ -1105,7 +1121,12 @@ function simplenews_block_form(&$form_state, $tid) {
       '#options' => array('subscribe' => t('Subscribe'), 'unsubscribe' => t('Unsubscribe')),
     );
   }
+  
+  // All block forms use the same validate and submit function.
+  // #tid carries the tid for processing of the right newsletter issue term.
   $form['#tid'] = $tid;
+  $form['#validate'][] = 'simplenews_block_form_validate';
+  $form['#submit'][] = 'simplenews_block_form_submit';
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => isset($submit_text) ? $submit_text : t('Save')
@@ -1874,7 +1895,7 @@ function template_preprocess_simplenews_block(&$variables) {
   // Block content variables
   $variables['message'] = check_plain(variable_get('simplenews_block_m_'. $tid, t('Stay informed on our latest news!')));
   if (user_access('subscribe to newsletters')) {
-    $variables['form'] = drupal_get_form('simplenews_block_form', $tid);
+    $variables['form'] = drupal_get_form('simplenews_block_form_'. $tid);
     $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions');
   }
   if (user_access('view links in block') || user_access('administer newsletters')) {
