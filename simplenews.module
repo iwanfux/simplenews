@@ -449,8 +449,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
-    $form['content_types']['nodes']['#required'] = TRUE;
-    $form['content_types']['nodes']['#description'] = t('Select content type(s) to be used as newsletter');
+    $form['content_types']['nodes']['#disabled'] = TRUE;
+    $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
   }
 
   // Simplenews newsletter node form
@@ -459,10 +459,9 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       if (isset($form['#node']->simplenews)) {
         $simplenews_values = $form['#node']->simplenews;
       }
-      $vid = variable_get('simplenews_vid', '');
-      if (!isset($form['taxonomy'][$vid]) && !isset($form['taxonomy']['tag'][$vid])) {
-        $vocabulary = taxonomy_vocabulary_load($vid);
-        drupal_set_message(t('Content type %type requires to be assigned to vocabulary %name. Please change the vocabulary settings.', array('%type' => $form['type']['#value'], '%name' => $vocabulary->name)), 'error');
+      $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
+      if (!isset($vocabulary->nodes[$form['type']['#value']])) {
+        drupal_set_message(t('Missing vocabulary %name. Please check and save the !settings.', array('%name' => $vocabulary->name, '!settings' => l('Simplenews settings', 'admin/simplenews/settings'))), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',

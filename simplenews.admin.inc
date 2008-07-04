@@ -775,7 +775,7 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   // Newsletter vocabulary is updated using node type settings.
   $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
-  $vocabulary['nodes'] = array_merge($vocabulary['nodes'], $form_state['values']['simplenews_content_types']);
+  $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
 
   taxonomy_save_vocabulary($vocabulary);
   drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
