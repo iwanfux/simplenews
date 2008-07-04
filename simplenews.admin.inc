@@ -771,6 +771,17 @@ function simplenews_admin_settings(&$form_state) {
   return system_settings_form($form);
 }
 
+function simplenews_admin_settings_submit($form, &$form_state) {
+  // Newsletter vocabulary is updated using node type settings.
+  $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
+  $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
+  $vocabulary['nodes'] = array_merge($vocabulary['nodes'], $form_state['values']['simplenews_content_types']);
+
+  taxonomy_save_vocabulary($vocabulary);
+  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
+  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/'. $form_state['values']['vid']));
+}
+
 /**
  * Menu callback: Simplenews admin settings - Newsletter.
  */
@@ -857,6 +868,12 @@ function simplenews_admin_settings_newsletter(&$form_state) {
   );
 
   return system_settings_form($form);
+}
+
+function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
+  if (!valid_email_address($form_state['values']['simplenews_from_address'])) {
+    form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
+  }
 }
 
 /**
@@ -965,23 +982,6 @@ function simplenews_admin_settings_subscription(&$form_state) {
   );
 
   return system_settings_form($form);
-}
-
-function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
-  if (!valid_email_address($form_state['values']['simplenews_from_address'])) {
-    form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
-  }
-}
-
-function simplenews_admin_settings_submit($form, &$form_state) {
-  // Newsletter vocabulary is updated using node type settings.
-  $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
-  $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
-  $vocabulary['nodes'] = array_merge($vocabulary['nodes'], $form_state['values']['simplenews_content_types']);
-
-  taxonomy_save_vocabulary($vocabulary);
-  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
-  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/'. $form_state['values']['vid']));
 }
 
 /**
