@@ -129,9 +129,9 @@ function simplenews_types_overview() {
  * @see simplenews_admin_types_form_validate()
  * @see simplenews_admin_types_form_submit()
  */
-//TODO rework this form to be able to set newsletter options when creating the newsletter.
 function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   if (isset($tid)) {
+    // We are editing an existing newsletter.
     $term = taxonomy_get_term($tid);
 
     // If the given term is not a newsletter, don't allow editing.
@@ -147,18 +147,17 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
 
   }
   else {
-    // Add form so choose simplenews vocabulary.
+    // We will create a new newsletter.
+    // Provide vocabulary id for the newsletter to be added to.
     $term = (object)array('vid' => variable_get('simplenews_vid', ''));
   }
 
-  //TODO: move info text to hook_help. Add help for newsletter settings after submitting the newsletter.
-  $form['info'] = array('#value' => t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).'));
   $form['name'] = array(
     '#type' => 'textfield',
     '#title' => t('Newsletter name'),
     '#size' => 50,
     '#maxlength' => 128,
-    '#description' => t('This name is used to identify the newsletter.'),
+    '#description' => t('This name of this newsletter.'),
     '#required' => TRUE,
     '#default_value' => isset($term->name) ? $term->name : '',
   );
@@ -167,63 +166,39 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     '#title' => t('Description'),
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('The description can be used to provide more information.'),
+    '#description' => t('A description of the newsletter. To be displayed on taxonomy/term pages and RSS feeds.'),
     '#default_value' => isset($term->description) ? $term->description : '',
   );
   $form['weight'] = array(
     '#type' => 'weight',
     '#title' => t('Weight'),
     '#delta' => 10,
-    '#description' => t('In listings, the heavier (with a higher weight value) terms will sink and the lighter terms will be positioned nearer the top.'),
+    '#description' => t('Newsletters are displayed in ascending order by weight.'),
+    '#required' => TRUE,
     '#default_value' => isset($term->weight) ? $term->weight : 0,
   );
 
-  if (isset($term->tid)) {
-    //TODO: enable below form at creation of newsletter
-    // Store the term ID to indicate a newsletter specific form.
-    $form['simplenews_newsletter'] = array(
-      '#type' => 'hidden',
-      '#value' => $term->tid,
-    );
-
-    $form['simplenews_sender_information'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Sender information'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['simplenews_sender_information']['simplenews_from_name_'. $term->tid] = array(
-      '#type' => 'textfield',
-      '#title' => t('From name'),
-      '#size' => 60,
-      '#maxlength' => 128,
-      '#default_value' => variable_get('simplenews_from_name_'. $term->tid, variable_get('site_name', 'Drupal')),
-    );
-    $form['simplenews_sender_information']['simplenews_from_address_'. $term->tid] = array(
-      '#type' => 'textfield',
-      '#title' => t('From e-mail address'),
-      '#size' => 60,
-      '#maxlength' => 128,
-      '#required' => TRUE,
-      '#default_value' => variable_get('simplenews_from_address_'. $term->tid, variable_get('site_mail', ini_get('sendmail_from'))),
-    );
-    $form['simplenews_hyperlinks'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('HTML to text conversion'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#description' => t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'),
-    );
-/*
-    Support for inline links removed. Restoring this function will depend on user requests.
-    $form['simplenews_hyperlinks']['simplenews_hyperlinks_'. $term->tid] = array(
-      '#type' => 'radios',
-      '#title' => t('Hyperlink conversion'),
-      '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
-      '#default_value' => variable_get('simplenews_hyperlinks_'. $term->tid, 1),
-    );
-*/
-  }
+  $form['simplenews_sender_information'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Sender information'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['simplenews_sender_information']['simplenews_from_name_'. $term->tid] = array(
+    '#type' => 'textfield',
+    '#title' => t('From name'),
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#default_value' => variable_get('simplenews_from_name_'. $term->tid, variable_get('site_name', 'Drupal')),
+  );
+  $form['simplenews_sender_information']['simplenews_from_address_'. $term->tid] = array(
+    '#type' => 'textfield',
+    '#title' => t('From e-mail address'),
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#required' => TRUE,
+    '#default_value' => variable_get('simplenews_from_address_'. $term->tid, variable_get('site_mail', ini_get('sendmail_from'))),
+  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -234,9 +209,9 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     '#value' => isset($term->vid) ? $term->vid : variable_get('simplenews_vid', ''),
   );
 
-  // If we are editing a newsletter term, show delete option. When the submit
-  // passes the $form_state['values']['tid'] to taxonomy_save_term() it will delete the
-  // term for some reason.
+  // If we are editing a newsletter term, show delete option and store tid.
+  // tid is used in validation and submission functions to differentiate
+  // between form actions of creating a new or editing an existing term.
   if (isset($term->tid)) {
     $form['delete'] = array(
       '#type' => 'submit',
@@ -256,13 +231,11 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
 }
 
 function simplenews_admin_types_form_validate($form, &$form_state) {
-  if (isset($form_state['values']['simplenews_newsletter'])) {
-    $tid = $form_state['values']['simplenews_newsletter'];
-    $field_name = 'simplenews_from_address_'. $tid;
+  $tid = $form_state['values']['tid'];
+  $field_name = 'simplenews_from_address_'. $tid;
 
-    if (!valid_email_address($form_state['values'][$field_name])) {
-      form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
-    }
+  if (!valid_email_address($form_state['values'][$field_name])) {
+    form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
   }
 }
 
@@ -272,7 +245,14 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
       drupal_goto('admin/content/simplenews/types/delete/'. $term->tid);
     }
 
-  switch (taxonomy_save_term($form_state['values'])) {
+  // Create or update taxonomy term for this newsletter.
+  // When creating a term $form_state['values']['tid'] is NULL.
+  $termdata['tid'] = $form_state['values']['tid'];
+  $termdata['vid'] = $form_state['values']['vid'];
+  $termdata['name'] = $form_state['values']['name'];
+  $termdata['description'] = $form_state['values']['description'];
+  $termdata['weight'] = $form_state['values']['weight'];
+  switch (taxonomy_save_term($termdata)) {
     case SAVED_NEW:
       drupal_set_message(t('Created new term %name.', array('%name' => $form_state['values']['name'])));
       break;
@@ -281,13 +261,21 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
       break;
   }
 
-  // Store newsletter specific settings when editing an existing newsletter
-  if (isset($form_state['values']['simplenews_newsletter'])) {
-    $tid = $form_state['values']['simplenews_newsletter'];
-    variable_set('simplenews_from_name_'. $tid, $form_state['values']['simplenews_from_name_'. $tid]);
-    variable_set('simplenews_from_address_'. $tid, $form_state['values']['simplenews_from_address_'. $tid]);
-    //variable_set('simplenews_hyperlinks_'. $tid, $form_state['values']['simplenews_hyperlinks_'. $tid]);
+  // Store newsletter specific settings.
+  // When editing a newsletter fieldnames have $tid suffix.
+  // When creating a new newsletter field names have no suffix
+  // and $form_state['values']['tid'] is NULL.
+  if (isset($form_state['values']['tid'])) {
+    $tid = $suffix = $form_state['values']['tid'];
   }
+  else {
+    // Get the tid from the database based on the form values used above to
+    // create a new term.
+    $tid = db_result(db_query("SELECT t.tid FROM {term_data} t WHERE t.vid = %d AND t.name = '%s' ORDER BY t.tid DESC", $form_state['values']['vid'], $form_state['values']['name']));
+    $suffix = '';
+  }
+  variable_set('simplenews_from_name_'. $tid, $form_state['values']['simplenews_from_name_'. $suffix]);
+  variable_set('simplenews_from_address_'. $tid, $form_state['values']['simplenews_from_address_'. $suffix]);
 }
 
 /**
@@ -322,8 +310,11 @@ function simplenews_admin_types_delete(&$form_state, $tid = NULL) {
 
 function simplenews_admin_types_delete_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    $term = taxonomy_get_term($form_state['values']['tid']);
-    taxonomy_del_term($form_state['values']['tid']);
+    $tid = $form_state['values']['tid'];
+    $term = taxonomy_get_term($tid);
+    taxonomy_del_term($tid);
+    variable_del('simplenews_from_name_'. $tid);
+    variable_del('simplenews_from_address_'. $tid);
     drupal_set_message(t('Newsletter %title has been deleted.', array('%title' => $term->name)));
   }
 }
