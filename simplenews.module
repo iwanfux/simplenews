@@ -461,7 +461,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       }
       $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
       if (!isset($vocabulary->nodes[$form['type']['#value']])) {
-        drupal_set_message(t('Missing vocabulary %name. Please check and save the !settings.', array('%name' => $vocabulary->name, '!settings' => l('Simplenews settings', 'admin/simplenews/settings'))), 'error');
+        drupal_set_message(t('Missing vocabulary %name. Please check the !settings.', array('%name' => $vocabulary->name, '!settings' => l('Simplenews settings', 'admin/settings/simplenews'))), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
