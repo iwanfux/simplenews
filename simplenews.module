@@ -1784,7 +1784,7 @@ function simplenews_help($path, $arg) {
         $help .= "<p>". t('Install Mime Mail module to send HTML emails. Mime Mail is also used to send emails with attachments, both plain text and HTML emails.') ."</p>\n";
       }
       return $help;
-    case 'admin/content/simplenews/settings':
+    case 'admin/settings/simplenews/newsletter':
       $help = '<p>'. t('Newsletter specific settings can be found at the <a href="@page">Newsletters settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) ."</p>\n";
       return $help;
     case 'admin/content/simplenews/types/add':
