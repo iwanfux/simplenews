@@ -189,7 +189,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     '#title' => t('From name'),
     '#size' => 60,
     '#maxlength' => 128,
-    '#default_value' => variable_get('simplenews_from_name_'. $term->tid, variable_get('site_name', 'Drupal')),
+    '#default_value' => variable_get('simplenews_from_name_'. $term->tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal'))),
   );
   $form['simplenews_sender_information']['simplenews_from_address_'. $term->tid] = array(
     '#type' => 'textfield',
@@ -197,7 +197,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
-    '#default_value' => variable_get('simplenews_from_address_'. $term->tid, variable_get('site_mail', ini_get('sendmail_from'))),
+    '#default_value' => variable_get('simplenews_from_address_'. $term->tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
   );
   $form['submit'] = array(
     '#type' => 'submit',

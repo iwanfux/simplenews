@@ -1624,8 +1624,8 @@ function _simplenews_set_from($node = NULL) {
   $name_default = variable_get('site_name', 'Drupal');
 
   if (isset($node->simplenews['tid'])) {
-    $address = variable_get('simplenews_from_address_'. $node->simplenews['tid'], $address_default);
-    $name = variable_get('simplenews_from_name_'. $node->simplenews['tid'], $name_default);
+    $address = variable_get('simplenews_from_address_'. $node->simplenews['tid'], variable_get('simplenews_from_address', $address_default));
+    $name = variable_get('simplenews_from_name_'. $node->simplenews['tid'], variable_get('simplenews_from_name', $name_default));
   }
   else {
     $address = variable_get('simplenews_from_address', $address_default);
