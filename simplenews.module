@@ -864,7 +864,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
     $params['from'] = _simplenews_set_from();
     $params['newsletter'] = taxonomy_get_term($tid);
     $params['context']['account'] = $subscription;
-    drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params);
+    drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
   elseif (!isset($subscription->tids[$tid])) {
     // OR add user to newsletter relationship if not already subscribed.
@@ -908,7 +908,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
     $params['from'] = _simplenews_set_from();
     $params['newsletter'] = $newsletter;
     $params['context']['account'] = $subscription;
-    drupal_mail('simplenews', 'unsubscribe', $mail, $subscription->language, $params);
+    drupal_mail('simplenews', 'unsubscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
   elseif (isset($subscription->tids[$tid])) {
     // OR remove the user from the newsletter.
@@ -1266,7 +1266,7 @@ function simplenews_send_test($node, $accounts = array()) {
     foreach ($accounts as $account) {
       $subscription = simplenews_get_subscription($account);
       $params['context']['account'] = $subscription;
-      $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['formatted']);
+      $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['address']);
       if ($result['result']) {
         drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $account->mail)));
       }
@@ -1351,6 +1351,7 @@ function simplenews_mail($key, &$message, $params) {
 
         // Add simplenews specific header data
         $headers = array_merge($message['headers'], _simplenews_headers($node, $params['from']['address']));
+        $headers['From'] = $params['from']['formatted'];
         $message['headers'] = $messages[$nid][$langcode]['headers'] = $headers;
 
         // Build message subject
@@ -1402,8 +1403,8 @@ function simplenews_mail($key, &$message, $params) {
       $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $langcode);
       break;
     case 'subscribe':
-      // Replace default site address with formatted simplenews from address
-      $message['headers']['From'] = $message['headers']['Reply-To'] = $params['from']['formatted'];
+      // Use formatted from address "name" <mail_address>
+      $message['headers']['From'] = $params['from']['formatted'];
 
       if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
         $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
@@ -1426,8 +1427,8 @@ function simplenews_mail($key, &$message, $params) {
       }
       break;
     case 'unsubscribe':
-      // Replace default site address with formatted simplenews from address
-      $message['headers']['From'] = $message['headers']['Reply-To'] = $params['from']['formatted'];
+      // Use formatted from address "name" <mail_address>
+      $message['headers']['From'] = $params['from']['formatted'];
 
       if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
         $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
@@ -1488,7 +1489,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
       $params['context']['node'] = $node;
   
       // Send mail
-      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], TRUE);
+      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
   
       if (variable_get('simplenews_debug', FALSE)) {
         watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
