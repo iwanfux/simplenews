@@ -449,8 +449,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
-    $form['content_types']['nodes']['#disabled'] = TRUE;
-    $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
+    $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can also be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
   }
 
   // Simplenews newsletter node form
@@ -1794,6 +1793,9 @@ function simplenews_help($path, $arg) {
       return $help;
     case 'admin/content/simplenews/types/add':
       $help = '<p>'. t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') ."</p>\n";
+      return $help;
+    case 'admin/content/simplenews/types/edit/%':
+      $help = '<p>'. t('This newsletter issue is based on a taxonomy term. More settings for this term can be found at <a href="@edit_term">Edit Taxonomy term</a>.', array('@edit_term' => url('admin/content/taxonomy/edit/term/'. $arg[5]))) ."</p>\n";
       return $help;
   }
 }

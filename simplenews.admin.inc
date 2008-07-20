@@ -733,14 +733,16 @@ function simplenews_admin_settings(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
+  $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', '')); 
   $form['simplenews_general_settings']['simplenews_content_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Newsletter content types'),
     '#required' => TRUE,
     '#options' => array_map('check_plain', node_get_types('names')),
-    '#default_value' => variable_get('simplenews_content_types', array('simplenews')),
+    '#default_value' => $vocabulary->nodes,
     '#description' => t('Select content type(s) to be used as newsletter.'),
   );
+
   $vocabulary_options = array();
   if ($vocabularies = taxonomy_get_vocabularies()) {
     foreach ($vocabularies as $key => $object) {
@@ -767,8 +769,11 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
   $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
-
   taxonomy_save_vocabulary($vocabulary);
+
+  // We do not need a simplenews_content_types variable.
+  unset($form_state['values']['simplenews_content_types']);
+
   drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
   watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/'. $form_state['values']['vid']));
 }
