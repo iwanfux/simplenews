@@ -1875,9 +1875,6 @@ function simplenews_theme() {
     'simplenews_newsletter_footer' => array(
       'arguments' => array('format' => NULL, 'hash' => NULL, 'test' => NULL, 'langcode' => NULL),
     ),
-    'simplenews_newsletter_confirmation' => array(
-      'arguments' => array('email' => NULL, 'newsletter' => NULL, 'snid' => NULL, 'op' => NULL, 'hash' => NULL),
-    ),
     'simplenews_subscription_list' => array(
       'file' => 'simplenews.admin.inc',
       'arguments' => array('form' => NULL),
@@ -1968,51 +1965,4 @@ function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $lang
     $output .= "\n- - - ". t('This is a test version of the newsletter. The above unsubscribe link does not work!', array(), $langcode) .' - - -';
   }
   return $output;
-}
-
-/**
- * Construct the themable newsletter confirmation email.
- */
-function theme_simplenews_newsletter_confirmation($email, $newsletter, $snid, $op, $hash) {
-  $mail = new stdClass();
-
-  $mail->simplenews['s_format'] = 'plain';
-  $mail->simplenews['priority'] = 'none';
-
-  $mail->simplenews['to'] = $email;
-  $mail->simplenews['subject'] = t('Confirmation for @newsletter from @site', array('@newsletter' => $newsletter->name, '@site' => $mail->from_name));
-  $mail->body = t('This is a subscription status confirmation notice for the @newsletter.', array('@newsletter' => $newsletter->name));
-  $mail->body .= "\n\n";
-
-  $user_is_subscribed = simplenews_user_is_subscribed($email, $newsletter->tid);
-  switch ($op) {
-    case 'subscribe':
-      if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). However, you are already subscribed to this newsletter. If you want to unsubscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
-      }
-      else {
-        $mail->body .= t('We have received a request for subscription of your e-mail address, @mail, to the @newsletter from @site (!url). To confirm that you want to be added to this mailing list, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
-        $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
-        $footer = "\n\n-- \n". t('Subscribe link: !url', array('!url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE))));
-      }
-      break;
-    case 'unsubscribe':
-      if ($user_is_subscribed) {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). If you want to unsubscribe, simply visit the confirmation link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
-        $mail->body .= "\n\n". t('If you did not make this request, please disregard this message.');
-        $footer = "\n\n-- \n". t('Unsubscribe link: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))));
-      }
-      else {
-        $mail->body .= t('We have received a request for the removal of your e-mail address, @mail, from the @newsletter from @site (!url). However, you were not subscribed to this newsletter. If you want to subscribe, you can visit our website by using the link at the bottom of this e-mail.', array('@mail' => $email, '@newsletter' => $newsletter->name, '@site' => $mail->from_name, '!url' => url('', array('absolute' => TRUE))));
-        $mail->body .= "\n\n". t('If you do not wish to be subscribed to this list, please disregard this message.');
-      }
-      break;
-  }
-
-  if (!isset($footer)) {
-    $footer = "\n\n-- \n". t('Visit our site: !url', array('!url' => url('', array('absolute' => TRUE))));
-  }
-
-  $mail->body .= $footer;
-  return $mail;
 }
