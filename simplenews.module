@@ -353,12 +353,16 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
         }
       }
 
-      // When translation module is activated all translated modules share the send status
-      //TODO Share all states, not only send state
-      if (module_exists('translation') && $send_with_permission) {
+      // When this node is selected for translation all translation of this node
+      // will be send too.
+      // All translated nodes will receive the same send states (priority, confirmation, format).
+      if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
         if ($translations = translation_node_get_translations($node->tnid))  {
           foreach ($translations as $translation) {
-            db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_PENDING, $translation->nid);
+            db_query("UPDATE {simplenews_newsletters} SET s_status = %d, s_format = '%s', priority = %d, receipt = %d
+              WHERE nid = %d",
+              SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'],
+              $node->simplenews['receipt'], $translation->nid);
           }
         }
       }
@@ -532,6 +536,10 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
             '#description' => t('You have no privileges to send this newsletter'),
           );
         }
+        if (module_exists('translation') && translation_supported_type($form['#node']->type)) {
+          $form['simplenews']['send']['#description'] = t('This newsletter issue is part of a translation set. All translations in this set will be send when you send this node.');
+        }
+
         $address_default = variable_get('site_mail', ini_get('sendmail_from'));
         if (variable_get('simplenews_test_address_override', 0)) {
           $form['simplenews']['test_address'] = array(
@@ -1320,7 +1328,7 @@ function simplenews_mail($key, &$message, $params) {
 
         // If the node has translations and a translation is required
         // the equivalent of the node in the required langugage is used
-        // or the base node (tnid) is used
+        // or the base node (nid == tnid) is used
         if ($tnid = $context['node']->tnid) {
           if ($langcode != $context['node']->language) {
             $translations = translation_node_get_translations($tnid);
@@ -1358,15 +1366,21 @@ function simplenews_mail($key, &$message, $params) {
         $headers['From'] = $params['from']['formatted'];
         $message['headers'] = $messages[$nid][$langcode]['headers'] = $headers;
 
-        // Build message subject
+        // Build email subject
         if ($tid = $node->simplenews['tid']) {
           $term = taxonomy_get_term($tid);
-          $name = check_plain($term->name);
+          // Translate the newsletter term name if simplenews vocabulary uses Localized terms.
+          if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_LOCALIZE) {
+            $name = check_plain(tt('taxonomy:term:'. $tid .':name', $term->name, $langcode));
+          }
+          else {
+            $name = check_plain($term->name);
+          }
         }
         else {
           $name = t('Unassigned newsletter');
         }
-        $subject = theme('simplenews_newsletter_subject', $name, check_plain($node->title), $langcode);
+        $subject = theme('simplenews_newsletter_subject', $name, check_plain($node->title), $message['language']);
         $subject = str_replace(array("\r", "\n"), '', $subject);
         $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
 
@@ -1378,33 +1392,39 @@ function simplenews_mail($key, &$message, $params) {
         unset($node->teaser);
         node_invoke_nodeapi($node, 'alter', FALSE, TRUE);
         $node = node_prepare($node);
-        $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $langcode);
+        $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $message['language']);
 
         // Buffer body text node and language specific
         $messages[$nid][$langcode]['body'] = $body;
 
       }
       else {
-        // Retreived headers, subject and raw body from the buffer
+        // Get message data from buffer
         $message['headers'] = $messages[$nid][$langcode]['headers'];
         $message['subject'] = $messages[$nid][$langcode]['subject'];
         $body = $messages[$nid][$langcode]['body'];
       }
 
+      // Build message body.
+      // The placeholders are replaced with user specific data
+      // before conversion to plain text.
       $variables =  user_mail_tokens($context['account'], $context['account']->language);
       $body = strtr($body, $variables);
       $body = simplenews_html_to_text($body);
       $message['body']['body'] = $body;
 
-      // Build message footer
+      // Build message footer.
       if ($key == 'node' && isset($context['account']->snid)) {
         $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $context['node']->simplenews['tid']);
       }
       else {
         $hash = '';
       }
+      $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $message['language']);
+      
+      // Add user specific header data.
       $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
-      $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $langcode);
+      
       break;
     case 'subscribe':
       // Use formatted from address "name" <mail_address>
@@ -1491,7 +1511,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
       $node = node_load(array('nid' => $message['nid'], 'vid' => $message['vid']));
       $params['from'] = _simplenews_set_from($node);
       $params['context']['node'] = $node;
-  
+
       // Send mail
       $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
   
@@ -1708,6 +1728,7 @@ function _simplenews_headers($node, $from) {
  *
  * @return string Target text with HTML and special characters replaced
  */
+//TODO: convert url to absolute url's with (right prefix ?)
 function simplenews_html_to_text($text) {
   // Remove in-page links
   $pattern = '@<a[^>]+?href="#[^"]*"[^>]*?>(.+?)</a>@i';
@@ -1874,13 +1895,13 @@ function simplenews_theme() {
       'arguments' => array('node' => NULL, 'tid' => NULL),
     ),
     'simplenews_newsletter_subject' => array(
-      'arguments' => array('name' => NULL, 'title' => NULL, 'langcode' => NULL),
+      'arguments' => array('name' => NULL, 'title' => NULL, 'language' => NULL),
     ),
     'simplenews_newsletter_body' => array(
-      'arguments' => array('body' => NULL, 'title' => NULL, 'langcode' => NULL),
+      'arguments' => array('body' => NULL, 'title' => NULL, 'language' => NULL),
     ),
     'simplenews_newsletter_footer' => array(
-      'arguments' => array('format' => NULL, 'hash' => NULL, 'test' => NULL, 'langcode' => NULL),
+      'arguments' => array('format' => NULL, 'hash' => NULL, 'test' => NULL, 'language' => NULL),
     ),
     'simplenews_subscription_list' => array(
       'file' => 'simplenews.admin.inc',
@@ -1944,14 +1965,14 @@ function theme_simplenews_newsletter($node, $tid) {
 /**
  * Theme the newsletter e-mail subject.
  */
-function theme_simplenews_newsletter_subject($name, $title, $langcode) {
+function theme_simplenews_newsletter_subject($name, $title, $language) {
   return  '['. $name .'] '. $title;
 }
 
 /**
  * Theme the newsletter message body.
  */
-function theme_simplenews_newsletter_body($body, $title, $langcode) {
+function theme_simplenews_newsletter_body($body, $title, $language) {
   $output = '<h2>'. $title ."</h2>\n";
   $output .= $body;
   return $output;
@@ -1960,16 +1981,16 @@ function theme_simplenews_newsletter_body($body, $title, $langcode) {
 /**
  * Theme the newsletter message footer.
  */
-function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $langcode) {
+function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $language) {
   if ($format == 'html') {
-    $output = '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter'), 'newsletter/confirm/remove/'. $hash, array('html' => TRUE), $langcode) .'</p>';
+    $output = '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter', array(), $language->language), 'newsletter/confirm/remove/'. $hash, array('html' => TRUE, 'language' => $language)) .'</p>';
   }
   else {
-    $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE))), $langcode);
+    $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language))), $language->language);
   }
 
   if ($test) {
-    $output .= "\n- - - ". t('This is a test version of the newsletter. The above unsubscribe link does not work!', array(), $langcode) .' - - -';
+    $output .= "\n- - - ". t('This is a test version of the newsletter. The above unsubscribe link does not work!', array(), $language->language) .' - - -';
   }
   return $output;
 }
