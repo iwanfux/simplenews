@@ -357,6 +357,8 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
  * @see simplenews_subscription_list_add_submit()
  */
 function simplenews_subscription_list_add() {
+  global $language;
+  
   $form['emails'] = array(
     '#type' => 'textarea',
     '#title' => t('E-mail addresses'),
@@ -374,6 +376,29 @@ function simplenews_subscription_list_add() {
     '#options' => $newsletters,
     '#required' => TRUE,
   );
+  
+  // Include language selection when the site is multilingual.
+  // Default value is the empty string which will result in receiving emails
+  // in the site's default language.
+  if (variable_get('language_count', 1) > 1) {
+    $options[''] = t('None (site default language)');
+    $languages = language_list('enabled');
+    foreach ($languages[1] as $langcode => $item) {
+      $name = t($item->name);
+      $options[$langcode] = $name . ($item->native != $name ? ' ('. $item->native .')' : '');
+    }
+    $form['language'] = array(
+      '#type' => 'radios',
+      '#title' => t('Anonymous user preferred language'),
+      '#default_value' => '',
+      '#options' => $options,
+      '#description' => t('Anonymous users will be subscribed with the selected preferred language. They will receive newsletters in this language if available. Registered users will be subscribed with their preferred language as set on their account page.'),
+    );
+  }
+  else {
+    $form['language'] = array('#type' => 'value', '#value' => '');
+  }
+  
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Subscribe'),
@@ -386,6 +411,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
   $added = array();
   $invalid = array();
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
+  $langcode = $form_state['values']['language'];
 
   $emails = explode(",", $form_state['values']['emails']);
   foreach ($emails as $email) {
@@ -393,7 +419,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
     if (valid_email_address($email)) {
       foreach ($checked_newsletters as $tid) {
         $newsletter = taxonomy_get_term($tid);
-        simplenews_subscribe_user($email, $newsletter->tid, FALSE);
+        simplenews_subscribe_user($email, $newsletter->tid, FALSE, $langcode);
         $added[] = $email;
       }
     }

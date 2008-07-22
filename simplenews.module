@@ -473,8 +473,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
         '#collapsed' => FALSE,
         '#tree' => TRUE,
       );
-      // Show newsletter sending options only when newsletter has not been send yet.
-      // When send a nodification is shown.
+      // Show newsletter sending options if newsletter has not been send yet.
+      // If send a nodification is shown.
       if (!isset($simplenews_values['s_status']) || (isset($simplenews_values['s_status']) && $simplenews_values['s_status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
 
         // Hide format selection if there is nothing to choose.
@@ -614,7 +614,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       if ($edit['mail']) {
         $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
         if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-          db_query("UPDATE {simplenews_subscriptions} SET uid = %d WHERE snid = %d", $edit['uid'], $result->snid);
+          db_query("UPDATE {simplenews_subscriptions} SET uid = %d, language = '%s' WHERE snid = %d", $edit['uid'], $edit['language'], $result->snid);
         }
       }
       break;
@@ -623,12 +623,12 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         $query = "SELECT snid FROM {simplenews_subscriptions} WHERE uid = %d";
         if ($result = db_fetch_object(db_query($query, $account->uid))) {
           db_query("DELETE FROM {simplenews_subscriptions} WHERE mail = '%s' AND uid = %d", $edit['mail'], 0);
-          db_query("UPDATE {simplenews_subscriptions} SET mail = '%s' WHERE snid = %d", $edit['mail'], $result->snid);
+          db_query("UPDATE {simplenews_subscriptions} SET mail = '%s', language = '%s' WHERE snid = %d", $edit['mail'], $edit['language'], $result->snid);
         }
         else {
           $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
           if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-            db_query("UPDATE {simplenews_subscriptions} SET uid = %d WHERE snid = %d", $account->uid, $result->snid);
+            db_query("UPDATE {simplenews_subscriptions} SET uid = %d, language = '%s' WHERE snid = %d", $account->uid, $account->language, $result->snid);
           }
         }
       }
@@ -846,26 +846,53 @@ function _simplenews_user_load($mail) {
  *   TRUE  = User receives an email to verify the address and complete the subscription
  * A new subscription account is created when the user is subscribed to the first newsletter
  *
- * @param string $mail The e-mail address to subscribe to the newsletter.
- * @param integer $tid The term ID of the newsletter.
- * @param boolean $confirm TRUE = send confirmation mail; FALSE = subscribe immediate to the newsletter
+ * @param string $mail
+ *   The e-mail address to subscribe to the newsletter.
+ * @param integer $tid
+ *   The term ID of the newsletter.
+ * @param boolean $confirm
+ *   TRUE = send confirmation mail; FALSE = subscribe immediate to the newsletter
+ * @param string $preferred_language
+ *   The language code (i.e. 'en', 'nl') of the user preferred language.
+ *   Use '' for the site default language.
+ *   Use NULL for the language of the current page.
  */
-function simplenews_subscribe_user($mail, $tid, $confirm = TRUE) {
+function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_language = NULL) {
+  global $language;
+  
   //Prevent mismatches from accidental capitals in mail address
   $mail = strtolower($mail);
 
+  // Get current subscriptions if any.
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
 
   // If user is not subscribed to ANY newsletter, create a subscription account
   if ($subscription->snid == 0) {
     // To subscribe a user:
-    //   1. Fetch the users uid.
-    //   2. Add the user to the database.
-    //   3. Get the full subscription object based on the mail address.
+    //   - Fetch the users uid.
+    //   - Determine the user preferred language.
+    //   - Add the user to the database.
+    //   - Get the full subscription object based on the mail address.
     // Note that step 3 gets subscription data based on mail address because the uid can be 0 (for anonymous users)
     $account = _simplenews_user_load($mail);
-    db_query("INSERT INTO {simplenews_subscriptions} (mail, uid, activated) VALUES ('%s', %d, %d)", $mail, $account->uid, 1);
+
+    // If the site is multilingual:
+    //  - Anonymous users are subscribed with their preferred language
+    //    equal to the language of the current page.
+    //  - Registered users will be subscribed with their default language as
+    //    set in their account settings.
+    // By default the preferred language is not set.
+    if (variable_get('language_count', 1) > 1) {
+      if ($account->uid) {
+        $preferred_language = $account->language;
+      }
+      else {
+        $preferred_language = isset($preferred_language) ? $preferred_language : $language->language;
+      }
+    }
+
+    db_query("INSERT INTO {simplenews_subscriptions} (mail, uid, language, activated) VALUES ('%s', %d, '%s', %d)", $mail, $account->uid, $preferred_language, 1);
     $subscription = simplenews_get_subscription($account);
   }
 

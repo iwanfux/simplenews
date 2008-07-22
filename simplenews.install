@@ -30,6 +30,13 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => t('Anonymous subscriber preferred language. Empty for authenticated users.'),
+      ),
     ),
     'indexes' => array(
       'mail' => array('mail'),
@@ -465,5 +472,28 @@ function simplenews_update_6004() {
   // New table to buffer mail messages during sending
   db_create_table($ret, 'simplenews_mail_spool', $schema['simplenews_mail_spool']);
   db_drop_table($ret, 'simplenews_mail_cache');
+  return $ret;
+}
+
+/**
+ * Add language field to subscription table.
+ * Set language of existing subscribers.
+ */
+function simplenews_update_6005() {
+  $ret = array();
+  db_add_field($ret, 'simplenews_subscriptions', 'language', array(
+      'type' => 'varchar',
+      'length' => 12,
+      'not null' => TRUE,
+      'default' => '',
+      'description' => t('Subscriber preferred language.'),
+    )
+  );
+  
+  // Set preferred language for all current none anonymous subscribers.
+  $result = db_query('SELECT s.snid, u.language FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.uid > %d', 0);
+  while ($subscriber = db_fetch_object($result)) {
+    db_query("UPDATE {simplenews_subscriptions} SET language = '%s' WHERE snid = %d", $subscriber->language, $subscriber->snid);
+  }  
   return $ret;
 }

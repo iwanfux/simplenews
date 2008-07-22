@@ -108,8 +108,10 @@ INSTALLATION
     Path prefixes are added to footer message according to the subscribers
     preferred language.
 
-    Anonymous users will receive emails in the site default language. Preferred
-    language setting for anonymous users is not supported.
+    The preferred language of anonymous users is set based on the interface
+    language of the page they visit for subscription. Anonymous users can NOT
+    change their preferred language. Users with an account on the site will be
+    subscribed with the preferred language as set in their account settings.
 
  9. TIPS
 
