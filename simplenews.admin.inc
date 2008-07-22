@@ -368,7 +368,6 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
 /**
  * Menu callback: Mass subscribe to newsletters.
  *
- * @see simplenews_subscription_list_add_validate()
  * @see simplenews_subscription_list_add_submit()
  */
 function simplenews_subscription_list_add() {
@@ -384,26 +383,16 @@ function simplenews_subscription_list_add() {
     $newsletters[$newsletter->tid] = $newsletter->name;
   }
   $form['newsletters'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Subscribe the addresses to the following newsletter(s)'),
-    '#collapsible' => FALSE,
-  );
-  $form['newsletters']['newsletters'] = array(
     '#type' => 'checkboxes',
+    '#title' => t('Subscribe to'),
     '#options' => $newsletters,
+    '#required' => TRUE,
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Subscribe'),
   );
   return $form;
-}
-
-function simplenews_subscription_list_add_validate($form, &$form_state) {
-  $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  if (!$checked_newsletters) {
-    form_set_error('newsletters', t('You must select at least one newsletter.'));
-  }
 }
 
 function simplenews_subscription_list_add_submit($form, &$form_state) {
@@ -452,35 +441,25 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * @see simplenews_admin_export_after_build()
  */
 function simplenews_subscription_list_export() {
-  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-  $form['simplenews_status'] = array(
-    '#type' => 'fieldset',
+  $form['states'] = array(
+    '#type' => 'checkboxes',
     '#title' => t('Status'),
-    '#description' => t('Select at least 1 status'),
-    '#collapsible' => FALSE,
+    '#options' => array('active' => t('Active users'), 'inactive' => t('Inactive users')),
+    '#description' => t('Subscriptions matching the selected states will be exported.'),
+    '#required' => TRUE,
   );
-  $form['simplenews_status']['active'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Active users'),
-  );
-  $form['simplenews_status']['inactive'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Inactive users'),
-  );
-  if ($tree) {
-    $form['simplenews_newsletter'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Subscribed to'),
-      '#description' => t('Select at least 1 newsletter'),
-      '#collapsible' => FALSE,
-    );
-    foreach ($tree as $newsletter) {
-      $form['simplenews_newsletter']['tid_'. $newsletter->tid] = array(
-        '#type' => 'checkbox',
-        '#title' => $newsletter->name,
-      );
-    }
+  $newsletters = array();
+  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+    $newsletters[$newsletter->tid] = $newsletter->name;
   }
+  $form['newsletters'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Subscribed to'),
+    '#options' => $newsletters,
+    '#description' => t('Subscriptions matching the selected newsletters will be exported.'),
+    '#required' => TRUE,
+  );
+
   // Emails item is initially empty. It serves as place holder. Data is added by
   // simplenews_admin_export_after_build(). 
   $form['emails'] = array();
@@ -495,23 +474,28 @@ function simplenews_subscription_list_export() {
 
 function simplenews_admin_export_after_build($form, $form_element) {
   if (isset($form_element['values']['op']) && $form_element['values']['op'] == t('Export')) {
-    $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-    if (isset($form_element['values']['active']) && $form_element['values']['active'] == 1) {
+    $states = array_filter($form_element['values']['states']);
+    $newsletters = array_filter($form_element['values']['newsletters']);
+
+    // Build where clause for active/inactive state and newsletter selection.
+    if (isset($states['active'])) {
       $where[] = 's.activated = 1';
     }
-    if ($form_element['values']['inactive'] == 1) {
+    if (isset($states['inactive'])) {
       $where[] = 's.activated = 0';
     }
     $where = isset($where) ? implode(' OR ', $where) : NULL;
-    if ($tree) {
+    if ($tree = taxonomy_get_tree(variable_get('simplenews_vid', ''))) {
       foreach ($tree as $newsletter) {
-        if ($form_element['values']['tid_'. $newsletter->tid]) {
+        if (isset($newsletters[$newsletter->tid])) {
           $where_tid[] = 't.tid = '. $newsletter->tid;
         }
       }
     }
     $where_tid = isset($where_tid) ? implode(' OR ', $where_tid) : NULL;
-    if ($where && $where_tid) {
+    
+    // Get subscription data
+    if (isset($where) && isset($where_tid)) {
       $query = 'SELECT DISTINCT s.mail FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE ('. $where .') AND ('. $where_tid .')';
       $result = db_query($query);
       while ($mail = db_fetch_object($result)) {
@@ -519,6 +503,8 @@ function simplenews_admin_export_after_build($form, $form_element) {
       }
     }
 
+    // Build form field containing exported emails.
+    // The field will be included in the form where at the ['emails'] place holder.
     if (isset($mails)) {
       $exported_mails = implode(", ", $mails);
     }
@@ -539,7 +525,6 @@ function simplenews_admin_export_after_build($form, $form_element) {
 /**
  * Menu callback: Mass subscribe to newsletters.
  *
- * @see simplenews_subscription_list_remove_validate()
  * @see simplenews_subscription_list_remove_submit()
  */
 function simplenews_subscription_list_remove() {
@@ -555,26 +540,16 @@ function simplenews_subscription_list_remove() {
     $newsletters[$newsletter->tid] = $newsletter->name;
   }
   $form['newsletters'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Unsubscribe the addresses from the following newsletter(s)'),
-    '#collapsible' => FALSE,
-  );
-  $form['newsletters']['newsletters'] = array(
     '#type' => 'checkboxes',
+    '#title' => t('Unsubscribe from'),
     '#options' => $newsletters,
+    '#required' => TRUE,
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Unsubscribe'),
   );
   return $form;
-}
-
-function simplenews_subscription_list_remove_validate($form, &$form_state) {
-  $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  if (!$checked_newsletters) {
-    form_set_error('newsletters', t('You must select at least one newsletter.'));
-  }
 }
 
 function simplenews_subscription_list_remove_submit($form, &$form_state) {
