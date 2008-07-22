@@ -1525,10 +1525,11 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
         $mail_sent[] = $key;
       }
     }
-    // Mark messages in the spool as sent.
+    // Mark messages in the spool as sent and update newsletter status.
     if (!empty($mail_sent)) {
       simplenews_mail_spool_update($mail_sent, SIMPLENEWS_SPOOL_SEND);
     }
+    simplenews_send_status_update();
   }
 }
 
@@ -1598,12 +1599,13 @@ function simplenews_mail_spool_update($msids, $status) {
  * Count data in mail spool table.
  *
  * @param integer $nid newsletter node id
+ * @param integer $vid newsletter revision id
  * @param string $status email send status
  *
  * @return array Mail message array
  */
-function simplenews_mail_spool_count($nid, $status = SIMPLENEWS_SPOOL_PENDING) {
-  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_spool} c WHERE c.nid = %d AND c.status = %d", $nid, $status));
+function simplenews_mail_spool_count($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
+  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = %d AND vid = %d AND status = %d", $nid, $vid, $status));
 }
 
 /**
@@ -1615,6 +1617,64 @@ function simplenews_mail_spool_count($nid, $status = SIMPLENEWS_SPOOL_PENDING) {
 function simplenews_clear_spool() {
   $expiration_time = time() - variable_get('simplenews_spool_expire', 0) * 86400;
   db_query("DELETE FROM {simplenews_mail_spool} WHERE status = %d AND timestamp <= %d", SIMPLENEWS_SPOOL_SEND, $expiration_time);
+}
+
+/**
+ * Update newsletter send status.
+ *
+ * Set newsletter send status based on email send status in spool table.
+ * Translated and untranslated nodes get a different treatment.
+ *
+ * The spool table holds data for emails to be send and (optionally)
+ * already send emails. The simplenews_newsletters table contains the overall
+ * send status of each newsletter issue (node).
+ * Newsletter issues get the status pending when sending is innitiated. As
+ * long as unsend emails exist in the spool, the status of the newsletter remains
+ * unsend. When no pending emails are found the newsletter status is set 'send'.
+ * 
+ * Translated newsletters are a group of nodes that share the same tnid ({node}.tnid).
+ * Only one node of the group is found in the spool, but all nodes should share
+ * the same state. Therefore they are checked for the combined number of emails
+ * in the spool.
+ */
+function simplenews_send_status_update() {
+  $counts = array();  // number pending of emails in the spool
+  $sum = array();     // sum of emails in the spool per tnid (translation id)
+  $send = array();    // nodes with the status 'send'
+
+  // For each pending newsletter count the number of pending emails in the spool.
+  $result = db_query("SELECT s.nid, s.vid, s.tid, n.tnid FROM {simplenews_newsletters} s JOIN {node} n ON s.nid = n.nid AND s.vid = n.vid WHERE s.s_status = %d", SIMPLENEWS_STATUS_SEND_PENDING);
+  while ($newsletter = db_fetch_object($result)) {
+    // nid-vid are combined in one unique key.
+    $counts[$newsletter->tnid][$newsletter->nid .'-'. $newsletter->vid] = simplenews_mail_spool_count($newsletter->nid, $newsletter->vid);
+  }
+  
+  // Determine which nodes are send per translation group and per individual node.
+  foreach ($counts as $tnid => $node_count) {
+    // The sum of emails per tnid is the combined status result for the group of translated nodes.
+    // Untranslated nodes have tnid == 0 which will be ignored later.
+    $sum[$tnid] = array_sum($node_count);
+    foreach ($node_count as $nidvid => $count) {
+      // Translated nodes (tnid != 0)
+      if ($tnid != '0' && $sum[$tnid] == '0') {
+          $send[] = $nidvid;
+      }
+      // Untranslated nodes (tnid == 0)
+      elseif ($tnid == '0' && $count == '0') {
+        $send[] = $nidvid;
+      }
+    }
+  }
+
+  // Update overall newsletter status
+  if (!empty($send)) {
+    foreach ($send as $nidvid) {
+      // Split the combined key 'nid-vid'
+      $nid = strtok($nidvid, '-');
+      $vid = strtok('-');
+      db_query("UPDATE {simplenews_newsletters} SET s_status = '%s' WHERE nid = %d AND vid = %d", SIMPLENEWS_STATUS_SEND_READY, $nid, $vid);
+    }
+  }
 }
 
 /**
