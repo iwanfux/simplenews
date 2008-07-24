@@ -358,7 +358,7 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
  */
 function simplenews_subscription_list_add() {
   global $language;
-  
+
   $form['emails'] = array(
     '#type' => 'textarea',
     '#title' => t('E-mail addresses'),
@@ -376,7 +376,7 @@ function simplenews_subscription_list_add() {
     '#options' => $newsletters,
     '#required' => TRUE,
   );
-  
+
   // Include language selection when the site is multilingual.
   // Default value is the empty string which will result in receiving emails
   // in the site's default language.
@@ -398,7 +398,7 @@ function simplenews_subscription_list_add() {
   else {
     $form['language'] = array('#type' => 'value', '#value' => '');
   }
-  
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Subscribe'),
@@ -473,7 +473,7 @@ function simplenews_subscription_list_export() {
   );
 
   // Emails item is initially empty. It serves as place holder. Data is added by
-  // simplenews_admin_export_after_build(). 
+  // simplenews_admin_export_after_build().
   $form['emails'] = array();
   $form['submit'] = array(
     '#type' => 'submit',
@@ -505,7 +505,7 @@ function simplenews_admin_export_after_build($form, $form_element) {
       }
     }
     $where_tid = isset($where_tid) ? implode(' OR ', $where_tid) : NULL;
-    
+
     // Get subscription data
     if (isset($where) && isset($where_tid)) {
       $query = 'SELECT DISTINCT s.mail FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE ('. $where .') AND ('. $where_tid .')';
@@ -720,7 +720,7 @@ function simplenews_admin_settings(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
-  $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', '')); 
+  $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
   $form['simplenews_general_settings']['simplenews_content_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Newsletter content types'),
@@ -772,7 +772,7 @@ function simplenews_admin_settings_newsletter(&$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
-  
+
   $form['simplenews_default_options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Default newsletter options'),
@@ -922,7 +922,7 @@ function simplenews_admin_settings_subscription(&$form_state) {
     '#default_value' => variable_get('simplenews_sync_account', TRUE),
     '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
   );
-  
+
   // These email tokens are shared for all settings, so just define
   // the list once to help ensure they stay in sync.
   $email_token_help = t('Available variables are:') .' !site, !uri, !uri_brief, !mailto, !date, !newsletter, !confirmation_url.';

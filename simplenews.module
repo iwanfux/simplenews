@@ -6,7 +6,7 @@
  * Enable nodes to be used as newsletter, manage subscriptions and sent
  * email newsletter to subscribers.
  */
- 
+
 /**
  * @file
  * Simplnews node handling, sent email, newsletter block and general hooks
@@ -270,7 +270,7 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews settings'),
     'weight' => -7,
   );
-  
+
   $items['newsletter/confirm'] = array(
     'title' => 'Confirm newsletter subscriptions',
     'type' => MENU_CALLBACK,
@@ -410,7 +410,7 @@ function simplenews_form(&$node) {
     $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
     // Available variables are based on user_mail_tokens().
     // But uses only those which can be used with uid = 0 since simplenews also sends to anonymous users.
-    $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') . ' !site ' . t('(the name of your website),') . ' !uri ' . t('(a link to your homepage),') . ' !uri_brief ' . t('(homepage link without the http://),') . ' !date ' . t("(today's date),") . ' !login_uri ' . t('(link to login page).');
+    $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') .' !site '. t('(the name of your website),') .' !uri '. t('(a link to your homepage),') .' !uri_brief '. t('(homepage link without the http://),') .' !date '. t("(today's date),") .' !login_uri '. t('(link to login page).');
   }
 
   return $form;
@@ -493,7 +493,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
             '#value' => variable_get('simplenews_format', 'plain'),
           );
         }
-    
+ 
         $form['simplenews']['priority'] = array(
           '#type' => 'select',
           '#title' => t('Priority'),
@@ -633,14 +633,14 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         }
       }
 
-       // Activate/deactivate subscription when account is blocked/unblocked
-       if ($category == 'account' && isset($edit['status'])) {
-         if (variable_get('simplenews_sync_account', TRUE)) {
-           db_query("UPDATE {simplenews_subscriptions} SET activated = %d WHERE uid = %d", $edit['status'], $account->uid);
-         }
-       }
+      // Activate/deactivate subscription when account is blocked/unblocked
+      if ($category == 'account' && isset($edit['status'])) {
+        if (variable_get('simplenews_sync_account', TRUE)) {
+          db_query("UPDATE {simplenews_subscriptions} SET activated = %d WHERE uid = %d", $edit['status'], $account->uid);
+        }
+      }
 
-       if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
+      if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
         foreach ($edit['newsletters'] as $tid => $checked) {
           if ($checked) {
             simplenews_subscribe_user($account->mail, $tid, FALSE);
@@ -651,14 +651,14 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         }
       }
       break;
-    case 'delete':     
+    case 'delete':
       if (variable_get('simplenews_sync_account', TRUE)) {
         // Delete subscription and all newsletter subscriptions when account is removed.
-        // We don't use simplenews_get_subscription() here because the user is already 
+        // We don't use simplenews_get_subscription() here because the user is already
         // deleted from the {user} table.
         $snid = db_result(db_query("SELECT s.snid FROM {simplenews_subscriptions} s WHERE s.mail = '%s'", $account->mail));
         db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
-        db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);        
+        db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
       }
       else {
         // Only remove uid from subscription data when account is removed
@@ -803,7 +803,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
 }
 
 /**
- * Implementation of hook_forms
+ * Implementation of hook_forms().
  *
  * All form blocks are build using simplenews_block_form().
  * hook_forms() is required to provide unique form id for each block form.
@@ -859,7 +859,7 @@ function _simplenews_user_load($mail) {
  */
 function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_language = NULL) {
   global $language;
-  
+
   //Prevent mismatches from accidental capitals in mail address
   $mail = strtolower($mail);
 
@@ -1164,7 +1164,7 @@ function simplenews_block_form(&$form_state, $tid) {
       '#options' => array('subscribe' => t('Subscribe'), 'unsubscribe' => t('Unsubscribe')),
     );
   }
-  
+
   // All block forms use the same validate and submit function.
   // #tid carries the tid for processing of the right newsletter issue term.
   $form['#tid'] = $tid;
@@ -1230,7 +1230,7 @@ function simplenews_block_form_submit($form, &$form_state) {
  */
 function simplenews_send_node($node, $accounts = array()) {
   $mails = array();
-  
+
   if (is_numeric($node)) {
     $node = node_load($node);
   }
@@ -1242,7 +1242,7 @@ function simplenews_send_node($node, $accounts = array()) {
     $node_data['tid'] = $node->simplenews['tid'];
     $node_data['nid'] = $node->nid;
     $node_data['vid'] = $node->vid;
-    
+
 
     if (empty($accounts)) {
       // No accounts specified. Get email address of all accounts subscribed to this newsletter.
@@ -1314,8 +1314,8 @@ function simplenews_send_test($node, $accounts = array()) {
 }
 
 /**
- * Implementation of hook_mail.
- * 
+ * Implementation of hook_mail().
+ *
  * Send simplenews mails using drupal mail API
  * @see drupal_mail()
  *
@@ -1448,10 +1448,10 @@ function simplenews_mail($key, &$message, $params) {
         $hash = '';
       }
       $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $message['language']);
-      
+
       // Add user specific header data.
       $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
-      
+
       break;
     case 'subscribe':
       // Use formatted from address "name" <mail_address>
@@ -1469,7 +1469,7 @@ function simplenews_mail($key, &$message, $params) {
       $variables += array('!newsletter' => $params['newsletter']->name);
 
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-      
+
       if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('subscribe_subscribed', $context['account']->language, $variables);
       }
@@ -1493,7 +1493,7 @@ function simplenews_mail($key, &$message, $params) {
       $variables += array('!newsletter' => $params['newsletter']->name);
 
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-      
+
       if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_subscribed', $context['account']->language, $variables);
       }
@@ -1527,10 +1527,10 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
   if ($messages = simplenews_mail_spool_get(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $mail_sent = array();
 
-    foreach($messages as $key => $message) {
+    foreach ($messages as $key => $message) {
       // Get subscription data for recipient and language
       $account = new stdClass();
-      $account->mail = $message['mail'];    
+      $account->mail = $message['mail'];
       $subscription = simplenews_get_subscription($account);
       $params['context']['account'] = $subscription;
 
@@ -1541,11 +1541,11 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 
       // Send mail
       $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
-  
+
       if (variable_get('simplenews_debug', FALSE)) {
         watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
       }
-  
+
       // Succesfull mail messages are marked in the spool with status send.
       // Succesfull mail are recorded with their spool id.
       if ($message['result']) {
@@ -1597,7 +1597,7 @@ function simplenews_mail_spool_set($message) {
  *  $message['tid']
  *  $message['status']
  *  $message['time']
-*/
+ */
 function simplenews_mail_spool_get($status, $nid = NULL, $vid = NULL, $limit = 999999) {
   $result = db_query_range("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = %d ORDER BY s.timestamp ASC", $status, 0, $limit);
   while ($data = db_fetch_array($result)) {
@@ -1658,7 +1658,7 @@ function simplenews_clear_spool() {
  * Newsletter issues get the status pending when sending is innitiated. As
  * long as unsend emails exist in the spool, the status of the newsletter remains
  * unsend. When no pending emails are found the newsletter status is set 'send'.
- * 
+ *
  * Translated newsletters are a group of nodes that share the same tnid ({node}.tnid).
  * Only one node of the group is found in the spool, but all nodes should share
  * the same state. Therefore they are checked for the combined number of emails
@@ -1675,7 +1675,7 @@ function simplenews_send_status_update() {
     // nid-vid are combined in one unique key.
     $counts[$newsletter->tnid][$newsletter->nid .'-'. $newsletter->vid] = simplenews_mail_spool_count($newsletter->nid, $newsletter->vid);
   }
-  
+
   // Determine which nodes are send per translation group and per individual node.
   foreach ($counts as $tnid => $node_count) {
     // The sum of emails per tnid is the combined status result for the group of translated nodes.
@@ -1808,7 +1808,7 @@ function _simplenews_headers($node, $from) {
 
 /**
  * HTML to text conversion for HTML and special characters.
- * 
+ *
  * Converts some special HTMLcharacters in addition to drupal_html_to_text()
  *
  * @param string $text Source text with HTML and special characters
@@ -1823,8 +1823,8 @@ function simplenews_html_to_text($text) {
 
   // Replace some special characters before performing the drupal standard conversion
   $preg = _simplenews_html_replace();
-  $text = preg_replace(array_keys($preg), array_values($preg), $text); 
-  
+  $text = preg_replace(array_keys($preg), array_values($preg), $text);
+
   // Perform standard drupal html to text conversion
   return drupal_html_to_text($text);
 }
@@ -1884,7 +1884,7 @@ function simplenews_private_key() {
 }
 
 /**
- * Implementation of hook_help.
+ * Implementation of hook_help().
  */
 function simplenews_help($path, $arg) {
   switch ($path) {
@@ -1892,7 +1892,7 @@ function simplenews_help($path, $arg) {
       $help  = "<p>". t('Simplenews sends html or plain text newsletters to the mailing list. Subscription and unsubscription are managed through a block, a form or by the newsletter administrator.') ."<br />\n";
       $help .=        t('Individual newsletters are grouped by a newsletter taxonomy term. Newsletters can have a block with the ability of (un)subscription, listing of recent newsletters and an associated rss-feed.') ."<br />\n";
       $help .=        t('Sending of large mailings can be managed by cron.') ."</p>\n";
-      $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="@handbook">Simplenews page</a>.', array('@handbook','http://drupal.org/node/197057')) ."</p>\n";
+      $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="@handbook">Simplenews page</a>.', array('@handbook', 'http://drupal.org/node/197057')) ."</p>\n";
       return $help;
     case 'node/add/simplenews':
       $help = "<p>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list.') ."</p>\n";
@@ -1999,7 +1999,7 @@ function simplenews_theme() {
 
 /**
  * Process variables to format the simplenews block.
- * 
+ *
  * Collect data and apply access restrictions.
  *
  * $variables contains:

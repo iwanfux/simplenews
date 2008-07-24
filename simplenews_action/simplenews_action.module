@@ -27,7 +27,7 @@ function simplenews_action_info() {
       'description' => t('Send pending simplenews newsletters'),
       'type' => 'simplenews',
       'configurable' => FALSE,
-      'hooks' => array( 
+      'hooks' => array(
         'cron' => array('run'),
       ),
     ),
@@ -61,7 +61,7 @@ function simplenews_action_info() {
  *    $context['resend']  allow resending of a previously send newsletter
  *
  *   @see simplenews_send_newsletter_action_form()
- *   @see simplenews_send_newsletter_action_submit
+ *   @see simplenews_send_newsletter_action_submit()
  */
 function simplenews_send_newsletter_action(&$object, $context = array()) {
   if ($context['hook'] == 'cron' || $context['hook'] == 'user' || $context['hook'] == 'simplenews') {
@@ -103,7 +103,7 @@ function simplenews_send_newsletter_action_form($context) {
   if (!isset($context['resend'])) {
     $context['resend'] = FALSE;
   }
-  
+ 
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {
@@ -134,7 +134,7 @@ function simplenews_send_newsletter_action_form($context) {
     '#default_value' => $context['resend'],
     '#description' => t('When checked a newsletter will be send even when already send before. The newsletter send status is checked, not the status of individual e-mail addresses. Use this for repeated (e.g. monthly) newsletters.'),
   );
-  
+ 
   return $form;
 }
 
@@ -201,7 +201,7 @@ function simplenews_subscribe_user_action_form($context) {
   if (!isset($context['newsletter'])) {
     $context['newsletter'] = array();
   }
-  
+ 
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {
@@ -261,13 +261,13 @@ function simplenews_unsubscribe_user_action(&$object, $context = array()) {
 }
 
 /**
- * Implementation of a configurable Drupal action. 
+ * Implementation of a configurable Drupal action.
  */
 function simplenews_unsubscribe_user_action_form($context) {
   if (!isset($context['newsletter'])) {
     $context['newsletter'] = array();
   }
-  
+ 
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {

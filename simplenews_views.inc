@@ -9,7 +9,7 @@
 views_include_handlers();
 
 /**
- * Implementation of hook_views_data()
+ * Implementation of hook_views_data().
  */
 function simplenews_views_data() {
   // Basic table information.
@@ -17,7 +17,7 @@ function simplenews_views_data() {
   // Define the base group of this table. Fields that don't
   // have a group defined will go into this field by default.
   $data['simplenews_newsletters']['table']['group']  = t('Simplenews');
-  
+
   $data['simplenews_newsletters']['table']['base'] = array(
     'field' => 'nid',
     'title' => t('Node'),
