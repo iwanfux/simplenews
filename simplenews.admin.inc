@@ -100,7 +100,7 @@ function simplenews_types_overview() {
   $header = array(t('Newsletter name'), t('Operations'));
 
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $term) {
-    $rows[] = array($term->name, l(t('edit newsletter'), 'admin/content/simplenews/types/edit/'. $term->tid));
+    $rows[] = array(check_plain($term->name), l(t('edit newsletter'), 'admin/content/simplenews/types/edit/'. $term->tid));
   }
 
   if (count($rows) == 0) {
@@ -368,7 +368,7 @@ function simplenews_subscription_list_add() {
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
-    $newsletters[$newsletter->tid] = $newsletter->name;
+    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
   }
   $form['newsletters'] = array(
     '#type' => 'checkboxes',
@@ -462,7 +462,7 @@ function simplenews_subscription_list_export() {
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
-    $newsletters[$newsletter->tid] = $newsletter->name;
+    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
   }
   $form['newsletters'] = array(
     '#type' => 'checkboxes',
@@ -549,7 +549,7 @@ function simplenews_subscription_list_remove() {
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
-    $newsletters[$newsletter->tid] = $newsletter->name;
+    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
   }
   $form['newsletters'] = array(
     '#type' => 'checkboxes',
