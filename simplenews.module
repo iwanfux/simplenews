@@ -479,7 +479,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
 
         // Hide format selection if there is nothing to choose.
         // The default format is plain text.
-        if (count(_simplenews_format_options()) > 1) {
+        $format_options = _simplenews_format_options();
+        if (count($format_options) > 1) {
           $form['simplenews']['s_format'] = array(
             '#type' => 'select',
             '#title' => t('Format'),
@@ -490,7 +491,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
         else {
           $form['simplenews']['s_format'] = array(
             '#type' => 'hidden',
-            '#value' => variable_get('simplenews_format', 'plain'),
+            '#value' => key($format_options),
           );
         }
  
@@ -1323,6 +1324,7 @@ function simplenews_send_test($node, $accounts = array()) {
  * @param array $message message array
  *          [from]
  *          [headers][From]
+ *          [language]            : preferred message language
  * @param array $params parameter array
  *          [context][node]       : node object of message to be send
  *          [context][snid]       : used for $key = subscribe or unsubscribe
@@ -1349,24 +1351,25 @@ function simplenews_mail($key, &$message, $params) {
       // $message buffer is node and language specific.
       static $messages = array();
 
+      // By default the the node is send which is supplied in the function call.
+      // When translation is used, the availability of translations is checked
+      // and when available the translation of the preferred language is selected.
       $nid = $context['node']->nid;
       $langcode = $message['language']->language;
       if (module_exists('translation')) {
-
         // If the node has translations and a translation is required
         // the equivalent of the node in the required langugage is used
-        // or the base node (nid == tnid) is used
+        // or the base node (nid == tnid) is used.
         if ($tnid = $context['node']->tnid) {
           if ($langcode != $context['node']->language) {
             $translations = translation_node_get_translations($tnid);
+            // A translation is available in the preferred language.
             if ($translation = $translations[$langcode]) {
               $nid = $translation->nid;
               $langcode = $translation->language;
             }
             else {
-              // No translation found which matches the required language
-              // Base node ($tnid) is used. The matching language replaces
-              // the required language.
+              // No translation found which matches the preferred language.
               foreach ($translations as $translation) {
                 if ($translation->nid == $tnid) {
                   $nid = $tnid;
@@ -1377,9 +1380,8 @@ function simplenews_mail($key, &$message, $params) {
             }
           }
         }
-
-        // If a different node is selected and this node is not available in
-        // the message buffer, the selected node load will replace the original.
+        // If a translation of the node is used and this node is not available in
+        // the message buffer, then load this node.
         if ($nid != $context['node']->nid && !isset($messages[$nid][$langcode])) {
           $context['node'] = node_load($nid);
         }
@@ -1437,7 +1439,9 @@ function simplenews_mail($key, &$message, $params) {
       // before conversion to plain text.
       $variables =  user_mail_tokens($context['account'], $context['account']->language);
       $body = strtr($body, $variables);
-      $body = simplenews_html_to_text($body);
+      if ($context['node']->simplenews['s_format'] == 'plain') {
+        $body = simplenews_html_to_text($body);
+      }
       $message['body']['body'] = $body;
 
       // Build message footer.
@@ -1447,7 +1451,7 @@ function simplenews_mail($key, &$message, $params) {
       else {
         $hash = '';
       }
-      $message['body']['footer'] = theme('simplenews_newsletter_footer', $node->simplenews['s_format'], $hash, $key == 'test', $message['language']);
+      $message['body']['footer'] = theme('simplenews_newsletter_footer', $context['node']->simplenews['s_format'], $hash, $key == 'test', $message['language']);
 
       // Add user specific header data.
       $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
