@@ -1,6 +1,9 @@
 <?php
 // $Id$
 
+/**
+ * Implementation of hook_schema().
+ */
 function simplenews_schema() {
   $schema['simplenews_subscriptions'] = array(
     'description' => t('Subscribers to {simplenews_newsletters}.'),
@@ -190,7 +193,7 @@ function simplenews_install() {
 function simplenews_enable() {
   if ($vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''))) {
     // Existing install. Add back newsletter content type, if the simplenews
-    // vocabulary still exists. All other content type settings unchanged.
+    // vocabulary still exists. All other content type settings remain unchanged.
     $vocabulary = (array) $vocabulary;
     $vocabulary['nodes']['simplenews'] = 1;
     taxonomy_save_vocabulary($vocabulary);
@@ -249,7 +252,7 @@ function simplenews_update_2() {
 }
 
 /**
- * Add index to simplenews_subscriptions
+ * Add index to simplenews_subscriptions.
  */
 function simplenews_update_5000() {
   $ret = array();
@@ -258,14 +261,17 @@ function simplenews_update_5000() {
 }
 
 /**
- * Add index to simplenews_subscriptions
+ * Addition of node version to simplenews_newsletters in order to record the
+ * node version which is being send.
  */
 function simplenews_update_5001() {
   db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => TRUE, 'default' => 0));
 }
 
 /**
- * Add index to simplenews_subscriptions
+ * Data conversion of block delta.
+ * Field type conversions: newsletter priority.
+ * Field name change in simplenews_subscriptions table.
  */
 function simplenews_update_6000() {
   $ret = array();
@@ -402,7 +408,7 @@ function simplenews_update_6002() {
 }
 
 /**
- * Addition of index to uid in simplenews_subscriptions
+ * Addition of index to uid in simplenews_subscriptions.
  */
 function simplenews_update_6003() {
   $ret = array();
@@ -411,8 +417,7 @@ function simplenews_update_6003() {
 }
 
 /**
- * Add spool table.
- * Remove cache table.
+ * Add spool table and remove cache table.
  */
 function simplenews_update_6004() {
   $schema['simplenews_mail_spool'] = array(
@@ -476,8 +481,7 @@ function simplenews_update_6004() {
 }
 
 /**
- * Add language field to subscription table.
- * Set language of existing subscribers.
+ * Add language field to subscription table and set language of existing subscribers.
  */
 function simplenews_update_6005() {
   $ret = array();
