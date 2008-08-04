@@ -42,7 +42,7 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
 function simplenews_subscription_manager_form_validate($form, &$form_state) {
   $valid_email = valid_email_address($form_state['values']['mail']);
   if (!$valid_email) {
-    form_set_error('mail', t('The e-mail address you supplied is not valid.'));
+    form_set_error('mail', t('The email address you supplied is not valid.'));
   }
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
   $account = new stdClass();
@@ -71,7 +71,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
           simplenews_subscribe_user($form_state['values']['mail'], $tid);
         }
       }
-      drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+      drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
       break;
     case t('Unsubscribe'):
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
@@ -79,7 +79,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
           simplenews_unsubscribe_user($form_state['values']['mail'], $tid);
         }
       }
-      drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete the unsubscription process.'));
+      drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
       break;
   }
 }
@@ -88,7 +88,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
  * Menu callback: confirm the user's (un)subscription request
  *
  * This function is called by clicking the confirm link in the confirmation
- * e-mail or the unsubscribe link in the footer of the newsletter. It handles
+ * email or the unsubscribe link in the footer of the newsletter. It handles
  * both subscription and unsubscription.
  *
  * @see simplenews_confirm_add_form()

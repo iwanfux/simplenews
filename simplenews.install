@@ -81,14 +81,14 @@ function simplenews_schema() {
         'default' => '',
       ),
       'priority' => array(
-        'description' => t('E-mail priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).'),
+        'description' => t('Email priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).'),
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
       ),
       'receipt' => array(
-        'description' => t('Boolean indicating request for e-mail receipt confirmation according to RFC 2822.'),
+        'description' => t('Boolean indicating request for email receipt confirmation according to RFC 2822.'),
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -126,7 +126,7 @@ function simplenews_schema() {
         'not null' => TRUE,
         ),
       'mail' => array(
-        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'description' => t('The formatted email address of mail message receipient.'),
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -151,7 +151,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'description' => t('The send status of the email (0 = hold, 1 = pending, 2 = send).'),
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -339,14 +339,14 @@ function simplenews_update_6001() {
         'default' => '',
       ),
       'mail' => array(
-        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'description' => t('The formatted email address of mail message receipient.'),
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
       'status' => array(
-        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'description' => t('The send status of the email (0 = hold, 1 = pending, 2 = send).'),
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -425,7 +425,7 @@ function simplenews_update_6004() {
         'not null' => TRUE,
         ),
       'mail' => array(
-        'description' => t('The formatted e-mail address of mail message receipient.'),
+        'description' => t('The formatted email address of mail message receipient.'),
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -450,7 +450,7 @@ function simplenews_update_6004() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => t('The send status of the e-mail (0 = hold, 1 = pending, 2 = send).'),
+        'description' => t('The send status of the email (0 = hold, 1 = pending, 2 = send).'),
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,

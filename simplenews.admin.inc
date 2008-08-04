@@ -179,7 +179,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   );
   $form['simplenews_sender_information']['simplenews_from_address_'. $term->tid] = array(
     '#type' => 'textfield',
-    '#title' => t('From e-mail address'),
+    '#title' => t('From email address'),
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
@@ -221,7 +221,7 @@ function simplenews_admin_types_form_validate($form, &$form_state) {
   $field_name = 'simplenews_from_address_'. $tid;
 
   if (!valid_email_address($form_state['values'][$field_name])) {
-    form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
+    form_set_error($field_name, t("The sender's email address you supplied is not valid."));
   }
 }
 
@@ -361,7 +361,7 @@ function simplenews_subscription_list_add() {
 
   $form['emails'] = array(
     '#type' => 'textarea',
-    '#title' => t('E-mail addresses'),
+    '#title' => t('Email addresses'),
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('Supply a comma separated list of email addresses to be subscribed.'),
@@ -542,7 +542,7 @@ function simplenews_admin_export_after_build($form, $form_element) {
 function simplenews_subscription_list_remove() {
   $form['emails'] = array(
     '#type' => 'textarea',
-    '#title' => t('E-mail addresses'),
+    '#title' => t('Email addresses'),
     '#cols' => 60,
     '#rows' => 5,
     '#description' => t('Supply a comma separated list of email addresses to be unsubscribed. Email addresses which are no longer subscribed to any newsletter, will be removed from the database.'),
@@ -634,7 +634,7 @@ function simplenews_subscription_admin($form_state) {
 function simplenews_subscription_list_form() {
   // Table header. Used as tablesort default
   $header = array(
-    array('data' => t('E-mail'), 'field' => 'ss.mail', 'sort' => 'asc'),
+    array('data' => t('Email'), 'field' => 'ss.mail', 'sort' => 'asc'),
     array('data' => t('Username'), 'field' => 'u.name'),
     array('data' => t('Status'), 'field' => 'ss.activated'),
     t('Operations')
@@ -795,14 +795,14 @@ function simplenews_admin_settings_newsletter(&$form_state) {
     '#type' => 'select',
     '#title' => t('Priority'),
     '#options' => array(0 => t('none'), 1 => t('highest'), 2 => t('high'), 3 => t('normal'), 4 => t('low'), 5 => t('lowest')),
-    '#description' => t('Note that e-mail priority is ignored by a lot of e-mail programs.'),
+    '#description' => t('Note that email priority is ignored by a lot of email programs.'),
     '#default_value' => variable_get('simplenews_priority', 0),
   );
   $form['simplenews_default_options']['simplenews_receipt'] = array(
     '#type' => 'checkbox',
     '#title' => t('Request receipt'),
     '#default_value' => variable_get('simplenews_receipt', 0),
-    '#description' => t('Request a Read Receipt from your newsletters. A lot of e-mail programs ignore these so it is not a definitive indication of how many people have read your newsletter.'),
+    '#description' => t('Request a Read Receipt from your newsletters. A lot of email programs ignore these so it is not a definitive indication of how many people have read your newsletter.'),
   );
   $form['simplenews_default_options']['simplenews_send'] = array(
     '#type' => 'radios',
@@ -814,11 +814,11 @@ function simplenews_admin_settings_newsletter(&$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Test addresses options'),
     '#collapsible' => FALSE,
-    '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation.'),
+    '#description' => t('Supply a comma-separated list of email addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation.'),
   );
   $form['simplenews_test_address']['simplenews_test_address'] = array(
     '#type' => 'textfield',
-    '#title' => t('Test e-mail address'),
+    '#title' => t('Test email address'),
     '#size' => 60,
     '#maxlength' => 128,
     '#default_value' => variable_get('simplenews_test_address', $address_default),
@@ -832,7 +832,7 @@ function simplenews_admin_settings_newsletter(&$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Sender information'),
     '#collapsible' => FALSE,
-    '#description' => t('Default sender address that will only be used for confirmation e-mails. You can specify sender information for each newsletter separately on the newsletter\'s settings page.'),
+    '#description' => t('Default sender address that will only be used for confirmation emails. You can specify sender information for each newsletter separately on the newsletter\'s settings page.'),
   );
   $form['simplenews_sender_info']['simplenews_from_name'] = array(
     '#type' => 'textfield',
@@ -843,7 +843,7 @@ function simplenews_admin_settings_newsletter(&$form_state) {
   );
   $form['simplenews_sender_info']['simplenews_from_address'] = array(
     '#type' => 'textfield',
-    '#title' => t('From e-mail address'),
+    '#title' => t('From email address'),
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
@@ -855,7 +855,7 @@ function simplenews_admin_settings_newsletter(&$form_state) {
 
 function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['simplenews_from_address'])) {
-    form_set_error($field_name, t("The sender's e-mail address you supplied is not valid."));
+    form_set_error($field_name, t("The sender's email address you supplied is not valid."));
   }
 }
 
@@ -1024,9 +1024,9 @@ function simplenews_subscription_filters() {
     $filters['newsletter']['options']['tid-'. $newsletter->tid] = $newsletter->name;
   }
 
-  // E-mail filter
+  // Email filter
   $filters['email'] = array(
-    'title' => t('E-mail address'),
+    'title' => t('Email address'),
   );
 
   return $filters;
@@ -1146,7 +1146,7 @@ function theme_simplenews_subscription_list($form) {
   // Subscription table header
   $header = array(
     theme('table_select_header_cell'),
-    array('data' => t('E-mail'), 'field' => 'ss.mail', 'sort' => 'asc'),
+    array('data' => t('Email'), 'field' => 'ss.mail', 'sort' => 'asc'),
     array('data' => t('Username'), 'field' => 'u.name'),
     array('data' => t('Status'), 'field' => 'ss.activated'),
     t('Operations')

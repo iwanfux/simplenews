@@ -53,7 +53,7 @@ function simplenews_node_info() {
     'simplenews' => array(
       'name' => t('Newsletter issue'),
       'module' => 'simplenews',
-      'description' => t('A newsletter issue to be sent to subscribed e-mail addresses.'),
+      'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
     )
   );
 }
@@ -319,10 +319,10 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
         foreach ($mails as $mail) {
           $mail = trim($mail);
           if ($mail == '') {
-            form_set_error('simplenews][test_address', t('Cannot send test newsletter: no test e-mail address specified.'));
+            form_set_error('simplenews][test_address', t('Cannot send test newsletter: no test email address specified.'));
           }
           elseif (!valid_email_address($mail)) {
-            form_set_error('simplenews][test_address', t('Cannot send test newsletter to %mail: e-mail address invalid.', array('%mail' => $mail)));
+            form_set_error('simplenews][test_address', t('Cannot send test newsletter to %mail: email address invalid.', array('%mail' => $mail)));
           }
         }
       }
@@ -545,8 +545,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
         if (variable_get('simplenews_test_address_override', 0)) {
           $form['simplenews']['test_address'] = array(
             '#type' => 'textfield',
-            '#title' => t('Test e-mail addresses'),
-            '#description' => t('Supply a comma-separated list of e-mail addresses to be used as test addresses.'),
+            '#title' => t('Test email addresses'),
+            '#description' => t('Supply a comma-separated list of email addresses to be used as test addresses.'),
             '#default_value' => isset($simplenews_values['test_address']) ? $simplenews_values['test_address'] : variable_get('simplenews_test_address', $address_default),
             '#size' => 60,
             '#maxlength' => 128,
@@ -824,7 +824,7 @@ function simplenews_forms() {
  *
  * @return account
  *   object (
- *     mail,   e-mail address
+ *     mail,   email address
  *     uid,    uid or 0 for anonymous
  *   )
  */
@@ -848,7 +848,7 @@ function _simplenews_user_load($mail) {
  * A new subscription account is created when the user is subscribed to the first newsletter
  *
  * @param string $mail
- *   The e-mail address to subscribe to the newsletter.
+ *   The email address to subscribe to the newsletter.
  * @param integer $tid
  *   The term ID of the newsletter.
  * @param boolean $confirm
@@ -898,7 +898,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
   }
 
   if ($confirm) {
-    // Send confirmation e-mail to user to complete subscription or to tell
+    // Send confirmation email to user to complete subscription or to tell
     // them that he or she is already subscribed.
     // Confirmation mail is in the user preferred language which is by default the language_default().
     $params['from'] = _simplenews_set_from();
@@ -924,7 +924,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
  *   TRUE  = User receives an email to verify the address and complete the unsubscription
  * The subscription account is deleted when the user is unsubscribed to the last newsletter
  *
- * @param string $mail The e-mail address to unsubscribe from the newsletter.
+ * @param string $mail The email address to unsubscribe from the newsletter.
  * @param integer $tid The term ID of the newsletter.
  * @param boolean $confirm TRUE = send confirmation mail; FALSE = unsubscribe immediate from the newsletter
  */
@@ -942,7 +942,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
   }
 
   if ($confirm) {
-    // Send confirmation e-mail to user to complete unsubscription
+    // Send confirmation email to user to complete unsubscription
     // or to tell them that he or she is not subscribed
     // Confirmation mail is in the user preferred language.
     $params['from'] = _simplenews_set_from();
@@ -967,7 +967,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
 }
 
 /**
- * Check if the e-mail address is subscribed to the given newsletter.
+ * Check if the email address is subscribed to the given newsletter.
  *
  * @param string $mail email address
  * @param integer $tid newsletter term id
@@ -981,14 +981,14 @@ function simplenews_user_is_subscribed($mail, $tid) {
 /**
  * Get the subscription object for the given account.
  *
- * Account is defined by (in order of preference) snid, e-mail address or uid.
+ * Account is defined by (in order of preference) snid, email address or uid.
  * If the account is not subscribed a default subscription object is returned
  * containing all available account info.
  *
  * @param object $account account details. Containing one or none of these items:
  *  object(
  *    snid :  subscription id
- *    mail :  e-mail address
+ *    mail :  email address
  *    uid  :  user id
  *  )
  *
@@ -997,7 +997,7 @@ function simplenews_user_is_subscribed($mail, $tid) {
  *     snid :  subscription id. 0 if account is not subscribed
  *     tids :  array of newsletter tid's
  *     uid  :  user id. 0 if account is anonymous user
- *     mail :  user e-mail address. empty if e-mail is unknown
+ *     mail :  user email address. empty if email is unknown
  *     name :  always empty. Added for compatebility with user account object
  *     language : language object. User preferred or default language
  *   )
@@ -1072,8 +1072,8 @@ function _simplenews_subscription_manager_form($subscription) {
     '#default_value' => array_merge($default_value, (array)$subscription->tids),
   );
 
-  // If current user is logged in, just display e-mail.
-  // Anonymous users see an e-mail box and will receive confirmations
+  // If current user is logged in, just display email.
+  // Anonymous users see an email box and will receive confirmations
   if ($subscription->mail) {
     $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $subscription->mail));
     $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $subscription->mail);
@@ -1087,7 +1087,7 @@ function _simplenews_subscription_manager_form($subscription) {
     $form['subscriptions']['#title'] = t('Manage your newsletter subscriptions');
     $form['subscriptions']['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('E-mail'),
+      '#title' => t('email'),
       '#size' => 20,
       '#maxlength' => 128,
       '#weight' => 10,
@@ -1154,7 +1154,7 @@ function simplenews_block_form(&$form_state, $tid) {
   else {
     $form['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('E-mail'),
+      '#title' => t('Email'),
       '#size' => 20,
       '#maxlength' => 128,
       '#required' => TRUE,
@@ -1180,7 +1180,7 @@ function simplenews_block_form(&$form_state, $tid) {
 
 function simplenews_block_form_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['mail'])) {
-    form_set_error('mail', t("The e-mail address you supplied is not valid."));
+    form_set_error('mail', t("The email address you supplied is not valid."));
   }
 }
 
@@ -1189,14 +1189,14 @@ function simplenews_block_form_submit($form, &$form_state) {
   $tid = $form['#tid'];
   $account = _simplenews_user_load($form_state['values']['mail']);
 
-  // If e-mail belongs to the current registered user, don't send confirmation.
+  // If email belongs to the current registered user, don't send confirmation.
   $confirm = $account->uid && $account->uid == $user->uid ? FALSE : TRUE;
 
   switch ($form_state['values']['action']) {
     case 'subscribe':
       simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm);
       if ($confirm) {
-        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
       }
       else {
         drupal_set_message(t('You have been successfully subscribed.'));
@@ -1205,7 +1205,7 @@ function simplenews_block_form_submit($form, &$form_state) {
     case 'unsubscribe':
       simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm);
       if ($confirm) {
-        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete the unsubscription process.'));
+        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
       }
       else {
         drupal_set_message(t('You have been successfully unsubscribed.'));
@@ -1223,7 +1223,7 @@ function simplenews_block_form_submit($form, &$form_state) {
  *     snid     = subscription id. 0 if no subscription record exists
  *     tids     = array(tid) array of newsletter tid's
  *     uid      = user id. 0 if subscriber is anonymous user.
- *     mail     = user e-mail address.
+ *     mail     = user email address.
  *     name     = <empty>. Added for compatebility with user account object
  *     language = language object. User preferred of default language
  *   )
@@ -1280,7 +1280,7 @@ function simplenews_send_node($node, $accounts = array()) {
  * @param integer or object $node Newsletter node to be send. Integer = nid; Object = node object
  * @param array $accounts account objects to send the test newsletter to.
  *                  account = object(
- *                    mail : e-mail address of recipient
+ *                    mail : email address of recipient
  *                  )
  */
 function simplenews_send_test($node, $accounts = array()) {
@@ -1294,7 +1294,7 @@ function simplenews_send_test($node, $accounts = array()) {
 
     // If no account is specified the test newsletter is send to the test address(es) specified in the node.
     if (empty($accounts)) {
-      // Build array of test e-mail addresses
+      // Build array of test email addresses
       $mails = explode(',', $node->simplenews['test_address']);
       foreach ($mails as $mail) {
         $account['mail'] = trim($mail);
@@ -1730,7 +1730,7 @@ function simplenews_call_actions($op, $subscription) {
 }
 
 /**
- * Build formatted from-name and e-mail for a mail object.
+ * Build formatted from-name and email for a mail object.
  *
  * Each newsletter (serie; tid) can have a different from address.
  * The from name and address depend on the newsletter term tid which is included in the $node object
@@ -1762,7 +1762,7 @@ function _simplenews_set_from($node = NULL) {
  * Build header array with priority and receipt confirmation settings.
  *
  * @param $node: node object
- * @param $from: from e-mail address
+ * @param $from: from email address
  *
  * @return Header array with priority and receipt confirmation info
  */
@@ -2054,7 +2054,7 @@ function theme_simplenews_newsletter($node, $tid) {
 }
 
 /**
- * Theme the newsletter e-mail subject.
+ * Theme the newsletter email subject.
  */
 function theme_simplenews_newsletter_subject($name, $title, $language) {
   return  '['. $name .'] '. $title;

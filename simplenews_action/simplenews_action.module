@@ -72,7 +72,7 @@ function simplenews_send_newsletter_action(&$object, $context = array()) {
       $accounts[] = $context['account'];
     }
 
-    // Get send status of this newsletter. The global newsletter send status is used not the send status of individual e-mails.
+    // Get send status of this newsletter. The global newsletter send status is used not the send status of individual emails.
     $s_status = db_result(db_query("SELECT s_status FROM {simplenews_newsletters} WHERE nid = %d", $context['nid']));
 
     // Send newsletter if resend is allowed OR newsletter is not yet send.
@@ -132,7 +132,7 @@ function simplenews_send_newsletter_action_form($context) {
     '#title' => t('Allow to resend newsletter'),
     '#type' => 'checkbox',
     '#default_value' => $context['resend'],
-    '#description' => t('When checked a newsletter will be send even when already send before. The newsletter send status is checked, not the status of individual e-mail addresses. Use this for repeated (e.g. monthly) newsletters.'),
+    '#description' => t('When checked a newsletter will be send even when already send before. The newsletter send status is checked, not the status of individual email addresses. Use this for repeated (e.g. monthly) newsletters.'),
   );
  
   return $form;
