@@ -232,7 +232,7 @@ function simplenews_menu() {
   );
 
   $items['admin/settings/simplenews'] = array(
-    'title' => 'Simplenews settings',
+    'title' => 'Simplenews',
     'description' => 'Manage simplenews configuration.',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
