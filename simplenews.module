@@ -1899,10 +1899,9 @@ function simplenews_help($path, $arg) {
       $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="@handbook">Simplenews page</a>.', array('@handbook', 'http://drupal.org/node/197057')) ."</p>\n";
       return $help;
     case 'node/add/simplenews':
-      $help = "<p>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list.') ."</p>\n";
-      $help .= "<p>". t('Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') ."</p>\n";
+      $help = "<p>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') ."</p>\n";
       if (!module_exists('mimemail')) {
-        $help .= "<p>". t('Install Mime Mail module to send HTML emails. Mime Mail is also used to send emails with attachments, both plain text and HTML emails.') ."</p>\n";
+        $help .= "<p>". t('Install <a href="@mime_mail_url">Mime Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('@mime_mail_url' => 'http://drupal.org/project/mimemail')) ."</p>\n";
       }
       return $help;
     case 'admin/settings/simplenews/newsletter':
