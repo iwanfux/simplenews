@@ -738,10 +738,10 @@ function simplenews_admin_settings(&$form_state) {
   }
   $form['simplenews_general_settings']['simplenews_vid'] = array(
     '#type' => 'select',
-    '#title' => t('Newsletter taxonomy'),
+    '#title' => t('Newsletter vocabulary'),
     '#options' =>  $vocabulary_options,
     '#required' => TRUE,
-    '#description' => t('Select the taxonomy used to identify newsletter series. Note that changing the newsletter taxonomy will change the taxonomy of existing newsletter issues.'),
+    '#description' => t('Select the vocabulary used to identify newsletter series. Note that changing the newsletter vocabulary will have effect on existing newsletter issues.'),
     '#default_value' => variable_get('simplenews_vid', ''),
   );
 
