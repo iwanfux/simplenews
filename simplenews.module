@@ -1948,7 +1948,7 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
 
   if ($admin_setting = variable_get('simplenews_confirm_'. $key, FALSE)) {
     // An admin setting overrides the default string.
-    return strtr($admin_setting, $variables);
+    return t($admin_setting, $variables, $langcode);
   }
   else {
     // No override, return default string.
