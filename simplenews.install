@@ -180,10 +180,11 @@ function simplenews_schema() {
  */
 function simplenews_install() {
   if (drupal_install_schema('simplenews')) {
-    drupal_set_message(t('Simplenews module succesfully installed.'));
-  }
+    drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.',
+    array('!simplenews_help' => url('admin/help/simplenews'))));
+}
   else {
-    drupal_set_message(t('The installation of the Simplenews module was unsuccessful.'), 'error');
+    drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
   }
 }
 

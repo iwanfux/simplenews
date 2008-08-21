@@ -723,11 +723,11 @@ function simplenews_admin_settings(&$form_state) {
   $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
   $form['simplenews_general_settings']['simplenews_content_types'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Newsletter content types'),
+    '#title' => t('Content types'),
     '#required' => TRUE,
     '#options' => array_map('check_plain', node_get_types('names')),
     '#default_value' => $vocabulary->nodes,
-    '#description' => t('Select content type(s) to be used as newsletter.'),
+    '#description' => t('Content types to be used as newsletter.'),
   );
 
   $vocabulary_options = array();
@@ -741,7 +741,7 @@ function simplenews_admin_settings(&$form_state) {
     '#title' => t('Newsletter vocabulary'),
     '#options' =>  $vocabulary_options,
     '#required' => TRUE,
-    '#description' => t('Select the vocabulary used to identify newsletter series. Note that changing the newsletter vocabulary will have effect on existing newsletter issues.'),
+    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged.'),
     '#default_value' => variable_get('simplenews_vid', ''),
   );
 
@@ -780,9 +780,9 @@ function simplenews_admin_settings_newsletter(&$form_state) {
     '#collapsed' => FALSE,
     '#description' => t('These options will be the defaults for new newsletters, but can be overridden in the newsletter editing form.'),
   );
-  $description = t('Select the default newsletter sending format.');
+  $description = t('Default newsletter format.');
   if (!module_exists('mimemail')) {
-        $description .= t(' Mime Mail module is required to send newsletters in HTML format.');
+        $description .= ' '. t('Install <a href="@mime_mail_url">Mime Mail</a> module to send newsletters in HTML format.', array('@mime_mail_url' => 'http://drupal.org/project/mimemail'));
   }
   $form['simplenews_default_options']['simplenews_format'] = array(
     '#type' => 'select',
@@ -806,19 +806,19 @@ function simplenews_admin_settings_newsletter(&$form_state) {
   );
   $form['simplenews_default_options']['simplenews_send'] = array(
     '#type' => 'radios',
-    '#title' => t('Default selection for sending newsletters'),
+    '#title' => t('Default send action'),
     '#options' => array(0 => t("Don't send now"), 2 => t('Send one test newsletter to the test address'), 1 => t('Send newsletter')),
     '#default_value' => variable_get('simplenews_send', 0),
   );
   $form['simplenews_test_address'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Test addresses options'),
+    '#title' => t('Test addresses'),
     '#collapsible' => FALSE,
-    '#description' => t('Supply a comma-separated list of email addresses to be used as test addresses. The override function allows to override these addresses upon newsletter creation.'),
+    '#description' => t('Supply a comma-separated list of email addresses to be used as test addresses. The override function allows to override these addresses in the newsletter editing form.'),
   );
   $form['simplenews_test_address']['simplenews_test_address'] = array(
     '#type' => 'textfield',
-    '#title' => t('Test email address'),
+    '#title' => t('Email address'),
     '#size' => 60,
     '#maxlength' => 128,
     '#default_value' => variable_get('simplenews_test_address', $address_default),

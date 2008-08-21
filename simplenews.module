@@ -264,7 +264,7 @@ function simplenews_menu() {
     'weight' => -8,
   );
   $items['admin/settings/simplenews/mail'] = array(
-    'title' => 'Mail backend',
+    'title' => 'Send mail',
     'type' => MENU_LOCAL_TASK,
     'page arguments' => array('simplenews_admin_settings_mail'),
     'access arguments' => array('administer simplenews settings'),
@@ -380,7 +380,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
     case 'delete':
       $result = db_query('DELETE FROM {simplenews_newsletters} WHERE nid = %d', $node->nid);
       if ($result) {
-        drupal_set_message(t('Newsletter %title was successfully deleted.', array('%title' => $node->title)));
+        drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->title)));
       }
       break;
     case 'load':
@@ -595,7 +595,7 @@ function simplenews_taxonomy($op, $type, $term = NULL) {
       case 'term':
         db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $array['tid']);
         db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
-        drupal_set_message(t('Deleted all subscriptions to newsletter %newsletter.', array('%newsletter' => $term['name'])));
+        drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
         break;
     }
   }
@@ -737,12 +737,14 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       }
       return $blocks;
     case 'configure':
+      //TODO: remove simplenews_block_m_status_
       $form['simplenews_block_'. $delta]['simplenews_block_m_status_'. $delta] = array(
         '#type' => 'checkbox',
         '#title' => t('Display block message'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_m_status_'. $delta, 1),
       );
+      //TODO: leave empty to display no message.
       $form['simplenews_block_'. $delta]['simplenews_block_m_'. $delta] = array(
         '#type' => 'textfield',
         '#title' => t('Block message'),
@@ -754,7 +756,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#type' => 'checkbox',
         '#title' => t('Display subscription form'),
         '#return_value' => 1,
-        '#description' => t('If selected a subscription form is displayed, if not selected a link to the subscription page is displayed.'),
+        '#description' => t("If checked a subscription form is displayed, if not checked a link to the subscription page is displayed. Note: this requires permission 'subscribe to newsletters'."),
         '#default_value' => variable_get('simplenews_block_f_'. $delta, 1),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_l_'. $delta] = array(
@@ -762,13 +764,14 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#title' => t('Display link to previous issues'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_l_'. $delta, 1),
-        '#description' => t('Links (to previous issues, previous issues and RSS-feed) are only displayed to users who have "view links in block" privileges.'),
+        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_i_status_'. $delta] = array(
         '#type' => 'checkbox',
         '#title' => t('Display previous issues'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_i_status_'. $delta, 0),
+        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_i_'. $delta] = array(
         '#type' => 'select',
@@ -781,6 +784,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#title' => t('Display RSS-feed icon'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_r_'. $delta, 1),
+        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       return $form;
     case 'save':
@@ -1199,7 +1203,7 @@ function simplenews_block_form_submit($form, &$form_state) {
         drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
       }
       else {
-        drupal_set_message(t('You have been successfully subscribed.'));
+        drupal_set_message(t('You have been subscribed.'));
       }
       break;
     case 'unsubscribe':
@@ -1208,7 +1212,7 @@ function simplenews_block_form_submit($form, &$form_state) {
         drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
       }
       else {
-        drupal_set_message(t('You have been successfully unsubscribed.'));
+        drupal_set_message(t('You have been unsubscribed.'));
       }
       break;
   }
@@ -1893,25 +1897,49 @@ function simplenews_private_key() {
 function simplenews_help($path, $arg) {
   switch ($path) {
     case 'admin/help#simplenews':
-      $help  = "<p>". t('Simplenews sends html or plain text newsletters to the mailing list. Subscription and unsubscription are managed through a block, a form or by the newsletter administrator.') ."<br />\n";
-      $help .=        t('Individual newsletters are grouped by a newsletter taxonomy term. Newsletters can have a block with the ability of (un)subscription, listing of recent newsletters and an associated rss-feed.') ."<br />\n";
-      $help .=        t('Sending of large mailings can be managed by cron.') ."</p>\n";
-      $help .= "<p>". t('For more information please read the configuration and customization handbook <a href="@handbook">Simplenews page</a>.', array('@handbook', 'http://drupal.org/node/197057')) ."</p>\n";
+      $help  = "<p>". t('Simplenews publishes and sends newsletters to lists of subscribers. Both anonymous and authenticated users can opt-in to different mailing lists.') ."</p>\n";
+      $help .= "<p>". t('Simplenews uses nodes for <strong>newsletter issues</strong>. Each newsletter issue is assigned to one <strong>newsletter</strong> by a taxonomy term. Node type and vocabulary are selectable. A newsletter is send to all email addresses which are subscribed to the newsletter. Newsletter issues can be sent only once. Large mailings should be sent by cron to spread the load of the mailserver.') ."</p>\n";
+      $help .= "<p>". t('Simplenews adds elements to the newsletter node add/edit form to manage newsletter format and sending of the newsletter issue. A newsletter issue can be sent for test before sending officially.') ."</p>\n";
+      $help .= "<p>". t('Both anonymous and authenticated users can <strong>opt-in and opt-out</strong> to a newsletter. A confirmation message is sent to anonymous users at subscription and unsubscription. Users can (un)subscribe using a form and a block. A <strong>subscription block</strong> is available for each newsletter offering a subscription form, a link to recent newsletters and RSS feed. Email addresses can also be imported and exported via the subscription administration pages.') ."</p>\n";
+      $help .= "<h2>". t('Configuration') ."</h3>\n";
+      $help .= "<ul>";
+      if (user_access('administer permissions')) {
+        $help .= "<li>". l(t('Configure permissions'), 'admin/user/permissions', array('fragment' => 'module-simplenews')) ."</li>\n";
+      }
+      if (user_access('administer simplenews settings')) {
+        $help .= "<li>". l(t('Configure Simplenews'), 'admin/settings/simplenews') ."</li>\n";
+      }
+      if (user_access('administer blocks')) {
+        $help .= "<li>". t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/build/block'))) ."</li>\n";
+      }
+      if (user_access('administer simplenews settings')) {
+        $help .= "<li>". t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/content/simplenews/types'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) ."</li>\n";
+      }
+      $help .= "</ul>";
+
+      $help .= "<p>". t('For more information, see the online handbook entry for <a href="@handbook">Simplenews</a>.', array('@handbook', 'http://drupal.org/node/197057')) ."</p>\n";
       return $help;
     case 'node/add/simplenews':
-      $help = "<p>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') ."</p>\n";
-      if (!module_exists('mimemail')) {
-        $help .= "<p>". t('Install <a href="@mime_mail_url">Mime Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('@mime_mail_url' => 'http://drupal.org/project/mimemail')) ."</p>\n";
+      $help  = '<ul>';
+      $help .= "<li>". t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') ."</li>\n";
+      if (user_access('administer simplenews settings')) {
+        $help .= "<li>". t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/settings/simplenews/newsletter'))) ."</li>\n";
       }
+      if (user_access('administer newsletters')) {
+        $help .= "<li>". t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews/types'))) ."</li>\n";
+      }
+      $help .= "</ul>";
       return $help;
     case 'admin/settings/simplenews/newsletter':
-      $help = '<p>'. t('Newsletter specific settings can be found at the <a href="@page">Newsletters settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) ."</p>\n";
+      $help = '<ul>';
+      $help .= '<li>'. t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) ."</li>\n";
+      if (!module_exists('mimemail')) {
+        $help .= "<li>". t('Install <a href="@mime_mail_url">Mime Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('@mime_mail_url' => 'http://drupal.org/project/mimemail')) ."</li>\n";
+      }
+      $help .= "</ul>";
       return $help;
     case 'admin/content/simplenews/types/add':
       $help = '<p>'. t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') ."</p>\n";
-      return $help;
-    case 'admin/content/simplenews/types/edit/%':
-      $help = '<p>'. t('This newsletter issue is based on a taxonomy term. More settings for this term can be found at <a href="@edit_term">Edit Taxonomy term</a>.', array('@edit_term' => url('admin/content/taxonomy/edit/term/'. $arg[5]))) ."</p>\n";
       return $help;
   }
 }
