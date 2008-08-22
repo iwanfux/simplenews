@@ -102,6 +102,12 @@ function simplenews_init() {
   if (module_exists('views')) {
     include_once(drupal_get_path('module', 'simplenews') .'/simplenews_views.inc');
   }
+
+  // Simpelnews can not work without this variable.
+  if ((variable_get('simplenews_vid', '')) == '') {
+    drupal_set_message(t('Missing newsletter vocabulary. Please set a vocabulary at <a href="@settings">Simplenews settings</a>.', array('@settings' => url('admin/settings/simplenews'))), 'error');
+  }
+
 }
 
 /**
@@ -463,8 +469,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
         $simplenews_values = $form['#node']->simplenews;
       }
       $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
-      if (!isset($vocabulary->nodes[$form['type']['#value']])) {
-        drupal_set_message(t('Missing vocabulary %name. Please check the !settings.', array('%name' => $vocabulary->name, '!settings' => l('Simplenews settings', 'admin/settings/simplenews'))), 'error');
+      if (!empty($vocabulary) && !isset($vocabulary->nodes[$form['type']['#value']])) {
+        drupal_set_message(t('Invalid node type or vocabulary setting. Please check the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews'))), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
@@ -788,22 +794,35 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       );
       return $form;
     case 'save':
-        variable_set('simplenews_block_m_status_'. $delta, $edit['simplenews_block_m_status_'. $delta]);
-        variable_set('simplenews_block_m_'. $delta, $edit['simplenews_block_m_'. $delta]);
-        variable_set('simplenews_block_f_'. $delta, $edit['simplenews_block_f_'. $delta]);
-        variable_set('simplenews_block_l_'. $delta, $edit['simplenews_block_l_'. $delta]);
-        variable_set('simplenews_block_i_status_'. $delta, $edit['simplenews_block_i_status_'. $delta]);
-        variable_set('simplenews_block_i_'. $delta, $edit['simplenews_block_i_'. $delta]);
-        variable_set('simplenews_block_r_'. $delta, $edit['simplenews_block_r_'. $delta]);
-        break;
+      variable_set('simplenews_block_m_status_'. $delta, $edit['simplenews_block_m_status_'. $delta]);
+      variable_set('simplenews_block_m_'. $delta, $edit['simplenews_block_m_'. $delta]);
+      variable_set('simplenews_block_f_'. $delta, $edit['simplenews_block_f_'. $delta]);
+      variable_set('simplenews_block_l_'. $delta, $edit['simplenews_block_l_'. $delta]);
+      variable_set('simplenews_block_i_status_'. $delta, $edit['simplenews_block_i_status_'. $delta]);
+      variable_set('simplenews_block_i_'. $delta, $edit['simplenews_block_i_'. $delta]);
+      variable_set('simplenews_block_r_'. $delta, $edit['simplenews_block_r_'. $delta]);
+      break;
     case 'view':
-      if ($newsletter = (array) taxonomy_get_term($delta)) {
-        $block = array(
-          'subject' => check_plain($newsletter['name']),
-          'content' => theme('simplenews_block', $newsletter['tid']),
-        );
+      if ($tree = taxonomy_get_tree(variable_get('simplenews_vid', ''))) {
+        // Only display a block if $delta is a valid newsletter term id.
+        foreach ($tree as $taxonomy) {
+          $tids[] = $taxonomy->tid;
+        }
+        if (in_array($delta, $tids)) {
+          // $delta is validated, the block can be displayed.
+          $newsletter = (array) taxonomy_get_term($delta);
+          $block = array(
+            'subject' => check_plain($newsletter['name']),
+            'content' => theme('simplenews_block', $newsletter['tid']),
+          );
+          return $block;
+        }
+      else {
+        drupal_set_message(t('You have probably changed the newsletter vocabulary. Please redefine the <a href="@blocks">newsletter blocks</a>.', array('@blocks' => url('admin/build/block'))), 'error');
+        return array();
       }
-      return $block;
+    }
+    break;  
   }
 }
 
@@ -814,11 +833,13 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
  * hook_forms() is required to provide unique form id for each block form.
  */
 function simplenews_forms() {
-  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
-    $forms['simplenews_block_form_'. $newsletter->tid] = array(
-      'callback' => 'simplenews_block_form',
-      'callback arguments' => array($newsletter->tid),
-    );
+  if ($taxonomies = taxonomy_get_tree(variable_get('simplenews_vid', ''))) {
+    foreach ($taxonomies as $newsletter) {
+      $forms['simplenews_block_form_'. $newsletter->tid] = array(
+        'callback' => 'simplenews_block_form',
+        'callback arguments' => array($newsletter->tid),
+      );
+    }
   }
   return $forms;
 }

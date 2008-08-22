@@ -726,11 +726,11 @@ function simplenews_admin_settings(&$form_state) {
     '#title' => t('Content types'),
     '#required' => TRUE,
     '#options' => array_map('check_plain', node_get_types('names')),
-    '#default_value' => $vocabulary->nodes,
+    '#default_value' => isset($vocabulary) ? $vocabulary->nodes : array(),
     '#description' => t('Content types to be used as newsletter.'),
   );
 
-  $vocabulary_options = array();
+  $vocabulary_options = array('' => t('<select>'));
   if ($vocabularies = taxonomy_get_vocabularies()) {
     foreach ($vocabularies as $key => $object) {
       $vocabulary_options[$key] = $object->name;
@@ -741,7 +741,7 @@ function simplenews_admin_settings(&$form_state) {
     '#title' => t('Newsletter vocabulary'),
     '#options' =>  $vocabulary_options,
     '#required' => TRUE,
-    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged.'),
+    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged and newsletter blocks to be redefined.'),
     '#default_value' => variable_get('simplenews_vid', ''),
   );
 
