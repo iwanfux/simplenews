@@ -15,20 +15,19 @@
  * - $subscription_link: link to subscription form at 'newsletter/subscriptions'
  * - $newsletter_link: link to taxonomy list of the newsletter issue
  * - $issuelist: list of newsletters (of the $tid newsletter series)
- * - $rssfeed: rss feed of newsletter (series)
+ * - $rssfeed: RSS feed of newsletter (series)
  *
  * Simplenews module controls the display of the block content. The following
  * variables are available for this purpose:
- *  - $use_message:
- *  - $use_form
- *  - $use_issue_link
- *  - $use_issue_list
- *  - $use_rss
+ *  - $use_form       : TRUE = display the form; FALSE = display link to example.com/newsletter/subscriptions
+ *  - $use_issue_link : TRUE = display link to newsletter issue list
+ *  - $use_issue_list : TRUE = display list of the newsletter issue
+ *  - $use_rss        : TRUE = display RSS feed
  *
  * @see template_preprocess_simplenews_block()
  */
 ?>
-  <?php if ($use_message && $message): ?>
+  <?php if ($message): ?>
     <p><?php print $message; ?></p>
   <?php endif; ?>
 

@@ -743,14 +743,6 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       }
       return $blocks;
     case 'configure':
-      //TODO: remove simplenews_block_m_status_
-      $form['simplenews_block_'. $delta]['simplenews_block_m_status_'. $delta] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Display block message'),
-        '#return_value' => 1,
-        '#default_value' => variable_get('simplenews_block_m_status_'. $delta, 1),
-      );
-      //TODO: leave empty to display no message.
       $form['simplenews_block_'. $delta]['simplenews_block_m_'. $delta] = array(
         '#type' => 'textfield',
         '#title' => t('Block message'),
@@ -759,10 +751,10 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#default_value' => variable_get('simplenews_block_m_'. $delta, t('Stay informed on our latest news!')),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_f_'. $delta] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Display subscription form'),
-        '#return_value' => 1,
-        '#description' => t("If checked a subscription form is displayed, if not checked a link to the subscription page is displayed. Note: this requires permission 'subscribe to newsletters'."),
+        '#type' => 'radios',
+        '#title' => t('Subscription interface'),
+        '#options' => array('1' => t('Subscription form'), '0' => t('Link to form')),
+        '#description' => t("Note: this requires permission 'subscribe to newsletters'."),
         '#default_value' => variable_get('simplenews_block_f_'. $delta, 1),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_l_'. $delta] = array(
@@ -794,7 +786,6 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       );
       return $form;
     case 'save':
-      variable_set('simplenews_block_m_status_'. $delta, $edit['simplenews_block_m_status_'. $delta]);
       variable_set('simplenews_block_m_'. $delta, $edit['simplenews_block_m_'. $delta]);
       variable_set('simplenews_block_f_'. $delta, $edit['simplenews_block_f_'. $delta]);
       variable_set('simplenews_block_l_'. $delta, $edit['simplenews_block_l_'. $delta]);
@@ -2079,7 +2070,6 @@ function template_preprocess_simplenews_block(&$variables) {
   }
 
   // Block content control variables
-  $variables['use_message'] = variable_get('simplenews_block_m_status_'. $tid, 1);
   $variables['use_form'] = variable_get('simplenews_block_f_'. $tid, 1);
   $variables['use_issue_link'] = variable_get('simplenews_block_l_'. $tid, 1);
   $variables['use_issue_list'] = variable_get('simplenews_block_i_status_'. $tid, 0);
