@@ -990,8 +990,18 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
  *
  * @return boolean TRUE = email address is subscribed to given newsletter term id
  */
-function simplenews_user_is_subscribed($mail, $tid) {
-  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.mail = '%s' AND t.tid = %d", $mail, $tid)) ? TRUE : FALSE;
+function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
+  static $subscribed = array();
+  
+    if ($reset) {
+      unset($subscribed);
+    }
+    
+    if (!isset($subscribed[$mail][$tid])) {
+      $subscribed[$mail][$tid] = db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.mail = '%s' AND t.tid = %d", $mail, $tid)) ? TRUE : FALSE;
+    }
+  
+  return $subscribed[$mail][$tid];
 }
 
 /**
