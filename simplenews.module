@@ -1295,7 +1295,11 @@ function simplenews_send_node($node, $accounts = array()) {
     }
     if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
       simplenews_mail_send($node_data['nid'], $node_data['vid'], 999999);
+      drupal_set_message(t('Newsletter sent.'));
       simplenews_clear_spool();
+    }
+    else {
+      drupal_set_message(t('Newsletter pending.'));
     }
   }
 }
