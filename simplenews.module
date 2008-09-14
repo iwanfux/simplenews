@@ -99,10 +99,6 @@ function simplenews_access($op, $node) {
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
 
-  if (module_exists('views')) {
-    include_once(drupal_get_path('module', 'simplenews') .'/simplenews_views.inc');
-  }
-
   // Simpelnews can not work without this variable.
   if ((variable_get('simplenews_vid', '')) == '') {
     drupal_set_message(t('Missing newsletter vocabulary. Please set a vocabulary at <a href="@settings">Simplenews settings</a>.', array('@settings' => url('admin/settings/simplenews'))), 'error');
@@ -1745,9 +1741,16 @@ function simplenews_send_status_update() {
 }
 
 /**
- * Call simplenews actions
- *
- * @see simplenews_hook_info()
+ * Implementations of hook_views_api().
+ */
+function simplenews_views_api() {
+  return array(
+    'api' => 2,
+  );
+}
+
+/**
+ * Call simplenews actions.
  */
 function simplenews_call_actions($op, $subscription) {
   // Only call actions when the simplenews_action module is enabled.
