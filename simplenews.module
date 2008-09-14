@@ -794,6 +794,8 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
       variable_set('simplenews_block_r_'. $delta, $edit['simplenews_block_r_'. $delta]);
       break;
     case 'view':
+      global $language;
+
       if ($tree = taxonomy_get_tree(variable_get('simplenews_vid', ''))) {
         // Only display a block if $delta is a valid newsletter term id.
         foreach ($tree as $taxonomy) {
@@ -802,6 +804,10 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         if (in_array($delta, $tids)) {
           // $delta is validated, the block can be displayed.
           $newsletter = (array) taxonomy_get_term($delta);
+          // Translate newsletter name if required.
+          if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_LOCALIZE) {
+            $newsletter['name'] = tt('taxonomy:term:'. $newsletter['tid'] .':name', $newsletter['name'], $language->language);
+          }
           $block = array(
             'subject' => check_plain($newsletter['name']),
             'content' => theme('simplenews_block', $newsletter['tid']),
