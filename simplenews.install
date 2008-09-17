@@ -286,7 +286,7 @@ function simplenews_update_6000() {
   $result = db_query("SELECT module, delta FROM {blocks_roles} WHERE module = 'simplenews' AND delta LIKE 'newsletter-%'");
   while ($data = db_fetch_object($result)) {
     $delta = strtr($data->delta, array('newsletter-' => ''));
-    $ret[] = update_sql("UPDATE {blocks_roles} SET delta = '%s WHERE module = 'simplenews' AND delta = 'newsletter-%s'", $delta, $delta);
+    $ret[] = update_sql("UPDATE {blocks_roles} SET delta = '%s' WHERE module = 'simplenews' AND delta = 'newsletter-%s'", $delta, $delta);
   }
 
   // Convert newsletter priority: change field type int to string
