@@ -481,6 +481,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#weight' => -1,
     );
     $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can also be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
+    // Free tagging can not be allowed see: simplenews_validate_taxonomy().
+    $form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
   }
 
   // Simplenews newsletter node form
