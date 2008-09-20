@@ -419,26 +419,51 @@ function simplenews_form(&$node) {
 }
 
 /**
- * Validate if term is Newsletter taxonomy term.
+ * Validate if selected terms are Newsletter taxonomy terms.
  *
+ * @param array $taxonomy Taxonomy form array of newsletter node.
+ * 
  * @return
  *   Array of selected Newsletter terms. Example: array(4, 12)
  *   FALSE: no Newsletter term is selected
+ *
+ * NOTE: This function can not handle free tagging tags.
+ *       In case of free tagging see taxonomy_node_save() for example code.
+ *       Note that free tagging can create new terms at node add/edit. This
+ *       contradicts with the current set-up of simpelnews.
  */
 function simplenews_validate_taxonomy($taxonomy) {
+  // Get newsletter tids.
   $vid = variable_get('simplenews_vid', '');
   $result = db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid);
   while ($tid = db_fetch_object($result)) {
-    $tids[] = $tid->tid;
+    $newsletter_tids[] = $tid->tid;
   }
-  if (isset($tids) && !empty($taxonomy)) {
-    $taxes = array();
-    foreach ($taxonomy as $tax) {
-      $taxes[] = $tax;
+  // Extract selected tid's from the taxonomy form.
+  if (isset($newsletter_tids) && !empty($taxonomy)) {
+    $selected_terms = array();
+    if (is_array($taxonomy)) {
+      foreach ($taxonomy as $term) {
+        if (is_array($term)) {
+          foreach ($term as $tid) {
+            if ($tid) {
+              $selected_terms[] = $tid;
+            }
+          }
+        }
+        else if (is_object($term)) {
+          $selected_terms[] = $term->tid;
+        }
+        else if ($term) {
+          $selected_terms[] = $term;
+        }
+      }
     }
-    $selected_terms = array_intersect($tids, $taxes);
-    return empty($selected_terms) ? FALSE : $selected_terms;
+    // Compare selected tid's and newsletter tid's.
+    $valid_terms = array_intersect($newsletter_tids, $selected_terms);
+    return empty($valid_terms) ? FALSE : $valid_terms;
   }
+
   return FALSE;
 }
 
