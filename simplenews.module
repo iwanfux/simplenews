@@ -486,7 +486,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
           $form['simplenews']['s_format'] = array(
             '#type' => 'select',
             '#title' => t('Format'),
-            '#default_value' => $simplenews_values['s_format'],
+            '#default_value' => isset($simplenews_values['s_format']) ? $simplenews_values['s_format'] : variable_get('simplenews_format', 'plain'),
             '#options' => _simplenews_format_options(),
           );
         }
