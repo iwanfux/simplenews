@@ -1365,7 +1365,28 @@ function simplenews_send_test($node, $accounts = array()) {
     foreach ($accounts as $account) {
       $subscription = simplenews_get_subscription($account);
       $params['context']['account'] = $subscription;
-      $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['address']);
+      if (module_exists('mimemail')) {
+        // If mimemail module is installed ALL emails are send via this module.
+        // drupal_mail() builds the content of the email but does NOT send.
+        $message = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['formatted'], FALSE);
+        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
+        $result['result'] = mimemail(
+          $message['from'],
+          $message['to'],
+          $message['subject'],
+          $message['body'],
+          $plain,
+          $message['headers'],
+          $message['body'],
+          isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
+          '',
+          FALSE
+        );
+      }
+      else {
+        // Without mimemail all email are sent in plain text directly by drupal_mail().
+        $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['address']);
+      }
       if ($result['result']) {
         drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $account->mail)));
       }
@@ -1602,10 +1623,38 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
       $params['context']['node'] = $node;
 
       // Send mail
-      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
+      if (module_exists('mimemail')) {
+        // If mimemail module is installed ALL emails are send via this module.
+        // drupal_mail() builds the content of the email but does NOT send.
+        $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
+        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
+        $message['result'] = mimemail(
+          $message['from'],
+          $message['to'],
+          $message['subject'],
+          $message['body'],
+          $plain,
+          $message['headers'],
+          $message['body'],
+          isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
+          ''
+        );
+      }
+      else {
+        $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
+      }
 
+      // Log sent message.
       if (variable_get('simplenews_debug', FALSE)) {
-        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+        if (module_exists('mimemail')) {
+          $via_mimemail = '<br />'. t('Sent via Mime Mail');
+        }
+        if ($message['result']) {
+          watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
+        }
+        else {
+          watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
+        }
       }
 
       // Succesfull mail messages are marked in the spool with status send.
