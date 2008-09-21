@@ -2162,7 +2162,7 @@ function theme_simplenews_newsletter_body($body, $title, $language) {
  */
 function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $language) {
   if ($format == 'html') {
-    $output = '<p>-- <br />'. l(t('Click here to unsubscribe from this newsletter', array(), $language->language), 'newsletter/confirm/remove/'. $hash, array('html' => TRUE, 'language' => $language)) .'</p>';
+    $output = '<p class="newsletter-footer">'. l(t('Unsubscribe from this newsletter', array(), $language->language), 'newsletter/confirm/remove/'. $hash, array('html' => TRUE, 'language' => $language)) .'</p>';
   }
   else {
     $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language))), $language->language);
