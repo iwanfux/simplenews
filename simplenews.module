@@ -879,7 +879,7 @@ function _simplenews_user_load($mail) {
     // Construct anonymous user since we don't have a user that matches that e-amil.
     $account = new stdClass();
     $account->uid = 0;
-    $account->mail = $mail;
+    $account->mail = drupal_strtolower($mail);
   }
   return $account;
 }
