@@ -1479,7 +1479,6 @@ function simplenews_mail($key, &$message, $params) {
         $node->body = $content;
         unset($node->teaser);
         node_invoke_nodeapi($node, 'alter', FALSE, TRUE);
-        $node = node_prepare($node);
         $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $message['language']);
 
         // Buffer body text node and language specific
