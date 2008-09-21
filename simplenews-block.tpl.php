@@ -11,11 +11,13 @@
  * - $user: the current user is authenticated
  * - $tid: tid of the newsletter
  * - $message: announcement message (Default: 'Stay informed on our latest news!')
- * - $form: newsletter subscription form
- * - $subscription_link: link to subscription form at 'newsletter/subscriptions'
- * - $newsletter_link: link to taxonomy list of the newsletter issue
- * - $issuelist: list of newsletters (of the $tid newsletter series)
- * - $rssfeed: RSS feed of newsletter (series)
+ * - $form: newsletter subscription form *1
+ * - $subscription_link: link to subscription form at 'newsletter/subscriptions' *1
+ * - $newsletter_link: link to taxonomy list of the newsletter issue *2
+ * - $issuelist: list of newsletters (of the $tid newsletter series) *2
+ * - $rssfeed: RSS feed of newsletter (series) *2
+ * Note 1: requires 'subscribe to newsletters' permission
+ * Note 2: requires 'view links in block' or 'administer newsletters' permission
  *
  * Simplenews module controls the display of the block content. The following
  * variables are available for this purpose:

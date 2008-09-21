@@ -2153,6 +2153,13 @@ function template_preprocess_simplenews_block(&$variables) {
   global $user;
   $tid = $variables['tid'];
 
+  // Set default values in case of missing permission.
+  $variables['form'] = '';
+  $variables['subscription_link'] = '';
+  $variables['newsletter_link'] = '';
+  $variables['issue_list'] = '';
+  $variables['rssfeed'] = '';
+
   // Block content variables
   $variables['message'] = check_plain(variable_get('simplenews_block_m_'. $tid, t('Stay informed on our latest news!')));
   if (user_access('subscribe to newsletters')) {
@@ -2174,7 +2181,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['use_rss'] = variable_get('simplenews_block_r_'. $tid, 1);
 
   // Additional variables
-  $variables['subscribed'] = (simplenews_user_is_subscribed($user->mail, $tid) == TRUE);
+  $variables['subscribed'] = empty($user->uid) ? FALSE : (simplenews_user_is_subscribed($user->mail, $tid) == TRUE);
   $variables['user'] = !empty($user->uid);
 }
 
