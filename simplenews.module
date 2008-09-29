@@ -1868,7 +1868,7 @@ function _simplenews_set_from($node = NULL) {
 
   return array(
     'address' => $address,
-    'formatted' => '"'. mime_header_encode(addslashes(check_plain($name))) .'" <'. $address .'>',
+    'formatted' => '"'. mime_header_encode(check_plain($name)) .'" <'. $address .'>',
   );
 }
 
