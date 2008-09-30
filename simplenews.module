@@ -14,6 +14,8 @@
  * @ingroup simplenews
  */
 
+// TODO: in Drupal 7 try to replace time() by $_SERVER[''REQUEST_TIME'] (requires php 5.1.0)
+
 /**
  * NEWSLETTER MAIL PRIORITY
  */
@@ -497,7 +499,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Newsletter sending options'),
+        '#title' => t('Send newsletter'),
         '#collapsible' => TRUE,
         '#collapsed' => FALSE,
         '#tree' => TRUE,
@@ -506,43 +508,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       // If send a nodification is shown.
       if (!isset($simplenews_values['s_status']) || (isset($simplenews_values['s_status']) && $simplenews_values['s_status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
 
-        // Hide format selection if there is nothing to choose.
-        // The default format is plain text.
-        $format_options = _simplenews_format_options();
-        if (count($format_options) > 1) {
-          $form['simplenews']['s_format'] = array(
-            '#type' => 'select',
-            '#title' => t('Format'),
-            '#default_value' => isset($simplenews_values['s_format']) ? $simplenews_values['s_format'] : variable_get('simplenews_format', 'plain'),
-            '#options' => _simplenews_format_options(),
-          );
-        }
-        else {
-          $form['simplenews']['s_format'] = array(
-            '#type' => 'hidden',
-            '#value' => key($format_options),
-          );
-        }
- 
-        $form['simplenews']['priority'] = array(
-          '#type' => 'select',
-          '#title' => t('Priority'),
-          '#default_value' => isset($simplenews_values['priority']) ? $simplenews_values['priority'] : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-          '#options' => array(
-            SIMPLENEWS_PRIORITY_NONE => t('none'),
-            SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
-            SIMPLENEWS_PRIORITY_HIGH => t('high'),
-            SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
-            SIMPLENEWS_PRIORITY_LOW => t('low'),
-            SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
-          ),
-        );
-        $form['simplenews']['receipt'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('Request receipt'),
-          '#return_value' => 1,
-          '#default_value' => isset($simplenews_values['receipt']) ? $simplenews_values['receipt'] : variable_get('simplenews_receipt', 0),
-        );
+        // Add dynamic text for send button.
+        drupal_add_js(drupal_get_path('module', 'simplenews') .'/simplenews.js', 'module');
 
         if (user_access('send newsletter')) {
           $options[SIMPLENEWS_COMMAND_SEND_NONE] = t("Don't send now");
@@ -550,9 +517,10 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
           $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
           $form['simplenews']['send'] = array(
             '#type' => 'radios',
-            '#title' => t('Sending'),
+            '#title' => t('Send action'),
             '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE),
             '#options' => $options,
+            '#attributes' => array('class' => 'simplenews-command-send'),
           );
         }
         else {
@@ -564,6 +532,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
             '#default_value' => isset($simplenews_values['send']) ? $simplenews_values['send'] : SIMPLENEWS_COMMAND_SEND_NONE,
             '#options' => $options,
             '#description' => t('You have no privileges to send this newsletter'),
+            '#attributes' => array('class' => 'simplenews-command-send'),
           );
         }
         if (module_exists('translation') && translation_supported_type($form['#node']->type)) {
@@ -587,6 +556,51 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
             '#value' => variable_get('simplenews_test_address', $address_default),
           );
         }
+
+        $form['simplenews']['advanced'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Email options'),
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+        );
+           // Hide format selection if there is nothing to choose.
+        // The default format is plain text.
+        $format_options = _simplenews_format_options();
+        if (count($format_options) > 1) {
+          $form['simplenews']['advanced']['s_format'] = array(
+            '#type' => 'select',
+            '#title' => t('Email format'),
+            '#default_value' => isset($simplenews_values['s_format']) ? $simplenews_values['s_format'] : variable_get('simplenews_format', 'plain'),
+            '#options' => _simplenews_format_options(),
+          );
+        }
+        else {
+          $form['simplenews']['advanced']['s_format'] = array(
+            '#type' => 'hidden',
+            '#value' => key($format_options),
+          );
+        }
+ 
+        $form['simplenews']['advanced']['priority'] = array(
+          '#type' => 'select',
+          '#title' => t('Email priority'),
+          '#default_value' => isset($simplenews_values['priority']) ? $simplenews_values['priority'] : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
+          '#options' => array(
+            SIMPLENEWS_PRIORITY_NONE => t('none'),
+            SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
+            SIMPLENEWS_PRIORITY_HIGH => t('high'),
+            SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
+            SIMPLENEWS_PRIORITY_LOW => t('low'),
+            SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
+          ),
+        );
+        $form['simplenews']['advanced']['receipt'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Request receipt'),
+          '#return_value' => 1,
+          '#default_value' => isset($simplenews_values['receipt']) ? $simplenews_values['receipt'] : variable_get('simplenews_receipt', 0),
+        );
+
       }
       else {
         $form['simplenews']['none'] = array(
