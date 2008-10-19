@@ -167,8 +167,7 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   $form['simplenews_sender_information'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sender information'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsible' => FALSE,
   );
   $form['simplenews_sender_information']['simplenews_from_name_'. $term->tid] = array(
     '#type' => 'textfield',
@@ -777,7 +776,6 @@ function simplenews_admin_settings_newsletter(&$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Default newsletter options'),
     '#collapsible' => FALSE,
-    '#collapsed' => FALSE,
     '#description' => t('These options will be the defaults for new newsletters, but can be overridden in the newsletter editing form.'),
   );
   $description = t('Default newsletter format.');
