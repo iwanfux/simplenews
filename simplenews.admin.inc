@@ -756,6 +756,7 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
   $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
   taxonomy_save_vocabulary($vocabulary);
+  variable_set('simplenews_content_types',$form_state['values']['simplenews_content_types']);
 
   // We do not need a simplenews_content_types variable.
   unset($form_state['values']['simplenews_content_types']);
