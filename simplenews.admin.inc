@@ -363,7 +363,7 @@ function simplenews_subscription_list_add() {
     '#title' => t('Email addresses'),
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('Supply a comma separated list of email addresses to be subscribed.'),
+    '#description' => t('Email addresses must be separated by comma, space or newline.'),
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
@@ -412,7 +412,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
   $langcode = $form_state['values']['language'];
 
-  $emails = explode(",", $form_state['values']['emails']);
+  $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
   foreach ($emails as $email) {
     $email = trim($email);
     if (valid_email_address($email)) {
@@ -544,7 +544,7 @@ function simplenews_subscription_list_remove() {
     '#title' => t('Email addresses'),
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('Supply a comma separated list of email addresses to be unsubscribed. Email addresses which are no longer subscribed to any newsletter, will be removed from the database.'),
+    '#description' => t('Email addresses must be separated by comma, space or newline. Email addresses which are no longer subscribed to any newsletter, will be removed from the database.'),
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
@@ -569,7 +569,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
   $invalid = array();
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
 
-  $emails = explode(",", $form_state['values']['emails']);
+  $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
   foreach ($emails as $email) {
     $email = trim($email);
     if (valid_email_address($email)) {
