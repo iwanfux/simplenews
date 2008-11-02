@@ -380,7 +380,7 @@ function simplenews_subscription_list_add() {
   // Default value is the empty string which will result in receiving emails
   // in the site's default language.
   if (variable_get('language_count', 1) > 1) {
-    $options[''] = t('None (site default language)');
+    $options[''] = t('Site default language');
     $languages = language_list('enabled');
     foreach ($languages[1] as $langcode => $item) {
       $name = t($item->name);
