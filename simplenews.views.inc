@@ -34,10 +34,10 @@ function simplenews_views_data() {
   // ----------------------------------------------------------------
   // Fields
 
-  // newsletter send status
+  // newsletter sent status
   $data['simplenews_newsletters']['s_status'] = array(
-    'title' => t('Send status'), // The item it appears as on the UI,
-    'help' => t('Newsletter send status: Not send, Pending (being send or waiting for cron to run), Send.'), // The help that appears on the UI,
+    'title' => t('Sent status'), // The item it appears as on the UI,
+    'help' => t('Newsletter sent status: Not sent, Pending (being sent or waiting for cron to run), Sent.'), // The help that appears on the UI,
     'field' => array(
       'handler' => 'simplenews_handler_field_newsletter_s_status',
       'click sortable' => TRUE,
