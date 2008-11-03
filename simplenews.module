@@ -2133,9 +2133,6 @@ function simplenews_theme() {
       'file' => 'simplenews.admin.inc',
       'arguments' => array('status' => NULL, 'source' => NULL),
     ),
-    'simplenews_newsletter' => array(
-      'arguments' => array('node' => NULL, 'tid' => NULL),
-    ),
     'simplenews_newsletter_subject' => array(
       'arguments' => array('name' => NULL, 'title' => NULL, 'language' => NULL),
     ),
@@ -2197,17 +2194,6 @@ function template_preprocess_simplenews_block(&$variables) {
   // Additional variables
   $variables['subscribed'] = empty($user->uid) ? FALSE : (simplenews_user_is_subscribed($user->mail, $tid) == TRUE);
   $variables['user'] = !empty($user->uid);
-}
-
-/**
- * Theme the newsletter message subject and body.
- */
-function theme_simplenews_newsletter($node, $tid) {
-  $term = taxonomy_get_term($tid);
-  $name = $term->name ? $term->name : t('Unassigned newsletter');
-  $node->subject = '['. $name .'] '. $node->title;
-  $node->body = '<h2>'. $node->title ."</h2>\n". $node->body;
-  return $node;
 }
 
 /**
