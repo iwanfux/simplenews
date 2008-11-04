@@ -1126,9 +1126,33 @@ function simplenews_delete_subscription($snid) {
 function _simplenews_subscription_manager_form($subscription) {
   $form = array();
   $options = array();
-  foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
-    $options[$newsletter->tid] = check_plain($newsletter->name);
-    $default_value[$newsletter->tid] = FALSE;
+  $default_value = array();
+  global $language;
+
+  // Get taxonomy terms for subscription form checkboxes.
+  // With taxonomy translation and 'Per language terms' only the terms of the
+  // current language are listed. With taxonomy translation and 'Localize terms'
+  // all taxonomy terms are listed and translated.
+  if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_TRANSLATE) {
+    // Per language terms.
+    $tterms = i18ntaxonomy_vocabulary_get_terms(variable_get('simplenews_vid', ''), $language->language);
+    foreach ($tterms as $tid => $name) {
+      $options[$tid] = check_plain($name);
+      $default_value[$tid] = FALSE;
+    }
+  }
+  else {
+    foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
+      if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_LOCALIZE) {
+        // Localize terms.
+        $options[$newsletter->tid] = check_plain(tt('taxonomy:term:'. $newsletter->tid .':name', $newsletter->name, $language->language));;
+      }
+      else {
+        // Untranslated.
+        $options[$newsletter->tid] = check_plain($newsletter->name);
+      }
+      $default_value[$newsletter->tid] = FALSE;
+    }
   }
 
   $form['subscriptions'] = array(
