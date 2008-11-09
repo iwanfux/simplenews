@@ -883,7 +883,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
           return $block;
         }
       else {
-        drupal_set_message(t('You have probably changed the newsletter vocabulary. Please redefine the <a href="@blocks">newsletter blocks</a>.', array('@blocks' => url('admin/build/block'))), 'error');
+        drupal_set_message(t('You have probably changed the newsletter vocabulary. Please re-enable the <a href="@blocks">newsletter blocks</a>.', array('@blocks' => url('admin/build/block'))), 'error');
         return array();
       }
     }
