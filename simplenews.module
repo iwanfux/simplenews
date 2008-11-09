@@ -364,22 +364,27 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       break;
     case 'insert':
     case 'update':
+      // Flatten the simplenews 'advanced' settings array.
+      // This makes sure the $node array after insert/update is equal to the
+      // $node array after load.
+      $node->simplenews = _simplenews_flatten_array($node->simplenews);
+      
       $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
       if ($op == 'insert') {
         // Insert node
         $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
         db_query("INSERT INTO {simplenews_newsletters} (nid, vid, tid, s_status, s_format, priority, receipt)
-                  VALUES (%d, %d, %d, %d, '%s', %d, %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['advanced']['s_format'], $node->simplenews['advanced']['priority'], $node->simplenews['advanced']['receipt']);
+                  VALUES (%d, %d, %d, %d, '%s', %d, %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
         }
       else {
         // Update node
         if ($send_with_permission) {
           db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['advanced']['s_format'], $node->simplenews['advanced']['priority'], $node->simplenews['advanced']['receipt'], $node->nid);
+          WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
         }
         else {
           db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['advanced']['s_format'], $node->simplenews['advanced']['priority'], $node->simplenews['advanced']['receipt'], $node->nid);
+          WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
         }
       }
 
@@ -391,8 +396,8 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
           foreach ($translations as $translation) {
             db_query("UPDATE {simplenews_newsletters} SET s_status = %d, s_format = '%s', priority = %d, receipt = %d
               WHERE nid = %d",
-              SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['advanced']['s_format'], $node->simplenews['advanced']['priority'],
-              $node->simplenews['advanced']['receipt'], $translation->nid);
+              SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'],
+              $node->simplenews['receipt'], $translation->nid);
           }
         }
       }
@@ -1433,7 +1438,7 @@ function simplenews_send_test($node, $accounts = array()) {
         // If mimemail module is installed ALL emails are send via this module.
         // drupal_mail() builds the content of the email but does NOT send.
         $message = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['formatted'], FALSE);
-        $plain = $message['params']['context']['node']->simplenews['advanced']['s_format'] == 'plain';
+        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
         $result['result'] = mimemail(
           $message['from'],
           $message['to'],
@@ -1531,6 +1536,8 @@ function simplenews_mail($key, &$message, $params) {
         }
       }
 
+      // Check if this node-language pair has been buffered.
+      // If not, build the message and store it for later use.
       if (!isset($messages[$nid][$langcode])) {
         $node = $context['node'];
 
@@ -1582,7 +1589,7 @@ function simplenews_mail($key, &$message, $params) {
       // before conversion to plain text.
       $variables =  user_mail_tokens($context['account'], $context['account']->language);
       $body = strtr($body, $variables);
-      if ($context['node']->simplenews['advanced']['s_format'] == 'plain') {
+      if ($context['node']->simplenews['s_format'] == 'plain') {
         $body = simplenews_html_to_text($body);
       }
       $message['body']['body'] = $body;
@@ -1594,7 +1601,7 @@ function simplenews_mail($key, &$message, $params) {
       else {
         $hash = '';
       }
-      $message['body']['footer'] = theme('simplenews_newsletter_footer', $context['node']->simplenews['advanced']['s_format'], $hash, $key == 'test', $message['language']);
+      $message['body']['footer'] = theme('simplenews_newsletter_footer', $context['node']->simplenews['s_format'], $hash, $key == 'test', $message['language']);
 
       // Add user specific header data.
       $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
@@ -1691,7 +1698,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
         // If mimemail module is installed ALL emails are send via this module.
         // drupal_mail() builds the content of the email but does NOT send.
         $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
-        $plain = $message['params']['context']['node']->simplenews['advanced']['s_format'] == 'plain';
+        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
         $message['result'] = mimemail(
           $message['from'],
           $message['to'],
@@ -1948,13 +1955,13 @@ function _simplenews_headers($node, $from) {
   $headers = array();
 
   // If receipt is requested, add headers.
-  if ($node->simplenews['advanced']['receipt']) {
+  if ($node->simplenews['receipt']) {
     $headers['Disposition-Notification-To'] = $from;
     $headers['X-Confirm-Reading-To'] = $from;
   }
 
   // Add priority if set.
-  switch ($node->simplenews['advanced']['priority']) {
+  switch ($node->simplenews['priority']) {
     case SIMPLENEWS_PRIORITY_HIGHEST:
       $headers['Priority'] = 'High';
       $headers['X-Priority'] = '1';
@@ -2116,6 +2123,23 @@ function simplenews_help($path, $arg) {
       $help = '<p>'. t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') ."</p>\n";
       return $help;
   }
+}
+
+/**
+ * Flatten a nested array
+ */
+function _simplenews_flatten_array($array) {
+  $return = array();
+  
+  foreach ($array as $key => $value) {
+    if (is_array($value)) {
+      $return += _simplenews_flatten_array($value);
+    }
+    else {
+      $return[$key] = $value;
+    }
+  }
+  return $return;
 }
 
 /**
