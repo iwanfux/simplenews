@@ -97,14 +97,16 @@ function _simplenews_set_filter($type, $values) {
  */
 function simplenews_types_overview() {
   $rows = array();
-  $header = array(t('Newsletter name'), t('Operations'));
+  $header = array(t('Newsletter name'), t('Subscribers'), t('Operations'));
 
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $term) {
-    $rows[] = array(check_plain($term->name), l(t('edit newsletter'), 'admin/content/simplenews/types/edit/'. $term->tid));
+    $count_result = db_query('SELECT COUNT(s.snid) AS s_count FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.activated = %d AND t.tid = %d', 1, $term->tid);    
+    $count = (int) db_result($count_result);
+    $rows[] = array(check_plain($term->name), $count, l(t('edit newsletter'), 'admin/content/simplenews/types/edit/'. $term->tid));
   }
 
   if (count($rows) == 0) {
-    $rows[] = array(array('data' => t('There are currently no newsletter series.'), 'colspan' => 2));
+    $rows[] = array(array('data' => t('There are currently no newsletter series.'), 'colspan' => count($header)));
   }
   return theme('table', $header, $rows);
 }
