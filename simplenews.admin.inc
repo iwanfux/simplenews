@@ -974,7 +974,7 @@ function simplenews_admin_settings_subscription(&$form_state) {
  * @param $snid array of snid's
  */
 function simplenews_activate_subscription($snid) {
-  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN(%s)', 1, implode(',', $snid));
+  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN('. db_placeholders($snid, 'int') .')', 1, implode(',', $snid));
 }
 
 /**
@@ -983,7 +983,7 @@ function simplenews_activate_subscription($snid) {
  * @param $snid array of snid's
  */
 function simplenews_inactivate_subscription($snid) {
-  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN(%s)', 0, implode(',', $snid));
+  db_query('UPDATE {simplenews_subscriptions} SET activated = %d WHERE snid IN('. db_placeholders($snid, 'int') .')', 0, implode(',', $snid));
 }
 
 /**
