@@ -1539,7 +1539,7 @@ function simplenews_mail($key, &$message, $params) {
       // Check if this node-language pair has been buffered.
       // If not, build the message and store it for later use.
       if (!isset($messages[$nid][$langcode])) {
-        $node = $context['node'];
+        $node = drupal_clone($context['node']);
 
         // Add simplenews specific header data
         $headers = array_merge($message['headers'], _simplenews_headers($node, $params['from']['address']));
