@@ -1446,7 +1446,7 @@ function simplenews_send_test($node, $accounts = array()) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body']),
+          $plain ? $message['body'] : simplenews_html_to_text($message['body'], variable_get('simplenews_hyperlinks_'. $message['params']['context']['node']->simplenews['tid'], 1)),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           '',
           FALSE
@@ -1590,7 +1590,7 @@ function simplenews_mail($key, &$message, $params) {
       $variables =  user_mail_tokens($context['account'], $context['account']->language);
       $body = strtr($body, $variables);
       if ($context['node']->simplenews['s_format'] == 'plain') {
-        $body = simplenews_html_to_text($body);
+        $body = simplenews_html_to_text($body, variable_get('simplenews_hyperlinks_'. $context['node']->simplenews['tid'], 1));
       }
       $message['body']['body'] = $body;
 
@@ -1706,7 +1706,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body']),
+          $plain ? $message['body'] : simplenews_html_to_text($message['body'], variable_get('simplenews_hyperlinks_'. $message['params']['context']['node']->simplenews['tid'], 1)),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           ''
         );
@@ -2001,25 +2001,50 @@ function _simplenews_headers($node, $from) {
  * Converts some special HTMLcharacters in addition to drupal_html_to_text()
  *
  * @param string $text Source text with HTML and special characters
- *
  * @return string Target text with HTML and special characters replaced
  */
-//TODO: convert url to absolute url's with (right prefix ?)
-function simplenews_html_to_text($text) {
-  // Remove in-page links
-  $pattern = '@<a[^>]+?href="#[^"]*"[^>]*?>(.+?)</a>@i';
-  $text = preg_replace($pattern, '$1', $text);
+function simplenews_html_to_text($text, $inline_hyperlinks = '1') {
+  // By replacing <a> tag by only its URL the URLs will be placed inline
+  // in the email body and are not converted to a numbered reference list
+  // by drupal_html_to_text().
+  // URL are converted to abolute URL as drupal_html_to_text() would have.
+  if ($inline_hyperlinks == '1') {
+    $pattern = '@<a[^>]+href="([^"]*)"[^>]*?>(.+?)</a>@i';
+    $text = preg_replace_callback($pattern, '_simplenews_absolute_mail_urls', $text);
+  }
 
-  // Replace some special characters before performing the drupal standard conversion
+  // Replace some special characters before performing the drupal standard conversion.
   $preg = _simplenews_html_replace();
   $text = preg_replace(array_keys($preg), array_values($preg), $text);
 
-  // Perform standard drupal html to text conversion
+  // Perform standard drupal html to text conversion.
   return drupal_html_to_text($text);
 }
 
 /**
- *  List of preg* regular expression patterns to search for and replace with
+ * Helper function for simplenews_html_to_text().
+ * 
+ * Replaces URLs with abolute URLs.
+ */
+function _simplenews_absolute_mail_urls($match) {
+  global $base_url, $base_path;
+  static $regexp;
+  $url = '';
+  
+  if ($match) {
+    if (empty($regexp)) {
+      $regexp = '@^'. preg_quote($base_path, '@') .'@';
+    }
+    list(, $url, ) = $match;
+    $url = strpos($url, '://') ? $url : preg_replace($regexp, $base_url .'/', $url);
+  }
+  return $url;
+}
+
+/**
+ * Helper function for simplenews_html_to_text().
+ * 
+ * List of preg* regular expression patterns to search for and replace with
  */
 function _simplenews_html_replace() {
     return array(

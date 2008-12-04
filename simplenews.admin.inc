@@ -186,6 +186,20 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     '#required' => TRUE,
     '#default_value' => variable_get('simplenews_from_address_'. $term->tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
   );
+  $form['simplenews_hyperlinks'] = array('#type' => 'fieldset',
+    '#title' => t('HTML to text conversion'),
+    '#collapsible' => FALSE,
+    '#description' => t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'),
+  );
+  $form['simplenews_hyperlinks']['simplenews_hyperlinks_'. $term->tid] = array(
+    '#type' => 'radios',
+    '#title' => t('Hyperlink conversion'),
+    '#options' => array(
+      t('Append hyperlinks as a numbered reference list'),
+      t('Display hyperlinks inline with the text')
+    ),
+    '#default_value' => variable_get('simplenews_hyperlinks_'. $term->tid, 1),
+  );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
@@ -263,6 +277,7 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
   }
   variable_set('simplenews_from_name_'. $tid, $form_state['values']['simplenews_from_name_'. $suffix]);
   variable_set('simplenews_from_address_'. $tid, $form_state['values']['simplenews_from_address_'. $suffix]);
+  variable_set('simplenews_hyperlinks_'. $tid, $form_state['values']['simplenews_hyperlinks_'. $suffix]);
 }
 
 /**
