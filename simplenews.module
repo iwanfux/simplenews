@@ -2012,7 +2012,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   // by drupal_html_to_text().
   // URL are converted to abolute URL as drupal_html_to_text() would have.
   if ($inline_hyperlinks) {
-    $pattern = '@<a[^>]+href="([^"]*)"[^>]*?>(.+?)</a>@i';
+    $pattern = '@<a[^>]+?href="([^"]*)"[^>]*?>(.+?)</a>@is';
     $text = preg_replace_callback($pattern, '_simplenews_absolute_mail_urls', $text);
   }
 
@@ -2038,10 +2038,10 @@ function _simplenews_absolute_mail_urls($match) {
     if (empty($regexp)) {
       $regexp = '@^'. preg_quote($base_path, '@') .'@';
     }
-    list(, $url, ) = $match;
+    list(, $url, $label) = $match;
     $url = strpos($url, '://') ? $url : preg_replace($regexp, $base_url .'/', $url);
   }
-  return $url;
+  return $label .' '. $url;
 }
 
 /**
