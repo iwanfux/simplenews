@@ -1446,7 +1446,7 @@ function simplenews_send_test($node, $accounts = array()) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body'], variable_get('simplenews_hyperlinks_'. $message['params']['context']['node']->simplenews['tid'], 1)),
+          $plain ? NULL : simplenews_html_to_text($message['body'], TRUE),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           '',
           FALSE
@@ -1706,7 +1706,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body'], variable_get('simplenews_hyperlinks_'. $message['params']['context']['node']->simplenews['tid'], 1)),
+          $plain ? NULL : simplenews_html_to_text($message['body'], TRUE),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           ''
         );
@@ -2001,14 +2001,17 @@ function _simplenews_headers($node, $from) {
  * Converts some special HTMLcharacters in addition to drupal_html_to_text()
  *
  * @param string $text Source text with HTML and special characters
+ * @param boolean $inline_hyperlinks
+ *   TRUE: URLs will be placed inline.
+ *   FALSE: URLs will be converted to numbered reference list.
  * @return string Target text with HTML and special characters replaced
  */
-function simplenews_html_to_text($text, $inline_hyperlinks = '1') {
+function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   // By replacing <a> tag by only its URL the URLs will be placed inline
   // in the email body and are not converted to a numbered reference list
   // by drupal_html_to_text().
   // URL are converted to abolute URL as drupal_html_to_text() would have.
-  if ($inline_hyperlinks == '1') {
+  if ($inline_hyperlinks) {
     $pattern = '@<a[^>]+href="([^"]*)"[^>]*?>(.+?)</a>@i';
     $text = preg_replace_callback($pattern, '_simplenews_absolute_mail_urls', $text);
   }
