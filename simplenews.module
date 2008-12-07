@@ -1446,7 +1446,7 @@ function simplenews_send_test($node, $accounts = array()) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? NULL : simplenews_html_to_text($message['body'], TRUE),
+          $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           '',
           FALSE
@@ -1706,7 +1706,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
           $message['body'],
           $plain,
           $message['headers'],
-          $plain ? NULL : simplenews_html_to_text($message['body'], TRUE),
+          $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
           isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
           ''
         );
