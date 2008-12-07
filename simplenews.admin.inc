@@ -757,7 +757,7 @@ function simplenews_admin_settings(&$form_state) {
     '#title' => t('Newsletter vocabulary'),
     '#options' =>  $vocabulary_options,
     '#required' => TRUE,
-    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged and newsletter blocks to be redefined.'),
+    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged and activated newsletter blocks to be re-activated.'),
     '#default_value' => variable_get('simplenews_vid', ''),
   );
 
