@@ -1676,6 +1676,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
   if ($messages = simplenews_mail_spool_get(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $mail_sent = array();
+    _simplenews_measure_usec(TRUE);
 
     foreach ($messages as $key => $message) {
       // Get subscription data for recipient and language
@@ -1735,6 +1736,9 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
       simplenews_mail_spool_update($mail_sent, SIMPLENEWS_SPOOL_SEND);
     }
     simplenews_send_status_update();
+
+    // Report sent result and elapsed time
+    watchdog('simplenews', '%count emails sent successfully in %sec seconds.', array('%count' => count($mail_sent), '%sec' => round(_simplenews_measure_usec(), 1)));
   }
 }
 
@@ -2215,6 +2219,22 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
         return t("Confirmation for !newsletter from !site", $variables, $langcode);
     }
   }
+}
+
+/**
+ * Helper function to measure elapsed time in microseconds.
+ *
+ * @param bool $start TRUE reset the time and start counting.
+ * @return float: elapsed time since start.
+ */
+function _simplenews_measure_usec($start = FALSE) {
+  static $start_time;
+  
+  if ($start) {
+    $start_time = microtime(TRUE);
+    return 0;
+  }
+  return microtime(TRUE) - $start_time;
 }
 
 /**

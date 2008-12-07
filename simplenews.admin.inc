@@ -900,7 +900,8 @@ function simplenews_admin_settings_mail(&$form_state) {
     '#title' => t('Cron throttle'),
     '#options' => $throttle,
     '#default_value' => variable_get('simplenews_throttle', 20),
-    '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.'),
+    '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.') .'<br />'.
+      t('Cron execution must not exceed the PHP maximum exection time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time'))),
   );
   $form['simplenews_mail_backend']['simplenews_spool_expire'] = array(
     '#type' => 'select',
