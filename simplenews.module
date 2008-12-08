@@ -1562,6 +1562,7 @@ function simplenews_mail($key, &$message, $params) {
 
         // Build message body
         // Processing node body mimics node_view() with full node view
+        $node->build_mode = $node->simplenews['s_format'] == 'plain' ? 'email_plain' : 'email_html';
         $node = node_build_content($node, FALSE, TRUE);
         $content = drupal_render($node->content);
         $node->body = $content;
@@ -2150,6 +2151,9 @@ function simplenews_help($path, $arg) {
     case 'admin/content/simplenews/types/add':
       $help = '<p>'. t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') ."</p>\n";
       return $help;
+    case 'admin/content/node-type/simplenews/display/simplenews':
+      $help = '<p>'. t("'Plain' display settings apply to the content of emails send in plain text format. 'HTML' display settings apply to both HTML and plain text alternative content of emails send in HTML format.") ."</p>\n";
+      return $help;
   }
 }
 
@@ -2235,6 +2239,27 @@ function _simplenews_measure_usec($start = FALSE) {
     return 0;
   }
   return microtime(TRUE) - $start_time;
+}
+
+/**
+ * Implementation of hook_content_build_modes().
+ */
+function simplenews_content_build_modes() {
+  return array(
+    'simplenews' => array(
+      'title' => t('Simplenews'),
+      'build modes' => array(
+        'email_plain' => array(
+          'title' => t('Email: Plain'),
+          'views style' => FALSE,
+        ),
+        'email_html' => array(
+          'title' => t('Email: HTML'),
+          'views style' => FALSE,
+        ),                        
+      ),
+    ),
+  );
 }
 
 /**
