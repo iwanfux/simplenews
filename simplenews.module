@@ -48,6 +48,17 @@ define('SIMPLENEWS_SPOOL_PENDING', 1);
 define('SIMPLENEWS_SPOOL_SEND', 2);
 
 /**
+ * AFTER EACH 100 NEWSLETTERS
+ * simplenews_mail_send() CHECKS IF LIMITS ARE EXCEEDED
+ */
+define('SIMPLENEWS_SEND_CHECK_INTERVAL', 100);
+
+/**
+ * AT 80% OF PHP MAX EXECUTION TIME EMAIL SENDING IS INTERRUPTED
+ */
+define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
+
+/**
  * Implementation of hook_node_info().
  */
 function simplenews_node_info() {
@@ -1731,7 +1742,21 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
       if ($message['result']) {
         $mail_sent[] = $key;
       }
+
+      // Check every n emails if we exceed the limit.
+      // When PHP maximum execution time is almost elapsed we interrupt
+      // sending. The remainder will be send during the next cron run.
+      if (++$check_counter >= SIMPLENEWS_SEND_CHECK_INTERVAL) {
+        $check_counter = 0;
+        // Break the sending if a percentage of max execution time was exceeded.
+        $elapsed = _simplenews_measure_usec();
+        if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * ini_get('max_execution_time')) {
+          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/settings/simplenews/mail')), WATCHDOG_WARNING);
+          break;
+        }
+      }
     }
+
     // Mark messages in the spool as sent and update newsletter status.
     if (!empty($mail_sent)) {
       simplenews_mail_spool_update($mail_sent, SIMPLENEWS_SPOOL_SEND);
@@ -1739,7 +1764,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
     simplenews_send_status_update();
 
     // Report sent result and elapsed time
-    watchdog('simplenews', '%count emails sent successfully in %sec seconds.', array('%count' => count($mail_sent), '%sec' => round(_simplenews_measure_usec(), 1)));
+    watchdog('simplenews', '%count emails sent in %sec seconds.', array('%count' => count($mail_sent), '%sec' => round(_simplenews_measure_usec(), 1)));
   }
 }
 
@@ -2226,19 +2251,21 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
 }
 
 /**
- * Helper function to measure elapsed time in microseconds.
+ * Helper function to measure PHP execution time in microseconds.
  *
  * @param bool $start TRUE reset the time and start counting.
- * @return float: elapsed time since start.
+ * @return float: elapsed PHP execution time since start.
  */
 function _simplenews_measure_usec($start = FALSE) {
   static $start_time;
+  $usage = getrusage();
+  $now = (float)($dat["ru_stime.tv_sec"].'.'.$dat["ru_stime.tv_usec"]) + (float)($usage["ru_utime.tv_sec"] .'.'. $usage["ru_utime.tv_usec"]);
   
   if ($start) {
-    $start_time = microtime(TRUE);
+    $start_time = $now;
     return 0;
   }
-  return microtime(TRUE) - $start_time;
+  return $now - $start_time;
 }
 
 /**

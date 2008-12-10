@@ -883,10 +883,6 @@ function simplenews_admin_settings_mail(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
-  $max_time = array(0, 1, 2, 3, 4);
-  for ($i = 5; $i < ini_get('max_execution_time'); $i=$i+5) {
-    $max_time[] = $i;
-  }
   $form['simplenews_mail_backend']['simplenews_use_cron'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use cron to send newsletters'),
@@ -901,7 +897,7 @@ function simplenews_admin_settings_mail(&$form_state) {
     '#options' => $throttle,
     '#default_value' => variable_get('simplenews_throttle', 20),
     '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.') .'<br />'.
-      t('Cron execution must not exceed the PHP maximum exection time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time'))),
+      t('Cron execution must not exceed the PHP maximum execution time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time'))),
   );
   $form['simplenews_mail_backend']['simplenews_spool_expire'] = array(
     '#type' => 'select',
