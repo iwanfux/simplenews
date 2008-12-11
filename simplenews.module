@@ -1699,48 +1699,53 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 
       // Get node data for the mail
       $node = node_load(array('nid' => $message['nid'], 'vid' => $message['vid']));
-      $params['from'] = _simplenews_set_from($node);
-      $params['context']['node'] = $node;
-
-      // Send mail
-      if (module_exists('mimemail')) {
-        // If mimemail module is installed ALL emails are send via this module.
-        // drupal_mail() builds the content of the email but does NOT send.
-        $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
-        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
-        $message['result'] = mimemail(
-          $message['from'],
-          $message['to'],
-          $message['subject'],
-          $message['body'],
-          $plain,
-          $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
-          isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
-          ''
-        );
-      }
-      else {
-        $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
-      }
-
-      // Log sent message.
-      if (variable_get('simplenews_debug', FALSE)) {
+      if (is_object($node)) {
+        $params['from'] = _simplenews_set_from($node);
+        $params['context']['node'] = $node;
+  
+        // Send mail
         if (module_exists('mimemail')) {
-          $via_mimemail = '<br />'. t('Sent via Mime Mail');
-        }
-        if ($message['result']) {
-          watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
+          // If mimemail module is installed ALL emails are send via this module.
+          // drupal_mail() builds the content of the email but does NOT send.
+          $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
+          $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
+          $message['result'] = mimemail(
+            $message['from'],
+            $message['to'],
+            $message['subject'],
+            $message['body'],
+            $plain,
+            $message['headers'],
+            $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
+            isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
+            ''
+          );
         }
         else {
-          watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
+          $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
         }
-      }
-
-      // Succesfull mail messages are marked in the spool with status send.
-      // Succesfull mail are recorded with their spool id.
-      if ($message['result']) {
-        $mail_sent[] = $key;
+  
+        // Log sent message.
+        if (variable_get('simplenews_debug', FALSE)) {
+          if (module_exists('mimemail')) {
+            $via_mimemail = '<br />'. t('Sent via Mime Mail');
+          }
+          if ($message['result']) {
+            watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
+          }
+          else {
+            watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
+          }
+        }
+  
+        // Succesfull mail messages are marked in the spool with status send.
+        // Succesfull mail are recorded with their spool id.
+        if ($message['result']) {
+          $mail_sent[] = $key;
+        }
+      } 
+      else {
+        watchdog('simplenews', 'Newsletter not send: node does not exist (nid = @nid; vid = @vid).', array('@nid' => $message['nid'], '@vid' => $message['vid']), WATCHDOG_ERROR);
       }
 
       // Check every n emails if we exceed the limit.
