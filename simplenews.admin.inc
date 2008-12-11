@@ -1138,7 +1138,7 @@ function simplenews_build_subscription_filter_query() {
           break;
         case 'email':
           if (!empty($value)) {
-            $where[] = 'ss.mail LIKE "%%'. db_escape_string($value) .'%%"';
+            $where[] = "ss.mail LIKE '%%". db_escape_string($value) ."%%'";
           }
           break;
       }
