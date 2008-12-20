@@ -1418,59 +1418,26 @@ function simplenews_send_node($node, $accounts = array()) {
  * Send test version of newsletter.
  *
  * @param integer or object $node Newsletter node to be send. Integer = nid; Object = node object
- * @param array $accounts account objects to send the test newsletter to.
- *                  account = object(
- *                    mail : email address of recipient
- *                  )
  */
-function simplenews_send_test($node, $accounts = array()) {
+function simplenews_send_test($node) {
   if (is_numeric($node)) {
     $node = node_load($node);
   }
   if (is_object($node)) {
-    $from = _simplenews_set_from($node);
-    $params['context']['node'] = $node;
-    $params['from'] = $from;
+    // Send the test newsletter to the test address(es) specified in the node.
+    // Build array of test email addresses
+    $mails = explode(',', $node->simplenews['test_address']);
 
-    // If no account is specified the test newsletter is send to the test address(es) specified in the node.
-    if (empty($accounts)) {
-      // Build array of test email addresses
-      $mails = explode(',', $node->simplenews['test_address']);
-      foreach ($mails as $mail) {
-        $account['mail'] = trim($mail);
-        $accounts[] = (object)$account;
+    // Send newsletter to test addresses.
+    // Emails are send direct, not using the spool.
+    foreach ($mails as $mail) {
+      $mail = trim($mail);
+      if (!empty($mail)) {
+        $result = simplenews_mail_mail($node->nid, $node->vid, $mail);
       }
     }
-
-    // Test emails are send directly by drupal_mail(). This in contrast to simplenews_send_node() which send via a buffer.
-    foreach ($accounts as $account) {
-      $subscription = simplenews_get_subscription($account);
-      $params['context']['account'] = $subscription;
-      if (module_exists('mimemail')) {
-        // If mimemail module is installed ALL emails are send via this module.
-        // drupal_mail() builds the content of the email but does NOT send.
-        $message = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['formatted'], FALSE);
-        $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
-        $result['result'] = mimemail(
-          $message['from'],
-          $message['to'],
-          $message['subject'],
-          $message['body'],
-          $plain,
-          $message['headers'],
-          $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
-          isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
-          '',
-          FALSE
-        );
-      }
-      else {
-        // Without mimemail all email are sent in plain text directly by drupal_mail().
-        $result = drupal_mail('simplenews', 'test', $account->mail, $subscription->language, $params, $from['address']);
-      }
-      if ($result['result']) {
-        drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $account->mail)));
-      }
+    if ($result['result']) {
+      drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $account->mail)));
     }
   }
 }
@@ -1671,11 +1638,84 @@ function simplenews_mail($key, &$message, $params) {
   }
 
   // Debug message to check for outgoing emails messages.
-  // Newsletters ($key = 'node') are not send now. Debugging will take place in simplenews_mail_send() when the newsletters are send
+  // Newsletters ($key = 'node') are not send now. Debugging will take place in simplenews_mail_mail() when the newsletters are send
   if (variable_get('simplenews_debug', FALSE) && $key != 'node') {
     watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
   }
 
+}
+
+/**
+ * Send a node to an email address.
+ */
+function simplenews_mail_mail($nid, $vid, $mail) {
+  // Get subscription data for recipient and language
+  $account = new stdClass();
+  $account->mail = $mail;
+  $subscription = simplenews_get_subscription($account);
+  $params['context']['account'] = $subscription;
+  if (variable_get('simplenews_cron_user', 'default') != 'default') {
+    // We send the newsletter the using permissions of an other user.
+    // Store the current user to be able to switch back later.
+    simplenews_switch_user();
+  }
+
+  // Get node data for the mail
+  $node = node_load(array('nid' => $nid, 'vid' => $vid));
+  if (is_object($node)) {
+    $params['from'] = _simplenews_set_from($node);
+    $params['context']['node'] = $node;
+
+    if (variable_get('simplenews_cron_user', 'default') != 'default') {
+      // Switch user to the node author to use the correct permissions.
+      // After building the newsletter we switch back to the original user.
+      simplenews_switch_user($node->nid, $node->vid);
+    }
+    // Send mail
+    if (module_exists('mimemail')) {
+      // If mimemail module is installed ALL emails are send via this module.
+      // drupal_mail() builds the content of the email but does NOT send.
+      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
+      $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
+      $message['result'] = mimemail(
+        $message['from'],
+        $message['to'],
+        $message['subject'],
+        $message['body'],
+        $plain,
+        $message['headers'],
+        $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
+        isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
+        ''
+      );
+    }
+    else {
+      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
+    }
+
+    if (variable_get('simplenews_cron_user', 'default') != 'default') {
+      // Switch back to the original user.
+      simplenews_switch_user();
+    }
+
+    // Log sent message.
+    if (variable_get('simplenews_debug', FALSE)) {
+      if (module_exists('mimemail')) {
+        $via_mimemail = '<br />'. t('Sent via Mime Mail');
+      }
+      if ($message['result']) {
+        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
+      }
+      else {
+        watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
+      }
+    }
+  }
+  else {
+    watchdog('simplenews', 'Newsletter not send: node does not exist (nid = @nid; vid = @vid).', array('@nid' => $message['nid'], '@vid' => $message['vid']), WATCHDOG_ERROR);
+  }
+
+  return isset($message['result']) ? $message['result'] : FALSE;
 }
 
 /**
@@ -1696,61 +1736,25 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
     _simplenews_measure_usec(TRUE);
 
     foreach ($messages as $key => $message) {
-      // Get subscription data for recipient and language
-      $account = new stdClass();
-      $account->mail = $message['mail'];
-      $subscription = simplenews_get_subscription($account);
-      $params['context']['account'] = $subscription;
+      $result = simplenews_mail_mail($message['nid'], $message['vid'], $message['mail']);
 
-      // Get node data for the mail
-      $node = node_load(array('nid' => $message['nid'], 'vid' => $message['vid']));
-      if (is_object($node)) {
-        $params['from'] = _simplenews_set_from($node);
-        $params['context']['node'] = $node;
-  
-        // Send mail
-        if (module_exists('mimemail')) {
-          // If mimemail module is installed ALL emails are send via this module.
-          // drupal_mail() builds the content of the email but does NOT send.
-          $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
-          $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
-          $message['result'] = mimemail(
-            $message['from'],
-            $message['to'],
-            $message['subject'],
-            $message['body'],
-            $plain,
-            $message['headers'],
-            $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE),
-            isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(),
-            ''
-          );
+      // Succesfull mail messages are marked in the spool with status send.
+      // Store spool id for the spool status update.
+      if ($result) {
+        $mail_sent[] = $key;
+      }
+
+      // Check every n emails if we exceed the limit.
+      // When PHP maximum execution time is almost elapsed we interrupt
+      // sending. The remainder will be send during the next cron run.
+      if (++$check_counter >= SIMPLENEWS_SEND_CHECK_INTERVAL) {
+        $check_counter = 0;
+        // Break the sending if a percentage of max execution time was exceeded.
+        $elapsed = _simplenews_measure_usec();
+        if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * ini_get('max_execution_time')) {
+          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/settings/simplenews/mail')), WATCHDOG_WARNING);
+          break;
         }
-        else {
-          $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
-        }
-  
-        // Log sent message.
-        if (variable_get('simplenews_debug', FALSE)) {
-          if (module_exists('mimemail')) {
-            $via_mimemail = '<br />'. t('Sent via Mime Mail');
-          }
-          if ($message['result']) {
-            watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
-          }
-          else {
-            watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
-          }
-        }
-  
-        // Succesfull mail messages are marked in the spool with status send.
-        // Succesfull mail are recorded with their spool id.
-        if ($message['result']) {
-          $mail_sent[] = $key;
-        }
-      } 
-      else {
-        watchdog('simplenews', 'Newsletter not send: node does not exist (nid = @nid; vid = @vid).', array('@nid' => $message['nid'], '@vid' => $message['vid']), WATCHDOG_ERROR);
       }
 
       // Check every n emails if we exceed the limit.
@@ -1767,7 +1771,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
       }
     }
 
-    // Mark messages in the spool as sent and update newsletter status.
+    // Update message status in the spool as sent and update newsletter status.
     if (!empty($mail_sent)) {
       simplenews_update_spool($mail_sent, SIMPLENEWS_SPOOL_SEND);
     }
