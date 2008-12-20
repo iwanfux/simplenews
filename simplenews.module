@@ -356,15 +356,20 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
         }
       }
       elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
-        $mails = explode(',', $node->simplenews['test_address']);
-        foreach ($mails as $mail) {
-          $mail = trim($mail);
-          if ($mail == '') {
-            form_set_error('simplenews][test_address', t('Cannot send test newsletter: no test email address specified.'));
+        if (!empty($node->simplenews['test_address'])) {
+          $mails = explode(',', $node->simplenews['test_address']);
+          foreach ($mails as $mail) {
+            $mail = trim($mail);
+            if ($mail == '') {
+              form_set_error('simplenews][test_address', t('Test email address is empty.'));
+            }
+            elseif (!valid_email_address($mail)) {
+              form_set_error('simplenews][test_address', t('Invalid email address %mail.', array('%mail' => $mail)));
+            }
           }
-          elseif (!valid_email_address($mail)) {
-            form_set_error('simplenews][test_address', t('Cannot send test newsletter to %mail: email address invalid.', array('%mail' => $mail)));
-          }
+        }
+        else {
+          form_set_error('simplenews][test_address', t('Missing test email address.'));
         }
       }
       break;
