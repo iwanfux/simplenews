@@ -49,7 +49,7 @@ define('SIMPLENEWS_SPOOL_SEND', 2);
 
 /**
  * AFTER EACH 100 NEWSLETTERS
- * simplenews_mail_send() CHECKS IF LIMITS ARE EXCEEDED
+ * simplenews_mail_spool() CHECKS IF LIMITS ARE EXCEEDED
  */
 define('SIMPLENEWS_SEND_CHECK_INTERVAL', 100);
 
@@ -669,7 +669,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
  * Implementation of hook_cron().
  */
 function simplenews_cron() {
-  simplenews_mail_send();
+  simplenews_mail_spool();
   simplenews_clear_spool();
 }
 
@@ -1401,10 +1401,10 @@ function simplenews_send_node($node, $accounts = array()) {
     // emails are send on each cron run.
     foreach ($mails as $mail) {
       $data = array_merge($node_data, $mail);
-      simplenews_mail_spool_set($data);
+      simplenews_save_spool($data);
     }
     if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
-      simplenews_mail_send($node_data['nid'], $node_data['vid'], 999999);
+      simplenews_mail_spool($node_data['nid'], $node_data['vid'], 999999);
       drupal_set_message(t('Newsletter sent.'));
       simplenews_clear_spool();
     }
@@ -1686,12 +1686,12 @@ function simplenews_mail($key, &$message, $params) {
  * Mail data is retreived from the spool, rendered and send one by one
  * If sending is succesful the message is marked as send in the spool.
  */
-function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
+function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
 
   // Send pending messages from database cache
   // A limited number of mails is retrieved from the spool
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
-  if ($messages = simplenews_mail_spool_get(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
+  if ($messages = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $mail_sent = array();
     _simplenews_measure_usec(TRUE);
 
@@ -1769,7 +1769,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 
     // Mark messages in the spool as sent and update newsletter status.
     if (!empty($mail_sent)) {
-      simplenews_mail_spool_update($mail_sent, SIMPLENEWS_SPOOL_SEND);
+      simplenews_update_spool($mail_sent, SIMPLENEWS_SPOOL_SEND);
     }
     simplenews_send_status_update();
 
@@ -1779,7 +1779,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 }
 
 /**
- * Store mail message in mail cache table.
+ * Save mail message in mail cache table.
  *
  * @param array $message data array to be stored
  *  $message['mail']
@@ -1791,7 +1791,7 @@ function simplenews_mail_send($nid = NULL, $vid = NULL, $limit = NULL) {
 
  * @param array $message Mail message array
  */
-function simplenews_mail_spool_set($message) {
+function simplenews_save_spool($message) {
   $status = isset($message['status']) ? $message['status'] : SIMPLENEWS_SPOOL_PENDING;
   $time = isset($message['time']) ? $message['time'] : time();
 
@@ -1816,7 +1816,7 @@ function simplenews_mail_spool_set($message) {
  *  $message['status']
  *  $message['time']
  */
-function simplenews_mail_spool_get($status, $nid = NULL, $vid = NULL, $limit = 999999) {
+function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
   $result = db_query_range("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = %d ORDER BY s.timestamp ASC", $status, 0, $limit);
   while ($data = db_fetch_array($result)) {
     $message = array();
@@ -1836,7 +1836,7 @@ function simplenews_mail_spool_get($status, $nid = NULL, $vid = NULL, $limit = 9
  * @param array $msids Mail spool id of record to be updated
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
  */
-function simplenews_mail_spool_update($msids, $status) {
+function simplenews_update_spool($msids, $status) {
   db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN (%s)", $status, time(), implode(',', $msids));
 }
 
@@ -1849,7 +1849,7 @@ function simplenews_mail_spool_update($msids, $status) {
  *
  * @return array Mail message array
  */
-function simplenews_mail_spool_count($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
+function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
   return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = %d AND vid = %d AND status = %d", $nid, $vid, $status));
 }
 
@@ -1891,7 +1891,7 @@ function simplenews_send_status_update() {
   $result = db_query("SELECT s.nid, s.vid, s.tid, n.tnid FROM {simplenews_newsletters} s JOIN {node} n ON s.nid = n.nid AND s.vid = n.vid WHERE s.s_status = %d", SIMPLENEWS_STATUS_SEND_PENDING);
   while ($newsletter = db_fetch_object($result)) {
     // nid-vid are combined in one unique key.
-    $counts[$newsletter->tnid][$newsletter->nid .'-'. $newsletter->vid] = simplenews_mail_spool_count($newsletter->nid, $newsletter->vid);
+    $counts[$newsletter->tnid][$newsletter->nid .'-'. $newsletter->vid] = simplenews_count_spool($newsletter->nid, $newsletter->vid);
   }
 
   // Determine which nodes are send per translation group and per individual node.
