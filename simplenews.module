@@ -1654,11 +1654,6 @@ function simplenews_mail_mail($nid, $vid, $mail) {
   $account->mail = $mail;
   $subscription = simplenews_get_subscription($account);
   $params['context']['account'] = $subscription;
-  if (variable_get('simplenews_cron_user', 'default') != 'default') {
-    // We send the newsletter the using permissions of an other user.
-    // Store the current user to be able to switch back later.
-    simplenews_switch_user();
-  }
 
   // Get node data for the mail
   $node = node_load(array('nid' => $nid, 'vid' => $vid));
@@ -1666,11 +1661,6 @@ function simplenews_mail_mail($nid, $vid, $mail) {
     $params['from'] = _simplenews_set_from($node);
     $params['context']['node'] = $node;
 
-    if (variable_get('simplenews_cron_user', 'default') != 'default') {
-      // Switch user to the node author to use the correct permissions.
-      // After building the newsletter we switch back to the original user.
-      simplenews_switch_user($node->nid, $node->vid);
-    }
     // Send mail
     if (module_exists('mimemail')) {
       // If mimemail module is installed ALL emails are send via this module.
@@ -1691,11 +1681,6 @@ function simplenews_mail_mail($nid, $vid, $mail) {
     }
     else {
       $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
-    }
-
-    if (variable_get('simplenews_cron_user', 'default') != 'default') {
-      // Switch back to the original user.
-      simplenews_switch_user();
     }
 
     // Log sent message.
