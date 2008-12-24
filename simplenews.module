@@ -59,19 +59,6 @@ define('SIMPLENEWS_SEND_CHECK_INTERVAL', 100);
 define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
 
 /**
- * Implementation of hook_node_info().
- */
-function simplenews_node_info() {
-  return array(
-    'simplenews' => array(
-      'name' => t('Newsletter issue'),
-      'module' => 'simplenews',
-      'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
-    )
-  );
-}
-
-/**
  * Implementation of hook_perm().
  */
 function simplenews_perm() {
@@ -333,6 +320,32 @@ function simplenews_newsletter_access () {
 }
 
 /**
+ * Implementation of hook_node_type().
+ *
+ * Update 'simplenews_content_types' on node update and delete.
+ * Related vocabulary settings are updated by taxonomy module.
+ */
+function simplenews_node_type($op, $info) {
+  switch ($op) {
+    case 'delete':
+      $simplenews_types = variable_get('simplenews_content_types', array());
+      if (isset($simplenews_types[$info->type])) {
+        unset($simplenews_types[$info->type]);
+        variable_set('simplenews_content_types', $simplenews_types);
+      }
+      break;
+    case 'update':
+      $simplenews_types = variable_get('simplenews_content_types', array());
+      if (isset($simplenews_types[$info->old_type]) && !empty($info->old_type) && $info->old_type != $info->type) {
+        unset($simplenews_types[$info->old_type]);
+        $simplenews_types[$info->type] = $info->type;
+        variable_set('simplenews_content_types', $simplenews_types);
+      }
+      break;
+  }
+}
+
+/**
  * Implementation of hook_nodeapi().
  */
 function simplenews_nodeapi(&$node, $op, $teaser, $page) {
@@ -441,33 +454,6 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
 }
 
 /**
- * Implementation of hook_form().
- */
-function simplenews_form(&$node) {
-  $type = node_get_types('type', $node);
-
-  if ($type->has_title) {
-    $form['title'] = array(
-      '#type' => 'textfield',
-      '#title' => check_plain($type->title_label),
-      '#required' => TRUE,
-      '#default_value' => $node->title,
-      '#maxlength' => 255,
-      '#weight' => -5,
-    );
-  }
-
-  if ($type->has_body) {
-    $form['body_field'] = node_body_field($node, $type->body_label, $type->min_word_count);
-    // Available variables are based on user_mail_tokens().
-    // But uses only those which can be used with uid = 0 since simplenews also sends to anonymous users.
-    $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') .' !site '. t('(the name of your website),') .' !uri '. t('(a link to your homepage),') .' !uri_brief '. t('(homepage link without the http://),') .' !date '. t("(today's date),") .' !login_uri '. t('(link to login page).');
-  }
-
-  return $form;
-}
-
-/**
  * Validate if selected terms are Newsletter taxonomy terms.
  *
  * @param array $taxonomy Taxonomy form array of newsletter node.
@@ -537,6 +523,13 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
   // Simplenews newsletter node form
   elseif (strpos($form_id, '_node_form')) {
     if (in_array($form['type']['#value'], variable_get('simplenews_content_types', array('simplenews')))) {
+
+      // Available variables are based on user_mail_tokens().
+      // But uses only those which can be used with uid = 0 since simplenews also sends to anonymous users.
+      if (isset($form['body_field'])) {
+        $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') .' !site '. t('(the name of your website),') .' !uri '. t('(a link to your homepage),') .' !uri_brief '. t('(homepage link without the http://),') .' !date '. t("(today's date),") .' !login_uri '. t('(link to login page).');
+      }
+
       if (isset($form['#node']->simplenews)) {
         $simplenews_values = $form['#node']->simplenews;
       }

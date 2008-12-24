@@ -186,21 +186,25 @@ function simplenews_install() {
   else {
     drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
   }
-}
 
-/**
- * Implementation of hook_enable().
- */
-function simplenews_enable() {
-  if ($vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''))) {
-    // Existing install. Add back newsletter content type, if the simplenews
-    // vocabulary still exists. All other content type settings remain unchanged.
-    $vocabulary = (array) $vocabulary;
-    $vocabulary['nodes']['simplenews'] = 1;
-    taxonomy_save_vocabulary($vocabulary);
+  //create a newsletter type, if it doesn't exist yet
+  if (!node_get_types('type', 'simplenews')) {
+    $info = array(
+      'type' => 'simplenews',
+      'name' => t('Newsletter issue'),
+      'module' => 'node',
+      'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
+      'locked' => FALSE,
+      'custom' => TRUE,
+    );
+    $info = _node_type_set_defaults($info);
+    node_type_save((object)$info);
   }
-  else {
-    // Create the simplenews vocabulary if it does not exist.
+  variable_set('simplenews_content_types', array('simplenews' => 'simplenews'));
+
+  // Create the simplenews vocabulary if it does not exist.
+  $result = db_result(db_query("SELECT name FROM {vocabulary} WHERE name = '%s'", array(t('Newsletter'))));
+  if (!$result) {
     $vocabulary = array(
       'name' => t('Newsletter'),
       'multiple' => '0',
@@ -218,7 +222,7 @@ function simplenews_enable() {
   $tid = db_result(db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vocabulary['vid']));
   if (!$tid) {
     $form_values = array(
-      'name' => variable_get('site_name', 'Drupal') .' '. t('newsletter'),
+      'name' => t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal'))),
       'vid' => $vocabulary['vid'],
       'weight' => 0,
     );
@@ -500,5 +504,20 @@ function simplenews_update_6005() {
   while ($subscriber = db_fetch_object($result)) {
     db_query("UPDATE {simplenews_subscriptions} SET language = '%s' WHERE snid = %d", $subscriber->language, $subscriber->snid);
   }
+  return $ret;
+}
+
+/**
+ * Make the simplenews content type a custom type.
+ */
+function simplenews_update_6006() {
+  $ret = array();
+  if ($type = node_get_types('type', 'simplenews')) {
+    $type->module = 'node';
+    $type->locked = FALSE;
+    $type->custom = TRUE;
+    node_type_save($type);
+  }
+  
   return $ret;
 }
