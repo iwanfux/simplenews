@@ -44,7 +44,7 @@
   <?php endif; ?>
 
   <?php if ($use_issue_list && $issue_list): ?>
-    <div class="issues-list"><?php print $issuelist; ?></div>
+    <div class="issues-list"><?php print $issue_list; ?></div>
   <?php endif; ?>
 
   <?php if ($use_rss): ?>
