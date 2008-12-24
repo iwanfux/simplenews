@@ -1396,9 +1396,11 @@ function simplenews_send_node($node, $accounts = array()) {
       }
     }
 
-    // When cron is not used (simplenews_use_cron = FALSE) the spool content
-    // is send immediately after filling the spool. When cron is used spooled
-    // emails are send on each cron run.
+    // To send the newsletter, the node id and target email addresses
+    // are stored in the spool.
+    // When cron is not used the newsletter is send immediately to the emails
+    // in the spool. When cron is used newsletters are send to addresses in the 
+    // spool during the next (and following) cron run.
     foreach ($mails as $mail) {
       $data = array_merge($node_data, $mail);
       simplenews_save_spool($data);
