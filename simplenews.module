@@ -355,8 +355,8 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
   }
 
   switch ($op) {
-    case 'view':
-      $node = simplenews_replace_vars($node, TRUE);
+    case 'alter':
+      simplenews_replace_vars($node, TRUE);
       break;
     case 'validate':
       global $_simplenews_valid_mails;
@@ -2097,14 +2097,13 @@ function _simplenews_html_replace() {
 /**
  * Replace tokens in node body/teaser with user specific variables.
  */
-function simplenews_replace_vars($node, $teaser = TRUE) {
+function simplenews_replace_vars(&$node, $teaser = TRUE) {
   global $user;
   $variables = user_mail_tokens($user, $user->language);
   $node->body = strtr($node->body, $variables);
   if ($teaser) {
     $node->teaser = strtr($node->teaser, $variables);
   }
-  return $node;
 }
 
 /**
