@@ -356,7 +356,14 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
 
   switch ($op) {
     case 'alter':
-      simplenews_replace_vars($node, TRUE);
+      // Don't replace the tokens when node alter is called by simplenews_mail.
+      if (!isset($node->simplenews_mail)) {
+        global $user;
+        $params['node'] = $node;
+        $variables = simplenews_mail_tokens($user, $params, $user->language);
+        $node->body = strtr($node->body, $variables);
+        $node->teaser = strtr($node->teaser, $variables);
+      }
       break;
     case 'validate':
       global $_simplenews_valid_mails;
@@ -527,7 +534,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       // Available variables are based on user_mail_tokens().
       // But uses only those which can be used with uid = 0 since simplenews also sends to anonymous users.
       if (isset($form['body_field'])) {
-        $form['body_field']['body']['#description'] = t('This will be the body of your newsletter. Available variables are:') .' !site '. t('(the name of your website),') .' !uri '. t('(a link to your homepage),') .' !uri_brief '. t('(homepage link without the http://),') .' !date '. t("(today's date),") .' !login_uri '. t('(link to login page).');
+        $form['body_field']['body']['#description'] = t("This will be the body of your newsletter. Available variables are: !site (the name of your website), !uri (a link to your homepage), !uri_brief (homepage link without the http://), !date (today's date), !login_uri (link to login page), !confirm_subscribe_url (subscription confirmation link), !confirm_unsubscribe_url (unsubscription link), !newsletter_url (link to this newsletter issue), !newsletter_name (name of this newsletter series).");
       }
 
       if (isset($form['#node']->simplenews)) {
@@ -1466,7 +1473,7 @@ function simplenews_mail($key, &$message, $params) {
 
       // Message header, body and mail headers are buffered to increase
       // perfomance when sending multiple mails. Buffered data only contains
-      // general data, no recipient specific content. Placeholders are used
+      // general data, no recipient specific content. Tokens are used
       // for recipient data and will later be replaced.
       // When mailing multiple newsletters in one page call or cron run,
       // data is once stored and subsequently retreived from the
@@ -1545,24 +1552,37 @@ function simplenews_mail($key, &$message, $params) {
         $content = drupal_render($node->content);
         $node->body = $content;
         unset($node->teaser);
+        // Set a flag to prevent token replacement during node alter.
+        $node->simplenews_mail = TRUE;
         node_invoke_nodeapi($node, 'alter', FALSE, TRUE);
-        $body = theme('simplenews_newsletter_body', $node->body, check_plain($node->title), $message['language']);
+        unset($node->simplenews_mail);
+
+        // TODO: Add 'simplenews_newsletter_body__' to enable dynamic
+        // theming of newsletter by term.
+        $body = theme('simplenews_newsletter_body', $node, $message['language']);
 
         // Buffer body text node and language specific
         $messages[$nid][$langcode]['body'] = $body;
+
+        // Build and buffer message footer
+        // TODO: Add 'simplenews_newsletter_footer__' to enable dynamic
+        // theming of newsletter by term.
+        $footer = theme('simplenews_newsletter_footer', $context['node'], $key, $message['language']);
+        $messages[$nid][$langcode]['footer'] = $footer;
 
       }
       else {
         // Get message data from buffer
         $message['headers'] = $messages[$nid][$langcode]['headers'];
         $message['subject'] = $messages[$nid][$langcode]['subject'];
-        $body = $messages[$nid][$langcode]['body'];
+        $body               = $messages[$nid][$langcode]['body'];
+        $footer             = $messages[$nid][$langcode]['footer'];
       }
 
       // Build message body.
-      // The placeholders are replaced with user specific data
-      // before conversion to plain text.
-      $variables =  user_mail_tokens($context['account'], $context['account']->language);
+      // Replace tokens with user specific data and 
+      // Convert to plain text if required.
+      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
       $body = strtr($body, $variables);
       if ($context['node']->simplenews['s_format'] == 'plain') {
         $body = simplenews_html_to_text($body, variable_get('simplenews_hyperlinks_'. $context['node']->simplenews['tid'], 1));
@@ -1570,35 +1590,19 @@ function simplenews_mail($key, &$message, $params) {
       $message['body']['body'] = $body;
 
       // Build message footer.
-      if ($key == 'node' && isset($context['account']->snid)) {
-        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $context['node']->simplenews['tid']);
-      }
-      else {
-        $hash = '';
-      }
-      $message['body']['footer'] = theme('simplenews_newsletter_footer', $context['node']->simplenews['s_format'], $hash, $key == 'test', $message['language']);
+      // Replace tokens with user specific data
+      $message['body']['footer'] = strtr($footer, $variables);
 
       // Add user specific header data.
-      $message['headers']['List-Unsubscribe'] = '<'. url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)) .'>';
+      $message['headers']['List-Unsubscribe'] = strtr('<!confirm_unsubscribe_url>', $variables);
 
       break;
     case 'subscribe':
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
-        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
-      }
-      else {
-        $hash = NULL;
-      }
-
-      $variables =  user_mail_tokens($context['account'], $context['account']->language);
-      $variables += array('!confirmation_url' => url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE)));
-      $variables += array('!newsletter' => $params['newsletter']->name);
-
+      $variables =  simplenews_mail_tokens($context['account'], $params, $context['account']->language);
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-
       if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('subscribe_subscribed', $context['account']->language, $variables);
       }
@@ -1610,19 +1614,8 @@ function simplenews_mail($key, &$message, $params) {
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      if (isset($context['account']->snid) && isset($params['newsletter']->tid)) {
-        $hash = _simplenews_generate_hash($context['account']->mail, $context['account']->snid, $params['newsletter']->tid);
-      }
-      else {
-        $hash = NULL;
-      }
-
-      $variables =  user_mail_tokens($context['account'], $context['account']->language);
-      $variables += array('!confirmation_url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE)));
-      $variables += array('!newsletter' => $params['newsletter']->name);
-
+      $variables =  simplenews_mail_tokens($context['account'], $params, $context['account']->language);
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-
       if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_subscribed', $context['account']->language, $variables);
       }
@@ -1661,6 +1654,7 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
   $node = node_load(array('nid' => $nid, 'vid' => $vid));
   if (is_object($node)) {
     $params['from'] = _simplenews_set_from($node);
+    $params['context']['newsletter'] = taxonomy_get_term($node->simplenews['tid']);
     $params['context']['node'] = $node;
 
     // Send mail
@@ -2102,15 +2096,48 @@ function _simplenews_html_replace() {
 }
 
 /**
- * Replace tokens in node body/teaser with user specific variables.
+ * Build array of mail tokens.
+ *
+ * Depending on the context in which this function is called, some tokens
+ * may return an empty value. e.g. !newsletter_url is empty when called
+ * while building a confirmation email.
+ *
+ * @param object $subscription subscription or user object
+ * @param array $context
+ *   newsletter: newsletter term object
+ *   node: node object
+ * 
+ * @return array of tokens and token values.
  */
-function simplenews_replace_vars(&$node, $teaser = TRUE) {
-  global $user;
-  $variables = user_mail_tokens($user, $user->language);
-  $node->body = strtr($node->body, $variables);
-  if ($teaser) {
-    $node->teaser = strtr($node->teaser, $variables);
+function simplenews_mail_tokens($subscription, $context, $language) {
+  // Build hash for (un)subscription confirmation link for subscribed user.
+  $hash = '';
+  if (isset($subscription->snid) && isset($context['newsletter']->tid)) {
+    $hash = _simplenews_generate_hash($subscription->mail, $subscription->snid, $context['newsletter']->tid);
   }
+
+  // Get newsletter name if not in newsletter object.
+  if (!$name = $context['newsletter']->name) {
+    $name = '';
+    if (isset($context['node']->simplenews['tid'])) {
+      if ($term = taxonomy_get_term($context['node']->simplenews['tid'])) {
+        // Translate newsletter name if required.
+        $name = $term->name;
+        if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_LOCALIZE) {
+          $name = tt('taxonomy:term:'. $context['node']->simplenews['tid'] .':name', $name, $language->language);
+        }
+      }
+    }
+  }
+
+  // Get tokens from user_mail_tokens() and add simplenews variables.
+  $vars = user_mail_tokens($subscription, $language->language);
+  $vars['!confirm_subscribe_url'] = url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE, 'language' => $language));
+  $vars['!confirm_unsubscribe_url'] = url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language));
+  $vars['!newsletter_url'] = isset($context['node']->nid) ? url('node/'. $context['node']->nid, array('absolute' => TRUE, 'language' => $language)) : '';
+  $vars['!newsletter_name'] = $name;
+
+  return $vars;
 }
 
 /**
@@ -2237,15 +2264,15 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
     // No override, return default string.
     switch ($key) {
       case 'subscribe_unsubscribed':
-        return t("We have received a request for subscription of !mailto to the !newsletter on !site website at !uri. To confirm this subscription please use the link below.\n\n!confirmation_url", $variables, $langcode);
+        return t("We have received a request for subscription of !mailto to the !newsletter_name on !site website at !uri. To confirm this subscription please use the link below.\n\n!confirm_subscribe_url", $variables, $langcode);
       case 'subscribe_subscribed':
-        return t("We have received a request for subscription of !mailto to the !newsletter on !site website at !uri. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: !uri", $variables, $langcode);
+        return t("We have received a request for subscription of !mailto to the !newsletter_name on !site website at !uri. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: !uri", $variables, $langcode);
       case 'unsubscribe_subscribed':
-        return t("We have received a request to unsubscribe !mailto from the !newsletter on !site website at !uri. To confirm this unsubscription please use the link below.\n\n!confirmation_url", $variables, $langcode);
+        return t("We have received a request to unsubscribe !mailto from the !newsletter_name on !site website at !uri. To confirm this unsubscription please use the link below.\n\n!confirm_unsubscribe_url", $variables, $langcode);
       case 'unsubscribe_unsubscribed':
-        return t("We have received a request to unsubscribe !mailto from the !newsletter on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
+        return t("We have received a request to unsubscribe !mailto from the !newsletter_name on !site website at !uri. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: !uri", $variables, $langcode);
       case 'subscribe_subject':
-        return t("Confirmation for !newsletter from !site", $variables, $langcode);
+        return t("Confirmation for !newsletter_name from !site", $variables, $langcode);
     }
   }
 }
@@ -2307,10 +2334,14 @@ function simplenews_theme() {
       'arguments' => array('name' => NULL, 'title' => NULL, 'language' => NULL),
     ),
     'simplenews_newsletter_body' => array(
-      'arguments' => array('body' => NULL, 'title' => NULL, 'language' => NULL),
+      'template' => 'simplenews-newsletter-body',
+      'arguments' => array('node' => NULL, 'language' => NULL),
+      'pattern' => 'simplenews_newsletter_body__',
     ),
     'simplenews_newsletter_footer' => array(
-      'arguments' => array('format' => NULL, 'hash' => NULL, 'test' => NULL, 'language' => NULL),
+      'template' => 'simplenews-newsletter-footer',
+      'arguments' => array('node' => NULL, 'key' => NULL, 'language' => NULL),
+      'pattern' => 'simplenews_newsletter_footer__',
     ),
     'simplenews_subscription_list' => array(
       'file' => 'simplenews.admin.inc',
@@ -2374,27 +2405,31 @@ function theme_simplenews_newsletter_subject($name, $title, $language) {
 }
 
 /**
- * Theme the newsletter message body.
+ * Process variables to format the simplenews newsletter footer.
+ *
+ * $variables contains:
+ * - $node
+ * - $language
+ *
+ * @see simplenews-newsletter-body.tpl.php
  */
-function theme_simplenews_newsletter_body($body, $title, $language) {
-  $output = '<h2>'. $title ."</h2>\n";
-  $output .= $body;
-  return $output;
+function template_preprocess_simplenews_newsletter_body(&$variables) {
+  $variables['title'] = check_plain($variables['node']->title);
+  $variables['body'] = $variables['node']->body;
 }
 
 /**
- * Theme the newsletter message footer.
+ * Process variables to format the simplenews newsletter footer.
+ *
+ * $variables contains:
+ * - $node
+ * - $key
+ * - $language
+ *
+ * @see simplenews-newsletter-footer.tpl.php
  */
-function theme_simplenews_newsletter_footer($format, $hash, $test = FALSE, $language) {
-  if ($format == 'html') {
-    $output = '<p class="newsletter-footer">'. l(t('Unsubscribe from this newsletter', array(), $language->language), 'newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'html' => TRUE)) .'</p>';
-  }
-  else {
-    $output = "\n\n-- \n". t('Unsubscribe from this newsletter: !url', array('!url' => url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language))), $language->language);
-  }
-
-  if ($test) {
-    $output .= "\n- - - ". t('This is a test version of the newsletter. The above unsubscribe link does not work!', array(), $language->language) .' - - -';
-  }
-  return $output;
+function template_preprocess_simplenews_newsletter_footer(&$variables) {
+  $variables['format'] = $variables['node']->simplenews['s_format'];
+  $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), $variables['language']->language);
+  $variables['test_message'] = t('This is a test version of the newsletter.', array(), $variables['language']->language);
 }
