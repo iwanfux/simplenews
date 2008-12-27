@@ -1428,7 +1428,7 @@ function simplenews_send_test($node) {
     foreach ($mails as $mail) {
       $mail = trim($mail);
       if (!empty($mail)) {
-        $result = simplenews_mail_mail($node->nid, $node->vid, $mail);
+        $result = simplenews_mail_mail($node->nid, $node->vid, $mail, 'test');
       }
     }
     if ($result['result']) {
@@ -1540,7 +1540,7 @@ function simplenews_mail($key, &$message, $params) {
 
         // Build message body
         // Processing node body mimics node_view() with full node view
-        $node->build_mode = $node->simplenews['s_format'] == 'plain' ? 'email_plain' : 'email_html';
+        $node->build_mode = 'email_'. $node->simplenews['s_format'];
         $node = node_build_content($node, FALSE, TRUE);
         $content = drupal_render($node->content);
         $node->body = $content;
@@ -1642,8 +1642,15 @@ function simplenews_mail($key, &$message, $params) {
 
 /**
  * Send a node to an email address.
+ *
+ * @param $nid node id of newsletter node
+ * @param $vid revision id of newsletter node
+ * @param $mail target email address
+ * @param $key email key [node|test]
+ *
+ * @return TRUE if email is succesfully delivered by php mail()
  */
-function simplenews_mail_mail($nid, $vid, $mail) {
+function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
   // Get subscription data for recipient and language
   $account = new stdClass();
   $account->mail = $mail;
@@ -1660,7 +1667,7 @@ function simplenews_mail_mail($nid, $vid, $mail) {
     if (module_exists('mimemail')) {
       // If mimemail module is installed ALL emails are send via this module.
       // drupal_mail() builds the content of the email but does NOT send.
-      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
+      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
       $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
       $message['result'] = mimemail(
         $message['from'],
@@ -1675,7 +1682,7 @@ function simplenews_mail_mail($nid, $vid, $mail) {
       );
     }
     else {
-      $message = drupal_mail('simplenews', 'node', $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
+      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
     }
 
     // Log sent message.
