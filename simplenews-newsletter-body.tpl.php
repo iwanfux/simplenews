@@ -5,6 +5,10 @@
  * @file simplenews-newsletter-body.tpl.php
  * Default theme implementation to format the simplenews newsletter body.
  *
+ * Copy this file in your theme directory to create a custom themed body.
+ * Rename it to simplenews-newsletter-body--<tid>.tpl.php to override it for a 
+ * newsletter using the newsletter term's id.
+ *
  * Available variables:
  * - node: Newsletter node object
  * - $body: Newsletter body (formatted as plain text or HTML)

@@ -4,7 +4,10 @@
 /**
  * @file simplenews-block.tpl.php
  * Default theme implementation to display the simplenews block.
- * The form applies to one newsletter (series) identified by $tid
+ * 
+ * Copy this file in your theme directory to create a custom themed block.
+ * Rename it to simplenews-block--<tid>.tpl.php to override it for a 
+ * newsletter using the newsletter term's id.
  *
  * Available variables:
  * - $subscribed: the current user is subscribed to the $tid newsletter

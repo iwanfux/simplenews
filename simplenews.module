@@ -894,7 +894,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
           }
           $block = array(
             'subject' => check_plain($newsletter['name']),
-            'content' => theme('simplenews_block', $newsletter['tid']),
+            'content' => theme(array('simplenews_block__'. $newsletter['tid'], 'simplenews_block'), $newsletter['tid']),
           );
           return $block;
         }
@@ -1557,17 +1557,13 @@ function simplenews_mail($key, &$message, $params) {
         node_invoke_nodeapi($node, 'alter', FALSE, TRUE);
         unset($node->simplenews_mail);
 
-        // TODO: Add 'simplenews_newsletter_body__' to enable dynamic
-        // theming of newsletter by term.
-        $body = theme('simplenews_newsletter_body', $node, $message['language']);
+        $body = theme(array('simplenews_newsletter_body__'. $context['node']->simplenews['tid'], 'simplenews_newsletter_body'), $node, $message['language']);
 
         // Buffer body text node and language specific
         $messages[$nid][$langcode]['body'] = $body;
 
         // Build and buffer message footer
-        // TODO: Add 'simplenews_newsletter_footer__' to enable dynamic
-        // theming of newsletter by term.
-        $footer = theme('simplenews_newsletter_footer', $context['node'], $key, $message['language']);
+        $footer = theme(array('simplenews_newsletter_footer' .$context['node']->simplenews['tid'], 'simplenews_newsletter_footer'), $context['node'], $key, $message['language']);
         $messages[$nid][$langcode]['footer'] = $footer;
 
       }
@@ -2324,6 +2320,7 @@ function simplenews_theme() {
     'simplenews_block' => array(
       'template' => 'simplenews-block',
       'arguments' => array('tid' => NULL),
+      'pattern' => 'simplenews_block__',
     ),
     'simplenews_status' => array(
       'template' => 'simplenews-status',
