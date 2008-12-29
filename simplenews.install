@@ -182,13 +182,37 @@ function simplenews_install() {
   if (drupal_install_schema('simplenews')) {
     drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.',
     array('!simplenews_help' => url('admin/help/simplenews'))));
-}
+  }
   else {
     drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
   }
 
-  //create a newsletter type, if it doesn't exist yet
-  if (!node_get_types('type', 'simplenews')) {
+  _simplenews_install_nodetype();
+  variable_set('simplenews_content_types', array('simplenews' => 'simplenews'));
+
+  _simplenews_install_vocabulary();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function simplenews_uninstall() {
+  drupal_uninstall_schema('simplenews');
+  db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
+}
+
+/**
+ * Create simplenews node type.
+ */
+function _simplenews_install_nodetype() {
+  // Create a newsletter type. If exists, modify it.
+  if ($type = node_get_types('type', 'simplenews')) {
+    $type->module = 'node';
+    $type->locked = FALSE;
+    $type->custom = TRUE;
+    node_type_save($type);
+  }
+  else {
     $info = array(
       'type' => 'simplenews',
       'name' => t('Newsletter issue'),
@@ -200,11 +224,19 @@ function simplenews_install() {
     $info = _node_type_set_defaults($info);
     node_type_save((object)$info);
   }
-  variable_set('simplenews_content_types', array('simplenews' => 'simplenews'));
+}
 
-  // Create the simplenews vocabulary if it does not exist.
-  $result = db_result(db_query("SELECT name FROM {vocabulary} WHERE name = '%s'", array(t('Newsletter'))));
-  if (!$result) {
+/**
+ * Create simplenews vocabulary and initial term.
+ */
+function _simplenews_install_vocabulary() {
+  // Create the simplenews vocabulary. If it exists, set it as the simplenews_vid.
+  $result = db_query("SELECT * FROM {vocabulary} WHERE name = '%s'", array(t('Newsletter')));
+  if ($result) {
+    $vocabulary = db_fetch_array($result);
+    $vocabulary['nodes'] = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
+  }
+  else {
     $vocabulary = array(
       'name' => t('Newsletter'),
       'multiple' => '0',
@@ -212,11 +244,11 @@ function simplenews_install() {
       'hierarchy' => '0',
       'relations' => '0',
       'module' => 'simplenews',
-      'nodes' => array('simplenews' => 1)
+      'nodes' => variable_get('simplenews_content_types', array('simplenews' => 'simplenews')),
     );
-    taxonomy_save_vocabulary($vocabulary);
-    variable_set('simplenews_vid', $vocabulary['vid']);
   }
+  taxonomy_save_vocabulary($vocabulary);
+  variable_set('simplenews_vid', $vocabulary['vid']);
 
   // Check to see if at least 1 term exists, else create one
   $tid = db_result(db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vocabulary['vid']));
@@ -235,14 +267,6 @@ function simplenews_install() {
         break;
     }
   }
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function simplenews_uninstall() {
-  drupal_uninstall_schema('simplenews');
-  db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
 }
 
 /**
@@ -512,11 +536,19 @@ function simplenews_update_6005() {
  */
 function simplenews_update_6006() {
   $ret = array();
+  
+  // Convert existing node type or re-create it.
+  // If _node_types_build() if called before update, the simplenews
+  // node type gets deleted because simplenews_node_info() no longer exists.
+  // In that case we re-create the node type.
   if ($type = node_get_types('type', 'simplenews')) {
     $type->module = 'node';
     $type->locked = FALSE;
     $type->custom = TRUE;
     node_type_save($type);
+  }
+  else {
+    _simplenews_install_nodetype();
   }
   
   return $ret;
