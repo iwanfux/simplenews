@@ -62,7 +62,7 @@ define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
  * Implementation of hook_perm().
  */
 function simplenews_perm() {
-  return array('view links in block', 'create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'administer simplenews subscriptions','administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
+  return array('create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'administer simplenews subscriptions','administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
 }
 
 /**
@@ -850,14 +850,12 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#title' => t('Display link to previous issues'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_l_'. $delta, 1),
-        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_i_status_'. $delta] = array(
         '#type' => 'checkbox',
         '#title' => t('Display previous issues'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_i_status_'. $delta, 0),
-        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       $form['simplenews_block_'. $delta]['simplenews_block_i_'. $delta] = array(
         '#type' => 'select',
@@ -870,7 +868,6 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
         '#title' => t('Display RSS-feed icon'),
         '#return_value' => 1,
         '#default_value' => variable_get('simplenews_block_r_'. $delta, 1),
-        '#description' => t("Note: this requires permission 'view links in block'."),
       );
       return $form;
     case 'save':
@@ -2379,13 +2376,11 @@ function template_preprocess_simplenews_block(&$variables) {
     $variables['form'] = drupal_get_form('simplenews_block_form_'. $tid);
     $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions');
   }
-  if (user_access('view links in block') || user_access('administer newsletters')) {
-    $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/'. $tid);
-    $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_'. $tid, 5));
-    $variables['issue_list'] = theme('item_list', $recent, t('Previous issues'), 'ul');
-    $term = taxonomy_get_term($tid);
-    $variables['rssfeed'] = theme('feed_icon', url('taxonomy/term/'. $tid .'/0/feed'), t('@newsletter feed', array('@newsletter' => $term->name)));
-  }
+  $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/'. $tid);
+  $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_'. $tid, 5));
+  $variables['issue_list'] = theme('item_list', $recent, t('Previous issues'), 'ul');
+  $term = taxonomy_get_term($tid);
+  $variables['rssfeed'] = theme('feed_icon', url('taxonomy/term/'. $tid .'/0/feed'), t('@newsletter feed', array('@newsletter' => $term->name)));
 
   // Block content control variables
   $variables['use_form'] = variable_get('simplenews_block_f_'. $tid, 1);
