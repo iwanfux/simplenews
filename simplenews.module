@@ -358,11 +358,15 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
     case 'alter':
       // Don't replace the tokens when node alter is called by simplenews_mail.
       if (!isset($node->simplenews_mail)) {
-        global $user;
+        global $language;
         $params['node'] = $node;
-        $variables = simplenews_mail_tokens($user, $params, $user->language);
-        $node->body = strtr($node->body, $variables);
-        $node->teaser = strtr($node->teaser, $variables);
+        $variables = simplenews_mail_tokens($user, $params, $language);
+        if (isset($node->body)) {
+          $node->body = strtr($node->body, $variables);
+        }
+        if (isset($node->teaser)) {
+          $node->teaser = strtr($node->teaser, $variables);
+        }
       }
       break;
     case 'validate':
