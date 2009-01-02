@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Views filter for simplenews sent status.
+ */
+
+/**
  * Filter bases on newsletter sent status.
  */
 class simplenews_handler_filter_newsletter_s_status extends views_handler_filter_in_operator {

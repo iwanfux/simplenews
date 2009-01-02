@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file simplenews.views.inc
+ * @file
  * Views interface for simplenews.
  */
 

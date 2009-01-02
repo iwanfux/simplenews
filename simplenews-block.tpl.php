@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file simplenews-block.tpl.php
+ * @file
  * Default theme implementation to display the simplenews block.
  * 
  * Copy this file in your theme directory to create a custom themed block.

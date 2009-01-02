@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file simplenews-newsletter-footer.tpl.php
+ * @file
  * Default theme implementation to format the simplenews newsletter footer.
  * 
  * Copy this file in your theme directory to create a custom themed footer.

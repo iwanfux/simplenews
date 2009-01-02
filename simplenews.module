@@ -62,7 +62,7 @@ define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
  * Implementation of hook_perm().
  */
 function simplenews_perm() {
-  return array('create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'administer simplenews subscriptions','administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
+  return array('create newsletter', 'edit own newsletter', 'edit any newsletter', 'delete own newsletter', 'delete any newsletter', 'administer newsletters', 'administer simplenews subscriptions', 'administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
 }
 
 /**
@@ -315,7 +315,7 @@ function simplenews_menu() {
  *
  * Access for both newsletter and subscriber admins.
  */
-function simplenews_newsletter_access () {
+function simplenews_newsletter_access() {
   return user_access('administer newsletters') || user_access('administer simplenews subscriptions');
 }
 
@@ -408,7 +408,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       // This makes sure the $node array after insert/update is equal to the
       // $node array after load.
       $node->simplenews = _simplenews_flatten_array($node->simplenews);
-      
+
       $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
       if ($op == 'insert') {
         // Insert node
@@ -468,7 +468,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
  * Validate if selected terms are Newsletter taxonomy terms.
  *
  * @param array $taxonomy Taxonomy form array of newsletter node.
- * 
+ *
  * @return
  *   Array of selected Newsletter terms. Example: array(4, 12)
  *   FALSE: no Newsletter term is selected
@@ -631,7 +631,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
             '#value' => key($format_options),
           );
         }
- 
+
         $form['simplenews']['advanced']['priority'] = array(
           '#type' => 'select',
           '#title' => t('Email priority'),
@@ -900,7 +900,7 @@ function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
           return $block;
         }
       }
-      break;  
+      break;
   }
 }
 
@@ -1079,15 +1079,15 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
  */
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   static $subscribed = array();
-  
+
     if ($reset) {
       unset($subscribed);
     }
-    
+
     if (!isset($subscribed[$mail][$tid])) {
       $subscribed[$mail][$tid] = db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.mail = '%s' AND t.tid = %d", $mail, $tid)) ? TRUE : FALSE;
     }
-  
+
   return $subscribed[$mail][$tid];
 }
 
@@ -1400,7 +1400,7 @@ function simplenews_send_node($node, $accounts = array()) {
     // To send the newsletter, the node id and target email addresses
     // are stored in the spool.
     // When cron is not used the newsletter is send immediately to the emails
-    // in the spool. When cron is used newsletters are send to addresses in the 
+    // in the spool. When cron is used newsletters are send to addresses in the
     // spool during the next (and following) cron run.
     foreach ($mails as $mail) {
       $data = array_merge($node_data, $mail);
@@ -1564,7 +1564,7 @@ function simplenews_mail($key, &$message, $params) {
         $messages[$nid][$langcode]['body'] = $body;
 
         // Build and buffer message footer
-        $footer = theme(array('simplenews_newsletter_footer' .$context['node']->simplenews['tid'], 'simplenews_newsletter_footer'), $context['node'], $key, $message['language']);
+        $footer = theme(array('simplenews_newsletter_footer__'. $context['node']->simplenews['tid'], 'simplenews_newsletter_footer'), $context['node'], $key, $message['language']);
         $messages[$nid][$langcode]['footer'] = $footer;
 
       }
@@ -1577,7 +1577,7 @@ function simplenews_mail($key, &$message, $params) {
       }
 
       // Build message body.
-      // Replace tokens with user specific data and 
+      // Replace tokens with user specific data and
       // Convert to plain text if required.
       $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
       $body = strtr($body, $variables);
@@ -1819,7 +1819,7 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
  */
 function simplenews_update_spool($msids, $status) {
-  db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN (%s)", $status, time(), implode(',', $msids));
+  db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN(". db_placeholders($msids, 'int') .")", $status, time(), implode(',', $msids));
 }
 
 /**
@@ -1905,7 +1905,7 @@ function simplenews_send_status_update() {
 }
 
 /**
- * Implementations of hook_views_api().
+ * Implementation of hook_views_api().
  */
 function simplenews_views_api() {
   return array(
@@ -2044,14 +2044,14 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
 
 /**
  * Helper function for simplenews_html_to_text().
- * 
+ *
  * Replaces URLs with abolute URLs.
  */
 function _simplenews_absolute_mail_urls($match) {
   global $base_url, $base_path;
   static $regexp;
   $url = '';
-  
+
   if ($match) {
     if (empty($regexp)) {
       $regexp = '@^'. preg_quote($base_path, '@') .'@';
@@ -2064,7 +2064,7 @@ function _simplenews_absolute_mail_urls($match) {
 
 /**
  * Helper function for simplenews_html_to_text().
- * 
+ *
  * List of preg* regular expression patterns to search for and replace with
  */
 function _simplenews_html_replace() {
@@ -2103,7 +2103,7 @@ function _simplenews_html_replace() {
  * @param array $context
  *   newsletter: newsletter term object
  *   node: node object
- * 
+ *
  * @return array of tokens and token values.
  */
 function simplenews_mail_tokens($subscription, $context, $language) {
@@ -2211,7 +2211,7 @@ function simplenews_help($path, $arg) {
  */
 function _simplenews_flatten_array($array) {
   $return = array();
-  
+
   foreach ($array as $key => $value) {
     if (is_array($value)) {
       $return += _simplenews_flatten_array($value);
@@ -2283,8 +2283,8 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
 function _simplenews_measure_usec($start = FALSE) {
   static $start_time;
   $usage = getrusage();
-  $now = (float)($dat["ru_stime.tv_sec"].'.'.$dat["ru_stime.tv_usec"]) + (float)($usage["ru_utime.tv_sec"] .'.'. $usage["ru_utime.tv_usec"]);
-  
+  $now = (float)($dat["ru_stime.tv_sec"] .'.'. $dat["ru_stime.tv_usec"]) + (float)($usage["ru_utime.tv_sec"] .'.'. $usage["ru_utime.tv_usec"]);
+
   if ($start) {
     $start_time = $now;
     return 0;
@@ -2307,14 +2307,14 @@ function simplenews_content_build_modes() {
         'email_html' => array(
           'title' => t('Email: HTML'),
           'views style' => FALSE,
-        ),                        
+        ),
       ),
     ),
   );
 }
 
 /**
- * Implementation of hook_theme.
+ * Implementation of hook_theme().
  */
 function simplenews_theme() {
   return array(

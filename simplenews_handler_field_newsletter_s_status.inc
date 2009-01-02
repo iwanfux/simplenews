@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Views handler for simplenews sent status.
+ */
+
+/**
  * Display newsletter sent status.
  */
 class simplenews_handler_field_newsletter_s_status extends views_handler_field {

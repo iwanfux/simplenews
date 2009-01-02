@@ -100,7 +100,7 @@ function simplenews_types_overview() {
   $header = array(t('Newsletter name'), t('Subscribers'), t('Operations'));
 
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $term) {
-    $count_result = db_query('SELECT COUNT(s.snid) AS s_count FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.activated = %d AND t.tid = %d', 1, $term->tid);    
+    $count_result = db_query('SELECT COUNT(s.snid) AS s_count FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.activated = %d AND t.tid = %d', 1, $term->tid);
     $count = (int) db_result($count_result);
     $rows[] = array(check_plain($term->name), $count, l(t('edit newsletter'), 'admin/content/simplenews/types/edit/'. $term->tid));
   }
@@ -773,7 +773,7 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
   $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
   taxonomy_save_vocabulary($vocabulary);
-  variable_set('simplenews_content_types',$form_state['values']['simplenews_content_types']);
+  variable_set('simplenews_content_types', $form_state['values']['simplenews_content_types']);
 
   // We do not need a simplenews_content_types variable.
   unset($form_state['values']['simplenews_content_types']);

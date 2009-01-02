@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * Simplenews installation.
+ */
+
+/**
  * Implementation of hook_schema().
  */
 function simplenews_schema() {
@@ -526,7 +531,7 @@ function simplenews_update_6005() {
   // Set preferred language for all current none anonymous subscribers.
   $result = db_query('SELECT s.snid, u.language FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.uid > %d', 0);
   while ($subscriber = db_fetch_object($result)) {
-    db_query("UPDATE {simplenews_subscriptions} SET language = '%s' WHERE snid = %d", $subscriber->language, $subscriber->snid);
+    $ret[] = update_sql("UPDATE {simplenews_subscriptions} SET language = '%s' WHERE snid = %d", $subscriber->language, $subscriber->snid);
   }
   return $ret;
 }

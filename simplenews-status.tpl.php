@@ -2,7 +2,7 @@
 // $Id$
 
 /**
- * @file simplenews-status.tpl.php
+ * @file
  * Default theme implementation to display the simplenews newsletter status.
  *
  * Available variables:
