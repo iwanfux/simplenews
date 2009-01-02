@@ -299,7 +299,9 @@ function simplenews_update_5000() {
  * node version which is being send.
  */
 function simplenews_update_5001() {
+  $ret = array();
   db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => TRUE, 'default' => 0));
+  return $ret;
 }
 
 /**
