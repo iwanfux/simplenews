@@ -560,3 +560,20 @@ function simplenews_update_6006() {
   
   return $ret;
 }
+
+/**
+ * Rename old permissions.
+ */
+function simplenews_update_6007() {
+  $ret = array();
+  $result = db_query("SELECT rid, perm FROM {permission} ORDER BY rid");
+  while ($role = db_fetch_object($result)) {
+    $patterns = array('/create newsletter/', '/edit own newsletter/', '/edit any newsletter/', '/delete own newsletter/', '/delete any newsletter/');
+    $replacements = array('create simplenews content', 'edit own simplenews content', 'edit any simplenews content' ,'delete own simplenews content', 'delete any simplenews content');
+    $renamed_permission = preg_replace($patterns, $replacements, $role->perm);
+    if ($renamed_permission != $role->perm) {
+      $ret[] = update_sql("UPDATE {permission} SET perm = '$renamed_permission' WHERE rid = $role->rid");
+    }
+  }
+  return $ret;
+}
