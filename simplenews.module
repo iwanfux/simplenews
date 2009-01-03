@@ -1791,7 +1791,10 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
  */
 function simplenews_update_spool($msids, $status) {
-  db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN(". db_placeholders($msids, 'int') .")", $status, time(), implode(',', $msids));
+  $params[] = $status;
+  $params[] = time();
+  $params = array_merge($params, $msids);
+  db_query("UPDATE {simplenews_mail_spool} SET status = %d, timestamp = %d WHERE msid IN(". db_placeholders($msids, 'int') .")", $params);
 }
 
 /**
