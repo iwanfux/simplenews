@@ -1620,7 +1620,7 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
   $params['context']['account'] = $subscription;
 
   // Get node data for the mail
-  $node = node_load(array('nid' => $nid, 'vid' => $vid));
+  $node = node_load($nid, $vid);
   if (is_object($node)) {
     $params['from'] = _simplenews_set_from($node);
     $params['context']['newsletter'] = taxonomy_get_term($node->simplenews['tid']);
