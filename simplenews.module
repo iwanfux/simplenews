@@ -1091,13 +1091,13 @@ function simplenews_get_subscription($account) {
   // Load subscription data based on available account informatioin
   // NOTE that the order of checking for snid, mail and uid is critical. mail must be checked *before* uid. See simplenews_subscribe_user()
   if (isset($account->snid)) {
-    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.snid = %d", $account->snid));
+    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.snid = %d", $account->snid));
   }
   elseif (isset($account->mail)) {
-    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.mail = '%s'", $account->mail));
+    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.mail = '%s'", $account->mail));
   }
   elseif (isset($account->uid) && $account->uid > 0) {
-    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s INNER JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
+    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
   }
 
   if ($subscription) {
@@ -1107,7 +1107,7 @@ function simplenews_get_subscription($account) {
       $subscription->tids[$newsletter->tid] = $newsletter->tid;
     }
     $subscription->name = '';
-    $subscription->language = user_preferred_language($subscription, language_default());
+    $subscription->language = user_preferred_language($subscription);
   }
   else {
     // Account is unknown in subscription table. Create default subscription object
