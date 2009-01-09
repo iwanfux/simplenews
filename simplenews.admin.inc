@@ -736,13 +736,12 @@ function simplenews_admin_settings(&$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
-  $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
   $form['simplenews_general_settings']['simplenews_content_types'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Content types'),
     '#required' => TRUE,
     '#options' => array_map('check_plain', node_get_types('names')),
-    '#default_value' => isset($vocabulary) ? $vocabulary->nodes : array(),
+    '#default_value' => variable_get('simplenews_content_types', array('simplenews' => 'simplenews')),
     '#description' => t('Content types to be used as newsletter.'),
   );
 
