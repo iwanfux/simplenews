@@ -321,6 +321,8 @@ function simplenews_node_type($op, $info) {
  * Implementation of hook_nodeapi().
  */
 function simplenews_nodeapi(&$node, $op, $teaser, $page) {
+  global $user;
+
   // Operate only on node types set in 'simplenews_content_types' variable.
   if (!in_array($node->type, variable_get('simplenews_content_types', array('simplenews')))) {
     return;
@@ -2089,8 +2091,8 @@ function simplenews_mail_tokens($subscription, $context, $language) {
   }
 
   // Get newsletter name if not in newsletter object.
-  if (!$name = $context['newsletter']->name) {
-    $name = '';
+  $name = isset($context['newsletter']->name) ? $context['newsletter']->name : '';
+  if (!$name) {
     if (isset($context['node']->simplenews['tid'])) {
       if ($term = taxonomy_get_term($context['node']->simplenews['tid'])) {
         // Translate newsletter name if required.
@@ -2103,7 +2105,7 @@ function simplenews_mail_tokens($subscription, $context, $language) {
   }
 
   // Get tokens from user_mail_tokens() and add simplenews variables.
-  $vars = user_mail_tokens($subscription, $language->language);
+  $vars = user_mail_tokens($subscription, $language);
   $vars['!confirm_subscribe_url'] = url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE, 'language' => $language));
   $vars['!confirm_unsubscribe_url'] = url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language));
   $vars['!newsletter_url'] = isset($context['node']->nid) ? url('node/'. $context['node']->nid, array('absolute' => TRUE, 'language' => $language)) : '';
