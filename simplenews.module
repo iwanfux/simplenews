@@ -1597,8 +1597,8 @@ function simplenews_mail($key, &$message, $params) {
   }
 
   // Debug message to check for outgoing emails messages.
-  // Newsletters ($key = 'node') are not send now. Debugging will take place in simplenews_mail_mail() when the newsletters are send
-  if (variable_get('simplenews_debug', FALSE) && $key != 'node') {
+  // Debug message of node and test emails is set in simplenews_mail_mail().
+  if (variable_get('simplenews_debug', FALSE) && $key != 'node' && $key != 'test') {
     watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
   }
 
@@ -1653,13 +1653,14 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
     // Log sent message.
     if (variable_get('simplenews_debug', FALSE)) {
       if (module_exists('mimemail')) {
-        $via_mimemail = '<br />'. t('Sent via Mime Mail');
+        $via_mimemail = t('Sent via Mime Mail');
       }
+      //TODO Add line break before %mimemail.
       if ($message['result']) {
-        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
+        watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
       }
       else {
-        watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => 'node', '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
+        watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_ERROR);
       }
     }
   }
