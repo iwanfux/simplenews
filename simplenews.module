@@ -1507,16 +1507,16 @@ function simplenews_mail($key, &$message, $params) {
           $term = taxonomy_get_term($tid);
           // Translate the newsletter term name if simplenews vocabulary uses Localized terms.
           if (module_exists('i18ntaxonomy') && i18ntaxonomy_vocabulary(variable_get('simplenews_vid', '')) == I18N_TAXONOMY_LOCALIZE) {
-            $name = check_plain(tt('taxonomy:term:'. $tid .':name', $term->name, $langcode));
+            $name = tt('taxonomy:term:'. $tid .':name', $term->name, $langcode);
           }
           else {
-            $name = check_plain($term->name);
+            $name = $term->name;
           }
         }
         else {
           $name = t('Unassigned newsletter');
         }
-        $subject = theme('simplenews_newsletter_subject', $name, check_plain($node->title), $message['language']);
+        $subject = theme('simplenews_newsletter_subject', $name, $node->title, $message['language']);
         $subject = str_replace(array("\r", "\n"), '', $subject);
         $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
 
@@ -1935,7 +1935,7 @@ function _simplenews_set_from($node = NULL) {
 
   return array(
     'address' => $address,
-    'formatted' => '"'. mime_header_encode(check_plain($name)) .'" <'. $address .'>',
+    'formatted' => '"'. mime_header_encode($name) .'" <'. $address .'>',
   );
 }
 
