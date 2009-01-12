@@ -658,7 +658,7 @@ function simplenews_subscription_list_form() {
 
   // Data collection with filter and sorting applied
   $filter = simplenews_build_subscription_filter_query();
-  $query = 'SELECT DISTINCT ss.*, u.name FROM {simplenews_subscriptions} ss INNER JOIN {users} u ON ss.uid = u.uid INNER JOIN {simplenews_snid_tid} s ON ss.snid = s.snid'. $filter['where'];
+  $query = 'SELECT DISTINCT ss.*, u.name FROM {simplenews_subscriptions} ss LEFT JOIN {users} u ON ss.uid = u.uid INNER JOIN {simplenews_snid_tid} s ON ss.snid = s.snid'. $filter['where'];
 
   // $count_query used to count distinct records only
   $count_query = preg_replace('/SELECT.*FROM /', 'SELECT COUNT(DISTINCT ss.mail) FROM ', $query);
