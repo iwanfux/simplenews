@@ -333,8 +333,8 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       // Don't replace the tokens when node alter is called by simplenews_mail.
       if (!isset($node->simplenews_mail)) {
         global $language;
-        $params['node'] = $node;
-        $variables = simplenews_mail_tokens($user, $params, $language);
+        $context['node'] = $node;
+        $variables = simplenews_mail_tokens($user, $context, $language);
         if (isset($node->body)) {
           $node->body = strtr($node->body, $variables);
         }
@@ -979,7 +979,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
     // them that he or she is already subscribed.
     // Confirmation mail is in the user preferred language which is by default the language_default().
     $params['from'] = _simplenews_set_from();
-    $params['newsletter'] = taxonomy_get_term($tid);
+    $params['context']['newsletter'] = taxonomy_get_term($tid);
     $params['context']['account'] = $subscription;
     drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
@@ -1023,7 +1023,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
     // or to tell them that he or she is not subscribed
     // Confirmation mail is in the user preferred language.
     $params['from'] = _simplenews_set_from();
-    $params['newsletter'] = $newsletter;
+    $params['context']['newsletter'] = $newsletter;
     $params['context']['account'] = $subscription;
     drupal_mail('simplenews', 'unsubscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
@@ -1572,9 +1572,9 @@ function simplenews_mail($key, &$message, $params) {
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      $variables =  simplenews_mail_tokens($context['account'], $params, $context['account']->language);
+      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-      if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
+      if (simplenews_user_is_subscribed($context['account']->mail, $context['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('subscribe_subscribed', $context['account']->language, $variables);
       }
       else {
@@ -1585,9 +1585,9 @@ function simplenews_mail($key, &$message, $params) {
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      $variables =  simplenews_mail_tokens($context['account'], $params, $context['account']->language);
+      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
-      if (simplenews_user_is_subscribed($context['account']->mail, $params['newsletter']->tid)) {
+      if (simplenews_user_is_subscribed($context['account']->mail, $context['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_subscribed', $context['account']->language, $variables);
       }
       else {
@@ -2077,10 +2077,13 @@ function _simplenews_html_replace() {
  * may return an empty value. e.g. !newsletter_url is empty when called
  * while building a confirmation email.
  *
- * @param object $subscription subscription or user object
- * @param array $context
- *   newsletter: newsletter term object
- *   node: node object
+ * @param $subscription
+ *  Subscription or user object
+ * @param $context
+ *  [newsletter] newsletter term object
+ *  [node] node object
+ * @param $language
+ *  Language object
  *
  * @return array of tokens and token values.
  */
