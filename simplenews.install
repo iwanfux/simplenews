@@ -279,7 +279,7 @@ function _simplenews_install_vocabulary() {
 function simplenews_update_2() {
   $ret = array();
   db_rename_table($ret, 'sn_snid_tid', 'simplenews_snid_tid');
-  db_rename_table($ret, 'sn_newsletters', 'simplenews_snid_tid');
+  db_rename_table($ret, 'sn_newsletters', 'simplenews_newsletters');
   db_rename_table($ret, 'sn_subscriptions', 'simplenews_subscriptions');
   return $ret;
 }
