@@ -1717,8 +1717,14 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
     }
     simplenews_send_status_update();
 
-    // Report sent result and elapsed time
-    watchdog('simplenews', '%count emails sent in %sec seconds.', array('%count' => count($mail_sent), '%sec' => round(_simplenews_measure_usec(), 1)));
+    // Report sent result and elapsed time. On Windows systems retrusage() is
+    // not implemented and hence no elapsed time is available.
+    if (function_exists('getrusage')) {
+      watchdog('simplenews', '%count emails sent in %sec seconds.', array('%count' => count($mail_sent), '%sec' => round(_simplenews_measure_usec(), 1)));
+    }
+    else {
+      watchdog('simplenews', '%count emails sent.', array('%count' => count($mail_sent)));
+    }
   }
 }
 
@@ -2249,6 +2255,11 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL, $var
  * @return float: elapsed PHP execution time since start.
  */
 function _simplenews_measure_usec($start = FALSE) {
+  // Windows systems don't implement getrusage(). There is no alternative.
+  if (!function_exists('getrusage')) {
+    return 0;
+  }
+  
   static $start_time;
   $usage = getrusage();
   $now = (float)($dat["ru_stime.tv_sec"] .'.'. $dat["ru_stime.tv_usec"]) + (float)($usage["ru_utime.tv_sec"] .'.'. $usage["ru_utime.tv_usec"]);

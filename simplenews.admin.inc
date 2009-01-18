@@ -890,13 +890,18 @@ function simplenews_admin_settings_mail(&$form_state) {
   );
   $throttle = drupal_map_assoc(array(1, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
   $throttle[999999] = t('Unlimited');
+  if (function_exists('getrusage')) {
+    $description_extra = '<br />'. t('Cron execution must not exceed the PHP maximum execution time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time')));
+  }
+  else {
+    $description_extra = '<br />'. t('Cron execution must not exceed the PHP maximum execution time of %max seconds.', array('%max' => ini_get('max_execution_time')));
+  }
   $form['simplenews_mail_backend']['simplenews_throttle'] = array(
     '#type' => 'select',
     '#title' => t('Cron throttle'),
     '#options' => $throttle,
     '#default_value' => variable_get('simplenews_throttle', 20),
-    '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.') .'<br />'.
-      t('Cron execution must not exceed the PHP maximum execution time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time'))),
+    '#description' => t('Sets the numbers of newsletters sent per cron run. Failure to send will also be counted.') . $description_extra,
   );
   $form['simplenews_mail_backend']['simplenews_spool_expire'] = array(
     '#type' => 'select',
