@@ -167,7 +167,7 @@ function simplenews_send_newsletter_action_submit($form, $form_state) {
  * Implementation of a Drupal action. Send pending simplenews newsletters.
  */
 function simplenews_cron_action(&$object, $context = array()) {
-  simplenews_mail_send(FALSE);
+  simplenews_cron();
   watchdog('action', 'Simplenews cron executed.');
 }
 
