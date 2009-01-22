@@ -634,6 +634,9 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
           '#return_value' => 0,
           '#attributes' => array('checked' => 'checked', 'disabled' => 'disabled'),
         );
+        $form['simplenews']['advanced']['s_format'] = array('#type' => 'hidden', '#value' => $simplenews_values['s_format']);
+        $form['simplenews']['advanced']['priority'] = array('#type' => 'hidden', '#value' => $simplenews_values['priority']);
+        $form['simplenews']['advanced']['receipt'] = array('#type' => 'hidden', '#value' => $simplenews_values['receipt']);
       }
       $form['simplenews']['s_status'] = array(
         '#type' => 'hidden',
