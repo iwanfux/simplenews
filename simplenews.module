@@ -2106,6 +2106,9 @@ function simplenews_mail_tokens($subscription, $context, $language) {
 
   // Get tokens from user_mail_tokens() and add simplenews variables.
   $vars = user_mail_tokens($subscription, $language);
+  // Replace existing uri and uri_brief to cope with multilingual sites.
+  $vars['!uri'] = url('', array('absolute' => TRUE, 'language' => $language));
+  $vars['!uri_brief'] = preg_replace('!^https?://!', '', $vars['!uri']);
   $vars['!confirm_subscribe_url'] = url('newsletter/confirm/add/'. $hash, array('absolute' => TRUE, 'language' => $language));
   $vars['!confirm_unsubscribe_url'] = url('newsletter/confirm/remove/'. $hash, array('absolute' => TRUE, 'language' => $language));
   $vars['!newsletter_url'] = isset($context['node']->nid) ? url('node/'. $context['node']->nid, array('absolute' => TRUE, 'language' => $language)) : '';
