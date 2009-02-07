@@ -248,6 +248,9 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
 
   // Create or update taxonomy term for this newsletter.
   // When creating a term $form_state['values']['tid'] is NULL.
+  if (isset($form_state['values']['tid'])) {
+    $termdata = (array)taxonomy_get_term($form_state['values']['tid']);
+  }
   $termdata['tid'] = $form_state['values']['tid'];
   $termdata['vid'] = $form_state['values']['vid'];
   $termdata['name'] = $form_state['values']['name'];
