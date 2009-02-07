@@ -500,9 +500,12 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
+    $form['content_types']['nodes']['#disabled'] = TRUE;
     $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can also be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
     // Free tagging can not be allowed see: simplenews_validate_taxonomy().
     $form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
+    // Multiple select does not work with simplenews.
+    $form['settings']['multiple'] = array('#type' => 'value', '#value' => FALSE);
   }
 
   // Simplenews newsletter node form
@@ -520,7 +523,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       }
       $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
       if (!empty($vocabulary) && !isset($vocabulary->nodes[$form['type']['#value']])) {
-        drupal_set_message(t('Invalid node type or vocabulary setting. Please check the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews'))), 'error');
+        drupal_set_message(t('Invalid vocabulary setting detected. Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews'))), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
@@ -1694,9 +1697,11 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
     foreach ($messages as $key => $message) {
       $result = simplenews_mail_mail($message['nid'], $message['vid'], $message['mail']);
 
-      // Succesfull mail messages are marked in the spool with status send.
-      // Store spool id for the spool status update.
+      // Update spool status if mail is sent succesfully.
+      // This is not optimal for performance but prevents duplicate emails
+      // in case of PHP execution time overrun.
       if ($result) {
+        simplenews_update_spool(array($key), SIMPLENEWS_SPOOL_SEND);
         $mail_sent[] = $key;
       }
 
@@ -1714,10 +1719,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
       }
     }
 
-    // Update message status in the spool as sent and update newsletter status.
-    if (!empty($mail_sent)) {
-      simplenews_update_spool($mail_sent, SIMPLENEWS_SPOOL_SEND);
-    }
+    // Update sent status for newsletter admin panel.
     simplenews_send_status_update();
 
     // Report sent result and elapsed time. On Windows systems retrusage() is
