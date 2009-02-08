@@ -236,8 +236,7 @@ function _simplenews_install_nodetype() {
  */
 function _simplenews_install_vocabulary() {
   // Create the simplenews vocabulary. If it exists, set it as the simplenews_vid.
-  if (db_result(db_query("SELECT * FROM {vocabulary} WHERE name = '%s'", t('Newsletter')))) {
-    $vocabulary = db_fetch_array($result);
+ if ($vocabulary = db_fetch_array(db_query("SELECT * FROM {vocabulary} WHERE name = '%s'", t('Newsletter')))) {
     $vocabulary['nodes'] = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
   }
   else {

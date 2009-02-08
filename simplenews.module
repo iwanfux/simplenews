@@ -308,7 +308,7 @@ function simplenews_node_type($op, $info) {
       break;
     case 'update':
       $simplenews_types = variable_get('simplenews_content_types', array());
-      if (isset($simplenews_types[$info->old_type]) && !empty($info->old_type) && $info->old_type != $info->type) {
+      if (isset($info->old_type) && isset($simplenews_types[$info->old_type]) && $info->old_type != $info->type) {
         unset($simplenews_types[$info->old_type]);
         $simplenews_types[$info->type] = $info->type;
         variable_set('simplenews_content_types', $simplenews_types);
