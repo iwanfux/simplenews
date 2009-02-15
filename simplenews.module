@@ -1772,6 +1772,8 @@ function simplenews_save_spool($message) {
  *  $message['time']
  */
 function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
+  $messages = array();
+
   $result = db_query_range("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = %d ORDER BY s.timestamp ASC", $status, 0, $limit);
   while ($data = db_fetch_array($result)) {
     $message = array();
