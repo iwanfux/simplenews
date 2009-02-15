@@ -1060,7 +1060,7 @@ function simplenews_subscription_filters() {
 function simplenews_subscription_filter_form() {
   // Current filter selections in $session var; stored at form submission
   // Example: array('newsletter' => 'all', 'email' => 'hotmail')
-  $session = $_SESSION['simplenews_subscriptions_filter'];
+  $session = isset($_SESSION['simplenews_subscriptions_filter']) ? $_SESSION['simplenews_subscriptions_filter'] : '';
   $session = is_array($session) ? $session : _simplenews_subscription_filter_default();
   $filters = simplenews_subscription_filters();
 
