@@ -71,7 +71,7 @@ function simplenews_perm() {
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
 
-  // Simpelnews can not work without this variable.
+  // Simplenews can not work without this variable.
   if ((variable_get('simplenews_vid', '')) == '') {
     drupal_set_message(t('Missing newsletter vocabulary. Please set a vocabulary at <a href="@settings">Simplenews settings</a>.', array('@settings' => url('admin/settings/simplenews/general'))), 'error');
   }
@@ -665,9 +665,10 @@ function simplenews_cron() {
  */
 function simplenews_taxonomy($op, $type, $term = NULL) {
   if ($op == 'delete' && $term['vid'] == variable_get('simplenews_vid', '')) {
-    switch ($term) {
+    switch ($type) {
       case 'term':
-        db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $array['tid']);
+        //TODO subscriber is not deleted when last subscription is removed.
+        db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $term['tid']);
         db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
         drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
         break;
@@ -752,8 +753,9 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
     case 'categories':
       if (user_access('subscribe to newsletters')) {
         $output[] = array('name' => 'newsletter', 'title' => t('My newsletters'), 'weight' => 10);
+        return $output;
       }
-      return $output;
+      break;
     case 'view':
       global $user;
       if ($user->uid == $account->uid || user_access('administer users')) {
@@ -789,7 +791,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
             '#weight' => -1,
           );
         }
-        return array(t('Newsletters') => $items);
+        return array(t('Newsletters') => $subscriptions);
       }
       break;
   }
@@ -1108,7 +1110,7 @@ function simplenews_get_subscription($account) {
     $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
   }
 
-  if ($subscription) {
+  if (!empty($subscription)) {
     $result = db_query("SELECT tid FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid);
     $subscription->tids = array();
     while ($newsletter = db_fetch_object($result)) {
@@ -1559,7 +1561,7 @@ function simplenews_mail($key, &$message, $params) {
       // Build message body.
       // Replace tokens with user specific data and
       // Convert to plain text if required.
-      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
+      $variables =  simplenews_mail_tokens($context['account'], $context, is_object($context['account']->language) ? $context['account']->language : language_default());
       $body = strtr($body, $variables);
       if ($context['node']->simplenews['s_format'] == 'plain') {
         $body = simplenews_html_to_text($body, variable_get('simplenews_hyperlinks_'. $context['node']->simplenews['tid'], 1));
@@ -1578,7 +1580,7 @@ function simplenews_mail($key, &$message, $params) {
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
+      $variables =  simplenews_mail_tokens($context['account'], $context, is_object($context['account']->language) ? $context['account']->language : language_default());
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
       if (simplenews_user_is_subscribed($context['account']->mail, $context['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('subscribe_subscribed', $context['account']->language, $variables);
@@ -1591,7 +1593,7 @@ function simplenews_mail($key, &$message, $params) {
       // Use formatted from address "name" <mail_address>
       $message['headers']['From'] = $params['from']['formatted'];
 
-      $variables =  simplenews_mail_tokens($context['account'], $context, $context['account']->language);
+      $variables =  simplenews_mail_tokens($context['account'], $context, is_object($context['account']->language) ? $context['account']->language : language_default());
       $message['subject'] = _simplenews_subscription_confirmation_text('subscribe_subject', $context['account']->language, $variables);
       if (simplenews_user_is_subscribed($context['account']->mail, $context['newsletter']->tid)) {
         $message['body'] = _simplenews_subscription_confirmation_text('unsubscribe_subscribed', $context['account']->language, $variables);
@@ -2109,7 +2111,7 @@ function simplenews_mail_tokens($subscription, $context, $language) {
   }
 
   // Get tokens from user_mail_tokens() and add simplenews variables.
-  $vars = user_mail_tokens($subscription, $language);
+  $vars = $subscription->uid ? user_mail_tokens($subscription, $language) : array();
   // Replace existing uri and uri_brief to cope with multilingual sites.
   $vars['!uri'] = url('', array('absolute' => TRUE, 'language' => $language));
   $vars['!uri_brief'] = preg_replace('!^https?://!', '', $vars['!uri']);
@@ -2390,7 +2392,7 @@ function theme_simplenews_newsletter_subject($name, $title, $language) {
 }
 
 /**
- * Process variables to format the simplenews newsletter footer.
+ * Process variables to format the simplenews newsletter body.
  *
  * $variables contains:
  * - $node
