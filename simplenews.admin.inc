@@ -26,14 +26,15 @@ function simplenews_admin_news(&$form_state, $action = 'sent') {
   $header = array(t('Title'), t('Newsletter'), t('Date created'), t('Published'), t('Sent'), t('Edit'));
   list($names, $queries) = array_values(simplenews_get_filter('simplenews_newsletters_filter'));
   $filter = isset($_SESSION['simplenews_newsletters_filter']) ? $_SESSION['simplenews_newsletters_filter'] : '';
+  $queryfilter = isset($queries[$filter]) ? $queries[$filter] : '';
   if ($action == 'notsent') {
     $form['simplenews_issue_filter']['filter'] = array(
       '#type' => 'select',
       '#options' => $names,
       '#default_value' => $filter,
     );
-    $query = "SELECT DISTINCT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d". $queries[$filter] ." ORDER BY n.created DESC";
-    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d". $queries[$filter];
+    $query = "SELECT DISTINCT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d". $queryfilter ." ORDER BY n.created DESC";
+    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status = %d". $queryfilter;
   }
   else {
     $form['simplenews_issue_filter']['filter'] = array(
@@ -41,8 +42,8 @@ function simplenews_admin_news(&$form_state, $action = 'sent') {
       '#options' => $names,
       '#default_value' => $filter,
     );
-    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queries[$filter] ." ORDER BY n.created DESC";
-    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queries[$filter];
+    $query = "SELECT n.*, s.s_status FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queryfilter ." ORDER BY n.created DESC";
+    $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid WHERE s.s_status > %d". $queryfilter;
   }
   $result = pager_query(db_rewrite_sql($query, 'n', 'nid', array(SIMPLENEWS_STATUS_SEND_NOT)), 10, 0, db_rewrite_sql($count_query, 'n', 'nid', array(SIMPLENEWS_STATUS_SEND_NOT)), 0);
   $rows = array();
