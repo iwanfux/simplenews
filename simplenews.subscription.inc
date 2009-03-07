@@ -27,7 +27,7 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
   }
 
   // If non-admin is trying to edit someone else's subscription, access denied.
-  if ($user->uid && $user->uid != $subscription->uid && !user_access('administer newsletters')) {
+  if ($user->uid && $user->uid != $subscription->uid && !user_access('administer simplenews subscriptions')) {
     drupal_access_denied();
     return;
   }
@@ -55,6 +55,9 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
 function simplenews_subscription_manager_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Update'):
+      // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
+      // when unsubscribed from the
+      arsort($form_state['values']['newsletters'], SORT_NUMERIC);
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
           simplenews_subscribe_user($form_state['values']['mail'], $tid, FALSE);
