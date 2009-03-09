@@ -575,3 +575,13 @@ function simplenews_update_6007() {
   }
   return $ret;
 }
+
+/**
+ * Make vocabulary required.
+ */
+function simplenews_update_6008() {
+  $vocabulary = (array)taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
+  $vocabulary['required'] = TRUE;
+  taxonomy_save_vocabulary($vocabulary);
+  return array();
+}

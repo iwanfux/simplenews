@@ -775,6 +775,12 @@ function simplenews_admin_settings_submit($form, &$form_state) {
   $vocabulary = (array)taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
   $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
+
+  // Set vocabulary required values
+  $vocabulary['multiple'] = FALSE;
+  $vocabulary['required'] = TRUE;
+  $vocabulary['tags'] = FALSE;
+
   taxonomy_save_vocabulary($vocabulary);
   variable_set('simplenews_content_types', $form_state['values']['simplenews_content_types']);
 
