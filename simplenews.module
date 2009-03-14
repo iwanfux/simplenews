@@ -2118,7 +2118,7 @@ function simplenews_mail_tokens($subscription, $context, $language) {
   }
 
   // Get tokens from user_mail_tokens() and add simplenews variables.
-  $vars = $subscription->uid ? user_mail_tokens($subscription, $language) : array();
+  $vars = user_mail_tokens($subscription, $language);
   // Replace existing uri and uri_brief to cope with multilingual sites.
   $vars['!uri'] = url('', array('absolute' => TRUE, 'language' => $language));
   $vars['!uri_brief'] = preg_replace('!^https?://!', '', $vars['!uri']);
