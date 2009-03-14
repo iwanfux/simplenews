@@ -13,4 +13,8 @@
  * @see template_preprocess_simplenews_status()
  */
 ?>
+  <?php if (isset($image)): ?>
     <img src="<?php print $image; ?>" width="15" height="15" alt="<?php print $alt; ?>" border="0" title="<?php print $title; ?>" />
+  <?php else: ?>
+    <?php print $title; ?>
+  <?php endif; ?>

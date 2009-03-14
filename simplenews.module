@@ -92,24 +92,14 @@ function simplenews_menu() {
     'file path' => drupal_get_path('module', 'system'),
   );
   $items['admin/content/simplenews/sent'] = array(
-    'title' => 'Sent issues',
-    'description' => 'List of newsletter issues sent and pending.',
+    'title' => 'Newsletter issues',
+    'description' => 'List of newsletter issues.',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_news'),
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
     'weight' => -10,
-  );
-  $items['admin/content/simplenews/notsent'] = array(
-    'title' => 'Draft issues',
-    'description' => 'List of newsletter issues not sent.',
-    'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_news', 'notsent'),
-    'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
-    'weight' => -9,
   );
 
   $items['admin/content/simplenews/types'] = array(
@@ -1695,7 +1685,6 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
  * If sending is succesful the message is marked as send in the spool.
  */
 function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
-
   // Send pending messages from database cache
   // A limited number of mails is retrieved from the spool
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
@@ -1739,7 +1728,11 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
     else {
       watchdog('simplenews', '%count emails sent.', array('%count' => count($mail_sent)));
     }
+    
+    variable_set('simplenews_last_cron', time());
+    variable_set('simplenews_last_sent', count($mail_sent));
   }
+
 }
 
 /**
