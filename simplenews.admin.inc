@@ -950,7 +950,7 @@ function simplenews_admin_settings_subscription(&$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Synchronize with account'),
     '#default_value' => variable_get('simplenews_sync_account', TRUE),
-    '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deteted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
+    '#description' => t('When checked subscriptions will be synchronized with site accounts. When accounts are deleted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
   );
 
   // These email tokens are shared for all settings, so just define
