@@ -357,6 +357,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       }
       break;
     case 'presave':
+      $node->simplenews = array_merge(_simplenews_get_node_form_defaults(), is_array($node->simplenews) ? $node->simplenews : array());
       $term = simplenews_validate_taxonomy($node->taxonomy);
       $tid = is_array($term) ? array_values($term) : FALSE;
       $node->simplenews['tid'] = $tid ? $tid[0] : 0;
@@ -2281,6 +2282,23 @@ function _simplenews_measure_usec($start = FALSE) {
     return 0;
   }
   return $now - $start_time;
+}
+
+/**
+ * Get defaults for the simplenews node form.
+ */
+function _simplenews_get_node_form_defaults() {
+  $defaults = array(
+    'advanced' => array(
+      's_format' => variable_get('simplenews_format', 'plain'),
+      'priority' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
+      'receipt' => variable_get('simplenews_receipt', 0),
+    ),
+    'send' => user_access('send newsletter') ? variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE) : SIMPLENEWS_COMMAND_SEND_NONE,
+    's_status' => '0',
+    'test_address' => variable_get('simplenews_test_address', variable_get('site_mail', ini_get('sendmail_from'))),
+  );
+  return $defaults;
 }
 
 /**
