@@ -2223,7 +2223,7 @@ function _simplenews_generate_hash($mail, $snid, $tid) {
  */
 function _simplenews_format_options() {
   $options = array('plain' => t('plain'));
-  if (module_exists('mimemail')) {
+  if (module_exists('mimemail') || module_exists('htmlmail')) {
     $options['html'] = t('html');
   }
   return $options;
