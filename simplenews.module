@@ -14,7 +14,7 @@
  * @ingroup simplenews
  */
 
-// TODO: in Drupal 7 try to replace time() by $_SERVER[''REQUEST_TIME'] (requires php 5.1.0)
+// TODO: in Drupal 7 replace time() by REQUEST_TIME (requires php 5.1.0)
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -749,10 +749,14 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       }
       break;
     case 'categories':
-      if (user_access('subscribe to newsletters')) {
-        $output[] = array('name' => 'newsletter', 'title' => t('My newsletters'), 'weight' => 10);
-        return $output;
-      }
+      $output[] = array(
+        'name' => 'newsletter',
+        'title' => t('My newsletters'),
+        'weight' => 10,
+        'access callback' => 'user_access',
+        'access arguments' => array('subscribe to newsletters'),
+      );
+      return $output;
       break;
     case 'view':
       global $user;
