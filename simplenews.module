@@ -793,7 +793,6 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
             '#weight' => -1,
           );
         }
-        return array(t('Newsletters') => $subscriptions);
       }
       break;
   }
