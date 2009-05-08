@@ -961,8 +961,18 @@ function simplenews_admin_settings_subscription(&$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Confirmation emails'),
     '#collapsible' => FALSE,
-    '#description' => t('Customize the confimation email which is sent to (un)subscribing visitors.') .' '. $email_token_help,
   );
+  
+  $form['simplenews_subscription']['subscription_mail']['token_help'] = array(
+    '#title' => t('Replacement patterns'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
+    '#value' => theme('token_help', 'all'),
+  );
+
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
