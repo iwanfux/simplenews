@@ -378,6 +378,7 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
  * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_add_submit()
+ * @todo Add 32char description field as subsription source
  */
 function simplenews_subscription_list_add() {
   global $language;
@@ -442,7 +443,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
     if (valid_email_address($email)) {
       foreach ($checked_newsletters as $tid) {
         $newsletter = taxonomy_get_term($tid);
-        simplenews_subscribe_user($email, $newsletter->tid, FALSE, $langcode);
+        simplenews_subscribe_user($email, $newsletter->tid, FALSE, 'mass subscribe', $langcode);
         $added[] = $email;
       }
     }
@@ -474,6 +475,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * Menu callback: Export email address of subscriptions.
  *
  * @see simplenews_admin_export_after_build()
+ * @todo Add checkboxes for subscribed and unsubscribed selection.
  */
 function simplenews_subscription_list_export() {
   $form['states'] = array(
@@ -508,6 +510,7 @@ function simplenews_subscription_list_export() {
 }
 
 function simplenews_admin_export_after_build($form, $form_element) {
+//TODO: Add (un)subscribed as filter to form.
   if (isset($form_element['values']['op']) && $form_element['values']['op'] == t('Export')) {
     $states = array_filter($form_element['values']['states']);
     $newsletters = array_filter($form_element['values']['newsletters']);
@@ -561,6 +564,7 @@ function simplenews_admin_export_after_build($form, $form_element) {
  * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_remove_submit()
+ * @todo Add 32char description field as unsubsription source
  */
 function simplenews_subscription_list_remove() {
   $form['emails'] = array(
@@ -568,7 +572,7 @@ function simplenews_subscription_list_remove() {
     '#title' => t('Email addresses'),
     '#cols' => 60,
     '#rows' => 5,
-    '#description' => t('Email addresses must be separated by comma, space or newline. Email addresses which are no longer subscribed to any newsletter, will be removed from the database.'),
+    '#description' => t('Email addresses must be separated by comma, space or newline.'),
   );
   $newsletters = array();
   foreach (taxonomy_get_tree(variable_get('simplenews_vid', '')) as $newsletter) {
@@ -599,7 +603,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     if (valid_email_address($email)) {
       foreach ($checked_newsletters as $tid) {
         $newsletter = taxonomy_get_term($tid);
-        simplenews_unsubscribe_user($email, $newsletter->tid, FALSE);
+        simplenews_unsubscribe_user($email, $newsletter->tid, FALSE, 'mass unsubscribe');
         $removed[] = $email;
       }
     }
@@ -609,7 +613,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
   }
   if ($removed) {
     $removed = implode(", ", $removed);
-    drupal_set_message(t('The following addresses were unsubscribed or removed: %removed.', array('%removed' => $removed)));
+    drupal_set_message(t('The following addresses were unsubscribed: %removed.', array('%removed' => $removed)));
 
     $newsletter_names = array();
     foreach ($checked_newsletters as $tid) {
@@ -655,6 +659,8 @@ function simplenews_subscription_admin($form_state) {
  * @see simplenews_subscription_list_form_submit()
  */
 function simplenews_subscription_list_form() {
+//TODO: Subscriber maintanance needs overhaul now we have more data availabale.
+
   // Table header. Used as tablesort default
   $header = array(
     array('data' => t('Email'), 'field' => 'ss.mail', 'sort' => 'asc'),
@@ -1190,7 +1196,7 @@ function simplenews_count_subscriptions($tid) {
   if (isset($subscription_count[$tid])) {
     return $subscription_count[$tid];
   }
-  $subscription_count[$tid] = db_result(db_query('SELECT COUNT(*) FROM {simplenews_snid_tid} WHERE tid = %d', $tid));
+  $subscription_count[$tid] = db_result(db_query('SELECT COUNT(*) FROM {simplenews_snid_tid} WHERE tid = %d AND status = %d', $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED));
   
   return $subscription_count[$tid];
 }

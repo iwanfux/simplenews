@@ -60,10 +60,10 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
       arsort($form_state['values']['newsletters'], SORT_NUMERIC);
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
-          simplenews_subscribe_user($form_state['values']['mail'], $tid, FALSE);
+          simplenews_subscribe_user($form_state['values']['mail'], $tid, FALSE, 'website');
         }
         else {
-          simplenews_unsubscribe_user($form_state['values']['mail'], $tid, FALSE);
+          simplenews_unsubscribe_user($form_state['values']['mail'], $tid, FALSE, 'website');
         }
       }
       drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
@@ -71,7 +71,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
     case t('Subscribe'):
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
-          simplenews_subscribe_user($form_state['values']['mail'], $tid);
+          simplenews_subscribe_user($form_state['values']['mail'], $tid, TRUE, 'website');
         }
       }
       drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
@@ -79,7 +79,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
     case t('Unsubscribe'):
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
-          simplenews_unsubscribe_user($form_state['values']['mail'], $tid);
+          simplenews_unsubscribe_user($form_state['values']['mail'], $tid, TRUE, 'website');
         }
       }
       drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
@@ -144,7 +144,7 @@ function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
 }
 
 function simplenews_confirm_add_form_submit($form, &$form_state) {
-  simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
+  simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE, 'website');
   drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
@@ -163,15 +163,15 @@ function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   return confirm_form($form,
     t('Confirm unsubscription'),
     '',
-    t('This action will only remove you from the newsletter mailing list. If you are registered at our site, your account information will remain unchanged.'),
+    t('This action will unsubscribe you from the newsletter mailing list.'),
     t('Unsubscribe'),
     t('Cancel')
   );
 }
 
 function simplenews_confirm_removal_form_submit($form, &$form_state) {
-  simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE);
-  drupal_set_message(t('%user was removed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+  simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE, 'website');
+  drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
 }
 
 /**

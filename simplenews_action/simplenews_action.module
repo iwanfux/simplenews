@@ -187,7 +187,7 @@ function simplenews_subscribe_user_action(&$object, $context = array()) {
     if (isset($context['tid'])) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
-      simplenews_subscribe_user($account->mail, $context['tid'], FALSE);
+      simplenews_subscribe_user($account->mail, $context['tid'], FALSE, 'action');
       drupal_set_message(t('You have been subscribed to newsletter %newsletter.', array('%newsletter' => $context['name'])));
       watchdog('action', 'User %name subscribed to newsletter %newsletter.', array('%name' => $account->name, '%newsletter' => $context['name']));
     }
@@ -247,12 +247,11 @@ function simplenews_unsubscribe_user_action(&$object, $context = array()) {
       $account = $context['account'];
       //TODO: Unsubscribing should be done by simplenews_unsubscribe_user but simplenews_get_user_subscription fails because the user is already removed
       if ($result = db_fetch_object(db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'", $account->mail))) {
-        db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d AND tid = %d', $result->snid, $context['tid']);
-
-        // Clean up simplenews_subscriptions if no more newsletter subscriptions.
-        if (!db_result(db_query("SELECT COUNT(*) FROM {simplenews_snid_tid} t WHERE t.snid = %d", $result->snid))) {
-          db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $result->snid);
-        }
+        db_query("UPDATE {simplenews_snid_tid}
+                 SET status = %d, timestamp = %d, source = '%s'
+                 WHERE snid = %d AND tid = %d",
+                 SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, time(), t('Action'), $result->snid, $context['tid']
+                );
       }
       drupal_set_message(t('You have been removed from the %newsletter subscription list.', array('%newsletter' => check_plain($context['name']))));
       watchdog('action', 'User %name unsubscribed from newsletter %newsletter.', array('%name' => check_plain($account->name), '%newsletter' => check_plain($context['name'])));

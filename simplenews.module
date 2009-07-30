@@ -34,6 +34,12 @@ define('SIMPLENEWS_COMMAND_SEND_NOW', 1);
 define('SIMPLENEWS_COMMAND_SEND_TEST', 2);
 
 /**
+ * NEWSLETTER SUBSCRIPTION STATUS
+ */
+define('SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED', 1);
+define('SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED', 0);
+
+/**
  * NEWSLETTER SEND STATUS
  */
 define('SIMPLENEWS_STATUS_SEND_NOT', 0);
@@ -665,7 +671,6 @@ function simplenews_taxonomy($op, $type, $term = NULL) {
   if ($op == 'delete' && $term['vid'] == variable_get('simplenews_vid', '')) {
     switch ($type) {
       case 'term':
-        //TODO subscriber is not deleted when last subscription is removed.
         db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $term['tid']);
         db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
         drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
@@ -717,10 +722,10 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
       if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
         foreach ($edit['newsletters'] as $tid => $checked) {
           if ($checked) {
-            simplenews_subscribe_user($account->mail, $tid, FALSE);
+            simplenews_subscribe_user($account->mail, $tid, FALSE, 'website');
           }
           else {
-            simplenews_unsubscribe_user($account->mail, $tid, FALSE);
+            simplenews_unsubscribe_user($account->mail, $tid, FALSE, 'website');
           }
         }
       }
@@ -767,7 +772,10 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
         );
         $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
         foreach ($tree as $newsletter) {
-          if (db_result(db_query('SELECT COUNT(s.uid) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.uid = %d AND t.tid = %d', $account->uid, $newsletter->tid))) {
+          if (db_result(db_query('SELECT COUNT(s.uid) FROM {simplenews_subscriptions} s
+                                 INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
+                                 WHERE s.uid = %d AND t.tid = %d AND t.status = %d',
+                                 $account->uid, $newsletter->tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))) {
             $subscriptions[] = l($newsletter->name, 'taxonomy/term/'. $newsletter->tid);
           }
         }
@@ -943,8 +951,14 @@ function _simplenews_user_load($mail) {
  *   The language code (i.e. 'en', 'nl') of the user preferred language.
  *   Use '' for the site default language.
  *   Use NULL for the language of the current page.
+ * @param string $source
+ *   Indication for source of subscription. Simplenews uses these sources:
+ *    website: via any website form (with or without confirmation email)
+ *    mass subscribe: mass admin UI
+ *    mass unsubscribe: mass admin UI
+ *    action: Drupal actions
  */
-function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_language = NULL) {
+function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown', $preferred_language = NULL) {
   global $language;
 
   //Prevent mismatches from accidental capitals in mail address
@@ -993,8 +1007,22 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
     drupal_mail('simplenews', 'subscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
   elseif (!isset($subscription->tids[$tid])) {
-    // OR add user to newsletter relationship if not already subscribed.
-    db_query("INSERT INTO {simplenews_snid_tid} (snid, tid) VALUES (%d, %d)", $subscription->snid, $tid);
+    // Add user to newsletter relationship if not already subscribed.
+    
+    // Check if user is (un)subscribed to this newsletter.
+    // Resubscribe or add new subscription.
+    if (isset($subscription->newsletter_subscription[$tid])) {
+      db_query("UPDATE {simplenews_snid_tid}
+               SET status = %d, timestamp = %d, source = '%s'
+               WHERE snid = %d AND tid = %d",
+               SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, time(), $source,
+               $subscription->snid, $tid);
+    }
+    else {
+      db_query("INSERT INTO {simplenews_snid_tid} (snid, tid, status, timestamp, source)
+               VALUES (%d, %d, %d, %d, '%s')",
+               $subscription->snid, $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, time(), $source);
+    }
 
     // Execute simplenews subscribe trigger.
     simplenews_call_actions('subscribe', $subscription);
@@ -1013,15 +1041,21 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $preferred_lang
  * @param string $mail The email address to unsubscribe from the newsletter.
  * @param integer $tid The term ID of the newsletter.
  * @param boolean $confirm TRUE = send confirmation mail; FALSE = unsubscribe immediate from the newsletter
+ * @param string $source
+ *   Indication for source of unsubscription. Simplenews uses these sources:
+ *    website: via any website form (with or without confirmation email)
+ *    mass subscribe: mass admin UI
+ *    mass unsubscribe: mass admin UI
+ *    action: Drupal actions
  */
-function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
+function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown') {
   //Prevent mismatches from accidental capitals in mail address
   $mail = strtolower($mail);
 
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
 
-  // The unlikely case that a user is subscribed from a non existing newsletter is logged
+  // The unlikely case that a user is unsubscribed from a non existing newsletter is logged
   if (!$newsletter = taxonomy_get_term($tid)) {
     watchdog('simplenews', 'Attempt to unsubscribe from non existing newsletter term ID %id', array('%id' => $tid), WATCHDOG_ERROR);
     return FALSE;
@@ -1037,17 +1071,15 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
     drupal_mail('simplenews', 'unsubscribe', $mail, $subscription->language, $params, $params['from']['address']);
   }
   elseif (isset($subscription->tids[$tid])) {
-    // OR remove the user from the newsletter.
-    db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d AND tid = %d', $subscription->snid, $tid);
-
-    // Clean up subscription account if user is not subscribed to any newsletter anymore
-    if (!db_result(db_query("SELECT COUNT(*) FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid))) {
-      db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $subscription->snid);
-    }
+    // Unsubscribe the user from the newsletter.
+    db_query("UPDATE {simplenews_snid_tid}
+             SET status = %d, timestamp = %d, source = '%s'
+             WHERE snid = %d AND tid = %d",
+             SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, time(), $source, $subscription->snid, $tid);
 
     // Execute simplenews unsubscribe trigger
     simplenews_call_actions('unsubscribe', $subscription);
-    }
+  }
 
   return TRUE;
 }
@@ -1060,15 +1092,19 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE) {
  *
  * @return boolean TRUE = email address is subscribed to given newsletter term id
  */
+//@TODO only return active subscriptions.
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   static $subscribed = array();
 
     if ($reset) {
-      unset($subscribed);
+      $subscribed = array();
     }
 
     if (!isset($subscribed[$mail][$tid])) {
-      $subscribed[$mail][$tid] = db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.mail = '%s' AND t.tid = %d", $mail, $tid)) ? TRUE : FALSE;
+      $subscribed[$mail][$tid] = db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s
+                                                    INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
+                                                    WHERE s.mail = '%s' AND t.tid = %d AND t.status = %d",
+                                                    $mail, $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)) ? TRUE : FALSE;
     }
 
   return $subscribed[$mail][$tid];
@@ -1091,7 +1127,8 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
  * @return subscription object
  *   object(
  *     snid :  subscription id. 0 if account is not subscribed
- *     tids :  array of newsletter tid's
+ *     tids :  array of tid's of active subscriptions
+ *     newsletter_subscriptions : array of newsletter subscription objects
  *     uid  :  user id. 0 if account is anonymous user
  *     mail :  user email address. empty if email is unknown
  *     name :  always empty. Added for compatebility with user account object
@@ -1112,10 +1149,14 @@ function simplenews_get_subscription($account) {
   }
 
   if (!empty($subscription)) {
-    $result = db_query("SELECT tid FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid);
+    $result = db_query("SELECT tid, status, timestamp, source
+                        FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid);
     $subscription->tids = array();
-    while ($newsletter = db_fetch_object($result)) {
-      $subscription->tids[$newsletter->tid] = $newsletter->tid;
+    while ($newsletter_subscription = db_fetch_object($result)) {
+      if ($newsletter_subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
+        $subscription->tids[$newsletter_subscription->tid] = $newsletter_subscription->tid;
+      }
+      $subscription->newsletter_subscription[$newsletter_subscription->tid] = $newsletter_subscription;
     }
     $subscription->name = '';
     $subscription->language = user_preferred_language($subscription);
@@ -1129,6 +1170,7 @@ function simplenews_get_subscription($account) {
     $subscription->language = language_default();
     $subscription->snid = 0;
     $subscription->tids = array();
+    $subscription->newsletter_subscription = array();
   }
   return $subscription;
 }
@@ -1314,7 +1356,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 
   switch ($form_state['values']['action']) {
     case 'subscribe':
-      simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm);
+      simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
       }
@@ -1323,7 +1365,7 @@ function simplenews_block_form_submit($form, &$form_state) {
       }
       break;
     case 'unsubscribe':
-      simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm);
+      simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
       }
@@ -1367,7 +1409,10 @@ function simplenews_send_node($node, $accounts = array()) {
 
     if (empty($accounts)) {
       // No accounts specified. Get email address of all accounts subscribed to this newsletter.
-      $result = db_query('SELECT s.mail FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE s.activated = %d AND t.tid = %d', 1, $node_data['tid']);
+      $result = db_query('SELECT s.mail FROM {simplenews_subscriptions} s
+                         INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
+                         WHERE s.activated = %d AND t.tid = %d AND t.status = %d',
+                         1, $node_data['tid'], SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
       while ($account = db_fetch_object($result)) {
         $mails[] = array('mail' => $account->mail);
       }

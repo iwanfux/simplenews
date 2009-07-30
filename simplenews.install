@@ -107,19 +107,40 @@ function simplenews_schema() {
   );
 
   $schema['simplenews_snid_tid'] = array(
-    'description' => t('Newsletter series subscription data.'),
+    'description' => 'Newsletter series subscription data.',
     'fields' => array(
        'snid' => array(
-        'description' => t('The {simplenews_subscriptions}.snid who is subscribed.'),
+        'description' => 'The {simplenews_subscriptions}.snid who is subscribed.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
-       'tid' => array(
-        'description' => t('The newsletter series ({term_data}.tid) the subscriber is subscribed to.'),
+      'tid' => array(
+        'description' => 'The newsletter series ({term_data}.tid) the subscriber is subscribed to.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'A flag indicating whether the user is subscribed (1) or unsubscribed (0).',
+        'type' => 'int',
+        'size' => 'small',
+        'not null' => TRUE,
+        'default' => 1
+      ),
+      'timestamp' => array(
+        'description' => 'UNIX timestamp of when the user is (un)subscribed.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'source' => array(
+        'description' => 'The source via which the user is (un)subscription.',
+        'type' => 'varchar',
+        'length' => 24,
+        'not null' => TRUE,
+        'default' => '',
       ),
     ),
     'primary key' => array('snid', 'tid'),
@@ -584,4 +605,36 @@ function simplenews_update_6008() {
   $vocabulary['required'] = TRUE;
   taxonomy_save_vocabulary($vocabulary);
   return array();
+}
+
+/**
+ * Add (un)subscription data to table simplenews_snid_tid.
+ */
+function simplenews_update_6100() {
+  $ret = array();
+  db_add_field($ret, 'simplenews_snid_tid', 'status', array(
+      'description' => 'A flag indicating whether the user is subscribed (1) or unsubscribed (0).',
+      'type' => 'int',
+      'size' => 'small',
+      'not null' => TRUE,
+      'default' => 1
+    )
+  );
+  db_add_field($ret, 'simplenews_snid_tid', 'timestamp', array(
+      'description' => 'UNIX timestamp of when the user is (un)subscribed.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    )
+  );
+  db_add_field($ret, 'simplenews_snid_tid', 'source', array(
+      'description' => 'The source via which the user is (un)subscription.',
+      'type' => 'varchar',
+      'length' => 24,
+      'not null' => TRUE,
+      'default' => '',
+    )
+  );
+  return $ret;
 }
