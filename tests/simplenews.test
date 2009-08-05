@@ -269,7 +269,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     * testSubscribeAuthenticated
     *
     * Steps performed:
-    *   Preparation
+    *   0. Preparation
     *   1. Subscribe authenticated via block
     *   2. Unsubscribe authenticated via subscription page
     *   3. Subscribe authenticated via subscription page
@@ -278,7 +278,27 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     */
    function testSubscribeAuthenticated() {
     // 0. Preparation
+    // Login admin
+    // Set permisison for anonymous to subscribe
+    // Enable newletter block
+    // Logout admin
     // Login Subscriber
+
+    $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions'));
+    $this->drupalLogin($admin_user);
+    $this->setAnonymousUserSubscription(TRUE);
+
+    // Setup subscription block with subscription form.
+    $block_settings = array(    
+      'message' => $this->randomName(4),
+      'form' => '1',
+      'link to previous' => FALSE,
+      'previous issues' => FALSE,
+      'rss feed' => TRUE,
+    );
+    $tid = $this->getRandomNewsletter();
+    $this->setupSubscriptionBlock($tid, $block_settings);
+    $this->drupalLogout();
 
     $subscriber_user = $this->drupalCreateUser(array('subscribe to newsletters'));
     $this->drupalLogin($subscriber_user);
