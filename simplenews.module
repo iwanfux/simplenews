@@ -928,7 +928,7 @@ function _simplenews_user_load($mail) {
     // Construct anonymous user since we don't have a user that matches that e-amil.
     $account = new stdClass();
     $account->uid = 0;
-    $account->mail = drupal_strtolower($mail);
+    $account->mail = $mail;
   }
   return $account;
 }
@@ -960,9 +960,6 @@ function _simplenews_user_load($mail) {
  */
 function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown', $preferred_language = NULL) {
   global $language;
-
-  //Prevent mismatches from accidental capitals in mail address
-  $mail = strtolower($mail);
 
   // Get current subscriptions if any.
   $account = (object) array('mail' => $mail);
@@ -1049,9 +1046,6 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
  *    action: Drupal actions
  */
 function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown') {
-  //Prevent mismatches from accidental capitals in mail address
-  $mail = strtolower($mail);
-
   $account = (object) array('mail' => $mail);
   $subscription = simplenews_get_subscription($account);
 
@@ -1142,7 +1136,7 @@ function simplenews_get_subscription($account) {
     $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.snid = %d", $account->snid));
   }
   elseif (isset($account->mail)) {
-    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.mail = '%s'", $account->mail));
+    $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE LOWER(s.mail) = LOWER('%s')", $account->mail));
   }
   elseif (isset($account->uid) && $account->uid > 0) {
     $subscription = db_fetch_object(db_query("SELECT s.* FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
