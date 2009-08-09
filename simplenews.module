@@ -2154,7 +2154,14 @@ function simplenews_mail_tokens($subscription, $context, $language) {
   }
 
   // Get tokens from user_mail_tokens() and add simplenews variables.
-  $vars = user_mail_tokens($subscription, $language);
+  if($subscription->uid) {
+    $vars = user_mail_tokens($subscription, $language);
+  }
+  else {
+    $vars = array();
+    $vars['!site'] = variable_get('site_name', 'Drupal');
+    $vars['!mailto'] = $subscription->mail;
+  }
   // Replace existing uri and uri_brief to cope with multilingual sites.
   $vars['!uri'] = url('', array('absolute' => TRUE, 'language' => $language));
   $vars['!uri_brief'] = preg_replace('!^https?://!', '', $vars['!uri']);
