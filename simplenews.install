@@ -638,3 +638,48 @@ function simplenews_update_6100() {
   );
   return $ret;
 }
+
+/**
+ * Convert Simplenews custom tokens to Token tokens.
+ */
+function simplenews_update_6101() {
+  $ret = array();
+  
+  $old = array(
+    '!site',
+    '!mailto',
+    '!date',
+    '!login_uri',
+    '!uri',
+    '!confirm_subscribe_url',
+    '!confirm_unsubscribe_url',
+    '!newsletter_url',
+    '!newsletter_name',
+  );
+  $new = array(
+    '[site-name]',
+    '[user-mail]',
+    '[site-date]',
+    '[site-url]/user',
+    '[site-url]',
+    '[simplenews-subscribe-url]',
+    '[simplenews-unsubscribe-url]',
+    '[simplenews-newsletter-url]',
+    '[simplenews-newsletters-name]',
+  );
+  $variables = array(
+    'simplenews_confirm_subscribe_subject',
+    'simplenews_confirm_subscribe_unsubscribed',
+    'simplenews_confirm_subscribe_subscribed',
+    'simplenews_confirm_unsubscribe_subscribed',
+    'simplenews_confirm_unsubscribe_unsubscribed',
+  );
+  foreach ($variables as $variable) {
+    if ($text = variable_get($variable, FALSE)) {
+      $text = str_replace($old, $new, $text);
+      variable_set($variable, $text);
+    }
+  }
+  drupal_set_message(t('Simplenews custom tokens have been deprecated. An attempt was made to replace custom tokens in the confirmation messages. Check the messages at <a href="!url">Simplenews subscription settings</a>. Manually replace Simplenews tokens in (unsent) newsletter issues.', array('!url' => url('admin/settings/simplenews/subscription'))));
+  return $ret;
+}

@@ -961,7 +961,6 @@ function simplenews_admin_settings_subscription(&$form_state) {
 
   // These email tokens are shared for all settings, so just define
   // the list once to help ensure they stay in sync.
-  $email_token_help = t('Available variables are:') .' !site, !uri, !uri_brief, !mailto, !date, !newsletter_name, !confirm_subscribe_url, !confirm_unsubscribe_url.';
 
   $form['simplenews_subscription']['subscription_mail'] = array(
     '#type' => 'fieldset',
@@ -976,7 +975,7 @@ function simplenews_admin_settings_subscription(&$form_state) {
     '#collapsed' => TRUE,
   );
   $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
-    '#value' => theme('token_help', 'all'),
+    '#value' => theme('token_help', 'simplenews'),
   );
 
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
