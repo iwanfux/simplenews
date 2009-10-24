@@ -341,7 +341,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
       break;
     case 'validate':
       $vid = variable_get('simplenews_vid', '');
-      if (!isset($node->taxonomy[$vid]) || (isset($node->taxonomy[$vid]) && !empty($node->taxonomy[$vid]) && simplenews_validate_taxonomy($node->taxonomy) == FALSE)) {
+      if (!isset($node->taxonomy[$vid]) || empty($node->taxonomy[$vid]) || simplenews_validate_taxonomy($node->taxonomy) == FALSE) {
         form_set_error('taxonomy', t('No newsletter term is selected, the newsletter taxonomy term is probably not configured correctly.<br /> Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews/general'))));
       }
       elseif (isset($node->simplenews['send']) && $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
