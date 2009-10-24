@@ -492,8 +492,16 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
-    $form['content_types']['nodes']['#disabled'] = TRUE;
-    $form['content_types']['nodes']['#description'] = t('These content type(s) are used as newsletter. They can also be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
+    // We display the current content type settings in a disabled form element
+    // to the user. The real value passed in the form separately because
+    // disabled elements do not get saved at submit.
+    $form['content_types']['display_only'] = $form['content_types']['nodes'];
+    $form['content_types']['display_only']['#disabled'] = TRUE;
+    $form['content_types']['display_only']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
+    $form['content_types']['nodes'] = array(
+      '#type' => 'value',
+      '#value' => $form['content_types']['nodes']['#default_value'],
+    );
     // Free tagging can not be allowed see: simplenews_validate_taxonomy().
     $form['settings']['tags'] = array('#type' => 'value', '#value' => FALSE);
     // Multiple select does not work with simplenews.

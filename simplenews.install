@@ -264,7 +264,7 @@ function _simplenews_install_vocabulary() {
     $vocabulary = array(
       'name' => t('Newsletter'),
       'multiple' => '0',
-      'required' => '0',
+      'required' => '1',
       'hierarchy' => '0',
       'relations' => '0',
       'module' => 'simplenews',
