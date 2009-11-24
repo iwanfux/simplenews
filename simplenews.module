@@ -1561,6 +1561,17 @@ function simplenews_mail($key, &$message, $params) {
       // Check if this node-language pair has been buffered.
       // If not, build the message and store it for later use.
       if (!isset($messages[$nid][$langcode])) {
+
+	// Use the default theme to render the email content.
+	// We temporary clear the $custom_theme to prevent the admin theme
+	// from being used when the newsletter is sent from the
+	// node add/edit form and the admin theme is other than the
+	// default theme. When no $custom_theme is set, the 
+	// After theming the email $custom_theme is restored.
+      	global $custom_theme;
+        $org_cutom_theme = $custom_theme;
+        $custom_theme = '';
+
         $node = drupal_clone($context['node']);
 
         // Add simplenews specific header data
@@ -1607,6 +1618,8 @@ function simplenews_mail($key, &$message, $params) {
         $footer = theme(array('simplenews_newsletter_footer__'. $context['node']->simplenews['tid'], 'simplenews_newsletter_footer'), $context['node'], $key, $message['language']);
         $messages[$nid][$langcode]['footer'] = $footer;
 
+        // Restore the custom theme.
+        $custom_theme = $org_cutom_theme;
       }
       else {
         // Get message data from buffer
