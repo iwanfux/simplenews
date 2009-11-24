@@ -2109,7 +2109,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
 function _simplenews_absolute_mail_urls($match) {
   global $base_url, $base_path;
   static $regexp;
-  $url = '';
+  $url = $label = '';
 
   if ($match) {
     if (empty($regexp)) {
@@ -2117,8 +2117,18 @@ function _simplenews_absolute_mail_urls($match) {
     }
     list(, $url, $label) = $match;
     $url = strpos($url, '://') ? $url : preg_replace($regexp, $base_url .'/', $url);
+
+    // If the link is formed by Drupal's URL filter, we only return the URL.
+    // The URL filter generates a label out of the original URL.
+    if (strpos($label, '...') == strlen($label) - 3) {
+      // Remove ellipsis from end of label.
+      $label = substr($label, 0, strlen($label) - 3);
+    }
+    if (strpos($url, $label) !== FALSE) {
+      return $url;
+    }
+    return $label .' '. $url;
   }
-  return $label .' '. $url;
 }
 
 /**
