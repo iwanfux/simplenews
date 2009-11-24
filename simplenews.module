@@ -65,6 +65,12 @@ define('SIMPLENEWS_SEND_CHECK_INTERVAL', 100);
 define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
 
 /**
+ * CAPTURE THE PHP MAX EXUCUTION TIME BEFORE drupal_cron_run() CHANGES THIS.
+ * THIS IS A WORK AROUND FOR DRUPAL6.14 BUG. SEE http://drupal.org/node/584334
+ */
+define('SIMPLENEWS_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
+
+/**
  * Implementation of hook_perm().
  */
 function simplenews_perm() {
@@ -1766,6 +1772,10 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
   if ($messages = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $mail_sent = array();
+
+    // Get PHP maximum execution time. 30 seconds default.
+    $max_execution_time = ini_get('max_execution_time') ? ini_get('max_execution_time') : SIMPLENEWS_MAX_EXECUTION_TIME;
+
     _simplenews_measure_usec(TRUE);
 
     foreach ($messages as $key => $message) {
@@ -1786,7 +1796,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
         $check_counter = 0;
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
-        if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * ini_get('max_execution_time')) {
+        if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * $max_execution_time) {
           watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/settings/simplenews/mail')), WATCHDOG_WARNING);
           break;
         }
