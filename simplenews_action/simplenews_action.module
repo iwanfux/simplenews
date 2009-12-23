@@ -94,31 +94,31 @@ function simplenews_send_newsletter_action(&$object, $context = array()) {
  * Implementation of a configurable Drupal action. Send newsletter
  */
 function simplenews_send_newsletter_action_form($context) {
-//TODO improve usability by adding a pre-selection of newsletters before the newsletter issue selection
-//     Requires AHAH function to select newsletters issues based on selected newsletter
-//
-//  if (!isset($context['newsletter'])) {
-//    $context['newsletter'] = array();
-//  }
+  //TODO improve usability by adding a pre-selection of newsletters before the newsletter issue selection
+  //     Requires AHAH function to select newsletters issues based on selected newsletter
+  //
+  //  if (!isset($context['newsletter'])) {
+  //    $context['newsletter'] = array();
+  //  }
   if (!isset($context['newsletter_issue'])) {
     $context['newsletter_issue'] = array();
   }
   if (!isset($context['resend'])) {
     $context['resend'] = FALSE;
   }
- 
+
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {
     $terms[$newsletter->tid] = check_plain($newsletter->name);
   }
-//  $form['newsletter'] = array(
-//    '#title' => t('Newsletter'),
-//    '#type' => 'select',
-//    '#options' => $terms,
-//    '#default_value' => $context['newsletter'],
-//    '#description' => t('The newsletter series'),
-//  );
+  //  $form['newsletter'] = array(
+  //    '#title' => t('Newsletter'),
+  //    '#type' => 'select',
+  //    '#options' => $terms,
+  //    '#default_value' => $context['newsletter'],
+  //    '#description' => t('The newsletter series'),
+  //  );
   $result = taxonomy_select_nodes(array_keys($terms));
   $nids = array();
   while ($node = db_fetch_object($result)) {
@@ -137,7 +137,7 @@ function simplenews_send_newsletter_action_form($context) {
     '#default_value' => $context['resend'],
     '#description' => t('When checked a newsletter will be send even when already send before. The newsletter send status is checked, not the status of individual email addresses. Use this for repeated (e.g. monthly) newsletters.'),
   );
- 
+
   return $form;
 }
 
@@ -204,7 +204,7 @@ function simplenews_subscribe_user_action_form($context) {
   if (!isset($context['newsletter'])) {
     $context['newsletter'] = array();
   }
- 
+
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {
@@ -253,8 +253,8 @@ function simplenews_unsubscribe_user_action(&$object, $context = array()) {
       if ($result = db_fetch_object(db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'", $account->mail))) {
         db_query("UPDATE {simplenews_snid_tid}
                  SET status = %d, timestamp = %d, source = '%s'
-                 WHERE snid = %d AND tid = %d",
-                 SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, time(), t('Action'), $result->snid, $context['tid']
+                 WHERE snid = %d AND tid = %d", 
+                 SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, REQUEST_TIME, t('Action'), $result->snid, $context['tid']
                 );
       }
       drupal_set_message(t('You have been removed from the %newsletter subscription list.', array('%newsletter' => check_plain($context['name']))));
@@ -270,7 +270,7 @@ function simplenews_unsubscribe_user_action_form($context) {
   if (!isset($context['newsletter'])) {
     $context['newsletter'] = array();
   }
- 
+
   $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   $terms = array();
   foreach ($tree as $newsletter) {

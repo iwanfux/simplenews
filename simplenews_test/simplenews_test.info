@@ -3,4 +3,9 @@ name = Simplenews test
 description = Simplenews helper module for automated simplenews tests.
 dependencies[] = simplenews
 package = Mail
-core = 6.x
+core = 7.x
+
+
+
+files[] = simplenews_test.install
+files[] = simplenews_test.module

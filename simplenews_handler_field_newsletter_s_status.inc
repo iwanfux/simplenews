@@ -12,7 +12,7 @@
  */
 class simplenews_handler_field_newsletter_s_status extends views_handler_field {
   function render($values) {
-    switch ($values->{$this->field_alias}) {
+    switch ($values->[$this->field_alias]) {
       case SIMPLENEWS_STATUS_SEND_NOT:
       default:
         return t('Not sent');

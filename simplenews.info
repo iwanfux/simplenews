@@ -4,5 +4,29 @@ description = Send newsletters to subscribed email addresses.
 dependencies[] = taxonomy
 dependencies[] = token
 package = Mail
-core = 6.x
-; @todo Add all loadable files: http://drupal.org/node/224333#registry
+core = 7.x
+
+
+
+
+
+
+
+
+
+
+
+
+
+files[] = simplenews-block.tpl.php
+files[] = simplenews-newsletter-body.tpl.php
+files[] = simplenews-newsletter-footer.tpl.php
+files[] = simplenews-status.tpl.php
+files[] = simplenews.admin.inc
+files[] = simplenews.install
+files[] = simplenews.module
+files[] = simplenews.subscription.inc
+files[] = simplenews.views.inc
+files[] = simplenews_handler_field_newsletter_s_status.inc
+files[] = simplenews_handler_filter_newsletter_s_status.inc
+files[] = tests/simplenews.test

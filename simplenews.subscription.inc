@@ -34,10 +34,10 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
     drupal_access_denied();
     return;
   }
-  $form = _simplenews_subscription_manager_form($subscription);
+  $form = simplenews_subscription_manager_form($subscription);
   $form['#validate'][] = 'simplenews_subscription_manager_form_validate';
   $form['#submit'][] = 'simplenews_subscription_manager_form_submit';
-  $form['#redirect'] = '';  //Return to home page after (un)subscribe
+  $form['#redirect'] = ''; //Return to home page after (un)subscribe
 
   return $form;
 }
@@ -112,7 +112,7 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
   }
 
   if ($md5 == drupal_substr(md5($subs->mail . simplenews_private_key()), 0, 10)) {
-    $newsletter = taxonomy_get_term($tid);
+    $newsletter = taxonomy_term_load($tid);
     if ($op1 == 'remove') {
       return drupal_get_form('simplenews_confirm_removal_form', $subs->mail, $newsletter);
     }
@@ -134,16 +134,24 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
  */
 function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   $form = array();
-  $form['question'] = array('#value' => '<p>'. t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) ."<p>\n");
-  $form['mail'] = array('#type' => 'value', '#value' => $mail);
-  $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
+  $form['question'] = array(
+    '#value' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+  );
+  $form['mail'] = array(
+    '#type' => 'value',
+    '#value' => $mail,
+  );
+  $form['newsletter'] = array(
+    '#type' => 'value',
+    '#value' => $newsletter,
+  );
   $form['#redirect'] = '';
 
-  return confirm_form($form,
-    t('Confirm subscription'),
-    '',
-    t('You always have the option of unsubscribing later.'),
-    t('Subscribe'),
+  return confirm_form($form, 
+    t('Confirm subscription'), 
+    '', 
+    t('You always have the option of unsubscribing later.'), 
+    t('Subscribe'), 
     t('Cancel')
   );
 }
@@ -161,16 +169,24 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
  */
 function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   $form = array();
-  $form['question'] = array('#value' => '<p>'. t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) ."<p>\n");
-  $form['mail'] = array('#type' => 'value', '#value' => $mail);
-  $form['newsletter'] = array('#type' => 'value', '#value' => $newsletter);
+  $form['question'] = array(
+    '#value' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+  );
+  $form['mail'] = array(
+    '#type' => 'value',
+    '#value' => $mail,
+  );
+  $form['newsletter'] = array(
+    '#type' => 'value',
+    '#value' => $newsletter,
+  );
   $form['#redirect'] = '';
 
-  return confirm_form($form,
-    t('Confirm unsubscription'),
-    '',
-    t('This action will unsubscribe you from the newsletter mailing list.'),
-    t('Unsubscribe'),
+  return confirm_form($form, 
+    t('Confirm unsubscription'), 
+    '', 
+    t('This action will unsubscribe you from the newsletter mailing list.'), 
+    t('Unsubscribe'), 
     t('Cancel')
   );
 }

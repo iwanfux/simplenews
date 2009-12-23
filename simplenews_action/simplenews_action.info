@@ -4,4 +4,7 @@ description = Provide actions for Simplenews.
 dependencies[] = simplenews
 dependencies[] = trigger
 package = Mail
-core = 6.x
+core = 7.x
+
+
+files[] = simplenews_action.module
