@@ -12,9 +12,16 @@
  * Simplnews node handling, sent email, newsletter block and general hooks
  *
  * @ingroup simplenews
+ * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
+ * @todo Where possible build re-usable functions wrapped around database calls.
+ * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
+ * @todo Investigate the use of static API: http://drupal.org/node/224333#static_variable_api
+ * @todo Change documentation of hook_foo implementations: http://drupal.org/node/224333#implementation_hook_comment
+ * @todo Concider context support for t(): http://drupal.org/node/224333#locale_context
+ * @todo Language code in t() now as array: http://drupal.org/node/224333#locale_context
+ * @todo Theme function second argument should be an array: http://drupal.org/node/224333#theme_changes
+ * @todo Coding standards: string concatenation, 'else if', type hinting
  */
-
-// TODO: in Drupal 7 replace time() by REQUEST_TIME (requires php 5.1.0)
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -72,6 +79,10 @@ define('SIMPLENEWS_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
 
 /**
  * Implementation of hook_perm().
+ * @todo Change array format and add titles where required: http://drupal.org/node/224333#descriptions_permissions
+ * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
+ * @todo Review the use of 'administer nodes': http://drupal.org/node/224333#bypass_node_access
+ * @todo hook_perm() renamed: http://drupal.org/node/224333#hook_permission
  */
 function simplenews_perm() {
   return array('administer newsletters', 'administer simplenews subscriptions', 'administer simplenews settings', 'send newsletter', 'subscribe to newsletters');
@@ -79,6 +90,7 @@ function simplenews_perm() {
 
 /**
  * Implementation of hook_init().
+ * @todo Check parameters of drupal_add_css: http://drupal.org/node/224333#drupal_add_js_options
  */
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') .'/simplenews.css', 'module', 'all', TRUE);
@@ -92,6 +104,8 @@ function simplenews_init() {
 
 /**
  * Implementation of hook_menu().
+ * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Review admin path due to D7's changed information architecture
  */
 function simplenews_menu() {
   $items['admin/content/simplenews'] = array(
@@ -321,6 +335,11 @@ function simplenews_node_type($op, $info) {
 
 /**
  * Implementation of hook_nodeapi().
+ *
+ * @todo: http://drupal.org/node/224333#php_version (&&node >> $node)
+ * @todo break-up by $op: http://drupal.org/node/224333#remove_op
+ * @todo Rename to hook_node_xxx(): http://drupal.org/node/224333#hook_node_xxx
+ * @todo $teaser parameter changed: http://drupal.org/node/224333#build_mode
  */
 function simplenews_nodeapi(&$node, $op, $teaser, $page) {
   global $user;
@@ -449,6 +468,7 @@ function simplenews_nodeapi(&$node, $op, $teaser, $page) {
  *       In case of free tagging see taxonomy_node_save() for example code.
  *       Note that free tagging can create new terms at node add/edit. This
  *       contradicts with the current set-up of simpelnews.
+ * @todo Rename table term_data -> taxonomy_term_data: http://drupal.org/node/224333#taxonomy_tables
  */
 function simplenews_validate_taxonomy($taxonomy) {
   // Get newsletter tids.
@@ -487,6 +507,11 @@ function simplenews_validate_taxonomy($taxonomy) {
 
 /**
  * Implementation of hook_form_alter().
+ * @todo Symplify the check for node form: http://drupal.org/node/224333#node_form
+ * @todo Check parameters of drupal_add_js: http://drupal.org/node/224333#drupal_add_js_options
+ * @todo Replace 'module' in drupal_add_js: http://drupal.org/node/224333#drupal_add_js_weight
+ * @todo Perhaps add drupal_add_js to form element: http://drupal.org/node/224333#attached_js
+ * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
  */
 function simplenews_form_alter(&$form, $form_state, $form_id) {
   $vid = variable_get('simplenews_vid', '');
@@ -711,6 +736,9 @@ function simplenews_taxonomy($op, $type, $term = NULL) {
  * user signs up. If so, changes uid from 0 to the new uid in
  * simplenews_subscriptions so that the user's subscription status is known when
  * he logs in.
+ *
+ * @todo: http://drupal.org/node/224333#php_version (&$account >> $account)
+ * @todo Do not use SELECT COUNT: http://drupal.org/node/224333#select_count
  */
 function simplenews_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
@@ -833,6 +861,7 @@ function simplenews_user($op, &$edit, &$account, $category = NULL) {
 
 /**
  * Implementation of hook_block().
+ * @todo break-up by $op: http://drupal.org/node/224333#remove_op
  */
 function simplenews_block($op = 'list', $delta = 0, $edit = array()) {
   switch ($op) {
@@ -946,6 +975,7 @@ function simplenews_forms() {
  *     mail,   email address
  *     uid,    uid or 0 for anonymous
  *   )
+ * @todo Rewrite to use the new user_load(): http://drupal.org/node/224333#user_load_multiple
  */
 function _simplenews_user_load($mail) {
   $account = user_load(array('mail' => $mail));
@@ -982,6 +1012,7 @@ function _simplenews_user_load($mail) {
  *    mass subscribe: mass admin UI
  *    mass unsubscribe: mass admin UI
  *    action: Drupal actions
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown', $preferred_language = NULL) {
   global $language;
@@ -1069,6 +1100,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
  *    mass subscribe: mass admin UI
  *    mass unsubscribe: mass admin UI
  *    action: Drupal actions
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown') {
   $account = (object) array('mail' => $mail);
@@ -1110,6 +1142,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
  * @param integer $tid newsletter term id
  *
  * @return boolean TRUE = email address is subscribed to given newsletter term id
+ * @todo Do not use SELECT COUNT: http://drupal.org/node/224333#select_count
  */
 //@TODO only return active subscriptions.
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
@@ -1292,6 +1325,8 @@ function _simplenews_subscription_manager_form($subscription) {
  *
  * @param integer $tid term id of selected newsletter
  * @param integer $count number of newsletters in the list
+ * @todo Rename table term_node -> taxonomy_term_node: http://drupal.org/node/224333#taxonomy_tables
+ * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
   $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.vid = t.vid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 1, 0, $count);
@@ -1310,6 +1345,7 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *
  * @see simplenews_block_form_validate()
  * @see simplenews_block_form_submit()
+ * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_block_form(&$form_state, $tid) {
   global $user;
@@ -1510,6 +1546,7 @@ function simplenews_send_test($node) {
  *          [from]                : array('address' => 'noreply@example.org', 'formatted' =>  'site name <noreply@example.org>')
  *          [newsletter]          : newsletter object (tid, name)
  *          [tokens]              : tokens for variable replacement. Defaults to: user_mail_tokens()
+ * @todo Replace drupal_clone: http://drupal.org/node/224333#drupal_clone
  */
 function simplenews_mail($key, &$message, $params) {
   $context = $params['context'];
@@ -1765,6 +1802,7 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
  * Sending is triggered by cron or immediately when the node is saved.
  * Mail data is retreived from the spool, rendered and send one by one
  * If sending is succesful the message is marked as send in the spool.
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
   // Send pending messages from database cache
@@ -1833,6 +1871,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
  *  $message['time']    (default: current unix timestamp)
 
  * @param array $message Mail message array
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_save_spool($message) {
   $status = isset($message['status']) ? $message['status'] : SIMPLENEWS_SPOOL_PENDING;
@@ -1880,6 +1919,7 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
  *
  * @param array $msids Mail spool id of record to be updated
  * @param string $status New status (0 = hold, 1 = pending, 2 = send)
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_update_spool($msids, $status) {
   $params[] = $status;
@@ -1906,6 +1946,7 @@ function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) 
  *
  * All records with status 'send' and time stamp before the expiration date
  * are removed from the spool.
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_clear_spool() {
   $expiration_time = time() - variable_get('simplenews_spool_expire', 0) * 86400;
@@ -2452,6 +2493,7 @@ function simplenews_content_build_modes() {
 
 /**
  * Implementation of hook_theme().
+ * @todo Theme definitions must register how it integrates with drupal_render(): http://drupal.org/node/224333#hook_theme_render_changes
  */
 function simplenews_theme() {
   return array(
@@ -2495,6 +2537,7 @@ function simplenews_theme() {
  *
  * @see simplenews-block.tpl.php
  * @see theme_simplenews-block()
+ * @todo use drupal_render() with drupal_get_form(): http://drupal.org/node/224333#unrendered
  */
 function template_preprocess_simplenews_block(&$variables) {
   global $user;
@@ -2532,6 +2575,7 @@ function template_preprocess_simplenews_block(&$variables) {
 
 /**
  * Theme the newsletter email subject.
+ * @todo Theme function second argument should be an array: http://drupal.org/node/224333#theme_changes
  */
 function theme_simplenews_newsletter_subject($name, $title, $language) {
   return  '['. $name .'] '. $title;

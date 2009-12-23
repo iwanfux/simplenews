@@ -6,6 +6,9 @@
  * (Un)subscription and (un)subscription confirmation
  *
  * @ingroup simplenews
+ * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
+ * @todo Where possible build re-usable functions wrapped around database calls.
+ * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
  */
 
 /**
@@ -96,6 +99,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
  *
  * @see simplenews_confirm_add_form()
  * @see simplenews_confirm_removal_form()
+ * @todo use drupal_render() with drupal_get_form(): http://drupal.org/node/224333#unrendered
  */
 function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
   $md5 = drupal_substr($op2, 0, 10);
@@ -126,6 +130,7 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
  * Generate the confirm subscription form.
  *
  * @see simplenews_confirm_add_form_submit()
+ * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   $form = array();
@@ -152,6 +157,7 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
  * Generate the confirm unsubscription form.
  *
  * @see simplenews_confirm_removal_form_submit()
+ * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
   $form = array();

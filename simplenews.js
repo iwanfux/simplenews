@@ -2,6 +2,9 @@
 
 /**
  * Set text of Save button dependent on the selected send option.
+ * @todo Changed Drupal.behaviors: http://drupal.org/node/224333#drupal_behaviors
+ * @todo Wrap jQuery code: http://drupal.org/node/224333#javascript_compatibility
+ * @todo behaviors settings passed locally: http://drupal.org/node/224333#local_settings_behaviors
  */
 Drupal.behaviors.simplenewsCommandSend = function (context) {
   var simplenewsSendButton = function () {

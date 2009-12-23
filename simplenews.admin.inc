@@ -6,12 +6,16 @@
  * Newsletter admin, subscription admin, simplenews settings
  *
  * @ingroup simplenews
+ * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
+ * @todo Where possible build re-usable functions wrapped around database calls.
+ * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
  */
 
 /**
  * Menu callback: Admin form for sent and draft newsletters.
  *
  * @see simplenews_admin_news_submit()
+ * @todo Arguments to theme('pager') have changed: http://drupal.org/node/224333#comment-1898826
  */
 function simplenews_admin_news(&$form_state, $action = 'sent') {
   $vid = variable_get('simplenews_vid', '');
@@ -1202,6 +1206,8 @@ function simplenews_count_subscriptions($tid) {
 
 /**
  * Theme subscription administration overview.
+ * @todo Rework the use of drupal_render: http://drupal.org/node/224333#menu_callback_array
+ * @todo Perhaps use drupal_render_children(): http://drupal.org/node/224333#drupal_render_children
  */
 function theme_simplenews_subscription_list($form) {
   // Subscription table header

@@ -6,6 +6,9 @@
  * Provide actions for simplenews.
  *
  * @ingroup simplenews
+ * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
+ * @todo Where possible build re-usable functions wrapped around database calls.
+ * @todo Check and rework actions/trigger code for trigger API overhaul: http://drupal.org/node/224333#trigger_overhaul
  */
 
 /*
@@ -239,6 +242,7 @@ function simplenews_subscribe_user_action_submit($form, $form_state) {
  *
  *   @see simplenews_unsubscribe_user_action_form()
  *   @see simplenews_unsubscribe_user_action_submit()
+ * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_unsubscribe_user_action(&$object, $context = array()) {
   if ($context['hook'] == 'user') {

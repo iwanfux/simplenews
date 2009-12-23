@@ -5,3 +5,4 @@ dependencies[] = taxonomy
 dependencies[] = token
 package = Mail
 core = 6.x
+; @todo Add all loadable files: http://drupal.org/node/224333#registry

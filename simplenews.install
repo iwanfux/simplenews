@@ -4,10 +4,15 @@
 /**
  * @file
  * Simplenews installation.
+ * @todo Add doxygen comment here: http://drupal.org/node/1354#files AND http://drupal.org/node/224333#afile
+ * @todo function node_get_type() replaced: http://drupal.org/node/224333#node_type_get_functions
+ * @todo Remove schema install/uninstall: http://drupal.org/node/224333#install-schema
  */
 
 /**
  * Implementation of hook_schema().
+ * @todo Rename table term_data -> taxonomy_term_data: http://drupal.org/node/224333#taxonomy_tables
+ * @todo Add foreign keys: http://drupal.org/node/224333#foreign-keys-added
  */
 function simplenews_schema() {
   $schema['simplenews_subscriptions'] = array(
@@ -254,6 +259,8 @@ function _simplenews_install_nodetype() {
 
 /**
  * Create simplenews vocabulary and initial term.
+ * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
+ * @todo Rename table term_data -> taxonomy_term_data: http://drupal.org/node/224333#taxonomy_tables
  */
 function _simplenews_install_vocabulary() {
   // Create the simplenews vocabulary. If it exists, set it as the simplenews_vid.
@@ -683,3 +690,7 @@ function simplenews_update_6101() {
   drupal_set_message(t('Simplenews custom tokens have been deprecated. An attempt was made to replace custom tokens in the confirmation messages. Check the messages at <a href="!url">Simplenews subscription settings</a>. Manually replace Simplenews tokens in (unsent) newsletter issues.', array('!url' => url('admin/settings/simplenews/subscription'))));
   return $ret;
 }
+
+// @todo Add doxygen comment to new update functions: http://drupal.org/node/224333#update_php
+// @todo Don't use $ret in any D7 hook_update_N(): http://drupal.org/node/224333#schema_ret
+// @todo D7 update_N() functions must return string or exception: http://drupal.org/node/224333#update_sql

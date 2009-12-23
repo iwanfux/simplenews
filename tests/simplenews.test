@@ -1,6 +1,15 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ * Simplenews test functions.
+ *
+ * @ingroup simplenews
+ * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
+ * @todo Where possible build re-usable functions wrapped around database calls.
+ */
+
 class SimplenewsTestCase extends DrupalWebTestCase {
 
   public function setUp() {
@@ -17,6 +26,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
    *
    * @param boolean $enabled
    *   Allow anonymous commenting.
+   * @todo Replace {permission} table http://drupal.org/node/224333#permission_tables
    */
   function setAnonymousUserSubscription($enabled) {
 
