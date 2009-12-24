@@ -6,5 +6,4 @@ dependencies[] = trigger
 package = Mail
 core = 7.x
 
-
 files[] = simplenews_action.module

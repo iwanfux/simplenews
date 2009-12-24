@@ -34,7 +34,7 @@ function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
     drupal_access_denied();
     return;
   }
-  $form = simplenews_subscription_manager_form($subscription);
+  $form = _simplenews_subscription_manager_form($subscription);
   $form['#validate'][] = 'simplenews_subscription_manager_form_validate';
   $form['#submit'][] = 'simplenews_subscription_manager_form_submit';
   $form['#redirect'] = ''; //Return to home page after (un)subscribe

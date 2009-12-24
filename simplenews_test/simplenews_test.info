@@ -5,7 +5,5 @@ dependencies[] = simplenews
 package = Mail
 core = 7.x
 
-
-
 files[] = simplenews_test.install
 files[] = simplenews_test.module

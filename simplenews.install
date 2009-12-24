@@ -185,12 +185,19 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = done).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
         'size' => 'tiny',
+      ),
+      'error' => array(
+        'description' => 'A boolean indicating whether an error occured while sending the email.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'timestamp' => array(
         'description' => 'The time status was set or changed.',
@@ -221,10 +228,10 @@ function simplenews_install() {
     drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
   }
 
-  simplenews_install_nodetype();
+  _simplenews_install_nodetype();
   variable_set('simplenews_content_types', array('simplenews' => 'simplenews'));
 
-  simplenews_install_vocabulary();
+  _simplenews_install_vocabulary();
 }
 
 /**
@@ -238,7 +245,7 @@ function simplenews_uninstall() {
 /**
  * Create simplenews node type.
  */
-function simplenews_install_nodetype() {
+function _simplenews_install_nodetype() {
   // Create a newsletter type. If exists, modify it.
   if ($type = node_get_types('type', 'simplenews')) {
     $type->module = 'node';
@@ -265,7 +272,7 @@ function simplenews_install_nodetype() {
  * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
  * @todo Rename table term_data -> taxonomy_term_data: http://drupal.org/node/224333#taxonomy_tables
  */
-function simplenews_install_vocabulary() {
+function _simplenews_install_vocabulary() {
   // Create the simplenews vocabulary. If it exists, set it as the simplenews_vid.
   if ($vocabulary = db_fetch_array(db_query("SELECT * FROM {vocabulary} WHERE name = '%s'", t('Newsletter')))) {
     $vocabulary['nodes'] = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
@@ -564,7 +571,7 @@ function simplenews_update_6006() {
     node_type_save($type);
   }
   else {
-    simplenews_install_nodetype();
+    _simplenews_install_nodetype();
   }
 
   return $ret;
@@ -627,6 +634,15 @@ function simplenews_update_6101() {
     }
   }
   drupal_set_message(t('Simplenews custom tokens have been deprecated. An attempt was made to replace custom tokens in the confirmation messages. Check the messages at <a href="!url">Simplenews subscription settings</a>. Manually replace Simplenews tokens in (unsent) newsletter issues.', array('!url' => url('admin/settings/simplenews/subscription'))));
+  return $ret;
+}
+
+/**
+ * Addition of error to simplenews_mail_cache to mark an email error.
+ */
+function simplenews_update_6200() {
+  $ret = array();
+  db_add_field($ret, 'simplenews_mail_spool', 'error', array('type' => 'int', 'not null' => TRUE, 'default' => 0));
   return $ret;
 }
 

@@ -6,18 +6,6 @@ dependencies[] = token
 package = Mail
 core = 7.x
 
-
-
-
-
-
-
-
-
-
-
-
-
 files[] = simplenews-block.tpl.php
 files[] = simplenews-newsletter-body.tpl.php
 files[] = simplenews-newsletter-footer.tpl.php
