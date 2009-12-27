@@ -357,6 +357,7 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
   variable_set('simplenews_from_name_' . $tid, $form_state['values']['simplenews_from_name_' . $suffix]);
   variable_set('simplenews_from_address_' . $tid, $form_state['values']['simplenews_from_address_' . $suffix]);
   variable_set('simplenews_hyperlinks_' . $tid, $form_state['values']['simplenews_hyperlinks_' . $suffix]);
+  variable_set('simplenews_email_subject_'. $tid, $form_state['values']['simplenews_email_subject_'. $suffix]);
   variable_set('simplenews_new_account_' . $tid, $form_state['values']['simplenews_new_account_' . $suffix]);
   variable_set('simplenews_opt_inout_' . $tid, $form_state['values']['simplenews_opt_inout_' . $suffix]);
 }

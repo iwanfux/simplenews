@@ -1792,7 +1792,7 @@ function simplenews_mail($key, &$message, $params) {
         //$subject = theme('simplenews_newsletter_subject', $name, $node->title, $message['language']);
         $subject = variable_get('simplenews_email_subject_' . $term->tid, '[[simplenews-newsletters-name]] [title-raw]');
         $subject = token_replace($subject, 'simplenews', $context);
-        $subject = token_replace($subject, 'node', $context);
+        $subject = token_replace($subject, 'node', $context['node']);
         $subject = str_replace(array("\r", "\n"), '', $subject);
         $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
 
