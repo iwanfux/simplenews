@@ -129,6 +129,16 @@ function simplenews_init() {
  * @todo Review admin path due to D7's changed information architecture
  */
 function simplenews_menu() {
+    $items['admin/content/simplenews'] = array(
+    'title' => 'Newsletters',
+    'description' => 'List newsletters and newsletter sent status.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simplenews_admin_news'),
+    'access arguments' => array('administer newsletters'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'simplenews.admin.inc',
+  );
+/*
   $items['admin/content/simplenews'] = array(
     'title' => 'Newsletters',
     'description' => 'Manage newsletters and subscriptions.',
@@ -138,6 +148,7 @@ function simplenews_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
+
   $items['admin/content/simplenews/sent'] = array(
     'title' => 'Newsletter issues',
     'description' => 'List of newsletter issues.',
@@ -148,7 +159,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
     'weight' => -10,
   );
-
+*/
   $items['admin/content/simplenews/types'] = array(
     'title' => 'Newsletters',
     'description' => 'List, add and edit newsletter series.',
@@ -197,58 +208,49 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/simplenews/users'] = array(
-    'title' => 'Subscriptions',
+  $items['admin/people/simplenews'] = array(
+    'title' => 'Newsletters',
     'description' => 'Newsletter subscription management.',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_admin'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -7,
   );
-  $items['admin/content/simplenews/users/edit/%'] = array(
+  $items['admin/people/simplenews/edit/%'] = array(
     'title' => 'Subscriptions',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_users_form', 5),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.subscription.inc',
   );
-  $items['admin/content/simplenews/users/list'] = array(
-    'title' => 'List',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
-  $items['admin/content/simplenews/users/import'] = array(
+  $items['admin/people/simplenews/import'] = array(
     'title' => 'Mass subscribe',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_add'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -9,
   );
-  $items['admin/content/simplenews/users/export'] = array(
+  $items['admin/people/simplenews/export'] = array(
     'title' => 'Export',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_export'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -7,
   );
-  $items['admin/content/simplenews/users/unsubscribe'] = array(
+  $items['admin/people/simplenews/unsubscribe'] = array(
     'title' => 'Mass unsubscribe',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_remove'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
-    'weight' => -8,
+    'file' => 'simplenews.admin.inc',    'weight' => -6,
   );
 
-  $items['admin/settings/simplenews'] = array(
+  $items['admin/config/simplenews'] = array(
     'title' => 'Simplenews',
     'description' => 'Manage simplenews configuration.',
     'type' => MENU_NORMAL_ITEM,
@@ -860,7 +862,11 @@ function simplenews_taxonomy($op, $type, $term = NULL) {
 
 /**
  * Implements hook_user_XXX.
+ *
+ * Fomerly:  case 'register'
+ * @todo: add this function to which hook_user_$op ?
  */
+/*
 function simplenews_user_XXX($edit, $account) {
   $options = $default_value = $hidden = array();
 
@@ -901,6 +907,7 @@ function simplenews_user_XXX($edit, $account) {
   }
   return $form;
 }
+*/
 
 /**
  * Implements hook_user_insert.
@@ -1010,7 +1017,11 @@ function simplenews_user_cancel($edit, $account, $method) {
 
 /**
  * Implements hook_user_XXX.
+ *
+ * Formerly: case 'form'
+ * @todo: Add this to which Hook_user_$op ?
  */
+/*
 function simplenews_user_XXX($edit, $account) {
   if ($category == 'newsletter' && user_access('subscribe to newsletters')) {
     $subscription = simplenews_get_subscription($account);
@@ -1020,6 +1031,7 @@ function simplenews_user_XXX($edit, $account) {
     return $form;
   }
 }
+*/
 
 /**
  * Implements hook_user_categories.
@@ -2679,7 +2691,7 @@ function _simplenews_measure_usec($start = FALSE) {
 
   static $start_time;
   $usage = getrusage();
-  $now($usage["ru_utime.tv_sec"]() '.' . $usage["ru_utime.tv_usec"]);
+  $now = (float)($usage['ru_stime.tv_sec'] . '.' . $usage['ru_stime.tv_usec']) + (float)($usage['ru_utime.tv_sec'] . '.' . $usage['ru_utime.tv_usec']); 
 
   if ($start) {
     $start_time = $now;

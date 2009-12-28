@@ -488,7 +488,7 @@ function simplenews_subscription_list_add() {
     $languages = language_list('enabled');
     foreach ($languages[1] as $langcode => $item) {
       $name = t($item->name);
-      $options[$langcode]($item->native() $name ? ' (' . $item->native . ')' : '');
+      $options[$langcode] = $name . ($item->native != $name ? ' ('. $item->native .')' : ''); 
     }
     $form['language'] = array(
       '#type' => 'radios',
@@ -714,70 +714,24 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
 
 /**
  * Menu callback: subscription administration.
- */
-function simplenews_subscription_admin($form_state) {
-  // Delete subscriptions requires delete confirmation. This is handled with a different form
-  if (isset($form_state['post']['operation']) && $form_state['post']['operation'] == 'delete' && isset($form_state['post']['snids'])) {
-    $destination = drupal_get_destination();
-    $_SESSION['simplenews_subscriptions_delete'] = $form_state['post']['snids'];
-    // Note: we redirect from admin/content/simplenews/users to admin/content/simplenews/subscriptions/delete to make the tabs disappear.
-    drupal_goto("admin/content/simplenews/subscriptions/delete", $destination);
-  }
-
-  $form = simplenews_subscription_filter_form();
-  $form['admin'] = simplenews_subscription_list_form();
-
-  return $form;
-}
-
-/**
- * Build the form for admin subscription.
- *
- * Form consists of a filter fieldset, an operation fieldset and a list of
- * subscriptions maching the filter criteria.
  *
  * @see simplenews_subscription_list_form_validate()
  * @see simplenews_subscription_list_form_submit()
  */
-function simplenews_subscription_list_form() {
+function simplenews_subscription_admin($form_state) {
   //TODO: Subscriber maintanance needs overhaul now we have more data availabale.
 
-  // Table header. Used as tablesort default
-  $header = array(array(
-      'data' => t('Email'),
-      'field' => 'ss.mail',
-      'sort' => 'asc',
-    ), array(
-      'data' => t('Username'),
-      'field' => 'u.name',
-    ), array(
-      'data' => t('Status'),
-      'field' => 'ss.activated',
-    ), t('Operations'));
-
-  // Data collection with filter and sorting applied
-  $filter = simplenews_build_subscription_filter_query();
-  $query = 'SELECT DISTINCT ss.*, u.name FROM {simplenews_subscriptions} ss LEFT JOIN {users} u ON ss.uid = u.uid INNER JOIN {simplenews_snid_tid} s ON ss.snid = s.snid' . $filter['where'];
-
-  // $count_query used to count distinct records only
-  $count_query = preg_replace('/SELECT.*FROM /', 'SELECT COUNT(DISTINCT ss.mail) FROM ', $query);
-  $query .= tablesort_sql($header);
-  $result = pager_query($query, 30, 0, $count_query);
-
-  // Update options
+  // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
     '#title' => t('Update options'),
     '#prefix' => '<div class="container-inline">',
     '#suffix' => '</div>',
   );
+  $options = array('activate' => t('Activate'), 'inactivate' => t('Inactivate'), 'delete' => t('Delete'));
   $form['options']['operation'] = array(
     '#type' => 'select',
-    '#options' => array(
-      'activate' => t('Activate'),
-      'inactivate' => t('Inactivate'),
-      'delete' => t('Delete'),
-    ),
+    '#options' => $options,
     '#default_value' => 'activate',
   );
   $form['options']['submit'] = array(
@@ -787,31 +741,48 @@ function simplenews_subscription_list_form() {
     '#validate' => array('simplenews_subscription_list_form_validate'),
   );
 
-  $snids = array();
-  // Subscription table and table pager
-  while ($subscription = db_fetch_object($result)) {
-    $snids[$subscription->snid] = '';
-    $form['mail'][$subscription->snid] = array(
-      '#value' => $subscription->mail,
-    );
-    $form['name'][$subscription->snid] =  array(
-      '#value' => isset($subscription->uid) ? l($subscription->name, 'user/' . $subscription->uid) : $subscription->name,
-    );
-    $form['status'][$subscription->snid] = array(
-      '#value' => theme('simplenews_status', $subscription->activated, 'activated'),
-    );
-    $form['operations'][$subscription->snid] = array(
-      '#value' => l(t('edit'), 'admin/content/simplenews/users/edit/' . $subscription->snid, array(), drupal_get_destination()),
+  // Table header. Used as tablesort default
+  $header = array(
+    'mail' => array('data' => t('Email'), 'field' => 'ss.mail', 'sort' => 'asc'),
+    'username' => array('data' => t('Username'), 'field' => 'u.name'),
+    'status' => array('data' => t('Status'), 'field' => 'ss.activated'),
+    'operations' => array('data' => t('Operations')),
+  );
+
+  $filter = simplenews_build_subscription_filter_query();
+  $filter = array('snippet' => NULL, 'args' => NULL);
+  $query = db_select('simplenews_subscriptions', 'ss')->extend('PagerDefault')->extend('TableSort');
+  $query->leftJoin('users', 'u', 'ss.uid = u.uid');
+  $query->innerJoin('simplenews_snid_tid', 's', 'ss.snid = s.snid');
+  $query->addField('u', 'name', 'name');
+  $result = $query
+    ->fields('ss', array('snid', 'activated', 'mail', 'uid', 'language'))
+/*    ->where($filter['snippet'], $filter['args'])  */
+    ->limit(30)
+    ->orderByHeader($header)
+    ->execute();
+
+  $options = array();
+  $destination = drupal_get_destination();
+
+  foreach ($result as $subscriber) {
+    $options[$subscriber->snid] = array(
+      'mail' => $subscriber->mail,
+      'username' => isset($subscriber->uid) ? l($subscriber->name, 'user/' . $subscriber->uid) : $subscriber->name,
+      'status' => theme('simplenews_status', $subscriber->activated, 'activated'),
+      'operations' => l(t('edit'), 'admin/people/simplenews/users/edit/' . $subscriber->snid, array(), $destination),
     );
   }
-  $form['snids'] = array(
-    '#type' => 'checkboxes',
-    '#options' => $snids,
+
+  $form['subscribers'] = array(
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => $options,
+    '#empty' => t('No subscribers available.'),
   );
-  $form['pager'] = array(
-    '#value' => theme('pager', NULL, 30, 0),
-  );
-  $form['#theme'] = 'simplenews_subscription_list';
+
+  $form['pager'] = array('#theme' => 'pager');
+
   return $form;
 }
 
