@@ -247,23 +247,22 @@ function simplenews_uninstall() {
  */
 function _simplenews_install_nodetype() {
   // Create a newsletter type. If exists, modify it.
-  if ($type = node_get_types('type', 'simplenews')) {
+  if ($type = node_type_get_type('simplenews')) {
     $type->module = 'node';
     $type->locked = FALSE;
     $type->custom = TRUE;
     node_type_save($type);
   }
   else {
-    $info = array(
+    $type = node_type_set_defaults(array(
       'type' => 'simplenews',
       'name' => t('Newsletter issue'),
       'module' => 'node',
       'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
       'locked' => FALSE,
       'custom' => TRUE,
-    );
-    $info = _node_type_set_defaults($info);
-    node_type_save((object) $info);
+    ));
+    node_type_save($type);
   }
 }
 
@@ -274,39 +273,35 @@ function _simplenews_install_nodetype() {
  */
 function _simplenews_install_vocabulary() {
   // Create the simplenews vocabulary. If it exists, set it as the simplenews_vid.
-  if ($vocabulary = db_fetch_array(db_query("SELECT * FROM {vocabulary} WHERE name = '%s'", t('Newsletter')))) {
-    $vocabulary['nodes'] = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
+  $vocabulary = new stdClass();
+  $names = taxonomy_vocabulary_get_names();
+  foreach ($names as $name) {
+    if ($name->name == t('Newsletter')) {
+      $vocabulary = taxonomy_vocabulary_load($name->vid);
+      $vocabulary->nodes = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
+    }
   }
-  else {
-    $vocabulary = array(
-      'name' => t('Newsletter'),
-      'multiple' => '0',
-      'required' => '1',
-      'hierarchy' => '0',
-      'relations' => '0',
-      'module' => 'simplenews',
-      'nodes' => variable_get('simplenews_content_types', array('simplenews' => 'simplenews')),
-    );
+  if (!isset($vocabulary->vid)) {
+    $vocabulary->name = t('Newsletter');
+    $vocabulary->multiple = '0';
+    $vocabulary->required = '1';
+    $vocabulary->hierarchy = '0';
+    $vocabulary->relations = '0';
+    $vocabulary->module = 'simplenews';
+    $vocabulary->nodes = variable_get('simplenews_content_types', array('simplenews' => 'simplenews'));
   }
-  taxonomy_save_vocabulary($vocabulary);
-  variable_set('simplenews_vid', $vocabulary['vid']);
+  taxonomy_vocabulary_save($vocabulary);
+  variable_set('simplenews_vid', $vocabulary->vid);
 
   // Check to see if at least 1 term exists, else create one
-  $tid = db_result(db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vocabulary['vid']));
-  if (!$tid) {
-    $form_values = array(
-      'name' => t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal'))),
-      'vid' => $vocabulary['vid'],
-      'weight' => 0,
-    );
-    switch (taxonomy_save_term($form_values)) {
-      case SAVED_UPDATED:
-        drupal_set_message(t('Updated term %name.', array('%name' => $form_values['name'])));
-        break;
-      case SAVED_DELETED:
-        drupal_set_message(t('Deleted term %name.', array('%name' => $form_values['name'])));
-        break;
-    }
+  $terms = taxonomy_get_tree($vocabulary->vid);
+  if (empty($terms)) {
+    $term = new stdClass();
+    $term->name = t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal')));
+    $term->vid = $vocabulary->vid;
+    $term->weight = 0;
+    taxonomy_term_save($term);
+    drupal_set_message(t('Created new Newsletter %term.', array('%term' => $term->name)));
   }
 }
 
