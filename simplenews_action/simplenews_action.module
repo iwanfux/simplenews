@@ -76,13 +76,16 @@ function simplenews_send_newsletter_action(&$object, $context = array()) {
     }
 
     // Get send status of this newsletter. The global newsletter send status is used not the send status of individual emails.
-    $s_status = db_result(db_query("SELECT s_status FROM {simplenews_newsletters} WHERE nid = %d", $context['nid']));
+    $s_status = db_query("SELECT s_status FROM {simplenews_newsletters} WHERE nid = :nid", array(':nid' => $context['nid']))->fetchField();
 
     // Send newsletter if resend is allowed OR newsletter is not yet send.
     if ($context['resend'] OR $s_status == SIMPLENEWS_STATUS_SEND_NOT) {
       if ($context['hook'] == 'cron') {
         // Set newsletter send status to pending if send by cron.
-        db_query("UPDATE {simplenews_newsletters} SET s_status = %d WHERE nid = %d", SIMPLENEWS_STATUS_SEND_PENDING, $context['nid']);
+        db_update('simplenews_newsletters')
+          ->fields(array('s_status' => SIMPLENEWS_STATUS_SEND_PENDING))
+          ->condition('nid', $context['nid'])
+          ->execute();
       }
       simplenews_send_node($context['nid'], $accounts);
     }
@@ -250,12 +253,16 @@ function simplenews_unsubscribe_user_action(&$object, $context = array()) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
       //TODO: Unsubscribing should be done by simplenews_unsubscribe_user but simplenews_get_user_subscription fails because the user is already removed
-      if ($result = db_fetch_object(db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'", $account->mail))) {
-        db_query("UPDATE {simplenews_snid_tid}
-                 SET status = %d, timestamp = %d, source = '%s'
-                 WHERE snid = %d AND tid = %d", 
-                 SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, REQUEST_TIME, t('Action'), $result->snid, $context['tid']
-                );
+      if ($result = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = :mail", array(':mail' => $account->mail))->fetchField()) {
+        db_update('simplenews_snid_tid')
+          ->fields(array(
+            'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED,
+            'timestamp' => REQUEST_TIME,
+            'source' => 'action',
+          ))
+          ->condition('snid', $result->snid)
+          ->condition('tid', $context['tid'])
+          ->execute();
       }
       drupal_set_message(t('You have been removed from the %newsletter subscription list.', array('%newsletter' => check_plain($context['name']))));
       watchdog('action', 'User %name unsubscribed from newsletter %newsletter.', array('%name' => check_plain($account->name), '%newsletter' => check_plain($context['name'])));

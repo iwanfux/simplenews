@@ -209,7 +209,7 @@ function simplenews_menu() {
     'file' => 'simplenews.admin.inc',
   );
   $items['admin/people/simplenews'] = array(
-    'title' => 'Newsletters',
+    'title' => 'Newsletter subscriptions',
     'description' => 'Newsletter subscription management.',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -219,7 +219,7 @@ function simplenews_menu() {
   );
   $items['admin/people/simplenews/edit/%'] = array(
     'title' => 'Subscriptions',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_users_form', 5),
     'access arguments' => array('administer simplenews subscriptions'),
@@ -232,6 +232,16 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_subscription_list_add'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
+    'weight' => 8,
+  );
+  $items['admin/people/simplenews/unsubscribe'] = array(
+    'title' => 'Mass unsubscribe',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simplenews_subscription_list_remove'),
+    'access arguments' => array('administer simplenews subscriptions'),
+    'file' => 'simplenews.admin.inc',
+    'weight' => 9,
   );
   $items['admin/people/simplenews/export'] = array(
     'title' => 'Export',
@@ -240,14 +250,7 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_subscription_list_export'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
-  );
-  $items['admin/people/simplenews/unsubscribe'] = array(
-    'title' => 'Mass unsubscribe',
-    'type' => MENU_LOCAL_TASK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_subscription_list_remove'),
-    'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',    'weight' => -6,
+    'weight' => 10,
   );
 
   $items['admin/config/simplenews'] = array(
@@ -429,18 +432,43 @@ function simplenews_node_insert($node) {
   if ($op == 'insert') {
     // Insert node
     $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
-    db_query("INSERT INTO {simplenews_newsletters} (nid, vid, tid, s_status, s_format, priority, receipt)
-                  VALUES (%d, %d, %d, %d, '%s', %d, %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
+    db_insert('simplenews_newsletters')
+      ->fields(array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+        'tid' => $node->simplenews['tid'],
+        's_status' => $s_status,
+        's_format' => $node->simplenews['s_format'],
+        'priority' => $node->simplenews['priority'],
+        'receipt' => $node->simplenews['receipt'],
+      ))
+      ->execute();
   }
   else {
     // Update node
     if ($send_with_permission) {
-      db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $node->nid)
+        ->fields(array(
+          'vid' => $node->vid,
+          'tid' => $node->simplenews['tid'],
+          's_status' => SIMPLENEWS_STATUS_SEND_PENDING,
+          's_format' => $node->simplenews['s_format'],
+          'priority' => $node->simplenews['priority'],
+          'receipt' => $node->simplenews['receipt'],
+        ))
+        ->execute();
     }
     else {
-      db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $node->nid)
+        ->fields(array(
+          'tid' => $node->simplenews['tid'],
+          's_format' => $node->simplenews['s_format'],
+          'priority' => $node->simplenews['priority'],
+          'receipt' => $node->simplenews['receipt'],
+        ))
+        ->execute();
     }
   }
 
@@ -450,10 +478,15 @@ function simplenews_node_insert($node) {
   if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
     if ($translations = translation_node_get_translations($node->tnid)) {
       foreach ($translations as $translation) {
-        db_query("UPDATE {simplenews_newsletters} SET s_status = %d, s_format = '%s', priority = %d, receipt = %d
-              WHERE nid = %d", 
-              SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], 
-              $node->simplenews['receipt'], $translation->nid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $translation->nid)
+        ->fields(array(
+          's_status' => SIMPLENEWS_STATUS_SEND_PENDING,
+          's_format' => $node->simplenews['s_format'],
+          'priority' => $node->simplenews['priority'],
+          'receipt' => $node->simplenews['receipt'],
+        ))
+        ->execute();
       }
     }
   }
@@ -482,18 +515,43 @@ function simplenews_node_update($node) {
   if ($op == 'insert') {
     // Insert node
     $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
-    db_query("INSERT INTO {simplenews_newsletters} (nid, vid, tid, s_status, s_format, priority, receipt)
-                  VALUES (%d, %d, %d, %d, '%s', %d, %d)", $node->nid, $node->vid, $node->simplenews['tid'], $s_status, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt']);
+    db_insert('simplenews_newsletters')
+      ->fields(array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+        'tid' => $node->simplenews['tid'],
+        's_status' => $s_status,
+        's_format' => $node->simplenews['s_format'],
+        'priority' => $node->simplenews['priority'],
+        'receipt' => $node->simplenews['receipt'],
+      ))
+      ->execute();
   }
   else {
     // Update node
     if ($send_with_permission) {
-      db_query("UPDATE {simplenews_newsletters} SET vid = %d, tid = %d, s_status = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->vid, $node->simplenews['tid'], SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $node->nid)
+        ->fields(array(
+          'vid' => $node->vid,
+          'tid' => $node->simplenews['tid'],
+          's_status' => SIMPLENEWS_STATUS_SEND_PENDING,
+          's_format' => $node->simplenews['s_format'],
+          'priority' => $node->simplenews['priority'],
+          'receipt' => $node->simplenews['receipt'],
+        ))
+        ->execute();
     }
     else {
-      db_query("UPDATE {simplenews_newsletters} SET tid = %d, s_format = '%s', priority = %d, receipt = %d
-          WHERE nid = %d", $node->simplenews['tid'], $node->simplenews['s_format'], $node->simplenews['priority'], $node->simplenews['receipt'], $node->nid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $node->nid)
+        ->fields(array(
+          'tid' => $node->simplenews['tid'],
+          's_format' => $node->simplenews['s_format'],
+          'priority' => $node->simplenews['priority'],
+          'receipt' => $node->simplenews['receipt'],
+        ))
+        ->execute();
     }
   }
 
@@ -503,10 +561,15 @@ function simplenews_node_update($node) {
   if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
     if ($translations = translation_node_get_translations($node->tnid)) {
       foreach ($translations as $translation) {
-        db_query("UPDATE {simplenews_newsletters} SET s_status = %d, s_format = '%s', priority = %d, receipt = %d
-              WHERE nid = %d", 
-              SIMPLENEWS_STATUS_SEND_PENDING, $node->simplenews['s_format'], $node->simplenews['priority'], 
-              $node->simplenews['receipt'], $translation->nid);
+        db_update('simplenews_newsletters')
+          ->condition('nid', $translation->nid)
+          ->fields(array(
+            's_status' => SIMPLENEWS_STATUS_SEND_PENDING,
+            's_format' => $node->simplenews['s_format'],
+            'priority' => $node->simplenews['priority'],
+            'receipt' => $node->simplenews['receipt'],
+          ))
+          ->execute();
       }
     }
   }
@@ -526,7 +589,9 @@ function simplenews_node_update($node) {
  * Implements hook_node_delete.
  */
 function simplenews_node_delete($node) {
-  $result = db_query('DELETE FROM {simplenews_newsletters} WHERE nid = %d', $node->nid);
+  $result = db_delete('simplenews_newsletters')
+    ->condition('nid', $node->nid)
+    ->execute();
   if ($result) {
     drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->title)));
   }
@@ -536,7 +601,7 @@ function simplenews_node_delete($node) {
  * Implements hook_node_load.
  */
 function simplenews_node_load($node, $types) {
-  $node->simplenews = db_fetch_array(db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = %d', $node->nid));
+  $node->simplenews = db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = :nid', array(':node' => $node->nid))->fetchAssoc();
 }
 
 /**
@@ -567,9 +632,12 @@ function simplenews_nodeapi_OLD(&$node, $op, $teaser, $page) { }
 function simplenews_validate_taxonomy($taxonomy) {
   // Get newsletter tids.
   $vid = variable_get('simplenews_vid', '');
-  $result = db_query('SELECT tid FROM {term_data} WHERE vid = %d', $vid);
-  while ($tid = db_fetch_object($result)) {
-    $newsletter_tids[] = $tid->tid;
+  $terms = db_select('term_data', 't')
+    ->fields('t', array('tid'))
+    ->condition('vid', $vid)
+    ->execute();
+  foreach ($terms as $term) {
+    $newsletter_tids[] = $term->tid;
   }
   // Extract selected tid's from the taxonomy form.
   if (isset($newsletter_tids) && !empty($taxonomy)) {
@@ -843,21 +911,23 @@ function simplenews_cron() {
 }
 
 /**
- * Implementation of hook_taxonomy().
+ * Implementation of hook_taxonomy_term_delete().
  *
  * Deletes subscriptions to term when term is deleted, and cleans the blocks
  * table.
  */
-function simplenews_taxonomy($op, $type, $term = NULL) {
-  if ($op == 'delete' && $term['vid'] == variable_get('simplenews_vid', '')) {
-    switch ($type) {
-      case 'term':
-        db_query('DELETE FROM {simplenews_snid_tid} WHERE tid = %d', $term['tid']);
-        db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'simplenews', $term['tid']);
-        drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
-        break;
-    }
-  }
+function simplenews_taxonomy_term_delete($term) {
+  // Delete subscriptions
+  db_delete('simplenews_snid_tid')
+    ->condition('tid', $term['tid'])
+    ->execute();
+  drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
+
+  // Delete subscription block 
+  db_delete('blocks')
+    ->condition('module', 'simplenews')
+    ->condition('delta', $term['tid'])
+    ->execute();
 }
 
 /**
@@ -911,12 +981,20 @@ function simplenews_user_XXX($edit, $account) {
 
 /**
  * Implements hook_user_insert.
+ *
+ * Update uid and preferred language when the new account was already subscribed.
  */
 function simplenews_user_insert(&$edit, $account, $category) {
   if ($edit['mail']) {
-    $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
-    if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-      db_query("UPDATE {simplenews_subscriptions} SET uid = %d, language = '%s' WHERE snid = %d", $edit['uid'], $edit['language'], $result->snid);
+    $user_subscription = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = :mail", array(':mail' => $edit['mail']));
+    if ($user_subscription->rowCount()) {
+      db_update('simplenews_subscriptions')
+        ->condition('snid', $result->snid)
+        ->fields(array(
+          'uid' => $edit['uid'],
+          'language' => $edit['language'],
+        ))
+        ->execute();
     }
   }
 }
@@ -965,15 +1043,30 @@ function simplenews_user_login(&$edit, $account) {
  */
 function simplenews_user_presave(&$edit, $account, $category) {
   if ($category == 'account' && $edit['mail']) {
-    $query = "SELECT snid FROM {simplenews_subscriptions} WHERE uid = %d";
-    if ($result = db_fetch_object(db_query($query, $account->uid))) {
-      db_query("DELETE FROM {simplenews_subscriptions} WHERE mail = '%s' AND uid = %d", $edit['mail'], 0);
-      db_query("UPDATE {simplenews_subscriptions} SET mail = '%s', language = '%s' WHERE snid = %d", $edit['mail'], $edit['language'], $result->snid);
+    $user_subscription = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE uid = :uid", array(':uid' => $account->uid));
+    if ($user_subscription->rowCount()) {
+      db_delete('simplenews_subscriptions')
+        ->condition('mail', $edit['mail'])
+        ->condition('uid', 0)
+        ->execute();
+      db_update('simplenews_subscriptions')
+        ->condition('snid', $result->snid)
+        ->fields(array(
+          'mail' => $edit['mail'],
+          'language' => $edit['language'],
+        ))
+        ->execute();
     }
     else {
-      $query = "SELECT snid FROM {simplenews_subscriptions} WHERE mail = '%s'";
-      if ($result = db_fetch_object(db_query($query, $edit['mail']))) {
-        db_query("UPDATE {simplenews_subscriptions} SET uid = %d, language = '%s' WHERE snid = %d", $account->uid, $account->language, $result->snid);
+      $user_subscription = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = :mail", array(':mail' => $edit['mail']));
+      if ($user_subscription->rowCount()) {
+        db_update('simplenews_subscriptions')
+          ->condition('snid', $result->snid)
+          ->fields(array(
+            'uid' => $account->uid,
+            'language' => $account->language,
+          ))
+          ->execute();
       }
     }
   }
@@ -981,7 +1074,10 @@ function simplenews_user_presave(&$edit, $account, $category) {
   // Activate/deactivate subscription when account is blocked/unblocked
   if ($category == 'account' && isset($edit['status'])) {
     if (variable_get('simplenews_sync_account', TRUE)) {
-      db_query("UPDATE {simplenews_subscriptions} SET activated = %d WHERE uid = %d", $edit['status'], $account->uid);
+      db_update('simplenews_subscriptions')
+        ->condition('uid', $account->uid)
+        ->fields(array('activated' => $edit['status']))
+        ->execute();
     }
   }
 
@@ -1005,13 +1101,22 @@ function simplenews_user_cancel($edit, $account, $method) {
     // Delete subscription and all newsletter subscriptions when account is removed.
     // We don't use simplenews_get_subscription() here because the user is already
     // deleted from the {user} table.
-    $snid = db_result(db_query("SELECT s.snid FROM {simplenews_subscriptions} s WHERE s.mail = '%s'", $account->mail));
-    db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
-    db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
+    $query = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = :mail", array(':mail' => $account->mail));
+    $snid = $query->fetch()->snid;
+
+    db_delete('simplenews_snid_tid')
+      ->condition('snid', $snid)
+      ->execute();
+    db_delete('simplenews_subscriptions')
+      ->condition('snid', $snid)
+      ->execute();
   }
   else {
     // Only remove uid from subscription data when account is removed
-    db_query("UPDATE {simplenews_subscriptions} SET uid = 0 WHERE uid = %d", $account->uid);
+    db_update('simplenews_subscriptions')
+      ->condition('uid', $account->uid)
+      ->fields(array('uid' => 0))
+      ->execute();
   }
 }
 
@@ -1049,6 +1154,8 @@ function simplenews_user_categories() {
 
 /**
  * Implements hook_user_view.
+ *
+ * @todo Check if hidden newsletters are not listed.
  */
 function simplenews_user_view($account, $build_mode) {
   global $user;
@@ -1060,10 +1167,11 @@ function simplenews_user_view($account, $build_mode) {
     // Collect newsletter to which the current user is subscribed.
     // 'hidden' newsletters are not listed.
     foreach (simplenews_get_newsletters(variable_get('simplenews_vid', '')) as $newsletter) {
-      if (db_result(db_query('SELECT COUNT(s.uid) FROM {simplenews_subscriptions} s
-                                 INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
-                                 WHERE s.uid = %d AND t.tid = %d AND t.status = %d', 
-                                 $account->uid, $newsletter->tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))) {
+      $query = db_query("SELECT s.uid FROM {simplenews_subscriptions} s
+                        INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
+                        WHERE s.uid = :uid AND t.tid = :tid AND t.status = :status", 
+                        array(':uid' => $account->uid, ':tid' => $newsletter->tid, ':status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED));
+      if ($query->rowCount()) {
         $subscriptions[] = l($newsletter->name, 'taxonomy/term/' . $newsletter->tid);
       }
     }
@@ -1138,7 +1246,7 @@ function simplenews_forms() {
  * @todo Rewrite to use the new user_load(): http://drupal.org/node/224333#user_load_multiple
  */
 function _simplenews_user_load($mail) {
-  $account = user_load(array('mail' => $mail));
+  $account = user_load_by_mail($mail);
   if ($account === FALSE) {
     // Construct anonymous user since we don't have a user that matches that e-amil.
     $account = new stdClass();
@@ -1208,7 +1316,14 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
       }
     }
 
-    db_query("INSERT INTO {simplenews_subscriptions} (mail, uid, language, activated) VALUES ('%s', %d, '%s', %d)", $mail, $account->uid, $preferred_language, 1);
+    db_insert('simplenews_subscriptions')
+      ->fields(array(
+        'mail' => $mail,
+        'uid' => $account->uid,
+        'language' => $preferred_language,
+        'activated' => 1,
+      ))
+      ->execute();
     $subscription = simplenews_get_subscription($account);
   }
 
@@ -1227,16 +1342,26 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
     // Check if user is (un)subscribed to this newsletter.
     // Resubscribe or add new subscription.
     if (isset($subscription->newsletter_subscription[$tid])) {
-      db_query("UPDATE {simplenews_snid_tid}
-               SET status = %d, timestamp = %d, source = '%s'
-               WHERE snid = %d AND tid = %d", 
-               SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, REQUEST_TIME, $source, 
-               $subscription->snid, $tid);
+      db_update('simplenews_snid_tid')
+        ->condition('snid', $subscription->snid)
+        ->condition('tid', $tid)
+        ->fields(array(
+          'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED,
+          'timestamp' => REQUEST_TIME,
+          'source' => $source,
+        ))
+        ->execute();
     }
     else {
-      db_query("INSERT INTO {simplenews_snid_tid} (snid, tid, status, timestamp, source)
-               VALUES (%d, %d, %d, %d, '%s')", 
-               $subscription->snid, $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, REQUEST_TIME, $source);
+      db_insert('simplenews_snid_tid')
+        ->fields(array(
+          'snid' => $subscription->snid,
+          'tid' => $tid,
+          'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED,
+          'timestamp' => REQUEST_TIME,
+          'source' => $source,
+        ))
+        ->execute();
     }
 
     // Execute simplenews subscribe trigger.
@@ -1287,10 +1412,15 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
   }
   elseif (isset($subscription->tids[$tid])) {
     // Unsubscribe the user from the newsletter.
-    db_query("UPDATE {simplenews_snid_tid}
-             SET status = %d, timestamp = %d, source = '%s'
-             WHERE snid = %d AND tid = %d", 
-             SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, REQUEST_TIME, $source, $subscription->snid, $tid);
+    db_update('simplenews_snid_tid')
+        ->condition('snid', $subscription->snid)
+        ->condition('tid', $tid)
+      ->fields(array(
+        'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED,
+        'timestamp' => REQUEST_TIME,
+        'source' => $source
+      ))
+      ->execute();
 
     // Execute simplenews unsubscribe trigger
     simplenews_call_actions('unsubscribe', $subscription);
@@ -1317,10 +1447,13 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   }
 
   if (!isset($subscribed[$mail][$tid])) {
-    $subscribed[$mail][$tid] = db_result(db_query("SELECT COUNT(*) FROM {simplenews_subscriptions} s
-                                                    INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
-                                                    WHERE s.mail = '%s' AND t.tid = %d AND t.status = %d", 
-                                                    $mail, $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)) ? TRUE : FALSE;
+    $query = db_select('simplenews_subscriptions', 's')
+      ->fields('s', array('snid'))
+      ->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid')
+      ->condition('s.mail', $mail)
+      ->condition('t.tid', $tid)
+      ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);    
+    $subscribed[$mail][$tid] = (booL)$query->fetchField();
   }
 
   return $subscribed[$mail][$tid];
@@ -1354,21 +1487,27 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
 function simplenews_get_subscription($account) {
   // Load subscription data based on available account informatioin
   // NOTE that the order of checking for snid, mail and uid is critical. mail must be checked *before* uid. See simplenews_subscribe_user()
+  $query = db_select('simplenews_subscriptions', 's');
+  $query->fields('s', array('snid', 'activated', 'mail', 'uid', 'language'))
+    ->fields('u', array('name'))
+    ->leftJoin('users', 'u', 'u.uid = s.uid');
   if (isset($account->snid)) {
-    $subscription = db_fetch_object(db_query("SELECT s.*, u.name FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.snid = %d", $account->snid));
+    $query->condition('s.snid', $account->snid);
   }
   elseif (isset($account->mail)) {
-    $subscription = db_fetch_object(db_query("SELECT s.*, u.name FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE LOWER(s.mail) = LOWER('%s')", $account->mail));
+    $query->where('LOWER(s.mail) = LOWER(:mail)', array(':mail' => $account->mail));
   }
   elseif (isset($account->uid) && $account->uid > 0) {
-    $subscription = db_fetch_object(db_query("SELECT s.*, u.name FROM {simplenews_subscriptions} s LEFT JOIN {users} u ON u.uid = s.uid WHERE s.uid = %d", $account->uid));
+    $query->condition('s.snid', $account->uid);
   }
+  $result = $query->execute();
 
-  if (!empty($subscription)) {
-    $result = db_query("SELECT tid, status, timestamp, source
-                        FROM {simplenews_snid_tid} t WHERE t.snid = %d", $subscription->snid);
+  if ($result->rowCount()) {
+    $subscription = $result->fetch();
+    $newsletter_subscriptions = db_query("SELECT tid, status, timestamp, source
+      FROM {simplenews_snid_tid} t WHERE t.snid = :snid", array(':snid' => $subscription->snid));
     $subscription->tids = array();
-    while ($newsletter_subscription = db_fetch_object($result)) {
+    foreach ($newsletter_subscriptions as $newsletter_subscription) {
       if ($newsletter_subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
         $subscription->tids[$newsletter_subscription->tid] = $newsletter_subscription->tid;
       }
@@ -1387,6 +1526,7 @@ function simplenews_get_subscription($account) {
     $subscription->tids = array();
     $subscription->newsletter_subscription = array();
   }
+
   return $subscription;
 }
 
@@ -1396,9 +1536,13 @@ function simplenews_get_subscription($account) {
  * @param integer $snid subscription id
  */
 function simplenews_delete_subscription($snid) {
-  $account = db_fetch_object(db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid));
-  db_query('DELETE FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
-  db_query('DELETE FROM {simplenews_snid_tid} WHERE snid = %d', $snid);
+  $account = db_query("SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d", $snid)->fetch();
+    db_delete('simplenews_snid_tid')
+      ->condition('snid', $snid)
+      ->execute();
+    db_delete('simplenews_subscriptions')
+      ->condition('snid', $snid)
+      ->execute();
   watchdog('simplenews', 'User %email deleted from the mailing list.', array('%email' => $account->mail), WATCHDOG_NOTICE);
 }
 
@@ -1477,11 +1621,19 @@ function _simplenews_subscription_manager_form($subscription) {
  * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
-  $result = db_query_range(db_rewrite_sql('SELECT n.nid, n.title, sn.s_status FROM {node} n INNER JOIN {term_node} t ON n.vid = t.vid INNER JOIN {simplenews_newsletters} sn ON n.nid = sn.nid WHERE (t.tid = %d AND n.status = %d) ORDER BY n.created DESC'), $tid, 1, 0, $count);
+  $result = db_select('node', 'n')
+    ->fields('n', array('nid', 'title'))
+    ->innerJoin('term_node', 't', 'n.vid = t.vid')
+    ->innerJoin('simplenews_newsletters', 'sn', 'n.nid = sn.nid')
+    ->condition('t.tid', $tid)
+    ->condition('n.status', NODE_PUBLISHED)
+    ->condition('sn.s_status', SIMPLENEWS_STATUS_SEND_NOT, '!=')
+    ->orderBy('n.created', 'DESC')
+    ->range(0, $count)
+    ->execute();
   $titles = array();
-  while ($item = db_fetch_object($result)) {
+  foreach ($result as $item) {
     $titles[$item->nid]['data'] = l($item->title, 'node/' . $item->nid);
-    $titles[$item->nid]['class'] = ($item->s_status == SIMPLENEWS_STATUS_SEND_NOT) ? 'newsletter-created' : 'newsletter-send';
   }
   return $titles;
 }
@@ -1629,11 +1781,14 @@ function simplenews_send_node($node, $accounts = array()) {
 
     if (empty($accounts)) {
       // No accounts specified. Get email address of all accounts subscribed to this newsletter.
-      $result = db_query('SELECT s.mail FROM {simplenews_subscriptions} s
-                         INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid
-                         WHERE s.activated = %d AND t.tid = %d AND t.status = %d', 
-                         1, $node_data['tid'], SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-      while ($account = db_fetch_object($result)) {
+      $result = db_select('simplenews_subscriptions', 's')
+        ->fields('s', 'mail')
+        ->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid')
+        ->condition('s.activated', 1)
+        ->condition('t.tid', $node_data['tid'])
+        ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)
+        ->execute();
+      foreach ($result->fetch() as $account) {
         $mails[] = array(
           'mail' => $account->mail,
         );
@@ -2073,8 +2228,16 @@ function simplenews_save_spool($message) {
   $status = isset($message['status']) ? $message['status'] : SIMPLENEWS_SPOOL_PENDING;
   $time = isset($message['time']) ? $message['time'] : REQUEST_TIME;
 
-  db_query("INSERT INTO {simplenews_mail_spool} (mail, nid, vid, tid, status, timestamp)
-            VALUES ('%s', %d, %d, %d, %d, %d)", $message['mail'], $message['nid'], $message['vid'], $message['tid'], $status, $time);
+  db_insert('simplenews_mail_spool')
+    ->fields(array(
+      'mail' => $message['mail'],
+      'nid' => $message['nid'],
+      'vid' => $message['vid'],
+      'tid' => $message['tid'],
+      'status' => $status,
+      'timestamp' => $time,
+    ))
+    ->execute();
 }
 
 /**
@@ -2093,17 +2256,17 @@ function simplenews_save_spool($message) {
  *  $message['tid']
  *  $message['status']
  *  $message['time']
+ * @todo Convert output to array of objects.
  */
 function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
   $messages = array();
 
-  $result = db_query_range("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = %d ORDER BY s.timestamp ASC", $status, 0, $limit);
-  while ($data = db_fetch_array($result)) {
-    $message = array();
-    foreach ($data as $key => $value) {
-      $message[$key] = $value;
-    }
-    $messages[$data['msid']] = $message;
+  $result = db_query("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = :status", array(':status' => $status))
+    ->order('s.timestamp', 'ASC')
+    ->range(0, $limit)
+    ->execute();
+  foreach ($result->fetch() as $data) {
+    $messages[$data->msid] = (array)$data;
   }
   return $messages;
 }
@@ -2122,11 +2285,15 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
  * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_update_spool($msids, $result) {
-  $params[] = $result['status'];
-  $params[] = isset($result['error']) ? $result['error'] : FALSE;
-  $params[] = REQUEST_TIME;
   $params = array_merge($params, $msids);
-  db_query("UPDATE {simplenews_mail_spool} SET status = %d, error = '%s', timestamp = %d WHERE msid IN(" . db_placeholders($msids, 'int') . ")", $params);
+  db_update('simplenews_mail_spool')
+    ->condition('msid', $msids)
+    ->fields(array(
+      'status' => $result['status'],
+      'error' => isset($result['error']) ? $result['error'] : FALSE,
+      'timestamp' => REQUEST_TIME,
+    ))
+    ->execute();
 }
 
 /**
@@ -2139,7 +2306,8 @@ function simplenews_update_spool($msids, $result) {
  * @return array Mail message array
  */
 function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
-  return db_result(db_query("SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = %d AND vid = %d AND status = %d", $nid, $vid, $status));
+  $query = db_query("SELECT snid FROM {simplenews_mail_spool} WHERE nid = :nid AND vid = :vid AND status = :status", array(':nid' => $nid, ':vid' => $vid, ':status' => $status));
+  return $query->rowCount();
 }
 
 /**
@@ -2151,7 +2319,10 @@ function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) 
  */
 function simplenews_clear_spool() {
   $expiration_time = REQUEST_TIME - variable_get('simplenews_spool_expire', 0) * 86400;
-  db_query("DELETE FROM {simplenews_mail_spool} WHERE status = %d AND timestamp <= %d", SIMPLENEWS_SPOOL_DONE, $expiration_time);
+  db_delete('simplenews_mail_spool')
+    ->condition('status', SIMPLENEWS_SPOOL_DONE)
+    ->condition('timestamp', $expiration_time, '<=')
+    ->execute();
 }
 
 /**
@@ -2178,8 +2349,13 @@ function simplenews_send_status_update() {
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  $result = db_query("SELECT s.nid, s.vid, s.tid, n.tnid FROM {simplenews_newsletters} s JOIN {node} n ON s.nid = n.nid AND s.vid = n.vid WHERE s.s_status = %d", SIMPLENEWS_STATUS_SEND_PENDING);
-  while ($newsletter = db_fetch_object($result)) {
+  $newsletters = db_select('simplenews_newsletters', 's')
+    ->fields('s', array('nid', 'vid', 'tid'))
+    ->fields('n', array('tnid'))
+    ->join('node', 'n', 's.nid = n.nid AND s.vid = n.vid')
+    ->condition('s.s_status', SIMPLENEWS_STATUS_SEND_PENDING)
+    ->execute();
+  foreach ($newsletters as $newsletter) {
     // nid-vid are combined in one unique key.
     $counts[$newsletter->tnid][$newsletter->nid . '-' . $newsletter->vid] = simplenews_count_spool($newsletter->nid, $newsletter->vid);
   }
@@ -2207,7 +2383,11 @@ function simplenews_send_status_update() {
       // Split the combined key 'nid-vid'
       $nid = strtok($nidvid, '-');
       $vid = strtok('-');
-      db_query("UPDATE {simplenews_newsletters} SET s_status = '%s' WHERE nid = %d AND vid = %d", SIMPLENEWS_STATUS_SEND_READY, $nid, $vid);
+      db_update('simplenews_newsletters')
+        ->condition('nid', $nid)
+        ->condition('vid', $vid)
+        ->fields(array('s_status' => SIMPLENEWS_STATUS_SEND_READY))
+        ->execute();
     }
   }
 }
@@ -2752,11 +2932,10 @@ function simplenews_theme() {
       'pattern' => 'simplenews_block__',
     ),
     'simplenews_status' => array(
-      'template' => 'simplenews-status',
       'file' => 'simplenews.admin.inc',
       'arguments' => array(
-        'status' => NULL,
         'source' => NULL,
+        'status' => NULL,
       ),
     ),
     'simplenews_newsletter_subject' => array(
@@ -2788,6 +2967,10 @@ function simplenews_theme() {
       'arguments' => array(
         'form' => NULL,
       ),
+    ),
+    'simplenews_subscription_filter_form' => array(
+      'render element' => 'form',
+      'file' => 'simplenews.admin.inc',
     ),
   );
 }

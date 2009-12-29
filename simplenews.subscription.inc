@@ -105,8 +105,8 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
   $md5 = drupal_substr($op2, 0, 10);
   list($snid, $tid) = explode('t', drupal_substr($op2, 10));
 
-  $result = db_query('SELECT snid, mail FROM {simplenews_subscriptions} WHERE snid = %d', $snid);
-  if (!($subs = db_fetch_object($result))) {
+  $query = db_query('SELECT snid, mail FROM {simplenews_subscriptions} WHERE snid = :snid', array(':snid' => $snid));
+  if (!($subs = $query->fetchField())) {
     drupal_not_found();
     return;
   }
