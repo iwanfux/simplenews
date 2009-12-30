@@ -118,7 +118,7 @@ function simplenews_init() {
 
   // Simplenews can not work without this variable.
   if ((variable_get('simplenews_vid', '')) == '') {
-    drupal_set_message(t('Missing newsletter vocabulary. Please set a vocabulary at <a href="@settings">Simplenews settings</a>.', array('@settings' => url('admin/settings/simplenews/general'))), 'error');
+    drupal_set_message(t('Missing newsletter vocabulary. Please set a vocabulary at <a href="@settings">Simplenews settings</a>.', array('@settings' => url('admin/config/simplenews/general'))), 'error');
   }
 
 }
@@ -217,6 +217,10 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
   );
+  $items['admin/people/simplenews/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
   $items['admin/people/simplenews/edit/%'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
@@ -256,52 +260,50 @@ function simplenews_menu() {
   $items['admin/config/simplenews'] = array(
     'title' => 'Simplenews',
     'description' => 'Manage simplenews configuration.',
-    'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'system_admin_menu_block_page',
+    'page callback' => 'system_admin_config_page',
     'access arguments' => array('administer simplenews settings'),
     'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
   );
 
-  $items['admin/settings/simplenews/general'] = array(
+  $items['admin/config/simplenews/general'] = array(
     'title' => 'General',
     'description' => 'Simplenews content type and vocabulary settings.',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -10,
+    'weight' => 1,
   );
-  $items['admin/settings/simplenews/newsletter'] = array(
+  $items['admin/config/simplenews/newsletter'] = array(
     'title' => 'Newsletter',
     'description' => 'Newsletter default settings and sender data.',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_newsletter'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -9,
+    'weight' => 2,
   );
-  $items['admin/settings/simplenews/subscription'] = array(
+  $items['admin/config/simplenews/subscription'] = array(
     'title' => 'Subscription',
     'description' => 'Subscription settings, opt-in/out confirmation email text.',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_subscription'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -8,
+    'weight' => 3,
   );
-  $items['admin/settings/simplenews/mail'] = array(
+  $items['admin/config/simplenews/mail'] = array(
     'title' => 'Send mail',
     'description' => 'Send mail, cron and debug options.',
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_mail'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -7,
+    'weight' => 4,
   );
 
   $items['newsletter/confirm'] = array(
@@ -388,7 +390,7 @@ function simplenews_node_build_alter($build) {
 function simplenews_node_validate($node, $form) {
   $vid = variable_get('simplenews_vid', '');
   if (!isset($node->taxonomy[$vid]) || empty($node->taxonomy[$vid]) || simplenews_validate_taxonomy($node->taxonomy) == FALSE) {
-    form_set_error('taxonomy', t('No newsletter term is selected, the newsletter taxonomy term is probably not configured correctly.<br /> Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews/general'))));
+    form_set_error('taxonomy', t('No newsletter term is selected, the newsletter taxonomy term is probably not configured correctly.<br /> Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/config/simplenews/general'))));
   }
   elseif (isset($node->simplenews['send']) && $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
     if (!empty($node->simplenews['test_address'])) {
@@ -690,7 +692,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
     // disabled elements do not get saved at submit.
     $form['content_types']['display_only'] = $form['content_types']['nodes'];
     $form['content_types']['display_only']['#disabled'] = TRUE;
-    $form['content_types']['display_only']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/settings/simplenews')));
+    $form['content_types']['display_only']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/config/simplenews')));
     $form['content_types']['nodes'] = array(
       '#type' => 'value',
       '#value' => $form['content_types']['nodes']['#default_value'],
@@ -737,7 +739,7 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       }
       $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', ''));
       if (!empty($vocabulary) && !isset($vocabulary->nodes[$form['type']['#value']])) {
-        drupal_set_message(t('Invalid vocabulary setting detected. Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/settings/simplenews'))), 'error');
+        drupal_set_message(t('Invalid vocabulary setting detected. Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/config/simplenews'))), 'error');
       }
       $form['simplenews'] = array(
         '#type' => 'fieldset',
@@ -1447,9 +1449,9 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   }
 
   if (!isset($subscribed[$mail][$tid])) {
-    $query = db_select('simplenews_subscriptions', 's')
-      ->fields('s', array('snid'))
-      ->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid')
+    $query = db_select('simplenews_subscriptions', 's');
+    $query->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid');
+    $query->fields('s', array('snid'))
       ->condition('s.mail', $mail)
       ->condition('t.tid', $tid)
       ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);    
@@ -1488,9 +1490,9 @@ function simplenews_get_subscription($account) {
   // Load subscription data based on available account informatioin
   // NOTE that the order of checking for snid, mail and uid is critical. mail must be checked *before* uid. See simplenews_subscribe_user()
   $query = db_select('simplenews_subscriptions', 's');
+  $query->leftJoin('users', 'u', 'u.uid = s.uid');
   $query->fields('s', array('snid', 'activated', 'mail', 'uid', 'language'))
-    ->fields('u', array('name'))
-    ->leftJoin('users', 'u', 'u.uid = s.uid');
+    ->fields('u', array('name'));
   if (isset($account->snid)) {
     $query->condition('s.snid', $account->snid);
   }
@@ -1504,8 +1506,7 @@ function simplenews_get_subscription($account) {
 
   if ($result->rowCount()) {
     $subscription = $result->fetch();
-    $newsletter_subscriptions = db_query("SELECT tid, status, timestamp, source
-      FROM {simplenews_snid_tid} t WHERE t.snid = :snid", array(':snid' => $subscription->snid));
+    $newsletter_subscriptions = db_query("SELECT tid, status, timestamp, source FROM {simplenews_snid_tid} WHERE snid = :snid", array(':snid' => $subscription->snid));
     $subscription->tids = array();
     foreach ($newsletter_subscriptions as $newsletter_subscription) {
       if ($newsletter_subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
@@ -1536,7 +1537,7 @@ function simplenews_get_subscription($account) {
  * @param integer $snid subscription id
  */
 function simplenews_delete_subscription($snid) {
-  $account = db_query("SELECT mail FROM {simplenews_subscriptions} WHERE snid = %d", $snid)->fetch();
+  $account = db_query("SELECT mail FROM {simplenews_subscriptions} WHERE snid = :snid", array(':snid' => $snid))->fetch();
     db_delete('simplenews_snid_tid')
       ->condition('snid', $snid)
       ->execute();
@@ -1621,18 +1622,17 @@ function _simplenews_subscription_manager_form($subscription) {
  * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
-  $result = db_select('node', 'n')
-    ->fields('n', array('nid', 'title'))
-    ->innerJoin('term_node', 't', 'n.vid = t.vid')
-    ->innerJoin('simplenews_newsletters', 'sn', 'n.nid = sn.nid')
+  $query = db_select('node', 'n');
+  $query->innerJoin('term_node', 't', 'n.vid = t.vid');
+  $query->innerJoin('simplenews_newsletters', 'sn', 'n.nid = sn.nid');
+  $query->fields('n', array('nid', 'title'))
     ->condition('t.tid', $tid)
     ->condition('n.status', NODE_PUBLISHED)
     ->condition('sn.s_status', SIMPLENEWS_STATUS_SEND_NOT, '!=')
     ->orderBy('n.created', 'DESC')
-    ->range(0, $count)
-    ->execute();
+    ->range(0, $count);
   $titles = array();
-  foreach ($result as $item) {
+  foreach ($query->execute() as $item) {
     $titles[$item->nid]['data'] = l($item->title, 'node/' . $item->nid);
   }
   return $titles;
@@ -1781,14 +1781,13 @@ function simplenews_send_node($node, $accounts = array()) {
 
     if (empty($accounts)) {
       // No accounts specified. Get email address of all accounts subscribed to this newsletter.
-      $result = db_select('simplenews_subscriptions', 's')
-        ->fields('s', 'mail')
-        ->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid')
+      $query = db_select('simplenews_subscriptions', 's');
+      $query->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid');
+      $query->fields('s', 'mail')
         ->condition('s.activated', 1)
         ->condition('t.tid', $node_data['tid'])
-        ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)
-        ->execute();
-      foreach ($result->fetch() as $account) {
+        ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+      foreach ($query->execute() as $account) {
         $mails[] = array(
           'mail' => $account->mail,
         );
@@ -2186,7 +2185,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
         if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * $max_execution_time) {
-          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/settings/simplenews/mail')), WATCHDOG_WARNING);
+          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')), WATCHDOG_WARNING);
           break;
         }
       }
@@ -2261,11 +2260,10 @@ function simplenews_save_spool($message) {
 function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
   $messages = array();
 
-  $result = db_query("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = :status", array(':status' => $status))
+  $query = db_query("SELECT * FROM {simplenews_mail_spool} s WHERE s.status = :status", array(':status' => $status))
     ->order('s.timestamp', 'ASC')
-    ->range(0, $limit)
-    ->execute();
-  foreach ($result->fetch() as $data) {
+    ->range(0, $limit);
+  foreach ($query->execute() as $data) {
     $messages[$data->msid] = (array)$data;
   }
   return $messages;
@@ -2349,13 +2347,12 @@ function simplenews_send_status_update() {
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  $newsletters = db_select('simplenews_newsletters', 's')
-    ->fields('s', array('nid', 'vid', 'tid'))
+  $query = db_select('simplenews_newsletters', 's'); 
+  $query->join('node', 'n', 's.nid = n.nid AND s.vid = n.vid');
+  $query->fields('s', array('nid', 'vid', 'tid'))
     ->fields('n', array('tnid'))
-    ->join('node', 'n', 's.nid = n.nid AND s.vid = n.vid')
-    ->condition('s.s_status', SIMPLENEWS_STATUS_SEND_PENDING)
-    ->execute();
-  foreach ($newsletters as $newsletter) {
+    ->condition('s.s_status', SIMPLENEWS_STATUS_SEND_PENDING);
+  foreach ($query->execute() as $newsletter) {
     // nid-vid are combined in one unique key.
     $counts[$newsletter->tnid][$newsletter->nid . '-' . $newsletter->vid] = simplenews_count_spool($newsletter->nid, $newsletter->vid);
   }
@@ -2726,7 +2723,7 @@ function simplenews_help($path, $arg) {
         $help .= "<li>" . l(t('Configure permissions'), 'admin/user/permissions', array('fragment' => 'module-simplenews')) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
-        $help .= "<li>" . l(t('Configure Simplenews'), 'admin/settings/simplenews') . "</li>\n";
+        $help .= "<li>" . l(t('Configure Simplenews'), 'admin/config/simplenews') . "</li>\n";
       }
       if (user_access('administer blocks')) {
         $help .= "<li>" . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/build/block'))) . "</li>\n";
@@ -2742,14 +2739,14 @@ function simplenews_help($path, $arg) {
       $help  = '<ul>';
       $help .= "<li>" . t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') . "</li>\n";
       if (user_access('administer simplenews settings')) {
-        $help .= "<li>" . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/settings/simplenews/newsletter'))) . "</li>\n";
+        $help .= "<li>" . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/config/simplenews/newsletter'))) . "</li>\n";
       }
       if (user_access('administer newsletters')) {
         $help .= "<li>" . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews/types'))) . "</li>\n";
       }
       $help .= "</ul>";
       return $help;
-    case 'admin/settings/simplenews/newsletter':
+    case 'admin/config/simplenews/newsletter':
       $help = '<ul>';
       $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) . "</li>\n";
       if (!module_exists('mimemail')) {

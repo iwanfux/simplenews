@@ -8,7 +8,6 @@ core = 7.x
 files[] = simplenews-block.tpl.php
 files[] = simplenews-newsletter-body.tpl.php
 files[] = simplenews-newsletter-footer.tpl.php
-files[] = simplenews-status.tpl.php
 files[] = simplenews.admin.inc
 files[] = simplenews.install
 files[] = simplenews.module

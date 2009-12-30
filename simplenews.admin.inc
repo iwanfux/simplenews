@@ -410,21 +410,25 @@ function simplenews_admin_types_delete_submit($form, &$form_state) {
  *
  * @see simplenews_subscription_multiple_delete_confirm_submit()
  * @todo: rework based on node_multiple_delete_confirm().
+ * @todo Bug? confirm_form() does not wait for confirmation.
  */
-function simplenews_subscription_multiple_delete_confirm($form, &$form_state, $snids) {
+function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
+  $snids = $form_state['input']['subscribers'];
   $form['snids'] = array(
     '#prefix' => '<ul>',
     '#suffix' => '</ul>',
     '#tree' => TRUE,
   );
   // array_filter returns only elements with TRUE values
-  foreach (array_filter($snids) as $snid => $value) {
-    $mail = db_query('SELECT mail FROM {simplenews_subscriptions} WHERE snid = :snid', array(':snid' => $snid))->fetchField();
-    $form['snids'][$snid] = array(
+  $query = db_select('simplenews_subscriptions', 's')
+    ->fields('s', array('snid', 'mail'))
+    ->condition('s.snid', $snids);
+  foreach ($query->execute() as $data) {
+    $form['snids'][$data->snid] = array(
       '#type' => 'hidden',
-      '#value' => $snid,
+      '#value' => $data->snid,
       '#prefix' => '<li>',
-      '#suffix' => check_plain($mail) . "</li>\n",
+      '#suffix' => check_plain($data->mail) . "</li>\n",
     );
   }
 
@@ -433,14 +437,14 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state, $s
     '#value' => 'delete',
   );
   $form['#submit'][] = 'simplenews_subscription_multiple_delete_confirm_submit';
-
+  $confirm_question = format_plural(count($snids),
+                                  'Are you sure you want to delete this subscription?',
+                                  'Are you sure you want to delete these subscriptions?');
   return confirm_form($form, 
-                      t('Are you sure you want to delete these subscriptions?'), 
-                      'admin/content/simplenews/users', 
+                      $confirm_question, 
+                      'admin/people/simplenews', 
                       t('This action cannot be undone.'), 
-                      t('Delete all'), 
-                      t('Cancel')
-                      );
+                      t('Delete'), t('Cancel'));
 }
 
 function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_state) {
@@ -559,6 +563,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * @todo Add checkboxes for subscribed and unsubscribed selection.
  */
 function simplenews_subscription_list_export() {
+  //TODO: Add (un)subscribed as filter to form.
   $form['states'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Status'),
@@ -593,38 +598,36 @@ function simplenews_subscription_list_export() {
   return $form;
 }
 
-function simplenews_admin_export_after_build($form, $form_element) {
+/**
+ * Form alter_build callback.
+ *
+ * Adds export results to the subscriptions export form after submission.
+ * @todo Something wrong. Email form element gets reset upon drupal_redirect_form().
+ */
+function simplenews_admin_export_after_build($form, &$form_state) {
   //TODO: Add (un)subscribed as filter to form.
-  if (isset($form_element['values']['op']) && $form_element['values']['op'] == t('Export')) {
-    $states = array_filter($form_element['values']['states']);
-    $newsletters = array_filter($form_element['values']['newsletters']);
+  if (isset($form_state['values']['op']) && $form_state['values']['op'] == t('Export')) {
+    $states = array_filter($form_state['values']['states']);
+    $newsletters = array_filter($form_state['values']['newsletters']);
 
     // Build where clause for active/inactive state and newsletter selection.
-    $tids = $activated = array();
     if (isset($states['active'])) {
       $active_states[] = 1;
     }
     if (isset($states['inactive'])) {
       $active_states[] = 0;
     }
-    foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-      if (isset($newsletters[$newsletter->tid])) {
-        $tids[] = $newsletter->tid;
-      }
-    }
+    $tids = array_keys(array_filter($newsletters));
 
     // Get subscription data
-    if (isset($condition) && isset($where_tid)) {
-      $query = 'SELECT DISTINCT s.mail FROM {simplenews_subscriptions} s INNER JOIN {simplenews_snid_tid} t ON s.snid = t.snid WHERE (' . $where . ') AND (' . $where_tid . ')';
-      $query = db_select('simplenews_subscriptions', 's')
-        ->fields('s', array('mail'))
-        ->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid')
-        ->distinct();
-      $query->condition('s.activated', $active_states);
-      $query->condition('t.tid', $tids);
-      foreach ($query->fetchFields() as $mail) {
-        $mails[] = $mail->mail;
-      }
+    $query = db_select('simplenews_subscriptions', 's');
+    $query->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid');
+    $query->fields('s', array('mail'))
+      ->condition('s.activated', $active_states)
+      ->condition('t.tid', $tids)
+      ->distinct();
+    foreach ($query->execute() as $mail) {
+      $mails[] = $mail->mail;
     }
 
     // Build form field containing exported emails.
@@ -687,8 +690,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $email = trim($email);
     if (valid_email_address($email)) {
       foreach ($checked_newsletters as $tid) {
-        $newsletter = taxonomy_term_load($tid);
-        simplenews_unsubscribe_user($email, $newsletter->tid, FALSE, 'mass unsubscribe');
+        simplenews_unsubscribe_user($email, $tid, FALSE, 'mass unsubscribe');
         $removed[] = $email;
       }
     }
@@ -718,10 +720,11 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
 
 /**
  * Menu callback: subscription administration.
+ * @todo bug: simplenews_subscription_filter_form_submit() is not called on filter Submit.
  */
 function simplenews_subscription_admin($form, $form_state) {
-  if (isset($form_state['values']['operation']) && $form_state['values']['operation'] == 'delete') {
-    return simplenews_subscription_multiple_delete_confirm($form, $form_state, array_filter($form_state['values']['snids']));
+  if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
+    return simplenews_subscription_multiple_delete_confirm($form, $form_state);
   }
   $form['filter'] = simplenews_subscription_filter_form();
   $form['filter']['#submit'][] = 'simplenews_subscription_filter_form_submit';
@@ -803,8 +806,6 @@ function simplenews_subscription_list_form() {
 }
 
 function simplenews_subscription_list_form_validate($form, &$form_state) {
-//dpm($form);
-//dpm($form_state);
   if (isset($form_state['values']['operation'])) {
     $snids = array_keys(array_filter($form_state['values']['subscribers']));
     if (empty($snids)) {
@@ -841,7 +842,7 @@ function simplenews_admin_settings(&$form_state) {
     '#type' => 'checkboxes',
     '#title' => t('Content types'),
     '#required' => TRUE,
-    '#options' => array_map('check_plain', node_get_types('names')),
+    '#options' => array_map('check_plain', node_type_get_names()),
     '#default_value' => variable_get('simplenews_content_types', array('simplenews' => 'simplenews')),
     '#description' => t('Content types to be used as newsletter.'),
   );
@@ -871,23 +872,23 @@ function simplenews_admin_settings(&$form_state) {
 
 function simplenews_admin_settings_submit($form, &$form_state) {
   // Newsletter vocabulary is updated using node type settings.
-  $vocabulary = (array) taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
+  $vocabulary = taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
   $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
-  $vocabulary['nodes'] = $form_state['values']['simplenews_content_types'];
+  $vocabulary->nodes = $form_state['values']['simplenews_content_types'];
 
   // Set vocabulary required values
-  $vocabulary['multiple'] = FALSE;
-  $vocabulary['required'] = TRUE;
-  $vocabulary['tags'] = FALSE;
+  $vocabulary->multiple = FALSE;
+  $vocabulary->required = TRUE;
+  $vocabulary->tags = FALSE;
 
-  taxonomy_vocabulary_save($vocabulary /* TODO Vocabulary object replaces array $vocabulary */);
+  taxonomy_vocabulary_save($vocabulary);
   variable_set('simplenews_content_types', $form_state['values']['simplenews_content_types']);
 
   // We do not need a simplenews_content_types variable.
   unset($form_state['values']['simplenews_content_types']);
 
-  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary['name'])));
-  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary['name']), WATCHDOG_NOTICE, l(t('edit'), 'admin/content/taxonomy/edit/vocabulary/' . $form_state['values']['vid']));
+  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary->name)));
+  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/taxonomy/' . $vocabulary->vid . '/edit'));
 }
 
 /**
