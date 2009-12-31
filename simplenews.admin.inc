@@ -14,100 +14,246 @@
 /**
  * Menu callback: Admin form for sent and draft newsletters.
  *
- * @see simplenews_admin_news_submit()
+ * @see simplenews_admin_newsletter_submit()
  * @todo Arguments to theme('pager') have changed: http://drupal.org/node/224333#comment-1898826
  */
-function simplenews_admin_news(&$form_state, $action = 'sent') {
-  $vid = variable_get('simplenews_vid', '');
-  $form = array();
-  $form['simplenews_issue_filter'] = array(
+function simplenews_admin_issues(&$form_state, $action = 'sent') {
+/*
+  if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
+    return simplenews_issue_multiple_delete_confirm($form, $form_state);
+  }
+*/
+
+  $form['filter'] = simplenews_issue_filter_form();
+  $form['filter']['#submit'][] = 'simplenews_issue_filter_form_submit';
+  $form['filter']['#theme'] = 'simplenews_filter_form';
+  $form['admin'] = simplenews_issue_list_form();
+
+  return $form;
+}
+
+/**
+ * Generate issue filters
+ */
+function simplenews_issue_filters() {
+  // Newsletter filter
+  $filters['newsletter'] = array(
+    'title' => t('Subscribed to'),
+    'options' => array(
+      'all'   => t('All newsletters'),
+      'tid-0'    => t('Unassigned newsletters'),
+    ),
+  );
+  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
+    $filters['newsletter']['options']['tid-' . $newsletter->tid] = $newsletter->name;
+  }
+
+  return $filters;
+}
+
+/**
+ * Return form for issue filters.
+ *
+ * @see simplenews_issue_filter_form_submit()
+ */
+function simplenews_issue_filter_form() {
+  // Current filter selections in $session var; stored at form submission
+  // Example: array('newsletter' => 'all', 'email' => 'hotmail')
+  $session = isset($_SESSION['simplenews_issue_filter']) ? $_SESSION['simplenews_issue_filter'] : '';
+  $session = is_array($session) ? $session : _simplenews_issue_filter_default();
+  $filters = simplenews_issue_filters();
+
+  $form['filters'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Show issues from'),
+    '#title' => t('Show only issues which'),
     '#collapsible' => FALSE,
+  );
+
+  // Filter values are default
+  $form['filters']['newsletter'] = array(
+    '#type' => 'select',
+    '#title' => $filters['newsletter']['title'],
+    '#options' => $filters['newsletter']['options'],
+    '#default_value' => $session['newsletter'],
+  );
+  $form['filters']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Filter'),
+    '#prefix' => '<span class="spacer" />',
+  );
+  // Add Reset button if filter is in use
+  if ($session != _simplenews_issue_filter_default()) {
+    $form['filters']['reset'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset'),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Helper function: returns issue filter default settings
+ */
+function _simplenews_issue_filter_default() {
+  return array(
+    'newsletter' => 'all',
+  );
+}
+
+function simplenews_issue_filter_form_submit($form, &$form_state) {
+  switch ($form_state['values']['op']) {
+    case t('Filter'):
+      $_SESSION['simplenews_issue_filter'] = array(
+        'newsletter' => $form_state['values']['newsletter'],
+      );
+      break;
+    case t('Reset'):
+      $_SESSION['simplenews_issue_filter'] = _simplenews_issue_filter_default();
+      break;
+  }
+}
+
+/**
+ * Builds a list of newsletter issues with operations.
+ *
+ * @see simplenews_issue_list_form_validate()
+ * @see simplenews_issue_list_form_submit()
+ */
+function simplenews_issue_list_form() {
+  // Build an 'Update options' form.
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Update options'),
     '#prefix' => '<div class="container-inline">',
     '#suffix' => '</div>',
+  );
+  //Possible future extensions:
+  //$options = array('send' => t('Send'), 'resend' => t('Resend'), 'pauze' => t('Pauze sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
+  $options = array('send' => t('Send'));
+  $form['options']['operation'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => 'activate',
+  );
+  $form['options']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array('simplenews_newsletter_list_form_submit'),
+    '#validate' => array('simplenews_newsletter_list_form_validate'),
   );
 
   if (variable_get('simplenews_last_cron', '')) {
     $form['last_sent'] = array(
-      '#value' => '<p>' . format_plural(variable_get('simplenews_last_sent', 0), 'Last batch: 1 mail sent at !time.', 'Last batch: !count mails sent at !time.', array('!time' => format_date(variable_get('simplenews_last_cron', ''), 'small'), '!count' => variable_get('simplenews_last_sent', 0))) . "</p>\n",
+      '#value' => '<p>' . format_plural(variable_get('simplenews_last_sent', 0),
+                                        'Last batch: 1 mail sent at !time.',
+                                        'Last batch: !count mails sent at !time.',
+                                        array('!time' => format_date(variable_get('simplenews_last_cron', ''), 'small'), '!count' => variable_get('simplenews_last_sent', 0))) . "</p>\n",
+    );
+  }
+  // Table header. Used as tablesort default
+  $header = array(
+    'title' => array('data' => t('Title'), 'field' => 'n.title'),
+    'newsletter' => array('data' => t('Newsletter issue'), 'field' => 't.name'),
+    'created' => array('data' => t('Created'), 'field' => 'n.created', 'sort' => 'desc'),
+    'published' => array('data' => t('Published')),
+    'sent' => array('data' => t('Sent')),
+    'subscribers' => array('data' => t('Subscribers')),
+    'operations' => array('data' => t('Operations')),
+  );
+
+  $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort');
+  simplenews_build_issue_filter_query($query);
+  $query->innerJoin('simplenews_newsletters', 's', 'n.nid = s.nid');
+  //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
+  $result = $query
+    ->fields('n', array('nid', 'title', 'created', 'status'))
+    ->fields('s', array('s_status', 'tid'))
+    ->limit(30)
+    ->orderByHeader($header)
+    ->execute();
+
+  $options = array();
+  $destination = drupal_get_destination();
+  $vid = variable_get('simplenews_vid', '');
+
+  foreach ($result as $issue) {
+    //@todo: this function is deprecated. Extend above query for required data.
+    // $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($issue, $vid, 'name'));
+    $terms = array('1' => 'dummy 1', '2' => 'dummy 2', '3' => 'dummy 3', '4' => 'dummy 4');
+    $subscriber_count = simplenews_count_subscriptions($issue->tid);
+    $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
+    $send_status = $issue->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->s_status));
+
+    $options[$issue->nid] = array(
+      'title' => l($issue->title, 'node/' . $issue->nid),
+      'newsletter' => isset($terms[0]) ? $terms[0] : t('- Unassigned -'),
+      'created' => format_date($issue->created, 'small'),
+      'published' => theme('simplenews_status', array('source' => 'published', 'status' => $node->status)),
+      'sent' => $send_status,
+      'subscribers' => $subscriber_count,
+      'operations' => l(t('edit'), 'node/' . $issue->nid . '/edit', array('query' => drupal_get_destination())),
     );
   }
 
-  $header = array(t('Title'), t('Newsletter'), t('Date created'), t('Published'), t('Sent'), t('Subscribers'), t('Operations'));
-  list($names, $queries) = array_values(simplenews_get_filter('simplenews_newsletters_filter'));
-  $filter = isset($_SESSION['simplenews_newsletters_filter']) ? $_SESSION['simplenews_newsletters_filter'] : '';
-  $form['simplenews_issue_filter']['filter'] = array(
-    '#type' => 'select',
-    '#options' => $names,
-    '#default_value' => $filter,
-  );
-  $where_condition = isset($queries[$filter]) && !empty($queries[$filter]) ? 'WHERE ' . $queries[$filter]  : '';
-  $query = "SELECT DISTINCT n.*, s.s_status, s.tid FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid " . $where_condition . " ORDER BY n.created DESC";
-  $count_query = "SELECT COUNT(n.nid) FROM {node} n INNER JOIN {simplenews_newsletters} s ON n.nid = s.nid " . $where_condition;
-  $result = pager_query(db_rewrite_sql($query, 'n', 'nid'), 10, 0, db_rewrite_sql($count_query, 'n', 'nid'), 0);
-
-  $rows = array();
-  while ($node = db_fetch_object($result)) {
-    $row = array();
-    $operation = array();
-    $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($node, $vid, 'name'));
-    $subscriber_count = simplenews_count_subscriptions($node->tid);
-    $pending_count = simplenews_count_spool($node->nid, $node->vid);
-    $send_status = $node->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $node->s_status));
-    $operation[] = l(t('edit'), 'node/' . $node->nid . '/edit', array('query' => drupal_get_destination()));
-
-    $row[] = l($node->title, 'node/' . $node->nid);
-    $row[] = isset($terms[0]) ? $terms[0] : t('n/a');
-    $row[] = format_date($node->created, 'small');
-    $row[] = theme('simplenews_status', array('source' => 'published', 'status' => $node->status));
-    $row[] = $send_status;
-    $row[] = $subscriber_count;
-    $row[] = implode(' ', $operation);
-    $rows[] = $row;
-  }
-  if ($pager = theme('pager', NULL, 10, 0)) {
-    $rows[] = array(array(
-        'data' => $pager,
-        'colspan' => '8',
-      ));
-  }
-  if (!$rows) {
-    $rows[] = array(array(
-        'data' => t('No newsletters available.'),
-        'colspan' => '8',
-      ));
-  }
-  $form['simplenews_issue_filter']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Filter'),
+  $form['issues'] = array(
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => $options,
+    '#empty' => t('No newsletter issues available.'),
   );
 
-  $table = theme('table', $header, $rows);
+  $form['pager'] = array('#theme' => 'pager');
 
-  $form['table'] = array(
-    '#value' => $table,
-  );
   return $form;
 }
 
-function simplenews_admin_news_submit($form, &$form_state) {
-  _simplenews_set_filter('simplenews_newsletters_filter', $form_state['values']);
+function simplenews_issue_list_form_validate($form, &$form_state) {
+  if (isset($form_state['values']['operation'])) {
+    $nids = array_keys(array_filter($form_state['values']['issues']));
+    if (empty($nids)) {
+      form_set_error('', t('No items selected.'));
+    }
+    else {
+      switch ($form_state['values']['operation']) {
+        case 'send':
+        //@todo If 'send': check if selected items are un-sent.
+        
+      }
+    }
+  }
+}
+
+function simplenews_issue_list_form_submit($form, &$form_state) {
+  if (isset($form_state['values']['operation'])) {
+    $nids = array_keys(array_filter($form_state['values']['issues']));
+    switch ($form_state['values']['operation']) {
+      case 'send':
+        //@todo Send selected newsletters.
+        //drupal_set_message(t('The update has been performed.'));
+        break;
+    }
+  }
 }
 
 /**
- * Store filter values in session var
+ * Apply filters for subscription filters based on session.
  *
- * @param $type identification string
- * @param $form_values array of values to be stored
+ * @param $query
+ *   A SelectQuery to which the filters should be applied.
  */
-function _simplenews_set_filter($type, $values) {
-  if (empty($_SESSION[$type])) {
-    $_SESSION[$type] = 'all';
-  }
-  $op = $values['op'];
-  if ($op == t('Filter') && isset($values['filter'])) {
-    $_SESSION[$type] = $values['filter'];
+function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
+  if (isset($_SESSION['simplenews_issue_filter'])) {
+    foreach ($_SESSION['simplenews_issue_filter'] as $key => $value) {
+      switch ($key) {
+        case 'newsletter':
+          if ($value != 'all') {
+            list($key, $value) = explode('-', $value, 2);
+            $query->condition('s.' . $key, $value);
+          }
+          break;
+      }
+    }
   }
 }
 
@@ -722,13 +868,13 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
  * Menu callback: subscription administration.
  * @todo bug: simplenews_subscription_filter_form_submit() is not called on filter Submit.
  */
-function simplenews_subscription_admin($form, $form_state) {
+function simplenews_admin_subscription($form, $form_state) {
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_subscription_multiple_delete_confirm($form, $form_state);
   }
   $form['filter'] = simplenews_subscription_filter_form();
   $form['filter']['#submit'][] = 'simplenews_subscription_filter_form_submit';
-  $form['filter']['#theme'] = 'simplenews_subscription_filter_form';
+  $form['filter']['#theme'] = 'simplenews_filter_form';
   $form['admin'] = simplenews_subscription_list_form();
 
   return $form;
@@ -1088,31 +1234,31 @@ function simplenews_admin_settings_subscription(&$form_state) {
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
-    '#default_value' => simplenews_subscription_confirmation_text('subscribe_subject'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subject'),
     '#maxlength' => 180,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_unsubscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text of subscribe email'),
-    '#default_value' => simplenews_subscription_confirmation_text('subscribe_unsubscribed'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_unsubscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text for already subscribed visitor'),
-    '#default_value' => simplenews_subscription_confirmation_text('subscribe_subscribed'),
+    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_subscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text of unsubscribe email'),
-    '#default_value' => simplenews_subscription_confirmation_text('unsubscribe_subscribed'),
+    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_subscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_unsubscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text for not yet subscribed visitor'),
-    '#default_value' => simplenews_subscription_confirmation_text('unsubscribe_unsubscribed'),
+    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_unsubscribed'),
     '#rows' => 5,
   );
 
@@ -1147,30 +1293,6 @@ function simplenews_inactivate_subscription($snids) {
     ))
     ->condition('snid', $snids, 'IN')
     ->execute();
-}
-
-/**
- * Built filter selection box options and filter query where clause
- *
- * @param $type identification string
- * @param $na TRUE for orphaned newsletters
- *
- * @return array of filter selection box options and related query where clause
- */
-function simplenews_get_filter($type, $na = TRUE) {
-  //Default data
-  $names['all'] = t('all newsletters');
-  $queries['all'] = '';
-  if ($na) {
-    $names['na'] = t('orphaned newsletters');
-    $queries['na'] = 's.tid = 0';
-  }
-  // Data for each newsletter
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $names[$newsletter->tid] = $newsletter->name;
-    $queries[$newsletter->tid] = 's.tid = ' . $newsletter->tid;
-  }
-  return array($names, $queries);
 }
 
 /**
@@ -1417,6 +1539,21 @@ function theme_simplenews_status($variables) {
   else {
     $output = check_plain($title[$status]);
   }
+  return $output;
+}
+
+/**
+ * Theme simplenews issues and subscriptions filter form.
+ *
+ * @ingroup themeable
+ */
+function theme_simplenews_filter_form($variables) {
+  $form = $variables['form'];
+
+  $output  = '<div id="simplenews-admin-filter">';
+  $output .= drupal_render($form['filters']);
+  $output .= '</div>';
+  $output .= drupal_render_children($form);
   return $output;
 }
 

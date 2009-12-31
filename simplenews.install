@@ -306,36 +306,6 @@ function _simplenews_install_vocabulary() {
 }
 
 /**
- * Rename sn_* tables to simplenews_* to avoid namespace conflicts.
- */
-function simplenews_update_2() {
-  $ret = array();
-  db_rename_table($ret, 'sn_snid_tid', 'simplenews_snid_tid');
-  db_rename_table($ret, 'sn_newsletters', 'simplenews_newsletters');
-  db_rename_table($ret, 'sn_subscriptions', 'simplenews_subscriptions');
-  return $ret;
-}
-
-/**
- * Add index to simplenews_subscriptions.
- */
-function simplenews_update_5000() {
-  $ret = array();
-  db_add_index($ret, 'simplenews_subscriptions', 'mail', array('mail'));
-  return $ret;
-}
-
-/**
- * Addition of node version to simplenews_newsletters in order to record the
- * node version which is being send.
- */
-function simplenews_update_5001() {
-  $ret = array();
-  db_add_field($ret, 'simplenews_newsletters', 'vid', array('type' => 'int', 'type' => 'int', 'not null' => TRUE, 'default' => 0));
-  return $ret;
-}
-
-/**
  * Data conversion of block delta.
  * Field type conversions: newsletter priority.
  * Field name change in simplenews_subscriptions table.

@@ -1,22 +1,22 @@
 /* $Id$ */
 
-#simplenews-subscription-filter .form-item { 
+#simplenews-admin-filter .form-item { 
   clear: both;
   line-height: 1.75em;
   margin: 0pt 1em 0pt 0pt;
 }
 
-#simplenews-subscription-filter .form-item label { 
+#simplenews-admin-filter .form-item label { 
   float: left;
   width: 12em; 
 }
 
-#simplenews-subscription-filter .spacer {
+#simplenews-admin-filter .spacer {
   margin-left: 12em;  
 }
 
-#simplenews-subscription-filter .form-select, 
-#simplenews-subscription-filter .form-text {
+#simplenews-admin-filter .form-select, 
+#simplenews-admin-filter .form-text {
   width: 14em;
 }
 

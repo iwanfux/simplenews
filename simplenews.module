@@ -132,34 +132,12 @@ function simplenews_menu() {
     $items['admin/content/simplenews'] = array(
     'title' => 'Newsletters',
     'description' => 'List newsletters and newsletter sent status.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_news'),
-    'access arguments' => array('administer newsletters'),
     'type' => MENU_LOCAL_TASK,
-    'file' => 'simplenews.admin.inc',
-  );
-/*
-  $items['admin/content/simplenews'] = array(
-    'title' => 'Newsletters',
-    'description' => 'Manage newsletters and subscriptions.',
-    'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'system_admin_menu_block_page',
-    'access callback' => 'simplenews_newsletter_access',
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-  );
-
-  $items['admin/content/simplenews/sent'] = array(
-    'title' => 'Newsletter issues',
-    'description' => 'List of newsletter issues.',
-    'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_news'),
+    'page arguments' => array('simplenews_admin_issues'),
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
-    'weight' => -10,
   );
-*/
   $items['admin/content/simplenews/types'] = array(
     'title' => 'Newsletters',
     'description' => 'List, add and edit newsletter series.',
@@ -213,7 +191,7 @@ function simplenews_menu() {
     'description' => 'Newsletter subscription management.',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_subscription_admin'),
+    'page arguments' => array('simplenews_admin_subscription'),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.admin.inc',
   );
@@ -260,9 +238,10 @@ function simplenews_menu() {
   $items['admin/config/simplenews'] = array(
     'title' => 'Simplenews',
     'description' => 'Manage simplenews configuration.',
-    'page callback' => 'system_admin_config_page',
+    'page callback' => 'system_admin_menu_block_page',
     'access arguments' => array('administer simplenews settings'),
     'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'), 
   );
 
   $items['admin/config/simplenews/general'] = array(
@@ -2841,15 +2820,15 @@ function _simplenews_subscription_confirmation_text($key, $language = NULL) {
     // No override, return default string.
     switch ($key) {
       case 'subscribe_unsubscribed':
-        return t("We have received a request from the email [simplenews-receiver-mail] for subscription to the [simplenews-newsletters-name] newsletter on [site-name] website at [site-url]. To confirm this subscription please use the link below.\n\n[simplenews-subscribe-url]", $langcode);
+        return t("We have received a request from the email [simplenews-receiver-mail] for subscription to the [simplenews-newsletters-name] newsletter on [site-name] website at [site-url]. To confirm this subscription please use the link below.\n\n[simplenews-subscribe-url]", array(), array('langcode' => $langcode));
       case 'subscribe_subscribed':
-        return t("We have received a request from the email [simplenews-receiver-mail] for subscription to the [simplenews-newsletters-name] newsletter on [site-name] website at [site-url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site-url]", $langcode);
+        return t("We have received a request from the email [simplenews-receiver-mail] for subscription to the [simplenews-newsletters-name] newsletter on [site-name] website at [site-url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site-url]", array(), array('langcode' => $langcode));
       case 'unsubscribe_subscribed':
-        return t("We have received a request from the email [simplenews-receiver-mail] to unsubscribe you from the [simplenews-newsletters-name] on [site-name] website at [site-url]. To confirm this unsubscription please use the  below.\n\n[simplenews-unsubscribe-url]", $langcode);
+        return t("We have received a request from the email [simplenews-receiver-mail] to unsubscribe you from the [simplenews-newsletters-name] on [site-name] website at [site-url]. To confirm this unsubscription please use the  below.\n\n[simplenews-unsubscribe-url]", array(), array('langcode' => $langcode));
       case 'unsubscribe_unsubscribed':
-        return t("We have received a from the email [simplenews-receiver-mail] request to unsubscribe you from the [simplenews-newsletters-name] on [site-name] website at [site-url]. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: [site-url]", $langcode);
+        return t("We have received a from the email [simplenews-receiver-mail] request to unsubscribe you from the [simplenews-newsletters-name] on [site-name] website at [site-url]. However, this email is not subscribed to this newsletter. If you intended to subscribe please visit our site: [site-url]", array(), array('langcode' => $langcode));
       case 'subscribe_subject':
-        return t("Confirmation for [simplenews-newsletters-name] from [site-name]", $langcode);
+        return t("Confirmation for [simplenews-newsletters-name] from [site-name]", array(), array('langcode' => $langcode));
     }
   }
 }
@@ -2965,7 +2944,7 @@ function simplenews_theme() {
         'form' => NULL,
       ),
     ),
-    'simplenews_subscription_filter_form' => array(
+    'simplenews_filter_form' => array(
       'render element' => 'form',
       'file' => 'simplenews.admin.inc',
     ),
