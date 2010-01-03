@@ -80,7 +80,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       's_status' => array(
-        'description' => 'Send status of the newsletter issue (0 = not send; 1 = pending; 2 = send). ',
+        'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent). ',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -185,7 +185,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = done).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = done).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -374,7 +374,7 @@ function simplenews_update_6001() {
         'default' => '',
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = sent).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -416,9 +416,9 @@ function simplenews_update_6001() {
 
 /**
  * Addition of node version to simplenews_newsletters in order to record the
- * node version which is being send.
+ * node version which is being sent.
  * Addition of nid to simplenews_mail_cache to be able to check the newsletter
- * send status.
+ * sent status.
  */
 function simplenews_update_6002() {
   $ret = array();
@@ -475,7 +475,7 @@ function simplenews_update_6004() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'The send status of the email (0 = hold, 1 = pending, 2 = send).',
+        'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = sent).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,

@@ -47,14 +47,14 @@ define('SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED', 1);
 define('SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED', 0);
 
 /**
- * NEWSLETTER SEND STATUS
+ * NEWSLETTER SENT STATUS
  */
 define('SIMPLENEWS_STATUS_SEND_NOT', 0);
 define('SIMPLENEWS_STATUS_SEND_PENDING', 1);
 define('SIMPLENEWS_STATUS_SEND_READY', 2);
 
 /**
- * MAIL SPOOL SEND STATUS
+ * MAIL SPOOL SENT STATUS
  */
 define('SIMPLENEWS_SPOOL_HOLD', 0);
 define('SIMPLENEWS_SPOOL_PENDING', 1);
@@ -134,7 +134,7 @@ function simplenews_menu() {
     'description' => 'List newsletters and newsletter sent status.',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_issues'),
+    'page arguments' => array('simplenews_admin_newsletter_issues'),
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
@@ -367,6 +367,7 @@ function simplenews_node_build_alter($build) {
  * Implements hook_node_validate.
  */
 function simplenews_node_validate($node, $form) {
+/*
   $vid = variable_get('simplenews_vid', '');
   if (!isset($node->taxonomy[$vid]) || empty($node->taxonomy[$vid]) || simplenews_validate_taxonomy($node->taxonomy) == FALSE) {
     form_set_error('taxonomy', t('No newsletter term is selected, the newsletter taxonomy term is probably not configured correctly.<br /> Check and <strong>save</strong> the <a href="@settings">Simplenews general settings</a>.', array('%name' => $vocabulary->name, '@settings' => url('admin/config/simplenews/general'))));
@@ -388,22 +389,26 @@ function simplenews_node_validate($node, $form) {
       form_set_error('simplenews][test_address', t('Missing test email address.'));
     }
   }
+*/
 }
 
 /**
  * Implements hook_node_presave.
  */
 function simplenews_node_presave($node) {
+/*
   $node->simplenews = array_merge(_simplenews_get_node_form_defaults(), is_array($node->simplenews) ? $node->simplenews : array());
   $term = simplenews_validate_taxonomy($node->taxonomy);
   $tid = is_array($term) ? array_values($term) : FALSE;
   $node->simplenews['tid'] = $tid ? $tid[0] : 0;
+*/
 }
 
 /**
  * Implements hook_node_insert.
  */
 function simplenews_node_insert($node) {
+/*
   // Flatten the simplenews 'advanced' settings array.
   // This makes sure the $node array after insert/update is equal to the
   // $node array after load.
@@ -454,7 +459,7 @@ function simplenews_node_insert($node) {
   }
 
   // When this node is selected for translation all translation of this node
-  // will be send too.
+  // will be sent too.
   // All translated nodes will receive the same send states (priority, confirmation, format).
   if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
     if ($translations = translation_node_get_translations($node->tnid)) {
@@ -481,12 +486,14 @@ function simplenews_node_insert($node) {
     // Send test newsletter to test address(es)
     simplenews_send_test($node);
   }
+*/
 }
 
 /**
  * Implements hook_node_update.
  */
 function simplenews_node_update($node) {
+/*
   // Flatten the simplenews 'advanced' settings array.
   // This makes sure the $node array after insert/update is equal to the
   // $node array after load.
@@ -537,7 +544,7 @@ function simplenews_node_update($node) {
   }
 
   // When this node is selected for translation all translation of this node
-  // will be send too.
+  // will be sent too.
   // All translated nodes will receive the same send states (priority, confirmation, format).
   if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
     if ($translations = translation_node_get_translations($node->tnid)) {
@@ -564,25 +571,30 @@ function simplenews_node_update($node) {
     // Send test newsletter to test address(es)
     simplenews_send_test($node);
   }
+*/
 }
 
 /**
  * Implements hook_node_delete.
  */
 function simplenews_node_delete($node) {
+/*
   $result = db_delete('simplenews_newsletters')
     ->condition('nid', $node->nid)
     ->execute();
   if ($result) {
     drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->title)));
   }
+*/
 }
 
 /**
  * Implements hook_node_load.
  */
 function simplenews_node_load($node, $types) {
+/*
   $node->simplenews = db_query('SELECT * FROM {simplenews_newsletters} WHERE nid = :nid', array(':node' => $node->nid))->fetchAssoc();
+*/
 }
 
 /**
@@ -656,19 +668,20 @@ function simplenews_validate_taxonomy($taxonomy) {
  * @todo Perhaps add drupal_add_js to form element: http://drupal.org/node/224333#attached_js
  * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
  */
-function simplenews_form_alter(&$form, $form_state, $form_id) {
-  $vid = variable_get('simplenews_vid', '');
-
-  // Newsletter vocabulary form
-  if ($form_id == 'taxonomy_form_vocabulary' && isset($form['vid']) && $form['vid']['#value'] == $vid) {
+function simplenews_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+//drupal_set_message('<pre>' . print_r($form, 1) . '</pre>');
+  if (isset($form['vid']) && $form['vid']['#value'] == variable_get('simplenews_vid', '')) {
     // Hide critical options from newsletter vocabulary.
+/*
     $form['help_simplenews_vocab'] = array(
       '#value' => t('This is the designated simplenews vocabulary.'),
       '#weight' => -1,
     );
+*/
     // We display the current content type settings in a disabled form element
     // to the user. The real value passed in the form separately because
     // disabled elements do not get saved at submit.
+/*
     $form['content_types']['display_only'] = $form['content_types']['nodes'];
     $form['content_types']['display_only']['#disabled'] = TRUE;
     $form['content_types']['display_only']['#description'] = t('These content type(s) are used as newsletter. They can be set in !simplenews_settings.', array('!simplenews_settings' => l('Simplenews settings', 'admin/config/simplenews')));
@@ -676,6 +689,8 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#type' => 'value',
       '#value' => $form['content_types']['nodes']['#default_value'],
     );
+*/
+/*
     // Free tagging can not be allowed see: simplenews_validate_taxonomy().
     $form['settings']['tags'] = array(
       '#type' => 'value',
@@ -690,10 +705,16 @@ function simplenews_form_alter(&$form, $form_state, $form_id) {
       '#type' => 'value',
       '#value' => TRUE,
     );
+*/
   }
+}
+
+function simplenews_form_alter(&$form, $form_state, $form_id) {
+//dpm($form_id);
+  $vid = variable_get('simplenews_vid', '');
 
   // Simplenews newsletter node form
-  elseif (strpos($form_id, '_node_form')) {
+  if (strpos($form_id, '_node_form')) {
     if (in_array($form['type']['#value'], variable_get('simplenews_content_types', array('simplenews')))) {
 
       // Available variables are based on user_mail_tokens().
@@ -1663,13 +1684,10 @@ function simplenews_block_form(&$form_state, $tid) {
       '#maxlength' => 128,
       '#required' => TRUE,
     );
+    $submit_text = t('Subscribe');
     $form['action'] = array(
-      '#type' => 'radios',
-      '#default_value' => 'subscribe',
-      '#options' => array(
-        'subscribe' => t('Subscribe'),
-        'unsubscribe' => t('Unsubscribe'),
-      ),
+      '#type' => 'value',
+      '#value' => 'subscribe',
     );
   }
 
@@ -1730,7 +1748,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 /**
  * Send newsletter node to subcribers.
  *
- * @param integer or object $node Newsletter node to be send. integer = nid; object = node object
+ * @param integer or object $node Newsletter node to be sent. integer = nid; object = node object
  * @param array $accounts  account objects to send the newsletter to.
  *   account = object (
  *     snid     = subscription id. 0 if no subscription record exists
@@ -1805,7 +1823,7 @@ function simplenews_send_node($node, $accounts = array()) {
 /**
  * Send test version of newsletter.
  *
- * @param integer or object $node Newsletter node to be send. Integer = nid; Object = node object
+ * @param integer or object $node Newsletter node to be sent. Integer = nid; Object = node object
  */
 function simplenews_send_test($node) {
   if (is_numeric($node)) {
@@ -1842,7 +1860,7 @@ function simplenews_send_test($node) {
  *          [headers][From]
  *          [language]            : preferred message language
  * @param array $params parameter array
- *          [context][node]       : node object of message to be send
+ *          [context][node]       : node object of message to be sent
  *          [context][snid]       : used for $key = subscribe or unsubscribe
  *          [context][from_name]  : name of mail sender or site name (optional)
  *          [context][account]    : account details of recipient
@@ -2060,21 +2078,24 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
       // If mimemail module is installed ALL emails are send via this module.
       // drupal_mail() builds the content of the email but does NOT send.
       $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
-      $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain';
+      $to = isset($message['params']['context']['account']) ? $message['params']['context']['account'] : $message['to'];
+      $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain' ? TRUE : NULL;
+      $plain_text = $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
+      $files = isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array();
       $message['result'] = mimemail(
         $message['from'], 
-        $message['to'], 
+        $to, 
         $message['subject'], 
         $message['body'], 
         $plain, 
         $message['headers'], 
-        $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE), 
-        isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array(), 
+        $plain_text, 
+        $files, 
         ''
       );
     }
     else {
-      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['address'], TRUE);
+      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], TRUE);
     }
 
     // Log sent result in watchdog.
@@ -2158,13 +2179,13 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
 
       // Check every n emails if we exceed the limit.
       // When PHP maximum execution time is almost elapsed we interrupt
-      // sending. The remainder will be send during the next cron run.
+      // sending. The remainder will be sent during the next cron run.
       if (++$check_counter >= SIMPLENEWS_SEND_CHECK_INTERVAL) {
         $check_counter = 0;
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
         if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * $max_execution_time) {
-          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be send during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')), WATCHDOG_WARNING);
+          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be sent during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')), WATCHDOG_WARNING);
           break;
         }
       }
@@ -2278,12 +2299,12 @@ function simplenews_update_spool($msids, $result) {
  *
  * @param integer $nid newsletter node id
  * @param integer $vid newsletter revision id
- * @param string $status email send status
+ * @param string $status email sent status
  *
  * @return array Mail message array
  */
 function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
-  $query = db_query("SELECT snid FROM {simplenews_mail_spool} WHERE nid = :nid AND vid = :vid AND status = :status", array(':nid' => $nid, ':vid' => $vid, ':status' => $status));
+  $query = db_query("SELECT msid FROM {simplenews_mail_spool} WHERE nid = :nid AND vid = :vid AND status = :status", array(':nid' => $nid, ':vid' => $vid, ':status' => $status));
   return $query->rowCount();
 }
 
@@ -2303,14 +2324,14 @@ function simplenews_clear_spool() {
 }
 
 /**
- * Update newsletter send status.
+ * Update newsletter sent status.
  *
- * Set newsletter send status based on email send status in spool table.
+ * Set newsletter sent status based on email sent status in spool table.
  * Translated and untranslated nodes get a different treatment.
  *
- * The spool table holds data for emails to be send and (optionally)
+ * The spool table holds data for emails to be sent and (optionally)
  * already send emails. The simplenews_newsletters table contains the overall
- * send status of each newsletter issue (node).
+ * sent status of each newsletter issue (node).
  * Newsletter issues get the status pending when sending is innitiated. As
  * long as unsend emails exist in the spool, the status of the newsletter remains
  * unsend. When no pending emails are found the newsletter status is set 'send'.
@@ -2696,7 +2717,7 @@ function simplenews_help($path, $arg) {
       $help .= "<p>" . t('Simplenews uses nodes for <strong>newsletter issues</strong>. Newsletter issues are grouped by a <strong>newsletter taxonomy term</strong>. Node type and vocabulary are selectable. A newsletter is send to all email addresses which are subscribed to the newsletter. Newsletter issues can be sent only once. Large mailings should be sent by cron to balance the mailserver load.') . "</p>\n";
       $help .= "<p>" . t('Simplenews adds elements to the newsletter node add/edit form to manage newsletter format and sending of the newsletter issue. A newsletter issue can be sent for test before sending officially.') . "</p>\n";
       $help .= "<p>" . t('Both anonymous and authenticated users can <strong>opt-in and opt-out</strong> to a newsletter. A confirmation message is sent to anonymous users at subscription and unsubscription. Users can (un)subscribe using a form and a block. A <strong>subscription block</strong> is available for each newsletter offering a subscription form, a link to recent newsletters and RSS feed. Email addresses can also be imported and exported via the subscription administration pages.') . "</p>\n";
-      $help .= "<h2>" . t('Configuration') . "</h3>\n";
+      $help .= "<h2>" . t('Configuration') . "</h2>\n";
       $help .= "<ul>";
       if (user_access('administer permissions')) {
         $help .= "<li>" . l(t('Configure permissions'), 'admin/user/permissions', array('fragment' => 'module-simplenews')) . "</li>\n";

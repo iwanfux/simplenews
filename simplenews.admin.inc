@@ -17,7 +17,7 @@
  * @see simplenews_admin_newsletter_submit()
  * @todo Arguments to theme('pager') have changed: http://drupal.org/node/224333#comment-1898826
  */
-function simplenews_admin_issues(&$form_state, $action = 'sent') {
+function simplenews_admin_newsletter_issues(&$form_state, $action = 'sent') {
 /*
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_issue_multiple_delete_confirm($form, $form_state);
@@ -25,9 +25,9 @@ function simplenews_admin_issues(&$form_state, $action = 'sent') {
 */
 
   $form['filter'] = simplenews_issue_filter_form();
-  $form['filter']['#submit'][] = 'simplenews_issue_filter_form_submit';
+  $form['#submit'][] = 'simplenews_issue_filter_form_submit';
   $form['filter']['#theme'] = 'simplenews_filter_form';
-  $form['admin'] = simplenews_issue_list_form();
+  $form['admin'] = simplenews_admin_issues();
 
   return $form;
 }
@@ -58,15 +58,13 @@ function simplenews_issue_filters() {
  */
 function simplenews_issue_filter_form() {
   // Current filter selections in $session var; stored at form submission
-  // Example: array('newsletter' => 'all', 'email' => 'hotmail')
-  $session = isset($_SESSION['simplenews_issue_filter']) ? $_SESSION['simplenews_issue_filter'] : '';
-  $session = is_array($session) ? $session : _simplenews_issue_filter_default();
+  // Example: array('newsletter' => 'all')
+  $session = isset($_SESSION['simplenews_issue_filter']) ? $_SESSION['simplenews_issue_filter'] : _simplenews_issue_filter_default();
   $filters = simplenews_issue_filters();
 
   $form['filters'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Show only issues which'),
-    '#collapsible' => FALSE,
+    '#title' => t('Show only newsletter issues which'),
   );
 
   // Filter values are default
@@ -76,14 +74,14 @@ function simplenews_issue_filter_form() {
     '#options' => $filters['newsletter']['options'],
     '#default_value' => $session['newsletter'],
   );
-  $form['filters']['submit'] = array(
+  $form['filters']['buttons']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Filter'),
     '#prefix' => '<span class="spacer" />',
   );
   // Add Reset button if filter is in use
   if ($session != _simplenews_issue_filter_default()) {
-    $form['filters']['reset'] = array(
+    $form['filters']['buttons']['reset'] = array(
       '#type' => 'submit',
       '#value' => t('Reset'),
     );
@@ -115,12 +113,12 @@ function simplenews_issue_filter_form_submit($form, &$form_state) {
 }
 
 /**
- * Builds a list of newsletter issues with operations.
+ * Form builder: Builds a list of newsletter issues with operations.
  *
- * @see simplenews_issue_list_form_validate()
- * @see simplenews_issue_list_form_submit()
+ * @see simplenews_admin_issues_validate()
+ * @see simplenews_admin_issues_submit()
  */
-function simplenews_issue_list_form() {
+function simplenews_admin_issues() {
   // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -130,7 +128,7 @@ function simplenews_issue_list_form() {
   );
   //Possible future extensions:
   //$options = array('send' => t('Send'), 'resend' => t('Resend'), 'pauze' => t('Pauze sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
-  $options = array('send' => t('Send'));
+  $options = array('send' => t('Send'), 'resend' => t('Resend'));
   $form['options']['operation'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -139,8 +137,8 @@ function simplenews_issue_list_form() {
   $form['options']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Update'),
-    '#submit' => array('simplenews_newsletter_list_form_submit'),
-    '#validate' => array('simplenews_newsletter_list_form_validate'),
+    '#submit' => array('simplenews_admin_issues_submit'),
+    '#validate' => array('simplenews_admin_issues_validate'),
   );
 
   if (variable_get('simplenews_last_cron', '')) {
@@ -167,7 +165,7 @@ function simplenews_issue_list_form() {
   $query->innerJoin('simplenews_newsletters', 's', 'n.nid = s.nid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
   $result = $query
-    ->fields('n', array('nid', 'title', 'created', 'status'))
+    ->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
     ->fields('s', array('s_status', 'tid'))
     ->limit(30)
     ->orderByHeader($header)
@@ -189,7 +187,7 @@ function simplenews_issue_list_form() {
       'title' => l($issue->title, 'node/' . $issue->nid),
       'newsletter' => isset($terms[0]) ? $terms[0] : t('- Unassigned -'),
       'created' => format_date($issue->created, 'small'),
-      'published' => theme('simplenews_status', array('source' => 'published', 'status' => $node->status)),
+      'published' => theme('simplenews_status', array('source' => 'published', 'status' => $issue->status)),
       'sent' => $send_status,
       'subscribers' => $subscriber_count,
       'operations' => l(t('edit'), 'node/' . $issue->nid . '/edit', array('query' => drupal_get_destination())),
@@ -208,14 +206,14 @@ function simplenews_issue_list_form() {
   return $form;
 }
 
-function simplenews_issue_list_form_validate($form, &$form_state) {
-  if (isset($form_state['values']['operation'])) {
-    $nids = array_keys(array_filter($form_state['values']['issues']));
+function simplenews_admin_issues_validate($form, &$form_state) {
+  if (isset($form_state['input']['operation'])) {
+    $nids = array_keys(array_filter($form_state['input']['issues']));
     if (empty($nids)) {
       form_set_error('', t('No items selected.'));
     }
     else {
-      switch ($form_state['values']['operation']) {
+      switch ($form_state['input']['operation']) {
         case 'send':
         //@todo If 'send': check if selected items are un-sent.
         
@@ -224,7 +222,7 @@ function simplenews_issue_list_form_validate($form, &$form_state) {
   }
 }
 
-function simplenews_issue_list_form_submit($form, &$form_state) {
+function simplenews_admin_issues_submit($form, &$form_state) {
   if (isset($form_state['values']['operation'])) {
     $nids = array_keys(array_filter($form_state['values']['issues']));
     switch ($form_state['values']['operation']) {
@@ -866,14 +864,13 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
 
 /**
  * Menu callback: subscription administration.
- * @todo bug: simplenews_subscription_filter_form_submit() is not called on filter Submit.
  */
 function simplenews_admin_subscription($form, $form_state) {
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_subscription_multiple_delete_confirm($form, $form_state);
   }
   $form['filter'] = simplenews_subscription_filter_form();
-  $form['filter']['#submit'][] = 'simplenews_subscription_filter_form_submit';
+  $form['#submit'][] = 'simplenews_subscription_filter_form_submit';
   $form['filter']['#theme'] = 'simplenews_filter_form';
   $form['admin'] = simplenews_subscription_list_form();
 
@@ -1153,7 +1150,7 @@ function simplenews_admin_settings_mail(&$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Use cron to send newsletters'),
     '#default_value' => variable_get('simplenews_use_cron', TRUE),
-    '#description' => t('When checked cron will be used to send newsletters (recommended). Test newsletters and confirmation emails will be send immediately. Leave unchecked for testing purposes.'),
+    '#description' => t('When checked cron will be used to send newsletters (recommended). Test newsletters and confirmation emails will be sent immediately. Leave unchecked for testing purposes.'),
   );
   $throttle = drupal_map_assoc(array(1, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
   $throttle[999999] = t('Unlimited');
@@ -1425,7 +1422,7 @@ function simplenews_count_subscriptions($tid) {
   if (isset($subscription_count[$tid])) {
     return $subscription_count[$tid];
   }
-  $subscription_count[$tid] = db_query('SELECT snid FROM {simplenews_snid_tid} WHERE tid = :tid AND status = :status', $tid, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)->rowCount();
+  $subscription_count[$tid] = db_query('SELECT snid FROM {simplenews_snid_tid} WHERE tid = :tid AND status = :status', array(':tid' => $tid, ':status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))->rowCount();
 
   return $subscription_count[$tid];
 }
@@ -1527,7 +1524,7 @@ function theme_simplenews_status($variables) {
   }
 
   // Build the output
-  if ($images[$status]) {
+  if (isset($images[$status])) {
     $img_vars = array(
       'path' => drupal_get_path('module', 'simplenews') . '/' . $images[$status],
       'alt' => $title[$status],
