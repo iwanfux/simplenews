@@ -21,6 +21,7 @@
  * @todo Language code in t() now as array: http://drupal.org/node/224333#locale_context
  * @todo Theme function second argument should be an array: http://drupal.org/node/224333#theme_changes
  * @todo Coding standards: string concatenation, 'else if', type hinting
+ * @todo Implement hook_requirements()?; http://api.drupal.org/api/function/hook_requirements/7
  */
 
 /**
@@ -76,6 +77,12 @@ define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
  * THIS IS A WORK AROUND FOR DRUPAL6.14 BUG. SEE http://drupal.org/node/584334
  */
 define('SIMPLENEWS_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
+
+/**
+ * SUBSCRIPTION STATUS
+ */
+define('SIMPLENEWS_SUBSCRIPTION_INACTIVE', 0);
+define('SIMPLENEWS_SUBSCRIPTION_ACTIVE', 1);
 
 /**
  * Implementation of hook_permission().
@@ -138,37 +145,35 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/simplenews/types'] = array(
+  $items['admin/structure/simplenews'] = array(
     'title' => 'Newsletters',
     'description' => 'List, add and edit newsletter series.',
-    'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'simplenews_types_overview',
-    'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
-    'weight' => -8,
-  );
-  $items['admin/content/simplenews/types/edit/%'] = array(
-    'title' => 'Newsletters',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_types_form', 5),
+    'page callback' => 'simplenews_admin_newsletter_series',
     'access arguments' => array('administer newsletters'),
     'file' => 'simplenews.admin.inc',
   );
-  $items['admin/content/simplenews/types/delete/%'] = array(
-    'title' => 'Newsletters',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_types_delete', 5),
-    'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
-  );
-  $items['admin/content/simplenews/types/list'] = array(
+  $items['admin/content/simplenews/list'] = array(
     'title' => 'List newsletters',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['admin/content/simplenews/types/add'] = array(
+  $items['admin/structure/simplenews/edit/%'] = array(
+    'title' => 'Newsletters',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simplenews_admin_types_form', 4),
+    'access arguments' => array('administer newsletters'),
+    'file' => 'simplenews.admin.inc',
+  );
+  $items['admin/structure/simplenews/delete/%'] = array(
+    'title' => 'Newsletters',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simplenews_admin_types_delete', 4),
+    'access arguments' => array('administer newsletters'),
+    'file' => 'simplenews.admin.inc',
+  );
+  $items['admin/structure/simplenews/add'] = array(
     'title' => 'Add newsletter',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -203,7 +208,7 @@ function simplenews_menu() {
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_users_form', 5),
+    'page arguments' => array('simplenews_admin_users_form', 4),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'simplenews.subscription.inc',
   );
@@ -921,14 +926,14 @@ function simplenews_cron() {
 function simplenews_taxonomy_term_delete($term) {
   // Delete subscriptions
   db_delete('simplenews_snid_tid')
-    ->condition('tid', $term['tid'])
+    ->condition('tid', $term->tid)
     ->execute();
-  drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term['name'])));
+  drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $term->name)));
 
   // Delete subscription block 
-  db_delete('blocks')
+  db_delete('block')
     ->condition('module', 'simplenews')
-    ->condition('delta', $term['tid'])
+    ->condition('delta', $term->tid)
     ->execute();
 }
 
@@ -1044,6 +1049,7 @@ function simplenews_user_login(&$edit, $account) {
  * Implements hook_user_presave.
  */
 function simplenews_user_presave(&$edit, $account, $category) {
+/*
   if ($category == 'account' && $edit['mail']) {
     $user_subscription = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE uid = :uid", array(':uid' => $account->uid));
     if ($user_subscription->rowCount()) {
@@ -1093,6 +1099,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
       }
     }
   }
+*/
 }
 
 /**
@@ -2729,7 +2736,7 @@ function simplenews_help($path, $arg) {
         $help .= "<li>" . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/build/block'))) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
-        $help .= "<li>" . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/content/simplenews/types'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
+        $help .= "<li>" . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/structure/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
       }
       $help .= "</ul>";
 
@@ -2742,19 +2749,19 @@ function simplenews_help($path, $arg) {
         $help .= "<li>" . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/config/simplenews/newsletter'))) . "</li>\n";
       }
       if (user_access('administer newsletters')) {
-        $help .= "<li>" . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews/types'))) . "</li>\n";
+        $help .= "<li>" . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/structure/simplenews'))) . "</li>\n";
       }
       $help .= "</ul>";
       return $help;
     case 'admin/config/simplenews/newsletter':
       $help = '<ul>';
-      $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/content/simplenews/types'))) . "</li>\n";
+      $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/structure/simplenews'))) . "</li>\n";
       if (!module_exists('mimemail')) {
         $help .= "<li>" . t('Install <a href="@mime_mail_url">Mime Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('@mime_mail_url' => 'http://drupal.org/project/mimemail')) . "</li>\n";
       }
       $help .= "</ul>";
       return $help;
-    case 'admin/content/simplenews/types/add':
+    case 'admin/structure/simplenews/add':
       $help = '<p>' . t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') . "</p>\n";
       return $help;
     case 'admin/content/node-type/simplenews/display/simplenews':

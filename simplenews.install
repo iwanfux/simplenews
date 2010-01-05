@@ -297,6 +297,7 @@ function _simplenews_install_vocabulary() {
   $terms = taxonomy_get_tree($vocabulary->vid);
   if (empty($terms)) {
     $term = new stdClass();
+    $term->tid = 0;
     $term->name = t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal')));
     $term->vid = $vocabulary->vid;
     $term->weight = 0;

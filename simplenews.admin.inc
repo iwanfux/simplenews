@@ -17,7 +17,7 @@
  * @see simplenews_admin_newsletter_submit()
  * @todo Arguments to theme('pager') have changed: http://drupal.org/node/224333#comment-1898826
  */
-function simplenews_admin_newsletter_issues(&$form_state, $action = 'sent') {
+function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
 /*
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_issue_multiple_delete_confirm($form, $form_state);
@@ -126,9 +126,10 @@ function simplenews_admin_issues() {
     '#prefix' => '<div class="container-inline">',
     '#suffix' => '</div>',
   );
-  //Possible future extensions:
-  //$options = array('send' => t('Send'), 'resend' => t('Resend'), 'pauze' => t('Pauze sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
-  $options = array('send' => t('Send'), 'resend' => t('Resend'));
+  $options = array();
+  foreach (module_invoke_all('simplenews_issue_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
   $form['options']['operation'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -206,6 +207,24 @@ function simplenews_admin_issues() {
   return $form;
 }
 
+/**
+ * Implements hook_simplenews_issue_operations().
+ */
+function simplenews_simplenews_issue_operations() {
+// @todo: future ideas: 'pauze' => t('Pauze sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
+  $operations = array(
+    'activate' => array(
+      'label' => t('Send'),
+      'callback' => 'simplenews_issue_send',
+    ),
+    'inactivate' => array(
+      'label' => t('Resend'),
+      'callback' => 'simplenews_issue_resend',
+    ),
+  );
+  return $operations;
+}
+
 function simplenews_admin_issues_validate($form, &$form_state) {
   if (isset($form_state['input']['operation'])) {
     $nids = array_keys(array_filter($form_state['input']['issues']));
@@ -223,15 +242,47 @@ function simplenews_admin_issues_validate($form, &$form_state) {
 }
 
 function simplenews_admin_issues_submit($form, &$form_state) {
-  if (isset($form_state['values']['operation'])) {
-    $nids = array_keys(array_filter($form_state['values']['issues']));
-    switch ($form_state['values']['operation']) {
-      case 'send':
-        //@todo Send selected newsletters.
-        //drupal_set_message(t('The update has been performed.'));
-        break;
+  // Call operation functions as defined in hook_simplenews_issue_operations().
+  $operations = module_invoke_all('simplenews_issue_operations');
+  $operation = $operations[$form_state['values']['operation']];
+  // Filter out unchecked newsletter issues
+  $nids = array_filter($form_state['values']['issues']);
+  if ($function = $operation['callback']) {
+    // Add in callback arguments if present.
+    if (isset($operation['callback arguments'])) {
+      $args = array_merge(array($nids), $operation['callback arguments']);
     }
+    else {
+      $args = array($nids);
+    }
+    call_user_func_array($function, $args);
+    
+    drupal_set_message(t('The update has been performed.'));
   }
+  else {
+    // We need to rebuild the form to go to a second step. For example, to
+    // show the confirmation form for the deletion of nodes.
+    $form_state['rebuild'] = TRUE;
+  }
+}
+
+/**
+ * ...
+ */
+function simplenews_issue_send($nids) {
+  //TODO
+  // check if $nids are not pending: error
+  // check if newsletters are not sent: error
+  // send newsletter
+}
+
+/**
+ * ...
+ */
+function simplenews_issue_resend($nids) {
+  //TODO
+  // check if $nids are not pending: error
+  // send newsletter  
 }
 
 /**
@@ -258,13 +309,15 @@ function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
 /**
  * Menu callback: newsletter admin form with list of available newsletter series.
  */
-function simplenews_types_overview() {
+function simplenews_admin_newsletter_series() {
+//dpm(simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE));
+
   $rows = array();
   $header = array(t('Newsletter name'), t('Subscribers'), t('Operations'));
 
   foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
     $count = simplenews_count_subscriptions($newsletter->tid);
-    $rows[] = array(check_plain($newsletter->name), $count, l(t('edit newsletter'), 'admin/content/simplenews/types/edit/' . $newsletter->tid));
+    $rows[] = array(check_plain($newsletter->name), $count, l(t('edit newsletter'), 'admin/structure/simplenews/edit/' . $newsletter->tid));
   }
 
   if (count($rows) == 0) {
@@ -273,7 +326,7 @@ function simplenews_types_overview() {
         'colspan' => count($header),
       ));
   }
-  return theme('table', $header, $rows);
+  return theme('table', array('header' => $header, 'rows' => $rows));
 }
 
 /**
@@ -282,7 +335,7 @@ function simplenews_types_overview() {
  * @see simplenews_admin_types_form_validate()
  * @see simplenews_admin_types_form_submit()
  */
-function simplenews_admin_types_form(&$form_state, $tid = NULL) {
+function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
   if (isset($tid)) {
     // We are editing an existing newsletter.
     $term = taxonomy_term_load($tid);
@@ -294,17 +347,17 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
     }
 
     // Redirect on a delete operation for posterity's sake.
-    if (isset($form_state['post']['op']) && $form_state['post']['op'] == t('Delete')) {
-      drupal_goto('admin/content/simplenews/types/delete/' . $term->tid);
+    if (isset($form_state['input']['op']) && $form_state['input']['op'] == t('Delete')) {      
+      drupal_goto('admin/structure/simplenews/delete/' . $term->tid);
     }
 
   }
   else {
     // We will create a new newsletter.
     // Provide vocabulary id for the newsletter to be added to.
-    $term = (object) array(
-      'vid' => variable_get('simplenews_vid', ''),
-    );
+    $term = new stdClass();
+    $term->tid = 0;
+    $term->vid = variable_get('simplenews_vid', '');
   }
 
   $form['name'] = array(
@@ -433,20 +486,21 @@ function simplenews_admin_types_form(&$form_state, $tid = NULL) {
   // If we are editing a newsletter term, show delete option and store tid.
   // tid is used in validation and submission functions to differentiate
   // between form actions of creating a new or editing an existing term.
-  if (isset($term->tid)) {
+  if ($term->tid) {
     $form['delete'] = array(
       '#type' => 'submit',
       '#value' => t('Delete'),
       '#weight' => 30,
     );
-    $form['tid'] = array(
-      '#type' => 'value',
-      '#value' => $term->tid,
-    );
   }
+  $form['tid'] = array(
+    '#type' => 'value',
+    '#value' => $term->tid,
+  );
 
+// TODO: form redirect does not work.
   // Return to Newsletter list page after submit
-  $form['#redirect'] = 'admin/content/simplenews/types';
+  $form['#redirect'] = 'admin/structure/simplenews';
 
   return $form;
 }
@@ -462,43 +516,42 @@ function simplenews_admin_types_form_validate($form, &$form_state) {
 
 function simplenews_admin_types_form_submit($form, &$form_state) {
   // Redirect on a delete operation for posterity's sake.
-  if (isset($form_state['post']['op']) && $form_state['post']['op'] == t('Delete')) {
-    drupal_goto('admin/content/simplenews/types/delete/' . $term->tid);
+  if (isset($form_state['input']['op']) && $form_state['input']['op'] == t('Delete')) {
+    drupal_goto('admin/structure/simplenews/delete/' . $form_state['values']['tid']);
   }
 
   // Create or update taxonomy term for this newsletter.
   // When creating a term $form_state['values']['tid'] is NULL.
-  if (isset($form_state['values']['tid'])) {
-    $termdata = (array) taxonomy_term_load($form_state['values']['tid']);
+  if ($form_state['values']['tid']) {
+    $term = taxonomy_term_load($form_state['values']['tid']);
   }
-  $termdata['tid'] = $form_state['values']['tid'];
-  $termdata['vid'] = $form_state['values']['vid'];
-  $termdata['name'] = $form_state['values']['name'];
-  $termdata['description'] = $form_state['values']['description'];
-  $termdata['weight'] = $form_state['values']['weight'];
-  switch (taxonomy_term_save($term /* TODO Term object replaces array $termdata */)) {
+  else {
+    $term = new stdClass();
+    $term->tid = 0;
+    $term->vid = $form_state['values']['vid'];
+  }
+  $term->name = $form_state['values']['name'];
+  $term->description = $form_state['values']['description'];
+  $term->weight = $form_state['values']['weight'];
+  switch (taxonomy_term_save($term)) {
     case SAVED_NEW:
-      drupal_set_message(t('Created new term %name.', array('%name' => $form_state['values']['name'])));
+      drupal_set_message(t('Created new term %term.', array('%term' => $form_state['values']['name'])));
       break;
     case SAVED_UPDATED:
-      drupal_set_message(t('Updated term %name.', array('%name' => $form_state['values']['name'])));
+      drupal_set_message(t('Updated term %term.', array('%term' => $form_state['values']['name'])));
       break;
   }
 
   // Store newsletter specific settings.
   // When editing a newsletter fieldnames have $tid suffix.
-  // When creating a new newsletter field names have no suffix
-  // and $form_state['values']['tid'] is NULL.
-  if (isset($form_state['values']['tid'])) {
+  // When creating a new newsletter field names have suffix '0'
+  if ($form_state['values']['tid']) {
     $tid = $suffix = $form_state['values']['tid'];
   }
   else {
-    // Get the tid from the database based on the form values used above to
-    // create a new term.
-    $tid = db_query("SELECT t.tid FROM {term_data} t WHERE t.vid = :vid AND t.name = :name", array(':vid' => $form_state['values']['vid'], ':name' => $form_state['values']['name']))
-      ->order('t.tid', 'DESC')
-      ->fetchField();
-    $suffix = '';
+    // $term contains the newly created term object.
+    $tid = $term->tid;
+    $suffix = 0;
   }
   variable_set('simplenews_from_name_' . $tid, $form_state['values']['simplenews_from_name_' . $suffix]);
   variable_set('simplenews_from_address_' . $tid, $form_state['values']['simplenews_from_address_' . $suffix]);
@@ -513,12 +566,12 @@ function simplenews_admin_types_form_submit($form, &$form_state) {
  *
  * @see simplenews_admin_types_delete_submit()
  */
-function simplenews_admin_types_delete(&$form_state, $tid = NULL) {
-  if (!isset($tid)) {
+function simplenews_admin_types_delete($form, &$form_state, $tid = NULL) {
+  if (!isset($tid) || !$term = taxonomy_term_load($tid)) {
     drupal_not_found();
     return;
   }
-  $term = taxonomy_term_load($tid);
+
   $form = array();
   $form['tid'] = array(
     '#type' => 'value',
@@ -527,11 +580,11 @@ function simplenews_admin_types_delete(&$form_state, $tid = NULL) {
   $form['notice'] = array(
     '#value' => '<p><strong>' . t('Note: All subscriptions associated with this newsletter will be lost.') . '</strong></p>',
   );
-  $form['#redirect'] = 'admin/content/simplenews/types';
+  $form['#redirect'] = 'admin/structure/simplenews';
 
   return confirm_form($form, 
     t('Are you sure you want to delete %title?', array('%title' => $term->name)), 
-    'admin/content/simplenews/types', 
+    'admin/structure/simplenews', 
     t('This action cannot be undone.'), 
     t('Delete'), 
     t('Cancel')
@@ -607,7 +660,7 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
  * @see simplenews_subscription_list_add_submit()
  * @todo Add 32char description field as subsription source
  */
-function simplenews_subscription_list_add() {
+function simplenews_subscription_list_add($form, &$form_state) {
   global $language;
 
   $form['emails'] = array(
@@ -706,7 +759,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * @see simplenews_admin_export_after_build()
  * @todo Add checkboxes for subscribed and unsubscribed selection.
  */
-function simplenews_subscription_list_export() {
+function simplenews_subscription_list_export($form, &$form_state) {
   //TODO: Add (un)subscribed as filter to form.
   $form['states'] = array(
     '#type' => 'checkboxes',
@@ -799,7 +852,7 @@ function simplenews_admin_export_after_build($form, &$form_state) {
  * @see simplenews_subscription_list_remove_submit()
  * @todo Add 32char description field as unsubsription source
  */
-function simplenews_subscription_list_remove() {
+function simplenews_subscription_list_remove($form, &$form_state) {
   $form['emails'] = array(
     '#type' => 'textarea',
     '#title' => t('Email addresses'),
@@ -865,7 +918,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
 /**
  * Menu callback: subscription administration.
  */
-function simplenews_admin_subscription($form, $form_state) {
+function simplenews_admin_subscription() {
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_subscription_multiple_delete_confirm($form, $form_state);
   }
@@ -884,7 +937,7 @@ function simplenews_admin_subscription($form, $form_state) {
  * @see simplenews_subscription_list_form_submit()
  * @todo Subscriber maintanance needs overhaul now we have more data availabale.
  */
-function simplenews_subscription_list_form() {
+function simplenews_subscription_list_form($form, &$form_state) {
   // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -892,6 +945,10 @@ function simplenews_subscription_list_form() {
     '#prefix' => '<div class="container-inline">',
     '#suffix' => '</div>',
   );
+  $options = array();
+  foreach (module_invoke_all('simplenews_subscription_operations') as $operation => $array) {
+    $options[$operation] = $array['label'];
+  }
   $options = array('activate' => t('Activate'), 'inactivate' => t('Inactivate'), 'delete' => t('Delete'));
   $form['options']['operation'] = array(
     '#type' => 'select',
@@ -948,6 +1005,29 @@ function simplenews_subscription_list_form() {
   return $form;
 }
 
+/**
+ * Implements hook_simplenews_subscription_operations().
+ */
+function simplenews_simplenews_subscription_operations() {
+  $operations = array(
+    'activate' => array(
+      'label' => t('Activate'),
+      'callback' => 'simplenews_subscription_activate',
+      'callback arguments' => array(SIMPLENEWS_SUBSCRIPTION_ACTIVE),
+    ),
+    'inactivate' => array(
+      'label' => t('Inactivate'),
+      'callback' => 'simplenews_subscription_activate',
+      'callback arguments' => array(SIMPLENEWS_SUBSCRIPTION_INACTIVE),
+    ),
+    'delete' => array(
+      'label' => t('Delete'),
+      'callback' => NULL,
+    ),
+  );
+  return $operations;
+}
+
 function simplenews_subscription_list_form_validate($form, &$form_state) {
   if (isset($form_state['values']['operation'])) {
     $snids = array_keys(array_filter($form_state['values']['subscribers']));
@@ -958,25 +1038,51 @@ function simplenews_subscription_list_form_validate($form, &$form_state) {
 }
 
 function simplenews_subscription_list_form_submit($form, &$form_state) {
-  if (isset($form_state['values']['operation'])) {
-    $snids = array_keys(array_filter($form_state['values']['subscribers']));
-    switch ($form_state['values']['operation']) {
-      case 'activate':
-        call_user_func_array('simplenews_activate_subscription', array($snids));
-        drupal_set_message(t('The update has been performed.'));
-        break;
-      case 'inactivate':
-        call_user_func_array('simplenews_inactivate_subscription', array($snids));
-        drupal_set_message(t('The update has been performed.'));
-        break;
+  // Call operation functions as defined in hook_simplenews_subscription_operations().
+  $operations = module_invoke_all('simplenews_subscription_operations');
+  $operation = $operations[$form_state['values']['operation']];
+  // Filter out unchecked subscribers
+  $snids = array_filter($form_state['values']['subscribers']);
+  if ($function = $operation['callback']) {
+    // Add in callback arguments if present.
+    if (isset($operation['callback arguments'])) {
+      $args = array_merge(array($snids), $operation['callback arguments']);
     }
+    else {
+      $args = array($snids);
+    }
+    call_user_func_array($function, $args);
+    
+    drupal_set_message(t('The update has been performed.'));
   }
+  else {
+    // We need to rebuild the form to go to a second step. For example, to
+    // show the confirmation form for the deletion of nodes.
+    $form_state['rebuild'] = TRUE;
+  }
+}
+
+/**
+ * Callback function to (de-)activate subscriptions.
+ *
+ * @param $snids
+ *   Array of snid's to be activated.
+ * @param $status
+ *   Status of the subscription (0, 1).
+ */
+function simplenews_subscription_activate($snids, $status) {
+  db_update('simplenews_subscriptions')
+    ->fields(array(
+      'activated' => $status,
+    ))
+    ->condition('snid', $snids, 'IN')
+    ->execute();
 }
 
 /**
  * Menu callback: Simplenews admin settings - General.
  */
-function simplenews_admin_settings(&$form_state) {
+function simplenews_admin_settings($form, &$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
@@ -1037,7 +1143,7 @@ function simplenews_admin_settings_submit($form, &$form_state) {
 /**
  * Menu callback: Simplenews admin settings - Newsletter.
  */
-function simplenews_admin_settings_newsletter(&$form_state) {
+function simplenews_admin_settings_newsletter($form, &$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
@@ -1141,7 +1247,7 @@ function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
 /**
  * Menu callback: Simplenews admin settings - Email.
  */
-function simplenews_admin_settings_mail(&$form_state) {
+function simplenews_admin_settings_mail($form, &$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
@@ -1192,7 +1298,7 @@ function simplenews_admin_settings_mail(&$form_state) {
 /**
  * Menu callback: Simplenews admin settings - Subscription.
  */
-function simplenews_admin_settings_subscription(&$form_state) {
+function simplenews_admin_settings_subscription($form, &$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
@@ -1260,36 +1366,6 @@ function simplenews_admin_settings_subscription(&$form_state) {
   );
 
   return system_settings_form($form);
-}
-
-/**
- * Callback function to activate the specified subscriptions.
- *
- * @param $snids
- *   Array of snid's to be activated.
- */
-function simplenews_activate_subscription($snids) {
-  db_update('simplenews_subscriptions')
-    ->fields(array(
-      'activated' => 1,
-    ))
-    ->condition('snid', $snids, 'IN')
-    ->execute();
-}
-
-/**
- * Callback function to inactivate the specified subscriptions.
- *
- * @param $snids
- *   Array of snid's to be de-activated.
- */
-function simplenews_inactivate_subscription($snids) {
-  db_update('simplenews_subscriptions')
-    ->fields(array(
-      'activated' => 0,
-    ))
-    ->condition('snid', $snids, 'IN')
-    ->execute();
 }
 
 /**
@@ -1467,7 +1543,7 @@ function theme_simplenews_subscription_list($form) {
   }
 
   // Render table header, pager and form
-  $output .= theme('table', $header, $rows);
+  $output .= theme('table', array('header' => $header, 'rows' => $rows));
   if ($form['pager']['#value']) {
     $output .= drupal_render($form['pager']);
   }
