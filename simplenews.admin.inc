@@ -15,7 +15,6 @@
  * Menu callback: Admin form for sent and draft newsletters.
  *
  * @see simplenews_admin_newsletter_submit()
- * @todo Arguments to theme('pager') have changed: http://drupal.org/node/224333#comment-1898826
  */
 function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
 /*
@@ -186,7 +185,7 @@ function simplenews_admin_issues() {
 
     $options[$issue->nid] = array(
       'title' => l($issue->title, 'node/' . $issue->nid),
-      'newsletter' => isset($terms[0]) ? $terms[0] : t('- Unassigned -'),
+      'newsletter' => isset($terms[0]) ? $terms[0] : '&lt;' . t('Unassigned') . '&gt;',
       'created' => format_date($issue->created, 'small'),
       'published' => theme('simplenews_status', array('source' => 'published', 'status' => $issue->status)),
       'sent' => $send_status,
@@ -435,15 +434,18 @@ function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
     '#title' => t('Newsletter subject'),
     '#collapsible' => FALSE,
   );
+  //TODO It seems that core does not support any list of available tokens in the user interface :(
   $form['simplenews_subject']['token_help'] = array(
     '#title' => t('Replacement patterns'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
+  /*
   $form['simplenews_subject']['token_help']['help'] = array(
     '#value' => theme('token_help', 'simplenews') . theme('token_help', 'node'),
   );
+  */
   $form['simplenews_subject']['simplenews_email_subject_' . $term->tid] = array(
     '#type' => 'textfield',
     '#title' => t('Email subject'),
@@ -1324,15 +1326,18 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
     '#collapsible' => FALSE,
   );
 
+  //TODO It seems that core does not support any list of available tokens in the user interface :(
   $form['simplenews_subscription']['subscription_mail']['token_help'] = array(
     '#title' => t('Replacement patterns'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
+  /*
   $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
     '#value' => theme('token_help', 'simplenews'),
   );
+  */
 
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
     '#type' => 'textfield',
