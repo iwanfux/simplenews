@@ -309,7 +309,6 @@ function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
  * Menu callback: newsletter admin form with list of available newsletter series.
  */
 function simplenews_admin_newsletter_series() {
-//dpm(simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE));
 
   $rows = array();
   $header = array(t('Newsletter name'), t('Subscribers'), t('Operations'));
@@ -443,7 +442,7 @@ function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
   );
   /*
   $form['simplenews_subject']['token_help']['help'] = array(
-    '#value' => theme('token_help', 'simplenews') . theme('token_help', 'node'),
+    '#markup' => theme('token_help', 'simplenews') . theme('token_help', 'node'),
   );
   */
   $form['simplenews_subject']['simplenews_email_subject_' . $term->tid] = array(
@@ -452,7 +451,7 @@ function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
-    '#default_value' => variable_get('simplenews_email_subject_' . $term->tid, '[[simplenews-newsletters-name]] [title-raw]'),
+    '#default_value' => variable_get('simplenews_email_subject_' . $term->tid, '[[simplenews-issue:newsletters-name]] [title-raw]'),
   );
 
   $form['simplenews_sender_information']['simplenews_from_address_' . $term->tid] = array(
@@ -1335,7 +1334,7 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
   );
   /*
   $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
-    '#value' => theme('token_help', 'simplenews'),
+    '#markup' => theme('token_help', 'simplenews'),
   );
   */
 

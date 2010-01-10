@@ -17,7 +17,7 @@
  * @see simplenews_subscription_manager_form_validate()
  * @see simplenews_subscription_manager_form_submit()
  */
-function simplenews_subscription_manager_form(&$form_state, $snid = NULL) {
+function simplenews_subscription_manager_form($form, &$form_state, $snid = NULL) {
   global $user;
 
   if (isset($snid)) {
@@ -102,6 +102,8 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
  * @todo use drupal_render() with drupal_get_form(): http://drupal.org/node/224333#unrendered
  */
 function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
+dpm($op1);
+dpm($op2);
   $md5 = drupal_substr($op2, 0, 10);
   list($snid, $tid) = explode('t', drupal_substr($op2, 10));
 
@@ -132,10 +134,10 @@ function simplenews_confirm_subscription($op1 = NULL, $op2 = NULL) {
  * @see simplenews_confirm_add_form_submit()
  * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
  */
-function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
+function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#value' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
@@ -150,7 +152,7 @@ function simplenews_confirm_add_form(&$form_state, $mail, $newsletter) {
   return confirm_form($form, 
     t('Confirm subscription'), 
     '', 
-    t('You always have the option of unsubscribing later.'), 
+    t('You can always unsubscribe later.'), 
     t('Subscribe'), 
     t('Cancel')
   );
@@ -167,10 +169,10 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
  * @see simplenews_confirm_removal_form_submit()
  * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
  */
-function simplenews_confirm_removal_form(&$form_state, $mail, $newsletter) {
+function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#value' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
@@ -200,7 +202,7 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
  * Menu callback: handle the edit subscription page and a subscription
  * page for anonymous users.
  */
-function simplenews_admin_users_form(&$form_state, $snid = NULL) {
+function simplenews_admin_users_form($form, &$form_state, $snid = NULL) {
   $form = simplenews_subscription_manager_form($form_state, $snid);
   $form['#redirect'] = 'admin/content/simplenews/users';
   return $form;

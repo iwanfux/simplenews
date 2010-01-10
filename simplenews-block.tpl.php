@@ -37,7 +37,7 @@
   <?php endif; ?>
 
   <?php if ($use_form): ?>
-    <?php print $form; ?>
+    <?php print render($form); ?>
   <?php elseif ($subscription_link): ?>
     <p><?php print $subscription_link; ?></p>
   <?php endif; ?>
