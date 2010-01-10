@@ -54,6 +54,19 @@ function simplenews_action_info() {
 }
 
 /**
+* Implementation of hook_action_info_alter().
+*
+* Makes user and system actions available to the Simplenews 'subscribe' and 'unsubscribe' triggers.
+*/
+function simplenews_action_info_alter(&$actions) {
+  foreach ($actions as $id => $action) {
+    if ($action['type'] == 'user' || $action['type'] == 'system') {
+      $actions[$id]['hooks']['simplenews'] = array('subscribe', 'unsubscribe');
+    }
+  }
+}
+
+/**
  * A configurable Drupal action. Send a simplenews newsletter.
  *   hook = cron: Send a newsletter to all subscribers.
  *   hook = user: Send a newsletter to the user who triggered the action.
