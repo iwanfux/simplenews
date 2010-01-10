@@ -1225,6 +1225,97 @@ function simplenews_user_view($account, $build_mode) {
 function simplenews_block_OLD($op = 'list', $delta = 0, $edit = array()) { }
 
 /**
+ * Implements hook_block_info().
+ */
+function simplenews_block_info() {
+  $blocks = array();
+  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', '')) as $newsletter) {
+    //TODO: 1. without form -> by role; 2. with form -> user caching with refresh on subscribe/unsubscribe (option as setting) or no caching
+    // Only list a block if the newsletter is not Hidden.
+    $blocks[$newsletter->tid] = array(
+      'info' => t('Newsletter: @title', array('@title' => $newsletter->name)),
+      'cache' => variable_get('simplenews_block_f_'. $newsletter->tid, 1) ? DRUPAL_NO_CACHE : DRUPAL_CACHE_PER_ROLE,
+    );
+  }
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function simplenews_block_configure($delta = '') {
+  $form['simplenews_block_'. $delta]['simplenews_block_m_'. $delta] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block message'),
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#default_value' => variable_get('simplenews_block_m_'. $delta, t('Stay informed on our latest news!')),
+  );
+  $form['simplenews_block_'. $delta]['simplenews_block_f_'. $delta] = array(
+    '#type' => 'radios',
+    '#title' => t('Subscription interface'),
+    '#options' => array('1' => t('Subscription form'), '0' => t('Link to form')),
+    '#description' => t("Note: this requires permission 'subscribe to newsletters'."),
+    '#default_value' => variable_get('simplenews_block_f_'. $delta, 1),
+  );
+  $form['simplenews_block_'. $delta]['simplenews_block_l_'. $delta] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display link to previous issues'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('simplenews_block_l_'. $delta, 1),
+  );
+  $form['simplenews_block_'. $delta]['simplenews_block_i_status_'. $delta] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display previous issues'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('simplenews_block_i_status_'. $delta, 0),
+  );
+  $form['simplenews_block_'. $delta]['simplenews_block_i_'. $delta] = array(
+    '#type' => 'select',
+    '#title' => t('Number of issues to display'),
+    '#options' => drupal_map_assoc(array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
+    '#default_value' => variable_get('simplenews_block_i_'. $delta, 5),
+  );
+  $form['simplenews_block_'. $delta]['simplenews_block_r_'. $delta] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display RSS-feed icon'),
+    '#return_value' => 1,
+    '#default_value' => variable_get('simplenews_block_r_'. $delta, 1),
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function simplenews_block_save($delta = '', $edit = array()) {
+  variable_set('simplenews_block_m_'. $delta, $edit['simplenews_block_m_'. $delta]);
+  variable_set('simplenews_block_f_'. $delta, $edit['simplenews_block_f_'. $delta]);
+  variable_set('simplenews_block_l_'. $delta, $edit['simplenews_block_l_'. $delta]);
+  variable_set('simplenews_block_i_status_'. $delta, $edit['simplenews_block_i_status_'. $delta]);
+  variable_set('simplenews_block_i_'. $delta, $edit['simplenews_block_i_'. $delta]);
+  variable_set('simplenews_block_r_'. $delta, $edit['simplenews_block_r_'. $delta]);
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function simplenews_block_view($delta = '') {
+  global $language;
+
+  $newsletters = simplenews_get_newsletters(variable_get('simplenews_vid', ''));
+  // Only display a block if $delta is a valid newsletter term id.
+  if (in_array($delta, array_keys($newsletters))) {
+    // $delta is validated, the block can be displayed.
+    $block = array(
+      'subject' => check_plain($newsletters['$delta']),
+      'content' => theme(array('simplenews_block__'. $delta, 'simplenews_block'), $delta),
+    );
+    return $block;
+  }
+}
+
+/**
  * Implementation of hook_forms().
  *
  * All form blocks are build using simplenews_block_form().
@@ -2439,6 +2530,8 @@ function simplenews_call_actions($op, $subscription) {
  *   On false hidden newsletters will not be returned.
  *   On true all newsletter will be returned.
  * @return array of newsletters objects.
+ *
+ * @todo We can probably remove the $vid parameter. Is always variable_get('simplenews_vid', '').
  */
 function simplenews_get_newsletters($vid, $show_all = FALSE) {
   $newsletters = array();
