@@ -36,15 +36,15 @@ function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent
  */
 function simplenews_issue_filters() {
   // Newsletter filter
-  $filters['newsletter'] = array(
+  $filters['list'] = array(
     'title' => t('Subscribed to'),
     'options' => array(
       'all'   => t('All newsletters'),
-      'tid-0'    => t('Unassigned newsletters'),
+      'scid-0'    => t('Unassigned newsletters'),
     ),
   );
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $filters['newsletter']['options']['tid-' . $newsletter->tid] = $newsletter->name;
+  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+    $filters['list']['options']['scid-' . $list->scid] = $list->name;
   }
 
   return $filters;
@@ -57,7 +57,7 @@ function simplenews_issue_filters() {
  */
 function simplenews_issue_filter_form() {
   // Current filter selections in $session var; stored at form submission
-  // Example: array('newsletter' => 'all')
+  // Example: array('list' => 'all')
   $session = isset($_SESSION['simplenews_issue_filter']) ? $_SESSION['simplenews_issue_filter'] : _simplenews_issue_filter_default();
   $filters = simplenews_issue_filters();
 
@@ -67,11 +67,11 @@ function simplenews_issue_filter_form() {
   );
 
   // Filter values are default
-  $form['filters']['newsletter'] = array(
+  $form['filters']['list'] = array(
     '#type' => 'select',
-    '#title' => $filters['newsletter']['title'],
-    '#options' => $filters['newsletter']['options'],
-    '#default_value' => $session['newsletter'],
+    '#title' => $filters['list']['title'],
+    '#options' => $filters['list']['options'],
+    '#default_value' => $session['list'],
   );
   $form['filters']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -94,7 +94,7 @@ function simplenews_issue_filter_form() {
  */
 function _simplenews_issue_filter_default() {
   return array(
-    'newsletter' => 'all',
+    'list' => 'all',
   );
 }
 
@@ -102,7 +102,7 @@ function simplenews_issue_filter_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
       $_SESSION['simplenews_issue_filter'] = array(
-        'newsletter' => $form_state['values']['newsletter'],
+        'list' => $form_state['values']['list'],
       );
       break;
     case t('Reset'):
@@ -152,7 +152,7 @@ function simplenews_admin_issues() {
   // Table header. Used as tablesort default
   $header = array(
     'title' => array('data' => t('Title'), 'field' => 'n.title'),
-    'newsletter' => array('data' => t('Newsletter issue'), 'field' => 't.name'),
+    'list' => array('data' => t('Newsletter issue'), 'field' => 't.name'),
     'created' => array('data' => t('Created'), 'field' => 'n.created', 'sort' => 'desc'),
     'published' => array('data' => t('Published')),
     'sent' => array('data' => t('Sent')),
@@ -162,30 +162,29 @@ function simplenews_admin_issues() {
 
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort');
   simplenews_build_issue_filter_query($query);
-  $query->innerJoin('simplenews_newsletters', 's', 'n.nid = s.nid');
+  $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
   $result = $query
-    ->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
-    ->fields('s', array('s_status', 'tid'))
+    ->fields('n', array('nid', 'title', 'created', 'status'))
+    ->fields('sn', array('s_status', 'scid'))
     ->limit(30)
     ->orderByHeader($header)
     ->execute();
 
   $options = array();
   $destination = drupal_get_destination();
-  $vid = variable_get('simplenews_vid', '');
 
   foreach ($result as $issue) {
     //@todo: this function is deprecated. Extend above query for required data.
     // $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($issue, $vid, 'name'));
     $terms = array('1' => 'dummy 1', '2' => 'dummy 2', '3' => 'dummy 3', '4' => 'dummy 4');
-    $subscriber_count = simplenews_count_subscriptions($issue->tid);
+    $subscriber_count = simplenews_count_subscriptions($issue->scid);
     $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
     $send_status = $issue->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->s_status));
 
     $options[$issue->nid] = array(
       'title' => l($issue->title, 'node/' . $issue->nid),
-      'newsletter' => isset($terms[0]) ? $terms[0] : '&lt;' . t('Unassigned') . '&gt;',
+      'list' => isset($terms[0]) ? $terms[0] : '&lt;' . t('Unassigned') . '&gt;',
       'created' => format_date($issue->created, 'small'),
       'published' => theme('simplenews_status', array('source' => 'published', 'status' => $issue->status)),
       'sent' => $send_status,
@@ -244,7 +243,7 @@ function simplenews_admin_issues_submit($form, &$form_state) {
   // Call operation functions as defined in hook_simplenews_issue_operations().
   $operations = module_invoke_all('simplenews_issue_operations');
   $operation = $operations[$form_state['values']['operation']];
-  // Filter out unchecked newsletter issues
+  // Filter out unchecked list issues
   $nids = array_filter($form_state['values']['issues']);
   if ($function = $operation['callback']) {
     // Add in callback arguments if present.
@@ -294,10 +293,10 @@ function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
   if (isset($_SESSION['simplenews_issue_filter'])) {
     foreach ($_SESSION['simplenews_issue_filter'] as $key => $value) {
       switch ($key) {
-        case 'newsletter':
+        case 'list':
           if ($value != 'all') {
             list($key, $value) = explode('-', $value, 2);
-            $query->condition('s.' . $key, $value);
+            $query->condition('sn.' . $key, $value);
           }
           break;
       }
@@ -306,128 +305,194 @@ function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
 }
 
 /**
- * Menu callback: newsletter admin form with list of available newsletter series.
+ * Menu callback: list admin form with list of available list categories.
+ *
+ * @ingroup forms
+ * @see simplenews_admin_newsletter_categories_submit()
+ * @see theme_simplenews_admin_newsletter_categories()
  */
-function simplenews_admin_newsletter_series() {
+function simplenews_admin_categories() {
+  $form['#tree'] = TRUE;
+  if ($categories = simplenews_categories_load_multiple()) {
+    foreach ($categories as $category) {
+      $form[$category->scid]['#category'] = $category;
+      $form[$category->scid]['name'] = array('#markup' => check_plain($category->name));
+      $form[$category->scid]['weight'] = array('#type' => 'weight', '#delta' => 10, '#default_value' => $category->weight);
+      $form[$category->scid]['edit'] = array('#type' => 'link', '#title' => t('edit newsletter category'), '#href' => "admin/structure/simplenews/$category->scid/edit");
+    }
+  }
+
+  // Only make this form include a submit button and weight if more than one
+  // category exists.
+  if (count($categories) > 1) {
+    $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  }
+  elseif (!empty($categories)) {
+    $form[$category->scid]['weight'] = array('#type' => 'value', '#value' => 0);
+  }
+  return $form;
+}
+
+function simplenews_admin_categories_submit($form, &$form_state) {
+  foreach ($form_state['values'] as $scid => $category) {
+    if (is_numeric($scid) && $form[$scid]['#category']->weight != $category['weight']) {
+      $form[$scid]['#category']->weight = $category['weight'];
+      simplenews_category_save($form[$scid]['#category']);
+    }
+  }
+  drupal_set_message(t('Your configuration has been saved.'));
+}
+
+function theme_simplenews_admin_categories($variables) {
+  $form = $variables['form'];
 
   $rows = array();
-  $header = array(t('Newsletter name'), t('Subscribers'), t('Operations'));
 
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $count = simplenews_count_subscriptions($newsletter->tid);
-    $rows[] = array(check_plain($newsletter->name), $count, l(t('edit newsletter'), 'admin/structure/simplenews/edit/' . $newsletter->tid));
+  foreach (element_children($form) as $key) {
+    if (isset($form[$key]['name'])) {
+      $category = &$form[$key];
+
+      $row = array();
+      $row[] = drupal_render($category['name']);
+      if (isset($category['weight'])) {
+        $category['weight']['#attributes']['class'] = array('simplenews-category-weight');
+        $row[] = drupal_render($category['weight']);
+      }
+      $row[] = drupal_render($category['edit']);
+      $rows[] = array('data' => $row, 'class' => array('draggable'));
+    }
   }
 
-  if (count($rows) == 0) {
-    $rows[] = array(array(
-        'data' => t('There are currently no newsletter series.'),
-        'colspan' => count($header),
-      ));
+  $header = array(t('Newsletter category name'));
+  if (isset($form['submit'])) {
+    $header[] = t('Weight');
+    // TODO No siblings
+    drupal_add_tabledrag('taxonomy', 'order', 'sibling', 'simplenews-category-weight');
   }
-  return theme('table', array('header' => $header, 'rows' => $rows));
+  $header[] = array('data' => t('Operations'), 'colspan' => '3');
+  return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No newsletter categories. <a href="@link">Add category</a>.', array('@link' => url('admin/structure/simplenews/add'))), 'attributes' => array('id' => 'newsletter-category'))) . drupal_render_children($form);
 }
 
 /**
  * Menu callback: newsletter admin form for newsletter add/edit.
  *
- * @see simplenews_admin_types_form_validate()
- * @see simplenews_admin_types_form_submit()
+ * @see simplenews_admin_category_form_validate()
+ * @see simplenews_admin_category_form_submit()
  */
-function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
-  if (isset($tid)) {
-    // We are editing an existing newsletter.
-    $term = taxonomy_term_load($tid);
-
-    // If the given term is not a newsletter, don't allow editing.
-    if (variable_get('simplenews_vid', '') != $term->vid) {
-      drupal_not_found();
-      return;
-    }
-
-    // Redirect on a delete operation for posterity's sake.
-    if (isset($form_state['input']['op']) && $form_state['input']['op'] == t('Delete')) {      
-      drupal_goto('admin/structure/simplenews/delete/' . $term->tid);
-    }
-
+function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
+  if (!is_array($edit)) {
+    $edit = (array)$edit;
   }
-  else {
-    // We will create a new newsletter.
-    // Provide vocabulary id for the newsletter to be added to.
-    $term = new stdClass();
-    $term->tid = 0;
-    $term->vid = variable_get('simplenews_vid', '');
-  }
+  $edit += array(
+    'name' => '',
+    'machine_name' => '',
+    'description' => '',
+    'weight' => '0',
+    'new_account' => 'none',
+    'opt_inout' => 'double',
+    'from_name' => variable_get('simplenews_from_name', variable_get('site_name', 'Drupal')),
+    'email_subject' => '[[simplenews-newsletters-name]] [title-raw]',
+    'from_address' => variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from'))),
+    'hyperlinks' => TRUE,
+  );
 
+  $form['#category'] = (object) $edit;
+  // Check whether we need a deletion confirmation form.
+  if (isset($form_state['confirm_delete']) && isset($form_state['values']['scid'])) {
+    $category = simplenews_category_load($form_state['values']['scid']);
+    return simplenews_admin_category_delete($form, $form_state, $category);
+  }
   $form['name'] = array(
     '#type' => 'textfield',
-    '#title' => t('Newsletter name'),
-    '#size' => 50,
-    '#maxlength' => 128,
-    '#description' => t('This name of this newsletter.'),
+    '#title' => t('Name'),
+    '#default_value' => $edit['name'],
+    '#maxlength' => 255,
     '#required' => TRUE,
-    '#default_value' => isset($term->name) ? $term->name : '',
+    '#field_suffix' => ' <small id="edit-name-suffix">&nbsp</small>',
+  );
+  $js_settings = array(
+    'type' => 'setting',
+    'data' => array(
+      'machineReadableValue' => array(
+        'name' => array(
+          'text' => t('Machine name'),
+          'target' => 'machine-name',
+          'searchPattern' => '[^a-z0-9]+',
+          'replaceToken' => '_',
+        ),
+      ),
+    ),
+  );
+  $form['machine_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Machine-readable name'),
+    '#default_value' => $edit['machine_name'],
+    '#maxlength' => 255,
+    '#description' => t('The unique machine-readable name for this newsletter category, used for theme templates. Can only contain lowercase letters, numbers, and underscores.'),
+    '#required' => TRUE,
+    '#attached' => array(
+      'js' => array(drupal_get_path('module', 'system') . '/system.js', $js_settings),
+    ),
   );
   $form['description'] = array(
-    '#type' => 'textarea',
+    '#type' => 'textfield',
     '#title' => t('Description'),
-    '#cols' => 60,
-    '#rows' => 5,
-    '#description' => t('A description of the newsletter. To be displayed on taxonomy/term pages and RSS feeds.'),
-    '#default_value' => isset($term->description) ? $term->description : '',
+    '#default_value' => $edit['description'],
   );
   $form['weight'] = array(
-    '#type' => 'weight',
-    '#title' => t('Weight'),
-    '#delta' => 10,
-    '#description' => t('Newsletters are displayed in ascending order by weight.'),
-    '#required' => TRUE,
-    '#default_value' => isset($term->weight) ? $term->weight : 0,
+    '#type' => 'hidden',
+    '#value' => $edit['weight'],
   );
-
   $form['subscription'] = array(
     '#type' => 'fieldset',
     '#title' => t('Subscription settings'),
     '#collapsible' => FALSE,
   );
+
+  // Subscribe at account registration time.
   $options = array(
     'none' => t('None'),
     'on' => t('Default on'),
     'off' => t('Default off'),
     'silent' => t('Silent'),
   );
-  $form['subscription']['simplenews_new_account_' . $term->tid] = array(
+  $form['subscription']['new_account'] = array(
     '#type' => 'select',
     '#title' => t('Subscribe new account'),
     '#options' => $options,
-    '#default_value' => variable_get('simplenews_new_account_' . $term->tid, 'none'),
+    '#default_value' => $edit['new_account'],
     '#description' => t('None: This newsletter is not listed on the user registration page.<br />Default on: This newsletter is listed on the user registion page and is selected by default.<br />Default off: This newsletter is listed on the user registion page and is not selected by default.<br />Silent: A new user is automatically subscribed to this newsletter. The newsletter is not listed on the user registration page.'),
   );
 
+  // Type of (un)subsribe confirmation
   $options = array(
-    'hidden' => t('Hidden'),
-    'single' => t('Single'),
-    'double' => t('Double'),
+    SIMPLENEWS_OPT_INOUT_HIDDEN => t('Hidden'),
+    SIMPLENEWS_OPT_INOUT_SINGLE => t('Single'),
+    SIMPLENEWS_OPT_INOUT_DOUBLE => t('Double'),
   );
-  $form['subscription']['simplenews_opt_inout_' . $term->tid] = array(
+  $form['subscription']['opt_inout'] = array(
     '#type' => 'select',
     '#title' => t('Opt-in/out method'),
     '#options' => $options,
-    '#default_value' => variable_get('simplenews_opt_inout_' . $term->tid, 'double'),
+    '#default_value' => $edit['opt_inout'],
     '#description' => t('Hidden: This newsletter does not appear on subscription forms. No unsubscription footer in newsletter.<br /> Single: Users are (un)subscribed immediately.<br />Double: When (un)subscribing at a subscription form, anonymous users receive an (un)subscription confirmation email. Authenticated users are (un)subscribed immediately.'),
   );
 
+  // Email sender name
   $form['simplenews_sender_information'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sender information'),
     '#collapsible' => FALSE,
   );
-  $form['simplenews_sender_information']['simplenews_from_name_' . $term->tid] = array(
+  $form['simplenews_sender_information']['from_name'] = array(
     '#type' => 'textfield',
     '#title' => t('From name'),
     '#size' => 60,
     '#maxlength' => 128,
-    '#default_value' => variable_get('simplenews_from_name_' . $term->tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal'))),
+    '#default_value' => $edit['from_name'],
   );
+
+  // Email subject
   $form['simplenews_subject'] = array(
     '#type' => 'fieldset',
     '#title' => t('Newsletter subject'),
@@ -445,162 +510,140 @@ function simplenews_admin_types_form($form, &$form_state, $tid = NULL) {
     '#markup' => theme('token_help', 'simplenews') . theme('token_help', 'node'),
   );
   */
-  $form['simplenews_subject']['simplenews_email_subject_' . $term->tid] = array(
+  $form['simplenews_subject']['email_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Email subject'),
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
-    '#default_value' => variable_get('simplenews_email_subject_' . $term->tid, '[[simplenews-issue:newsletters-name]] [title-raw]'),
+    '#default_value' => $edit['email_subject'],
   );
 
-  $form['simplenews_sender_information']['simplenews_from_address_' . $term->tid] = array(
+  // Email from address
+  $form['simplenews_sender_information']['from_address'] = array(
     '#type' => 'textfield',
     '#title' => t('From email address'),
     '#size' => 60,
     '#maxlength' => 128,
     '#required' => TRUE,
-    '#default_value' => variable_get('simplenews_from_address_' . $term->tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
+    '#default_value' => $edit['from_address'],
   );
+
+  // Type of hyperlinks
   $form['simplenews_hyperlinks'] = array(
     '#type' => 'fieldset',
     '#title' => t('HTML to text conversion'),
     '#collapsible' => FALSE,
     '#description' => t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'),
   );
-  $form['simplenews_hyperlinks']['simplenews_hyperlinks_' . $term->tid] = array(
+  $form['simplenews_hyperlinks']['hyperlinks'] = array(
     '#type' => 'radios',
     '#title' => t('Hyperlink conversion'),
     '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
-    '#default_value' => variable_get('simplenews_hyperlinks_' . $term->tid, 1),
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-    '#weight' => 25,
-  );
-  $form['vid'] = array(
-    '#type' => 'hidden',
-    '#value' => isset($term->vid) ? $term->vid : variable_get('simplenews_vid', ''),
+    '#default_value' => $edit['hyperlinks'],
   );
 
-  // If we are editing a newsletter term, show delete option and store tid.
-  // tid is used in validation and submission functions to differentiate
-  // between form actions of creating a new or editing an existing term.
-  if ($term->tid) {
-    $form['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete'),
-      '#weight' => 30,
-    );
+  // TODO Add: Email format (plain or HTML)
+  // TODO Add: priority, receive confirmation?
+  // TODO Add: Test email options?
+
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  if (isset($edit['scid'])) {
+    $form['delete'] = array('#type' => 'submit', '#value' => t('Delete'));
+    $form['scid'] = array('#type' => 'value', '#value' => $edit['scid']);
   }
-  $form['tid'] = array(
-    '#type' => 'value',
-    '#value' => $term->tid,
-  );
-
-// TODO: form redirect does not work.
-  // Return to Newsletter list page after submit
-  $form['#redirect'] = 'admin/structure/simplenews';
-
   return $form;
 }
 
-function simplenews_admin_types_form_validate($form, &$form_state) {
-  $tid = $form_state['values']['tid'];
-  $field_name = 'simplenews_from_address_' . $tid;
+function simplenews_admin_category_form_validate($form, &$form_state) {
+  if ($form_state['clicked_button']['#value'] != t('Delete') && isset($form_state['values']['machine_name'])) {
 
-  if (!valid_email_address($form_state['values'][$field_name])) {
-    form_set_error($field_name, t("The sender's email address you supplied is not valid."));
+    // Restrict machine names to appropriate characters.
+    $machine_name = $form_state['values']['machine_name'];
+    if (!preg_match('!^[a-z0-9_]+$!', $form_state['values']['machine_name'])) {
+      form_set_error('machine_name', t('The machine-readable name must contain only lowercase letters, numbers, and underscores.'));
+    }
+    // Restrict machine names to 21 characters to avoid exceeding the limit
+    // for field names.
+    if (drupal_strlen($machine_name) > 21) {
+      form_set_error('machine_name', t('The machine-readable name must not exceed 21 characters.'));
+    }
+
+    // Do not allow duplicate machine names.
+    $categories = simplenews_categories_load_multiple();
+    foreach ($categories as $category) {
+      if (trim($machine_name) == $category->machine_name && (!isset($form_state['values']['scid']) || $category->scid != $form_state['values']['scid'])) {
+        form_set_error('machine_name', t('This machine-readable name already exists. Enter a unique name.'));
+      }
+    }
+
+    // Check for valid email address.
+    if (!valid_email_address($form_state['values']['from_address'])) {
+      form_set_error('from_address', t("The sender's email address you supplied is not valid."));
+    }
   }
 }
 
-function simplenews_admin_types_form_submit($form, &$form_state) {
-  // Redirect on a delete operation for posterity's sake.
-  if (isset($form_state['input']['op']) && $form_state['input']['op'] == t('Delete')) {
-    drupal_goto('admin/structure/simplenews/delete/' . $form_state['values']['tid']);
+function simplenews_admin_category_form_submit($form, &$form_state) {
+  if ($form_state['clicked_button']['#value'] == t('Delete')) {
+    if ($form_state['values']['confirm']) {
+      $scid = $form_state['values']['scid'];
+      $name = $form_state['values']['name'];
+      simplenews_category_delete($scid);
+      drupal_set_message(t('Newsletter category %name has been deleted.', array('%name' => $name)));
+    }
+    // Rebuild the form to confirm category deletion.
+    $form_state['rebuild'] = TRUE;
+    $form_state['confirm_delete'] = TRUE;
+    return;
   }
-
-  // Create or update taxonomy term for this newsletter.
-  // When creating a term $form_state['values']['tid'] is NULL.
-  if ($form_state['values']['tid']) {
-    $term = taxonomy_term_load($form_state['values']['tid']);
-  }
-  else {
-    $term = new stdClass();
-    $term->tid = 0;
-    $term->vid = $form_state['values']['vid'];
-  }
-  $term->name = $form_state['values']['name'];
-  $term->description = $form_state['values']['description'];
-  $term->weight = $form_state['values']['weight'];
-  switch (taxonomy_term_save($term)) {
+  $old_category = $form['#category'];
+  $category = (object)$form_state['values'];
+  // For the time being we use one interface for category and mailing_list.
+  // In the back we separate the two to enable future development of
+  // a pluggable mailing target list (mailing_list, Views, other).
+  // For simpliclity we use one user admin form to enter all settings.
+  // Mailing list is saved with the same names, weights as category.
+  $list = clone($category);
+  simplenews_mailing_list_save($list);
+  switch (simplenews_category_save($category)) {
     case SAVED_NEW:
-      drupal_set_message(t('Created new term %term.', array('%term' => $form_state['values']['name'])));
+      drupal_set_message(t('Created new newsletter category %name.', array('%name' => $category->name)));
+      watchdog('simplenews', 'Created new newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->scid . '/edit'));
       break;
+
     case SAVED_UPDATED:
-      drupal_set_message(t('Updated term %term.', array('%term' => $form_state['values']['name'])));
+      drupal_set_message(t('Updated newsletter category %name.', array('%name' => $category->name)));
+      watchdog('taxonomy', 'Updated newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/taxonomy/' . $category->scid . '/edit'));
       break;
   }
 
-  // Store newsletter specific settings.
-  // When editing a newsletter fieldnames have $tid suffix.
-  // When creating a new newsletter field names have suffix '0'
-  if ($form_state['values']['tid']) {
-    $tid = $suffix = $form_state['values']['tid'];
-  }
-  else {
-    // $term contains the newly created term object.
-    $tid = $term->tid;
-    $suffix = 0;
-  }
-  variable_set('simplenews_from_name_' . $tid, $form_state['values']['simplenews_from_name_' . $suffix]);
-  variable_set('simplenews_from_address_' . $tid, $form_state['values']['simplenews_from_address_' . $suffix]);
-  variable_set('simplenews_hyperlinks_' . $tid, $form_state['values']['simplenews_hyperlinks_' . $suffix]);
-  variable_set('simplenews_email_subject_'. $tid, $form_state['values']['simplenews_email_subject_'. $suffix]);
-  variable_set('simplenews_new_account_' . $tid, $form_state['values']['simplenews_new_account_' . $suffix]);
-  variable_set('simplenews_opt_inout_' . $tid, $form_state['values']['simplenews_opt_inout_' . $suffix]);
+  $form_state['values']['scid'] = $category->scid;
+  $form_state['scid'] = $category->scid;
+  $form_state['redirect'] = 'admin/structure/simplenews';
 }
 
 /**
- * Menu callback: Delete newsletter series.
+ * Menu callback: Delete newsletter category.
  *
- * @see simplenews_admin_types_delete_submit()
+ * @see simplenews_admin_category_delete_submit()
  */
-function simplenews_admin_types_delete($form, &$form_state, $tid = NULL) {
-  if (!isset($tid) || !$term = taxonomy_term_load($tid)) {
-    drupal_not_found();
-    return;
-  }
-
+function simplenews_admin_category_delete($form, &$form_state, $category) {
   $form = array();
-  $form['tid'] = array(
-    '#type' => 'value',
-    '#value' => $tid,
-  );
+  $form['scid'] = array('#type' => 'value', '#value' => $category->scid);
+  $form['name'] = array('#type' => 'value', '#value' => $category->name);
   $form['notice'] = array(
     '#value' => '<p><strong>' . t('Note: All subscriptions associated with this newsletter will be lost.') . '</strong></p>',
   );
   $form['#redirect'] = 'admin/structure/simplenews';
 
   return confirm_form($form, 
-    t('Are you sure you want to delete %title?', array('%title' => $term->name)), 
+    t('Are you sure you want to delete category %name?', array('%name' => $category->name)), 
     'admin/structure/simplenews', 
     t('This action cannot be undone.'), 
     t('Delete'), 
     t('Cancel')
   );
-}
-
-function simplenews_admin_types_delete_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    $tid = $form_state['values']['tid'];
-    $term = taxonomy_term_load($tid);
-    taxonomy_term_delete($tid);
-    variable_del('simplenews_from_name_' . $tid);
-    variable_del('simplenews_from_address_' . $tid);
-    drupal_set_message(t('Newsletter %title has been deleted.', array('%title' => $term->name)));
-  }
 }
 
 /**
@@ -618,10 +661,7 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
     '#tree' => TRUE,
   );
   // array_filter returns only elements with TRUE values
-  $query = db_select('simplenews_subscriptions', 's')
-    ->fields('s', array('snid', 'mail'))
-    ->condition('s.snid', $snids);
-  foreach ($query->execute() as $data) {
+  foreach (simplenews_subscribers_load_multiple($snids) as $data) {
     $form['snids'][$data->snid] = array(
       '#type' => 'hidden',
       '#value' => $data->snid,
@@ -647,9 +687,9 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
 
 function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    foreach ($form_state['values']['snids'] as $snid => $value) {
-      simplenews_delete_subscription($snid);
-    }
+    // TODO delete subscriber + delete all subscription of these subscribers
+    //simplenews_subscription_delete(array_keys($form_state['values']['snids']));
+    //simplenews_subscriber_delete(array_keys($form_state['values']['snids']));
     drupal_set_message(t('The subscriptions have been deleted.'));
   }
   return '';
@@ -671,14 +711,14 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#rows' => 5,
     '#description' => t('Email addresses must be separated by comma, space or newline.'),
   );
-  $newsletters = array();
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
+  $lists = array();
+  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+    $lists[$list->slid] = check_plain($list->name);
   }
-  $form['newsletters'] = array(
+  $form['lists'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Subscribe to'),
-    '#options' => $newsletters,
+    '#options' => $lists,
     '#required' => TRUE,
   );
 
@@ -717,16 +757,16 @@ function simplenews_subscription_list_add($form, &$form_state) {
 function simplenews_subscription_list_add_submit($form, &$form_state) {
   $added = array();
   $invalid = array();
-  $checked_newsletters = array_filter($form_state['values']['newsletters']);
+  $checked_lists = array_filter($form_state['values']['lists']);
   $langcode = $form_state['values']['language'];
 
   $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
   foreach ($emails as $email) {
     $email = trim($email);
     if (valid_email_address($email)) {
-      foreach ($checked_newsletters as $tid) {
-        $newsletter = taxonomy_term_load($tid);
-        simplenews_subscribe_user($email, $newsletter->tid, FALSE, 'mass subscribe', $langcode);
+      foreach ($checked_lists as $slid) {
+        $list = simplenews_mailing_list_load($slid);
+        simplenews_subscribe_user($email, $list->slid, FALSE, 'mass subscribe', $langcode);
         $added[] = $email;
       }
     }
@@ -738,12 +778,12 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
     $added = implode(", ", $added);
     drupal_set_message(t('The following addresses were added or updated: %added.', array('%added' => $added)));
 
-    $newsletter_names = array();
-    foreach ($checked_newsletters as $tid) {
-      $newsletter = taxonomy_term_load($tid);
-      $newsletter_names[] = $newsletter->name;
+    $list_names = array();
+    foreach ($checked_lists as $slid) {
+      $list = simplenews_mailing_list_load($slid);
+      $list_names[] = $list->name;
     }
-    drupal_set_message(t('The addresses were subscribed to the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $newsletter_names))));
+    drupal_set_message(t('The addresses were subscribed to the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $list_names))));
   }
   else {
     drupal_set_message(t('No addresses were added.'));
@@ -772,14 +812,14 @@ function simplenews_subscription_list_export($form, &$form_state) {
     '#description' => t('Subscriptions matching the selected states will be exported.'),
     '#required' => TRUE,
   );
-  $newsletters = array();
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
+  $lists = array();
+  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+    $lists[$list->slid] = check_plain($list->name);
   }
-  $form['newsletters'] = array(
+  $form['lists'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Subscribed to'),
-    '#options' => $newsletters,
+    '#options' => $lists,
     '#description' => t('Subscriptions matching the selected newsletters will be exported.'),
     '#required' => TRUE,
   );
@@ -806,7 +846,7 @@ function simplenews_admin_export_after_build($form, &$form_state) {
   //TODO: Add (un)subscribed as filter to form.
   if (isset($form_state['values']['op']) && $form_state['values']['op'] == t('Export')) {
     $states = array_filter($form_state['values']['states']);
-    $newsletters = array_filter($form_state['values']['newsletters']);
+    $lists = array_filter($form_state['values']['lists']);
 
     // Build where clause for active/inactive state and newsletter selection.
     if (isset($states['active'])) {
@@ -815,14 +855,14 @@ function simplenews_admin_export_after_build($form, &$form_state) {
     if (isset($states['inactive'])) {
       $active_states[] = 0;
     }
-    $tids = array_keys(array_filter($newsletters));
+    $slids = array_keys(array_filter($lists));
 
     // Get subscription data
-    $query = db_select('simplenews_subscriptions', 's');
-    $query->innerJoin('simplenews_snid_tid', 't', 's.snid = t.snid');
-    $query->fields('s', array('mail'))
-      ->condition('s.activated', $active_states)
-      ->condition('t.tid', $tids)
+    $query = db_select('simplenews_subscriber', 'ss');
+    $query->innerJoin('simplenews_subscription', 'si', 'si.snid = ss.snid');
+    $query->fields('ss', array('mail'))
+      ->condition('ss.activated', $active_states)
+      ->condition('si.slid', $slids)
       ->distinct();
     foreach ($query->execute() as $mail) {
       $mails[] = $mail->mail;
@@ -861,14 +901,14 @@ function simplenews_subscription_list_remove($form, &$form_state) {
     '#rows' => 5,
     '#description' => t('Email addresses must be separated by comma, space or newline.'),
   );
-  $newsletters = array();
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $newsletters[$newsletter->tid] = check_plain($newsletter->name);
+  $lists = array();
+  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+    $lists[$list->slid] = check_plain($list->name);
   }
-  $form['newsletters'] = array(
+  $form['lists'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Unsubscribe from'),
-    '#options' => $newsletters,
+    '#options' => $lists,
     '#required' => TRUE,
   );
   $form['submit'] = array(
@@ -881,14 +921,14 @@ function simplenews_subscription_list_remove($form, &$form_state) {
 function simplenews_subscription_list_remove_submit($form, &$form_state) {
   $removed = array();
   $invalid = array();
-  $checked_newsletters = array_filter($form_state['values']['newsletters']);
+  $checked_lists = array_filter($form_state['values']['lists']);
 
   $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
   foreach ($emails as $email) {
     $email = trim($email);
     if (valid_email_address($email)) {
-      foreach ($checked_newsletters as $tid) {
-        simplenews_unsubscribe_user($email, $tid, FALSE, 'mass unsubscribe');
+      foreach ($checked_lists as $slid) {
+        simplenews_unsubscribe_user($email, $slid, FALSE, 'mass unsubscribe');
         $removed[] = $email;
       }
     }
@@ -900,12 +940,12 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $removed = implode(", ", $removed);
     drupal_set_message(t('The following addresses were unsubscribed: %removed.', array('%removed' => $removed)));
 
-    $newsletter_names = array();
-    foreach ($checked_newsletters as $tid) {
-      $newsletter = taxonomy_term_load($tid);
-      $newsletter_names[] = $newsletter->name;
+    $lists = simplenews_get_mailing_lists(TRUE);
+    $list_names = array();
+    foreach ($checked_lists as $slid) {
+      $list_names[] = $lists[$slid]->name;
     }
-    drupal_set_message(t('The addresses were unsubscribed from the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $newsletter_names))));
+    drupal_set_message(t('The addresses were unsubscribed from the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $list_names))));
   }
   else {
     drupal_set_message(t('No addresses were removed.'));
@@ -938,7 +978,7 @@ function simplenews_admin_subscription() {
  * @see simplenews_subscription_list_form_submit()
  * @todo Subscriber maintanance needs overhaul now we have more data availabale.
  */
-function simplenews_subscription_list_form($form, &$form_state) {
+function simplenews_subscription_list_form() {
   // Build an 'Update options' form.
   $form['options'] = array(
     '#type' => 'fieldset',
@@ -965,19 +1005,20 @@ function simplenews_subscription_list_form($form, &$form_state) {
 
   // Table header. Used as tablesort default
   $header = array(
-    'mail' => array('data' => t('Email'), 'field' => 'ss.mail', 'sort' => 'asc'),
+    'mail' => array('data' => t('Email'), 'field' => 'sn.mail', 'sort' => 'asc'),
     'username' => array('data' => t('Username'), 'field' => 'u.name'),
-    'status' => array('data' => t('Status'), 'field' => 'ss.activated'),
+    'status' => array('data' => t('Status'), 'field' => 'sn.activated'),
     'operations' => array('data' => t('Operations')),
   );
 
-  $query = db_select('simplenews_subscriptions', 'ss')->extend('PagerDefault')->extend('TableSort');
+  // TODO Make only subscribed user appear on this list. Ignore the unsubscribed records.
+  $query = db_select('simplenews_subscriber', 'sn')->extend('PagerDefault')->extend('TableSort');
   simplenews_build_subscription_filter_query($query);
-  $query->leftJoin('users', 'u', 'ss.uid = u.uid');
-  $query->innerJoin('simplenews_snid_tid', 's', 'ss.snid = s.snid');
+  $query->leftJoin('users', 'u', 'sn.uid = u.uid');
+  $query->innerJoin('simplenews_subscription', 'su', 'sn.snid = su.snid');
   $query->addField('u', 'name', 'name');
   $result = $query
-    ->fields('ss', array('snid', 'activated', 'mail', 'uid', 'language'))
+    ->fields('sn', array('snid', 'activated', 'mail', 'uid', 'language'))
     ->limit(30)
     ->orderByHeader($header)
     ->execute();
@@ -1072,12 +1113,11 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
  *   Status of the subscription (0, 1).
  */
 function simplenews_subscription_activate($snids, $status) {
-  db_update('simplenews_subscriptions')
-    ->fields(array(
-      'activated' => $status,
-    ))
-    ->condition('snid', $snids, 'IN')
-    ->execute();
+  foreach($snids as $snid) {
+    $subscriber = simplenews_subscriber_load($snid);
+    $subscriber->activated = $status;
+    simplenews_subscriber_save($subscriber);
+  }
 }
 
 /**
@@ -1157,7 +1197,9 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
   );
   $description = t('Default newsletter format.');
   if (!module_exists('mimemail')) {
-    $description .= ' ' . t('Install <a href="@mime_mail_url">Mime Mail</a> module to send newsletters in HTML format.', array('@mime_mail_url' => 'http://drupal.org/project/mimemail'));
+    $description .= ' ' . t('Install <a href="!mime_mail_url">Mime Mail</a> module or <a href="!html_url">HTML Mail</a> module to send newsletters in HTML format.',
+                            array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_url' => 'http://drupal.org/project/htmlmail')
+                          );
   }
   $form['simplenews_default_options']['simplenews_format'] = array(
     '#type' => 'select',
@@ -1377,14 +1419,14 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
  */
 function simplenews_subscription_filters() {
   // Newsletter filter
-  $filters['newsletter'] = array(
+  $filters['list'] = array(
     'title' => t('Subscribed to'),
     'options' => array(
       'all'   => t('All newsletters'),
     ),
   );
-  foreach (simplenews_get_newsletters(variable_get('simplenews_vid', ''), TRUE) as $newsletter) {
-    $filters['newsletter']['options']['tid-' . $newsletter->tid] = $newsletter->name;
+  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+    $filters['list']['options']['slid-' . $list->slid] = $list->name;
   }
 
   // Email filter
@@ -1402,7 +1444,7 @@ function simplenews_subscription_filters() {
  */
 function simplenews_subscription_filter_form() {
   // Current filter selections in $session var; stored at form submission
-  // Example: array('newsletter' => 'all', 'email' => 'hotmail')
+  // Example: array('list' => 'all', 'email' => 'hotmail')
   $session = isset($_SESSION['simplenews_subscriptions_filter']) ? $_SESSION['simplenews_subscriptions_filter'] : '';
   $session = is_array($session) ? $session : _simplenews_subscription_filter_default();
   $filters = simplenews_subscription_filters();
@@ -1414,11 +1456,11 @@ function simplenews_subscription_filter_form() {
   );
 
   // Filter values are default
-  $form['filters']['newsletter'] = array(
+  $form['filters']['list'] = array(
     '#type' => 'select',
-    '#title' => $filters['newsletter']['title'],
-    '#options' => $filters['newsletter']['options'],
-    '#default_value' => $session['newsletter'],
+    '#title' => $filters['list']['title'],
+    '#options' => $filters['list']['options'],
+    '#default_value' => $session['list'],
   );
   $form['filters']['email'] = array(
     '#type' => 'textfield',
@@ -1446,7 +1488,7 @@ function simplenews_subscription_filter_form() {
  */
 function _simplenews_subscription_filter_default() {
   return array(
-    'newsletter' => 'all',
+    'list' => 'all',
     'email' => '',
   );
 }
@@ -1455,7 +1497,7 @@ function simplenews_subscription_filter_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
       $_SESSION['simplenews_subscriptions_filter'] = array(
-        'newsletter' => $form_state['values']['newsletter'],
+        'list' => $form_state['values']['list'],
         'email' => $form_state['values']['email'],
       );
       break;
@@ -1475,15 +1517,15 @@ function simplenews_build_subscription_filter_query(SelectQueryInterface $query)
   if (isset($_SESSION['simplenews_subscriptions_filter'])) {
     foreach ($_SESSION['simplenews_subscriptions_filter'] as $key => $value) {
       switch ($key) {
-        case 'newsletter':
+        case 'list':
           if ($value != 'all') {
             list($key, $value) = explode('-', $value, 2);
-            $query->condition('s.' . $key, $value);
+            $query->condition('su.' . $key, $value);
           }
           break;
         case 'email':
           if (!empty($value)) {
-            $query->condition('ss.mail', '%' . $value . '%', 'LIKE');
+            $query->condition('sn.mail', '%' . $value . '%', 'LIKE');
           }
           break;
       }
@@ -1492,19 +1534,19 @@ function simplenews_build_subscription_filter_query(SelectQueryInterface $query)
 }
 
 /**
- * Count number of subscribers per newsletter series.
+ * Count number of subscribers per newsletter list.
  *
  * @return number of subscribers.
  */
-function simplenews_count_subscriptions($tid) {
+function simplenews_count_subscriptions($slid) {
   static $subscription_count;
 
-  if (isset($subscription_count[$tid])) {
-    return $subscription_count[$tid];
+  if (isset($subscription_count[$slid])) {
+    return $subscription_count[$slid];
   }
-  $subscription_count[$tid] = db_query('SELECT snid FROM {simplenews_snid_tid} WHERE tid = :tid AND status = :status', array(':tid' => $tid, ':status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))->rowCount();
+  $subscription_count[$slid] = db_query('SELECT snid FROM {simplenews_subscription} WHERE slid = :slid AND status = :status', array(':slid' => $slid, ':status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))->rowCount();
 
-  return $subscription_count[$tid];
+  return $subscription_count[$slid];
 }
 
 /**

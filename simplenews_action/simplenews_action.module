@@ -88,17 +88,15 @@ function simplenews_send_newsletter_action(&$object, $context = array()) {
       $accounts[] = $context['account'];
     }
 
-    // Get sent status of this newsletter. The global newsletter sent status is used not the sent status of individual emails.
-    $s_status = db_query("SELECT s_status FROM {simplenews_newsletters} WHERE nid = :nid", array(':nid' => $context['nid']))->fetchField();
+    // Get sent status of this newsletter. The newsletter sent status is used not the sent status of individual emails.
+    $newsletter = simplenews_newsletter_load($context['nid'], $context['vid']);
 
     // Send newsletter if resend is allowed OR newsletter is not yet send.
-    if ($context['resend'] OR $s_status == SIMPLENEWS_STATUS_SEND_NOT) {
+    if ($context['resend'] OR $newsletter->s_status == SIMPLENEWS_STATUS_SEND_NOT) {
       if ($context['hook'] == 'cron') {
         // Set newsletter sent status to pending if send by cron.
-        db_update('simplenews_newsletters')
-          ->fields(array('s_status' => SIMPLENEWS_STATUS_SEND_PENDING))
-          ->condition('nid', $context['nid'])
-          ->execute();
+        $newsletter->s_status = SIMPLENEWS_STATUS_SEND_PENDING;
+        simplenews_newsletter_save($newsletter);
       }
       simplenews_send_node($context['nid'], $accounts);
     }
@@ -123,27 +121,27 @@ function simplenews_send_newsletter_action_form($context) {
     $context['resend'] = FALSE;
   }
 
-  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-  $terms = array();
-  foreach ($tree as $newsletter) {
-    $terms[$newsletter->tid] = $newsletter->name;
+  $categories = simplenews_categories_load_multiple();
+  $newsletter_categories = array();
+  foreach ($categories as $category) {
+    $newsletter_categories[$category->scid] = $category->name;
   }
   //  $form['newsletter'] = array(
   //    '#title' => t('Newsletter'),
   //    '#type' => 'select',
-  //    '#options' => $terms,
+  //    '#options' => $newsletter_categories,
   //    '#default_value' => $context['newsletter'],
   //    '#description' => t('The newsletter series'),
   //  );
-  $result = taxonomy_select_nodes(array_keys($terms));
-  $nids = array();
-  while ($node = db_fetch_object($result)) {
-    $nids[$node->nid] = $node->title;
+  $newsletters = simplenews_newsletter_load_multiple(array(), array('scid' => array_keys($newsletter_categories)));
+  $newsletter_nodes = array();
+  foreach ($newsletters as $newsletter) {
+    $newsletter_nodes[$newsletter->nid] = $newsletter->title;
   }
   $form['newsletter_issue'] = array(
     '#title' => t('Newsletter issue'),
     '#type' => 'select',
-    '#options' => $nids,
+    '#options' => $newsletter_nodes,
     '#default_value' => $context['newsletter_issue'],
     '#description' => t('The newsletter issue to send'),
   );
@@ -262,21 +260,17 @@ function simplenews_subscribe_user_action_submit($form, $form_state) {
  */
 function simplenews_unsubscribe_user_action(&$object, $context = array()) {
   if ($context['hook'] == 'user') {
-    if (isset($context['tid'])) {
+    if (isset($context['slid'])) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
       //TODO: Unsubscribing should be done by simplenews_unsubscribe_user but simplenews_get_user_subscription fails because the user is already removed
-      if ($result = db_query("SELECT snid FROM {simplenews_subscriptions} WHERE mail = :mail", array(':mail' => $account->mail))->fetchField()) {
-        db_update('simplenews_snid_tid')
-          ->fields(array(
-            'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED,
-            'timestamp' => REQUEST_TIME,
-            'source' => 'action',
-          ))
-          ->condition('snid', $result->snid)
-          ->condition('tid', $context['tid'])
-          ->execute();
-      }
+      $subscriber = reset(simplenews_subscriber_load_multiple(array(), array('mail' => $account->mail)));
+      $data = array(
+        'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED,
+        'timestamp' => REQUEST_TIME,
+        'source' => 'action',
+      );
+      simplenews_subscription_update(array('ssid' => $subscriber->ssid, 'slid' => $context['slid']), $data);
       drupal_set_message(t('You have been removed from the %newsletter subscription list.', array('%newsletter' => $context['name'])));
       watchdog('action', 'User %name unsubscribed from newsletter %newsletter.', array('%name' => $account->name, '%newsletter' => $context['name']));
     }
