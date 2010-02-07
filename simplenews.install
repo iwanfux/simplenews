@@ -812,6 +812,9 @@ function simplenews_update_7000() {
     'not null' => TRUE,
     'default' => 0,
   ));
+  
+  // Delete deprecated variables.
+  variable_del('simplenews_vid');
 }
 
 

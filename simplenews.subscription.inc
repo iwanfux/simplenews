@@ -6,9 +6,6 @@
  * (Un)subscription and (un)subscription confirmation
  *
  * @ingroup simplenews
- * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
- * @todo Where possible build re-usable functions wrapped around database calls.
- * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
  */
 
 /**
@@ -113,12 +110,12 @@ function simplenews_confirm_subscription($op = NULL, $code = NULL) {
   }
 
   if ($md5 == drupal_substr(md5($subscriber->mail . simplenews_private_key()), 0, 10)) {
-    $newsletter = taxonomy_term_load($slid);
+    $list = simplenews_mailing_list_load($slid);
     if ($op == 'remove') {
-      return drupal_get_form('simplenews_confirm_removal_form', $subscriber->mail, $newsletter);
+      return drupal_get_form('simplenews_confirm_removal_form', $subscriber->mail, $list);
     }
     elseif ($op == 'add') {
-      return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $newsletter);
+      return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $list);
     }
   }
 

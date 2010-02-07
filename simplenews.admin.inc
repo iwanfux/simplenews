@@ -8,7 +8,6 @@
  * @ingroup simplenews
  * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
  * @todo Where possible build re-usable functions wrapped around database calls.
- * @todo Replace taxonomy_ and vocabulary_ CRUD functions: http://drupal.org/node/224333#taxonomy_crud AND http://drupal.org/node/224333#taxonomy_node
  */
 
 /**
@@ -36,15 +35,15 @@ function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent
  */
 function simplenews_issue_filters() {
   // Newsletter filter
-  $filters['list'] = array(
+  $filters['category'] = array(
     'title' => t('Subscribed to'),
     'options' => array(
       'all'   => t('All newsletters'),
       'scid-0'    => t('Unassigned newsletters'),
     ),
   );
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $filters['list']['options']['scid-' . $list->scid] = $list->name;
+  foreach (simplenews_get_categories() as $scid => $name) {
+    $filters['category']['options']['scid-' . $scid] = $name;
   }
 
   return $filters;
@@ -57,7 +56,7 @@ function simplenews_issue_filters() {
  */
 function simplenews_issue_filter_form() {
   // Current filter selections in $session var; stored at form submission
-  // Example: array('list' => 'all')
+  // Example: array('category' => 'all')
   $session = isset($_SESSION['simplenews_issue_filter']) ? $_SESSION['simplenews_issue_filter'] : _simplenews_issue_filter_default();
   $filters = simplenews_issue_filters();
 
@@ -67,11 +66,11 @@ function simplenews_issue_filter_form() {
   );
 
   // Filter values are default
-  $form['filters']['list'] = array(
+  $form['filters']['category'] = array(
     '#type' => 'select',
-    '#title' => $filters['list']['title'],
-    '#options' => $filters['list']['options'],
-    '#default_value' => $session['list'],
+    '#title' => $filters['category']['title'],
+    '#options' => $filters['category']['options'],
+    '#default_value' => $session['category'],
   );
   $form['filters']['buttons']['submit'] = array(
     '#type' => 'submit',
@@ -94,7 +93,7 @@ function simplenews_issue_filter_form() {
  */
 function _simplenews_issue_filter_default() {
   return array(
-    'list' => 'all',
+    'category' => 'all',
   );
 }
 
@@ -102,7 +101,7 @@ function simplenews_issue_filter_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
       $_SESSION['simplenews_issue_filter'] = array(
-        'list' => $form_state['values']['list'],
+        'category' => $form_state['values']['category'],
       );
       break;
     case t('Reset'):
@@ -165,7 +164,7 @@ function simplenews_admin_issues() {
   $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
   $result = $query
-    ->fields('n', array('nid', 'title', 'created', 'status'))
+    ->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
     ->fields('sn', array('s_status', 'scid'))
     ->limit(30)
     ->orderByHeader($header)
@@ -175,16 +174,14 @@ function simplenews_admin_issues() {
   $destination = drupal_get_destination();
 
   foreach ($result as $issue) {
-    //@todo: this function is deprecated. Extend above query for required data.
-    // $terms = array_keys(taxonomy_node_get_terms_by_vocabulary($issue, $vid, 'name'));
-    $terms = array('1' => 'dummy 1', '2' => 'dummy 2', '3' => 'dummy 3', '4' => 'dummy 4');
+    $categories = simplenews_get_categories();
     $subscriber_count = simplenews_count_subscriptions($issue->scid);
     $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
     $send_status = $issue->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->s_status));
 
     $options[$issue->nid] = array(
       'title' => l($issue->title, 'node/' . $issue->nid),
-      'list' => isset($terms[0]) ? $terms[0] : '&lt;' . t('Unassigned') . '&gt;',
+      'list' => $issue->scid ? $categories[$issue->scid] : '&lt;' . t('Unassigned') . '&gt;',
       'created' => format_date($issue->created, 'small'),
       'published' => theme('simplenews_status', array('source' => 'published', 'status' => $issue->status)),
       'sent' => $send_status,
@@ -366,8 +363,7 @@ function theme_simplenews_admin_categories($variables) {
   $header = array(t('Newsletter category name'));
   if (isset($form['submit'])) {
     $header[] = t('Weight');
-    // TODO No siblings
-    drupal_add_tabledrag('taxonomy', 'order', 'sibling', 'simplenews-category-weight');
+    drupal_add_tabledrag('newsletter-category', 'order', 'self', 'simplenews-category-weight');
   }
   $header[] = array('data' => t('Operations'), 'colspan' => '3');
   return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No newsletter categories. <a href="@link">Add category</a>.', array('@link' => url('admin/structure/simplenews/add'))), 'attributes' => array('id' => 'newsletter-category'))) . drupal_render_children($form);
@@ -614,7 +610,7 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
 
     case SAVED_UPDATED:
       drupal_set_message(t('Updated newsletter category %name.', array('%name' => $category->name)));
-      watchdog('taxonomy', 'Updated newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/taxonomy/' . $category->scid . '/edit'));
+      watchdog('simplenews', 'Updated newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->scid . '/edit'));
       break;
   }
 
@@ -1124,7 +1120,6 @@ function simplenews_subscription_activate($snids, $status) {
  * Menu callback: Simplenews admin settings - General.
  */
 function simplenews_admin_settings($form, &$form_state) {
-  $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
@@ -1137,55 +1132,13 @@ function simplenews_admin_settings($form, &$form_state) {
     '#description' => t('Content types to be used as newsletter.'),
   );
 
-  $vocabulary_options = array(
-    '' => t('<select>'),
-  );
-  if ($vocabularies = taxonomy_get_vocabularies()) {
-    foreach ($vocabularies as $key => $object) {
-      $vocabulary_options[$key] = $object->name;
-    }
-  }
-  $form['simplenews_general_settings']['simplenews_vid'] = array(
-    '#type' => 'select',
-    '#title' => t('Newsletter vocabulary'),
-    '#options' =>  $vocabulary_options,
-    '#required' => TRUE,
-    '#description' => t('This vocabulary identifies newsletter series. Note that changing this vocabulary will require existing newsletters to be re-tagged and activated newsletter blocks to be re-activated.'),
-    '#default_value' => variable_get('simplenews_vid', ''),
-  );
-
-  // Node type settings require pre-processing.
-  // simplenews_admin_settings_submit() is called before system_settings_form_submit().
-  $form['#submit'][] = 'simplenews_admin_settings_submit';
   return system_settings_form($form);
-}
-
-function simplenews_admin_settings_submit($form, &$form_state) {
-  // Newsletter vocabulary is updated using node type settings.
-  $vocabulary = taxonomy_vocabulary_load($form_state['values']['simplenews_vid']);
-  $form_state['values']['simplenews_content_types'] = array_filter($form_state['values']['simplenews_content_types']);
-  $vocabulary->nodes = $form_state['values']['simplenews_content_types'];
-
-  // Set vocabulary required values
-  $vocabulary->multiple = FALSE;
-  $vocabulary->required = TRUE;
-  $vocabulary->tags = FALSE;
-
-  taxonomy_vocabulary_save($vocabulary);
-  variable_set('simplenews_content_types', $form_state['values']['simplenews_content_types']);
-
-  // We do not need a simplenews_content_types variable.
-  unset($form_state['values']['simplenews_content_types']);
-
-  drupal_set_message(t('Updated vocabulary %name.', array('%name' => $vocabulary->name)));
-  watchdog('simplenews', 'Updated vocabulary %name.', array('%name' => $vocabulary->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/taxonomy/' . $vocabulary->vid . '/edit'));
 }
 
 /**
  * Menu callback: Simplenews admin settings - Newsletter.
  */
 function simplenews_admin_settings_newsletter($form, &$form_state) {
-  $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
@@ -1291,7 +1244,6 @@ function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
  * Menu callback: Simplenews admin settings - Email.
  */
 function simplenews_admin_settings_mail($form, &$form_state) {
-  $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
@@ -1342,7 +1294,6 @@ function simplenews_admin_settings_mail($form, &$form_state) {
  * Menu callback: Simplenews admin settings - Subscription.
  */
 function simplenews_admin_settings_subscription($form, &$form_state) {
-  $vid = variable_get('simplenews_vid', '');
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
