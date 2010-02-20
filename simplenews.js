@@ -6,6 +6,7 @@
  * @todo Wrap jQuery code: http://drupal.org/node/224333#javascript_compatibility
  * @todo behaviors settings passed locally: http://drupal.org/node/224333#local_settings_behaviors
  */
+// TODO This does not work
 Drupal.behaviors.simplenewsCommandSend = function (context) {
   var simplenewsSendButton = function () {
     switch ($(".simplenews-command-send :radio:checked").val()) {

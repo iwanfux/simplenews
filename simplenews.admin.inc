@@ -1119,18 +1119,11 @@ function simplenews_subscription_activate($snids, $status) {
 /**
  * Menu callback: Simplenews admin settings - General.
  */
+// TODO Delete this for if there is not more use for it.
 function simplenews_admin_settings($form, &$form_state) {
-  $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
-
-  $form['simplenews_general_settings']['simplenews_content_types'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Content types'),
-    '#required' => TRUE,
-    '#options' => array_map('check_plain', node_type_get_names()),
-    '#default_value' => variable_get('simplenews_content_types', array('simplenews' => 'simplenews')),
-    '#description' => t('Content types to be used as newsletter.'),
-  );
+  
+  $form['temp'] = array('#type' => 'markup', '#value' => 'This form is empty.');
 
   return system_settings_form($form);
 }

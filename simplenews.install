@@ -370,7 +370,6 @@ function simplenews_install() {
   //  drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
 
   _simplenews_install_nodetype();
-  variable_set('simplenews_content_types', array('simplenews' => 'simplenews'));
 
   _simplenews_init_simplenews_category();
 }
