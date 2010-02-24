@@ -1198,9 +1198,9 @@ function simplenews_block_info() {
   foreach (simplenews_get_mailing_lists() as $list) {
     //TODO: 1. without form -> by role; 2. with form -> user caching with refresh on subscribe/unsubscribe (option as setting) or no caching
     // Only list a block if the newsletter is not Hidden.
-    $blocks[$newsletter->slid] = array(
-      'info' => t('Newsletter: @title', array('@title' => $newsletter->name)),
-      'cache' => variable_get('simplenews_block_f_'. $newsletter->slid, 1) ? DRUPAL_NO_CACHE : DRUPAL_CACHE_PER_ROLE,
+    $blocks[$list->slid] = array(
+      'info' => t('Newsletter: @title', array('@title' => $list->name)),
+      'cache' => variable_get('simplenews_block_f_'. $list->slid, 1) ? DRUPAL_NO_CACHE : DRUPAL_CACHE_PER_ROLE,
     );
   }
   return $blocks;
@@ -3533,22 +3533,19 @@ function simplenews_theme() {
       'render element' => 'form',
     ),
     'simplenews_block' => array(
+      'render element' => 'slid',
       'template' => 'simplenews-block',
-      'arguments' => array(
-        'slid' => NULL,
-      ),
       'pattern' => 'simplenews_block__',
     ),
     'simplenews_status' => array(
       'file' => 'simplenews.admin.inc',
-      'arguments' => array(
+      'variables' => array(
         'source' => NULL,
         'status' => NULL,
       ),
     ),
     'simplenews_newsletter_body' => array(
-      'render element' => 'element',
-      'arguments' => array(
+      'variables' => array(
         'build' => NULL,
         'category' => NULL,
         'language' => NULL,
@@ -3556,7 +3553,7 @@ function simplenews_theme() {
     ),
     'simplenews_newsletter_footer' => array(
       'template' => 'simplenews-newsletter-footer',
-      'arguments' => array(
+      'variables' => array(
         'node' => NULL,
         'key' => NULL,
         'language' => NULL,
@@ -3564,10 +3561,8 @@ function simplenews_theme() {
       'pattern' => 'simplenews_newsletter_footer__',
     ),
     'simplenews_subscription_list' => array(
+      'render element' => 'form',
       'file' => 'simplenews.admin.inc',
-      'arguments' => array(
-        'form' => NULL,
-      ),
     ),
     'simplenews_filter_form' => array(
       'render element' => 'form',
@@ -3612,7 +3607,7 @@ function template_preprocess_simplenews_block(&$variables) {
   }
   // TODO replace path
   $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/' . $list->scid);
-  $recent = simplenews_recent_newsletters($scid, variable_get('simplenews_block_i_' . $slid, 5));
+  $recent = simplenews_recent_newsletters($list->scid, variable_get('simplenews_block_i_' . $slid, 5));
   $variables['issue_list'] = theme('item_list', array('items' => $recent, 'title' => t('Previous issues'), 'type' => 'ul'));
   // TODO replace path
   $variables['rssfeed'] = theme('feed_icon', array('url' => url('taxonomy/term/' . $list->slid . '/0/feed'), 'title' => t('@newsletter feed', array('@newsletter' => $category->name))));

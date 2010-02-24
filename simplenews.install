@@ -396,7 +396,7 @@ function _simplenews_install_nodetype() {
   else {
     $type = node_type_set_defaults(array(
       'type' => 'simplenews',
-      'name' => t('Newsletter issue'),
+      'name' => t('Simplenews newsletter'),
       'base' => 'node_content',
       'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
       'locked' => 0,
@@ -429,6 +429,7 @@ function _simplenews_init_simplenews_category() {
   }
 
   // Check to see if at least 1 mailing list exists, else create one
+  // TODO Check if $category->scid holds a value!
   $lists = simplenews_get_mailing_lists(TRUE);
   if (empty($lists)) {
     $list = new stdClass();
