@@ -17,6 +17,7 @@
  */
 function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
 /*
+  // TODO Fix the delete operation
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_issue_multiple_delete_confirm($form, $form_state);
   }
@@ -62,7 +63,7 @@ function simplenews_issue_filter_form() {
 
   $form['filters'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Show only newsletter issues which'),
+    '#title' => t('Show only newsletters which'),
   );
 
   // Filter values are default
@@ -111,7 +112,7 @@ function simplenews_issue_filter_form_submit($form, &$form_state) {
 }
 
 /**
- * Form builder: Builds a list of newsletter issues with operations.
+ * Form builder: Builds a list of newsletters with operations.
  *
  * @see simplenews_admin_issues_validate()
  * @see simplenews_admin_issues_submit()
@@ -151,7 +152,7 @@ function simplenews_admin_issues() {
   // Table header. Used as tablesort default
   $header = array(
     'title' => array('data' => t('Title'), 'field' => 'n.title'),
-    'list' => array('data' => t('Newsletter issue'), 'field' => 't.name'),
+    'category' => array('data' => t('Newsletter category'), 'field' => 'sc.name'),
     'created' => array('data' => t('Created'), 'field' => 'n.created', 'sort' => 'desc'),
     'published' => array('data' => t('Published')),
     'sent' => array('data' => t('Sent')),
@@ -162,18 +163,18 @@ function simplenews_admin_issues() {
   $query = db_select('node', 'n')->extend('PagerDefault')->extend('TableSort');
   simplenews_build_issue_filter_query($query);
   $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
+  $query->leftJoin('simplenews_category', 'sc', 'sn.scid = sc.scid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
-  $result = $query
-    ->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
+  $query->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
     ->fields('sn', array('s_status', 'scid'))
+    ->fields('sc', array('name'))
     ->limit(30)
-    ->orderByHeader($header)
-    ->execute();
+    ->orderByHeader($header);
 
   $options = array();
   $destination = drupal_get_destination();
 
-  foreach ($result as $issue) {
+  foreach ($query->execute() as $issue) {
     $categories = simplenews_get_categories();
     $subscriber_count = simplenews_count_subscriptions($issue->scid);
     $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
@@ -181,7 +182,7 @@ function simplenews_admin_issues() {
 
     $options[$issue->nid] = array(
       'title' => l($issue->title, 'node/' . $issue->nid),
-      'list' => $issue->scid ? $categories[$issue->scid] : '&lt;' . t('Unassigned') . '&gt;',
+      'category' => $issue->scid ? $categories[$issue->scid] : t('- Unassigned -'),
       'created' => format_date($issue->created, 'small'),
       'published' => theme('simplenews_status', array('source' => 'published', 'status' => $issue->status)),
       'sent' => $send_status,
@@ -194,7 +195,7 @@ function simplenews_admin_issues() {
     '#type' => 'tableselect',
     '#header' => $header,
     '#options' => $options,
-    '#empty' => t('No newsletter issues available.'),
+    '#empty' => t('No newsletters available.'),
   );
 
   $form['pager'] = array('#theme' => 'pager');

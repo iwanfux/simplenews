@@ -349,7 +349,7 @@ function simplenews_schema() {
     ),
     'primary key' => array('msid'),
     'indexes' => array(
-      'tid' => array('tid'),
+      'scid' => array('scid'),
       'status' => array('status'),
     ),
     'foreign keys' => array(
@@ -365,6 +365,7 @@ function simplenews_schema() {
  * Implement hook_install().
  */
 function simplenews_install() {
+  // TODO Make this link conditional for availability of Help module.
   drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.', array('!simplenews_help' => url('admin/help/simplenews'))));
   // TODO is it still possible/usefull to detect faulty installation
   //  drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
@@ -388,21 +389,23 @@ function _simplenews_install_nodetype() {
   // Create a newsletter type. If exists, modify it.
   if ($type = node_type_get_type('simplenews')) {
     $type->module = 'node';
-    $type->locked = FALSE;
-    $type->custom = TRUE;
+    $type->locked = 0;
+    $type->custom = 1;
     node_type_save($type);
   }
   else {
     $type = node_type_set_defaults(array(
       'type' => 'simplenews',
       'name' => t('Newsletter issue'),
-      'module' => 'node',
+      'base' => 'node_content',
       'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
-      'locked' => FALSE,
-      'custom' => TRUE,
+      'locked' => 0,
+      'custom' => 1,
+      'modified' => 1,
     ));
     node_type_save($type);
   }
+  variable_set('simplenews_content_type_' . $type->type, TRUE);
 }
 
 /**
@@ -411,13 +414,14 @@ function _simplenews_install_nodetype() {
 function _simplenews_init_simplenews_category() {
   $categories = simplenews_categories_load_multiple();
   if (empty($categories)) {
-    $category->name =          t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal')));
-    $category->machine_name =  'newsletter';
-    $category->description =   t('@site_name newsletters, to keep you informed.');
-    $category->from_name =     variable_get('site_name', 'Drupal');
-    $category->email_subject = '[[simplenews-newsletters-name]] [title-raw]';
-    $category->from_address =  variable_get('site_mail', ini_get('sendmail_from'));
-    $category->hyperlinks =    TRUE;
+    $category->name           = t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal')));
+    $category->machine_name   = 'newsletter';
+    $category->description    = t('@site_name newsletters, to keep you informed.', array('@site_name' => variable_get('site_name', 'Drupal')));
+    $category->from_name      = variable_get('site_name', 'Drupal');
+    $category->email_subject  ='[[simplenews-newsletters-name]] [title-raw]';
+    $category->from_address   = variable_get('site_mail', ini_get('sendmail_from'));
+    $category->hyperlinks     = TRUE;
+    $category->weight         = 0;
     simplenews_category_save($category);
   }
   else {
@@ -434,6 +438,7 @@ function _simplenews_init_simplenews_category() {
     $list->scid =         $category->scid;
     $list->new_account =  'none';
     $list->opt_inout =    'double';
+    $list->weight =       0;
     simplenews_mailing_list_save($list);
   }
 }

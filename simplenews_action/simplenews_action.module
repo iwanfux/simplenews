@@ -6,8 +6,6 @@
  * Provide actions for simplenews.
  *
  * @ingroup simplenews
- * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
- * @todo Where possible build re-usable functions wrapped around database calls.
  * @todo Check and rework actions/trigger code for trigger API overhaul: http://drupal.org/node/224333#trigger_overhaul
  */
 
@@ -193,20 +191,20 @@ function simplenews_cron_action(&$object, $context = array()) {
  *   hook = user: Subscribe this user to selected newsletter
  *
  *   Available context:
- *    $context['tid']     newsletter tid
- *    $context['name']   newsletter name
+ *    $context['slid']   Mailing list id
+ *    $context['name']   List name
  *
  *   @see simplenews_subscribe_user_action_form()
  *   @see simplenews_subscribe_user_action_submit()
  */
 function simplenews_subscribe_user_action(&$object, $context = array()) {
   if ($context['hook'] == 'user') {
-    if (isset($context['tid'])) {
+    if (isset($context['slid'])) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
-      simplenews_subscribe_user($account->mail, $context['tid'], FALSE, 'action');
-      drupal_set_message(t('You have been subscribed to newsletter %newsletter.', array('%newsletter' => $context['name'])));
-      watchdog('action', 'User %name subscribed to newsletter %newsletter.', array('%name' => $account->name, '%newsletter' => $context['name']));
+      simplenews_subscribe_user($account->mail, $context['slid'], FALSE, 'action');
+      drupal_set_message(t('You have been subscribed to mailing list %list.', array('%list' => $context['name'])));
+      watchdog('action', 'User %name subscribed to mailing list %list.', array('%name' => $account->name, '%list' => $context['name']));
     }
   }
 }
@@ -215,20 +213,20 @@ function simplenews_subscribe_user_action(&$object, $context = array()) {
  * Implementation of a configurable Drupal action.
  */
 function simplenews_subscribe_user_action_form($context) {
-  if (!isset($context['newsletter'])) {
-    $context['newsletter'] = array();
+  if (!isset($context['list'])) {
+    $context['list'] = array();
   }
 
-  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-  $terms = array();
+  $lists = simplenews_get_mailing_lists(TRUE);
+  $options = array();
   foreach ($tree as $newsletter) {
-    $terms[$newsletter->tid] = $newsletter->name;
+    $options[$list->slid] = $list->name;
   }
-  $form['newsletter'] = array(
-    '#title' => t('Newsletter'),
+  $form['list'] = array(
+    '#title' => t('Mailing list'),
     '#type' => 'select',
-    '#options' => $terms,
-    '#description' => t('The newsletter series the user will be subscribed to.'),
+    '#options' => $options,
+    '#description' => t('The mailing list the user will be subscribed to.'),
   );
   return $form;
 }
@@ -240,8 +238,8 @@ function simplenews_subscribe_user_action_submit($form, $form_state) {
   $form_values = $form_state['values'];
 
   $params = array(
-    'tid' => $form_values['newsletter'],
-    'name' => $form['newsletter']['#options'][$form_values['newsletter']],
+    'slid' => $form_values['list'],
+    'name' => $form['list']['#options'][$form_values['list']],
   );
   return $params;
 }
@@ -251,8 +249,8 @@ function simplenews_subscribe_user_action_submit($form, $form_state) {
  *   hook = user: Unsubscribe this user from selected newsletter
  *
  *   Available context:
- *    $context['tid']     newsletter tid
- *    $context['name']   newsletter name
+ *    $context['slid']    Mailing list id
+ *    $context['name']    List name
  *
  *   @see simplenews_unsubscribe_user_action_form()
  *   @see simplenews_unsubscribe_user_action_submit()
@@ -281,20 +279,20 @@ function simplenews_unsubscribe_user_action(&$object, $context = array()) {
  * Implementation of a configurable Drupal action.
  */
 function simplenews_unsubscribe_user_action_form($context) {
-  if (!isset($context['newsletter'])) {
-    $context['newsletter'] = array();
+  if (!isset($context['list'])) {
+    $context['list'] = array();
   }
 
-  $tree = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-  $terms = array();
+  $lists = simplenews_get_mailing_lists(TRUE);
+  $options = array();
   foreach ($tree as $newsletter) {
-    $terms[$newsletter->tid] = $newsletter->name;
+    $options[$list->slid] = $list->name;
   }
-  $form['newsletter'] = array(
-    '#title' => t('Newsletter'),
+  $form['list'] = array(
+    '#title' => t('Mailing list'),
     '#type' => 'select',
-    '#options' => $terms,
-    '#description' => t('The newsletter series the user will be unsubscribed from.'),
+    '#options' => $options,
+    '#description' => t('The mailing list the user will be unsubscribed from.'),
   );
   return $form;
 }
@@ -306,8 +304,8 @@ function simplenews_unsubscribe_user_action_submit($form, $form_state) {
   $form_values = $form_state['values'];
 
   $params = array(
-    'tid' => $form_values['newsletter'],
-    'name' => $form['newsletter']['#options'][$form_values['newsletter']],
+    'slid' => $form_values['list'],
+    'name' => $form['list']['#options'][$form_values['list']],
   );
   return $params;
 }

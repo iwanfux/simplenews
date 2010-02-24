@@ -6,17 +6,24 @@
  * Default theme implementation to format the simplenews newsletter body.
  *
  * Copy this file in your theme directory to create a custom themed body.
- * Rename it to simplenews-newsletter-body--<tid>.tpl.php to override it for a 
- * newsletter using the newsletter term's id.
+ * Rename it to override it. Available templates:
+ *   simplenews-newsletter-body--[category machine name].tpl.php
+ *   simplenews-newsletter-body--[view mode].tpl.php
+ *   simplenews-newsletter-body--[category machine name]--[view mode].tpl.php
+ *
+ * [category machine name]: Machine readable name of the newsletter category
+ * [view mode]: 'email_plain', 'email_html', 'email_textalt'
+ * Example:
+ *   simplenews-newsletter-body--drupal--email_plain.tpl.php
  *
  * Available variables:
- * - node: Newsletter node object
- * - $body: Newsletter body (formatted as plain text or HTML)
+ * - $build: Array as expected by render().
  * - $title: Node title
  * - $language: Language object
+ * - $view_mode: Active view mode.
  *
  * @see template_preprocess_simplenews_newsletter_body()
  */
 ?>
 <h2><?php print $title; ?></h2>
-<?php print $body; ?>
+<?php print render($build); ?>
