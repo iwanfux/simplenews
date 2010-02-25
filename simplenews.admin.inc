@@ -734,7 +734,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
       '#title' => t('Anonymous user preferred language'),
       '#default_value' => '',
       '#options' => $options,
-      '#description' => t('Anonymous users will be subscribed with the selected preferred language. They will receive newsletters in this language if available. Registered users will be subscribed with their preferred language as set on their account page.'),
+      '#description' => t('New subscriptions will be subscribed with the selected preferred language. The language of existing subscribers is unchanged.'),
     );
   }
   else {
@@ -1005,6 +1005,7 @@ function simplenews_subscription_list_form() {
     'mail' => array('data' => t('Email'), 'field' => 'sn.mail', 'sort' => 'asc'),
     'username' => array('data' => t('Username'), 'field' => 'u.name'),
     'status' => array('data' => t('Status'), 'field' => 'sn.activated'),
+    'language' => array('data' => t('Language'), 'field' => 'ss.language'),
     'operations' => array('data' => t('Operations')),
   );
 
@@ -1026,8 +1027,9 @@ function simplenews_subscription_list_form() {
   foreach ($result as $subscriber) {
     $options[$subscriber->snid] = array(
       'mail' => $subscriber->mail,
-      'username' => isset($subscriber->uid) ? l($subscriber->name, 'user/' . $subscriber->uid) : $subscriber->name,
+      'username' => isset($subscriber->uid) ? l($subscriber->name, 'user/' . $subscriber->uid) : check_plain($subscriber->name),
       'status' => theme('simplenews_status', array('source' => 'activated', 'status' => $subscriber->activated)),
+      'language' => check_plain($subscriber->language),
       'operations' => l(t('edit'), 'admin/people/simplenews/users/edit/' . $subscriber->snid, array(), $destination),
     );
   }
@@ -1356,6 +1358,24 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
     '#rows' => 5,
   );
 
+  $form['simplenews_subscription']['confirm_pages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Confirmation pages'),
+    '#collapsible' => FALSE,
+  );
+  $form['simplenews_subscription']['confirm_pages']['simplenews_confirm_subscribe_page'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subscribe confirmation'),
+    '#description' => t('Drupal path or URL of the destination page where after the subscription is confirmed (e.g. node/123). Leave empty to go to the front page.'),
+    '#default_value' => variable_get('simplenews_confirm_subscribe_page', ''),
+  );
+  $form['simplenews_subscription']['confirm_pages']['simplenews_confirm_unsubscribe_page'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Unsubscribe confirmation'),
+    '#description' => t('Drupal path or URL of the destination page when the subscription removal is confirmed (e.g. node/123). Leave empty to go to the front page.'),
+    '#default_value' => variable_get('simplenews_confirm_unsubscribe_page', ''),
+  );
+
   return system_settings_form($form);
 }
 
@@ -1501,17 +1521,26 @@ function simplenews_count_subscriptions($slid) {
  */
 function theme_simplenews_subscription_list($form) {
   // Subscription table header
-  $header = array(theme('table_select_header_cell'), array(
+  $header = array(
+    theme('table_select_header_cell'),
+    array(
       'data' => t('Email'),
       'field' => 'ss.mail',
       'sort' => 'asc',
-    ), array(
+    ),
+    array(
       'data' => t('Username'),
       'field' => 'u.name',
-    ), array(
+    ),
+    array(
       'data' => t('Status'),
       'field' => 'ss.activated',
-    ), t('Operations'));
+    ),
+    array(
+      'data' => t('Language'),
+      'field' => 'ss.language'
+    ),
+    t('Operations'));
 
   // Subscription table
   $output = drupal_render($form['options']);

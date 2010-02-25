@@ -10,11 +10,7 @@
  *   simplenews-newsletter-body--[category machine name].tpl.php
  *   simplenews-newsletter-body--[view mode].tpl.php
  *   simplenews-newsletter-body--[category machine name]--[view mode].tpl.php
- *
- * [category machine name]: Machine readable name of the newsletter category
- * [view mode]: 'email_plain', 'email_html', 'email_textalt'
- * Example:
- *   simplenews-newsletter-body--drupal--email_plain.tpl.php
+ * See README.txt for more details.
  *
  * Available variables:
  * - $build: Array as expected by render().

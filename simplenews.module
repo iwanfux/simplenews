@@ -678,7 +678,7 @@ function _simplenews_node_form(&$form, $form_state) {
   // translation source (and non translated) newsletters will get these options.
   if (module_exists('translation') && translation_supported_type($form['#node']->type) && 
       (isset($form['#node']->translation_source) || ($form['#node']->tnid && $form['#node']->tnid != $form['#node']->nid))) {
-    $form['simplenews']['#description'] = t('This newsletter issue is part of a translation set. Sending this set is controlled from the <a href="@link">translation source newsletter</a>.', array('@link' => '/node/' . $form['tnid']['#value']));
+    $form['simplenews']['#description'] = t('This newsletter issue is part of a translation set. Sending this set is controlled from the <a href="@link">translation source newsletter</a>.', array('@link' => url('node/'. $form['tnid']['#value'])));
     // Send option of translated newsletters are not used, but a default is
     // required to prevent errors when data is stored in the database.
     $form['simplenews']['send'] = array(
@@ -866,6 +866,8 @@ function simplenews_field_ui_view_modes_tabs() {
 function simplenews_cron() {
   simplenews_mail_spool();
   simplenews_clear_spool();
+  // Update sent status for newsletter admin panel.
+  simplenews_send_status_update();
 }
 
 /**
@@ -990,7 +992,7 @@ function simplenews_user_login(&$edit, $account) {
       foreach (explode(',', $data['simplenews_hidden']) as $slid) {
         simplenews_subscribe_user($account->mail, $slid, FALSE, 'automatically');
       }
-      unset($data['simplenews_hidden']);
+      $data['simplenews_hidden'] = NULL;
       $processed = TRUE;
     }
 
@@ -1001,13 +1003,13 @@ function simplenews_user_login(&$edit, $account) {
         $newsletters = simplenews_get_mailing_lists(TRUE);
         drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletters[$slid]->name)));
       }
-      unset($data['newsletters']);
+      $data['newsletters'] = NULL;
       $processed = TRUE;
     }
 
-    // If subscription data is processes, we remove it form the data variable.
+    // If subscription data is processed, we update the user data to remove it.
     if ($processed) {
-      $account->data = serialize($data);
+      user_save($account, $data);
     }
   }
 }
@@ -1097,6 +1099,7 @@ function simplenews_user_categories() {
     'title' => t('Newsletters'),
     'weight' => 10,
     'access callback' => 'user_access',
+    // TODO Need custom access control to restrict users own for only?
     'access arguments' => array('subscribe to newsletters'),
   );
   return $output;
@@ -1109,6 +1112,7 @@ function simplenews_user_categories() {
  */
 function simplenews_form_user_profile_form_alter(&$form, &$form_state) {
   if ($form['#user_category'] == 'simplenews') {
+    // TODO Can users access each others form?
     $subscription = simplenews_get_subscription((object)$form['#user']);
     $form += _simplenews_subscription_manager_form($subscription);
     $form['subscriptions']['#title'] =  t('Newsletter subscriptions');
@@ -1848,6 +1852,7 @@ function simplenews_block_form($form, &$form_state, $slid) {
       $form['action'] = array(
         '#type' => 'value',
         '#value' => 'unsubscribe',
+        '#attributes' => array('class' => 'simplenews-unsubscribe'),
       );
     }
     else {
@@ -1855,6 +1860,7 @@ function simplenews_block_form($form, &$form_state, $slid) {
       $form['action'] = array(
         '#type' => 'value',
         '#value' => 'subscribe',
+        '#attributes' => array('class' => 'simplenews-subscribe'),
       );
     }
     // TODO display the label inline with the user name.
@@ -1880,6 +1886,7 @@ function simplenews_block_form($form, &$form_state, $slid) {
     $form['action'] = array(
       '#type' => 'value',
       '#value' => 'subscribe',
+      '#attributes' => array('class' => 'simplenews-subscribe'),
     );
   }
 
@@ -2200,7 +2207,7 @@ function simplenews_build_node_mail(&$message, $params) {
     //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
     if (variable_get('simplenews_opt_inout_' . $scid, SIMPLENEWS_OPT_INOUT_DOUBLE) != SIMPLENEWS_OPT_INOUT_HIDDEN) {
       // Build and buffer message footer
-      $footer = theme(array('simplenews_newsletter_footer__' . $context['node']->simplenews['scid'], 'simplenews_newsletter_footer'), array('node' => $context['node'], 'key' => $key, 'language' => $message['language']));
+      $footer = theme('simplenews_newsletter_footer', array('node' => $context['node'], 'category' => $category, 'key' => $key, 'language' => $message['language']));
       $messages[$nid][$langcode]['footer'] = $footer;
     }
 
@@ -2296,6 +2303,8 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
  * @return TRUE if email is succesfully delivered by php mail()
  */
 function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
+  static $cache;
+
   // Get subscription data for recipient and language
   $account = new stdClass();
   $account->mail = $mail;
@@ -2303,7 +2312,16 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
   $params['context']['account'] = $subscription;
 
   // Get node data for the mail
-  $node = node_load($nid, $vid);
+  // Because node_load() only caches the most recent node
+  // we cache here based on nid and vid.
+  if (isset($cache[$nid . ':' . $vid])) {
+    $node = $cache[$nid . ':' . $vid];
+  }
+  else {
+    $node = node_load($nid, $vid);
+    $cache[$nid . ':' . $vid] = $node;
+  }
+
   if (is_object($node)) {
     $params['from'] = _simplenews_set_from($node);
     $params['context']['newsletter'] = simplenews_newsletter_load($node->simplenews['scid']);
@@ -2429,9 +2447,6 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
         }
       }
     }
-
-    // Update sent status for newsletter admin panel.
-    simplenews_send_status_update();
 
     // Report sent result and elapsed time. On Windows systems retrusage() is
     // not implemented and hence no elapsed time is available.
@@ -3149,7 +3164,7 @@ function _simplenews_absolute_mail_urls($match) {
 
     // If the link is formed by Drupal's URL filter, we only return the URL.
     // The URL filter generates a label out of the original URL.
-    if (strpos($label, '...') == strlen($label) - 3) {
+    if (strpos($label, '...') === strlen($label) - 3) {
       // Remove ellipsis from end of label.
       $label = substr($label, 0, strlen($label) - 3);
     }
@@ -3598,13 +3613,12 @@ function simplenews_theme() {
       ),
     ),
     'simplenews_newsletter_footer' => array(
-      'template' => 'simplenews-newsletter-footer',
       'variables' => array(
         'node' => NULL,
-        'key' => NULL,
+        'category' => NULL,
+        'key'=> NULL,
         'language' => NULL,
       ),
-      'pattern' => 'simplenews_newsletter_footer__',
     ),
     'simplenews_subscription_list' => array(
       'render element' => 'form',
@@ -3789,7 +3803,32 @@ function theme_simplenews_newsletter_body($variables) {
  * @see simplenews-newsletter-footer.tpl.php
  */
 function template_preprocess_simplenews_newsletter_footer(&$variables) {
+  // TODO Replace 'format' by 'view_mode ?
   $variables['format'] = $variables['node']->simplenews['s_format'];
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
+
+  // Add specific suggestions that can override the default implementation.
+  $variables['theme_hook_suggestions'] = array(
+    'simplenews_newsletter_footer__' . $variables['category']->machine_name,
+    'simplenews_newsletter_footer__' . $variables['build']['#view_mode'],
+    'simplenews_newsletter_footer__' . $variables['category']->machine_name . '__' . $variables['build']['#view_mode'],
+  );
 }
+
+/**
+ * TODO
+ */
+function theme_simplenews_newsletter_footer($variables) {
+  if ($variables['format'] == 'html') {
+    $output = '<p class="newsletter-footer"><a href="[simplenews-unsubscribe-url]">' . $variables['unsubscribe_text'] . '</a></p>';
+  }
+  else {
+    $output = $variables['unsubscribe_text'] . ': [simplenews-unsubscribe-url]';
+  }
+  if ($variables['key'] == 'test') {
+    $output .= '- - - ' . $variables['test_message'] . ' - - -';
+  }
+  return $output;
+}
+

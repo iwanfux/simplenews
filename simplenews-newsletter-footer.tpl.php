@@ -9,6 +9,7 @@
  * Rename it to simplenews-newsletter-footer--<tid>.tpl.php to override it for a 
  * newsletter using the newsletter term's id.
  *
+ * // TODO Update the available variables.
  * Available variables:
  * - $node: newsletter node object
  * - $language: language object
