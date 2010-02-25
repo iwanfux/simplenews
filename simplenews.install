@@ -199,6 +199,13 @@ function simplenews_schema() {
         'default' => '',
         'description' => 'TODO',
       ),
+      'block' => array(
+        'description' => 'For this mailing list a subscription block is available.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('slid'),
     'indexes' => array(
@@ -318,6 +325,12 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'vid' => array(
+        'description' => 'The {node}.vid of this newsletter.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'scid' => array(
         'description' => 'The {simplenews_category}.scid this newsletter belongs to.',
         'type' => 'int',
@@ -414,6 +427,7 @@ function _simplenews_install_nodetype() {
 function _simplenews_init_simplenews_category() {
   $categories = simplenews_categories_load_multiple();
   if (empty($categories)) {
+    $category = new stdClass();
     $category->name           = t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal')));
     $category->machine_name   = 'newsletter';
     $category->description    = t('@site_name newsletters, to keep you informed.', array('@site_name' => variable_get('site_name', 'Drupal')));
