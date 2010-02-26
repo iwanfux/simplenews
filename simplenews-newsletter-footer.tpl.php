@@ -11,7 +11,7 @@
  *
  * // TODO Update the available variables.
  * Available variables:
- * - $node: newsletter node object
+ * - $build: Array as expected by render().
  * - $language: language object
  * - $key: email key [node|test]
  * - $format: newsletter format [plain|html]

@@ -387,6 +387,9 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     'weight' => '0',
     'new_account' => 'none',
     'opt_inout' => 'double',
+    'format' => variable_get('simplenews_format', 'plain'),
+    'priority' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
+    'receipt' => variable_get('simplenews_receipt', 0),
     'from_name' => variable_get('simplenews_from_name', variable_get('site_name', 'Drupal')),
     'email_subject' => '[[simplenews-newsletters-name]] [title-raw]',
     'from_address' => variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from'))),
@@ -475,6 +478,52 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#description' => t('Hidden: This newsletter does not appear on subscription forms. No unsubscription footer in newsletter.<br /> Single: Users are (un)subscribed immediately.<br />Double: When (un)subscribing at a subscription form, anonymous users receive an (un)subscription confirmation email. Authenticated users are (un)subscribed immediately.'),
   );
 
+  $form['email'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Email settings'),
+    '#collapsible' => FALSE,
+  );
+  // Hide format selection if there is nothing to choose.
+  // The default format is plain text.
+  $format_options = simplenews_format_options();
+  if (count($format_options) > 1) {
+    $form['email']['format'] = array(
+      '#type' => 'radios',
+      '#title' => t('Email format'),
+      '#default_value' => $edit['format'],
+      '#options' => $format_options,
+    );
+  }
+  else {
+    $form['email']['format'] = array(
+      '#type' => 'hidden',
+      '#value' => key($format_options),
+    );
+    $form['email']['format_text'] = array(
+      '#markup' => t('Newsletter emails will be sent in %format format.', array('%format' => $edit['format'])),
+    );
+  }
+
+  $form['email']['priority'] = array(
+    '#type' => 'select',
+    '#title' => t('Email priority'),
+    '#default_value' => $edit['priority'],
+    '#options' => array(
+      SIMPLENEWS_PRIORITY_NONE => t('none'),
+      SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
+      SIMPLENEWS_PRIORITY_HIGH => t('high'),
+      SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
+      SIMPLENEWS_PRIORITY_LOW => t('low'),
+      SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
+    ),
+  );
+  $form['email']['receipt'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Request receipt'),
+    '#return_value' => 1,
+    '#default_value' => $edit['receipt'],
+  );
+
   // Email sender name
   $form['simplenews_sender_information'] = array(
     '#type' => 'fieldset',
@@ -539,10 +588,6 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
     '#default_value' => $edit['hyperlinks'],
   );
-
-  // TODO Add: Email format (plain or HTML)
-  // TODO Add: priority, receive confirmation?
-  // TODO Add: Test email options?
 
   $form['submit'] = array('#type' => 'submit', '#value' => t('Save'));
   if (isset($edit['scid'])) {
@@ -1157,6 +1202,7 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
     '#description' => $description,
     '#default_value' => variable_get('simplenews_format', 'plain'),
   );
+  // TODO Do we need these master defaults for 'priority' and 'receipt'?
   $form['simplenews_default_options']['simplenews_priority'] = array(
     '#type' => 'select',
     '#title' => t('Priority'),
@@ -1169,7 +1215,7 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
       5 => t('lowest'),
     ),
     '#description' => t('Note that email priority is ignored by a lot of email programs.'),
-    '#default_value' => variable_get('simplenews_priority', 0),
+    '#default_value' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
   );
   $form['simplenews_default_options']['simplenews_receipt'] = array(
     '#type' => 'checkbox',

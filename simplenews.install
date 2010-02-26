@@ -47,6 +47,29 @@ function simplenews_schema() {
         'default' => 0,
         'description' => 'The weight of this newsletter category relative to other newsletter categories.',
       ),
+      'format' => array(
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Format of the newsletter email (plain, html).',
+      ),
+      'priority' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Email priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).',
+      ),
+      'receipt' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'Boolean indicating request for email receipt confirmation according to RFC 2822.',
+      ),
       'from_name' => array(
         'type' => 'varchar',
         'length' => 64,
@@ -105,30 +128,6 @@ function simplenews_schema() {
       ),
       's_status' => array(
         'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent). ',
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      // TODO Move format to simplenews_category
-      's_format' => array(
-        'description' => 'Format of the newsletter (plain or html).',
-        'type' => 'varchar',
-        'length' => 8,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      // TODO Drop priority or move to simplenews_category
-      'priority' => array(
-        'description' => 'Email priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).',
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      // TODO Drop receipt or move to simplenews_category
-      'receipt' => array(
-        'description' => 'Boolean indicating request for email receipt confirmation according to RFC 2822.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -794,6 +793,7 @@ function simplenews_update_7000() {
   */
 
   // Change table simplenews_newsletters to simplenews_newsletter.
+  // Drop fields: s_format, priority, receipt (moved to simplenews_category).
   db_rename_table('simplenews_newsletters', 'simplenews_newsletter');
   db_change_field('simplenews_newsletter', 'tid', 'scid', array(
     'description' => 'The newsletter category {simplenews_category}.scid this newsletter belongs to.',
@@ -801,6 +801,9 @@ function simplenews_update_7000() {
     'not null' => TRUE,
     'default' => 0,
   ));
+  db_drop_field('simplenews_newsletter', 's_format');
+  db_drop_field('simplenews_newsletter', 'priority');
+  db_drop_field('simplenews_newsletter', 'receipt');
 
   // Change table simplenews_snid_tid to simplenews_subscription.
   db_drop_primary_key('simplenews_snid_tid');

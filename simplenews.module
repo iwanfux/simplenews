@@ -429,27 +429,17 @@ function simplenews_node_insert($node) {
     return;
   }
 
-  // TODO If advanced settings are moved to category, we can remove this code
-  //$node->simplenews = _simplenews_flatten_array($node->simplenews);
-
-  $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
+  $newsletter = (object)$node->simplenews;
+  $send_with_permission = $newsletter->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
   $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
   
-  $newsletter = (object)$node->simplenews;
   $newsletter->nid = $node->nid;
   $newsletter->vid = $node->vid;
   $newsletter->s_status = $s_status;
-  
-  //TODO Delete the below 'advanced' settings.
-  $newsletter->s_format = '';
-  $newsletter->priority = '';
-  $newsletter->receipt = '';
   simplenews_newsletter_save($newsletter);
 
-
-  // When this node is selected for translation all translation of this node
-  // will be sent too.
-  // All translated nodes will receive the same send states (priority, confirmation, format).
+  // When this node is selected for translation
+  // all translation of this node will be sent too.
   if (module_exists('translation') && translation_supported_type($node->type) && $send_with_permission) {
     if ($translations = translation_node_get_translations($node->tnid)) {
       foreach ($translations as $translation) {
@@ -461,13 +451,11 @@ function simplenews_node_insert($node) {
     }
   }
 
-  // Send newsletter or test newsletter
+  // Send newsletter to all subscribers or send test newsletter
   if ($send_with_permission) {
-    // Send newsletter to all subscribers
     simplenews_send_node($node);
   }
-  elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
-    // Send test newsletter to test address(es)
+  elseif ($newsletter->send == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node);
   }
 }
@@ -475,6 +463,7 @@ function simplenews_node_insert($node) {
 /**
  * Implements hook_node_update.
  */
+// TODO can we combine simplenews_node_update() and simplenews_node_insert() ?
 function simplenews_node_update($node) {
   if (!simplenews_check_node_types(array($node->type))) {
     return;
@@ -482,13 +471,14 @@ function simplenews_node_update($node) {
 
   $newsletter = (object)$node->simplenews;
   $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
-  if ($send_with_permission) {
-    $newsletter->s_status = SIMPLENEWS_STATUS_SEND_PENDING;
-  }
+  $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : $newsletter->s_status;
+
+  $newsletter->nid = $node->nid;
+  $newsletter->vid = $node->vid;
+  $newsletter->s_status = $s_status;
   simplenews_newsletter_save($newsletter);
 
   // When this node is translatable, all translations will be sent too.
-  // All translations will receive the same send states (priority, confirmation, format).
   if ($send_with_permission && module_exists('translation') && translation_supported_type($node->type)) {
     if ($translations = translation_node_get_translations($node->tnid)) {
       foreach ($translations as $translation) {
@@ -500,13 +490,11 @@ function simplenews_node_update($node) {
     }
   }
 
-  // Send newsletter or test newsletter
+  // Send newsletter to all subscribers or send test newsletter
   if ($send_with_permission) {
-    // Send newsletter to all subscribers
     simplenews_send_node($node);
   }
-  elseif ($node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
-    // Send test newsletter to test address(es)
+  elseif ($newsletter->send == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node);
   }
 }
@@ -674,7 +662,7 @@ function _simplenews_node_form(&$form, $form_state) {
     '#default_value' => isset($simplenews_values['scid']) ? $simplenews_values['scid'] : 0,
     );
 
-  // Translations of newsletters don't have send and format options. Only the
+  // Translations of newsletters don't have the 'send' option. Only the
   // translation source (and non translated) newsletters will get these options.
   if (module_exists('translation') && translation_supported_type($form['#node']->type) && 
       (isset($form['#node']->translation_source) || ($form['#node']->tnid && $form['#node']->tnid != $form['#node']->nid))) {
@@ -685,21 +673,8 @@ function _simplenews_node_form(&$form, $form_state) {
       '#type' => 'hidden',
       '#value' => SIMPLENEWS_COMMAND_SEND_NONE,
     );
-    // TODO move s_format, priority, receipt, format to Simplenews Category.
-/*
-    $form['simplenews']['advanced']['s_format'] = array(
-      '#type' => 'hidden',
-      '#value' => variable_get('simplenews_format', 'plain'),
-    );
-    $form['simplenews']['advanced']['priority'] = array(
-      '#type' => 'hidden',
-      '#value' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-    );
-    $form['simplenews']['advanced']['receipt'] = array(
-      '#type' => 'hidden',
-      '#value' => variable_get('simplenews_receipt', 0),
-    );
-*/
+    // TODO Translated nodes must also have the same Category!
+    //      Move the category in here and give the user feedback.
   }
   else {
     // Show newsletter sending options if newsletter has not been send yet.
@@ -749,52 +724,6 @@ function _simplenews_node_form(&$form, $form_state) {
           '#value' => variable_get('simplenews_test_address', $address_default),
         );
       }
-      // TODO move s_format, priority, receipt, format to Simplenews Category.
-/*
-      $form['simplenews']['advanced'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Email options'),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-      );
-      // Hide format selection if there is nothing to choose.
-      // The default format is plain text.
-      $format_options = simplenews_format_options();
-      if (count($format_options) > 1) {
-        $form['simplenews']['advanced']['s_format'] = array(
-          '#type' => 'select',
-          '#title' => t('Email format'),
-          '#default_value' => isset($simplenews_values['s_format']) ? $simplenews_values['s_format'] : variable_get('simplenews_format', 'plain'),
-          '#options' => simplenews_format_options(),
-        );
-      }
-      else {
-        $form['simplenews']['advanced']['s_format'] = array(
-          '#type' => 'hidden',
-          '#value' => key($format_options),
-        );
-      }
-
-      $form['simplenews']['advanced']['priority'] = array(
-        '#type' => 'select',
-        '#title' => t('Email priority'),
-        '#default_value' => isset($simplenews_values['priority']) ? $simplenews_values['priority'] : variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-        '#options' => array(
-          SIMPLENEWS_PRIORITY_NONE => t('none'),
-          SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
-          SIMPLENEWS_PRIORITY_HIGH => t('high'),
-          SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
-          SIMPLENEWS_PRIORITY_LOW => t('low'),
-          SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
-        ),
-      );
-      $form['simplenews']['advanced']['receipt'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Request receipt'),
-        '#return_value' => 1,
-        '#default_value' => isset($simplenews_values['receipt']) ? $simplenews_values['receipt'] : variable_get('simplenews_receipt', 0),
-      );
-*/
     }
     else {
       $form['simplenews']['none'] = array(
@@ -806,20 +735,6 @@ function _simplenews_node_form(&$form, $form_state) {
           'disabled' => 'disabled',
         ),
       );
-/*
-      $form['simplenews']['advanced']['s_format'] = array(
-        '#type' => 'hidden',
-        '#value' => $simplenews_values['s_format'],
-      );
-      $form['simplenews']['advanced']['priority'] = array(
-        '#type' => 'hidden',
-        '#value' => $simplenews_values['priority'],
-      );
-      $form['simplenews']['advanced']['receipt'] = array(
-        '#type' => 'hidden',
-        '#value' => $simplenews_values['receipt'],
-      );
-*/
     }
   }
   $form['simplenews']['s_status'] = array(
@@ -1966,13 +1881,9 @@ function simplenews_send_node($node, $accounts = array()) {
     $node = node_load($node);
   }
   if (is_object($node)) {
-    $from = _simplenews_set_from($node);
-    $params['context']['node'] = $node;
-    $params['from'] = $from;
-
-    $node_data['scid'] = $node->simplenews['scid'];
     $node_data['nid'] = $node->nid;
     $node_data['vid'] = $node->vid;
+    $node_data['scid'] = $node->simplenews['scid'];
 
     if (empty($accounts)) {
       // No accounts specified. Get email address of all accounts subscribed to this newsletter.
@@ -2157,7 +2068,7 @@ function simplenews_build_node_mail(&$message, $params) {
     $node = clone $context['node'];
 
     // Add simplenews specific header data
-    $headers = array_merge($message['headers'], _simplenews_headers($node, $params['from']['address']));
+    $headers = array_merge($message['headers'], _simplenews_headers($context['category'], $params['from']['address']));
     $headers['From'] = $params['from']['formatted'];
     $message['headers'] = $messages[$nid][$langcode]['headers'] = $headers;
 
@@ -2183,7 +2094,7 @@ function simplenews_build_node_mail(&$message, $params) {
 
 // TODO move this code to a function. We need to do this twice for HTML and Plain text Alternative.
     // TODO: restore the format selection.
-    //$build = node_view($node, 'email_' . $node->simplenews['s_format']);
+    //$build = node_view($node, 'email_' . $context['category']->format);
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
     $build = node_view($node, 'email_plain'); 
     // TODO Use simplenews_newsletter_body as #theme?
@@ -2195,8 +2106,7 @@ function simplenews_build_node_mail(&$message, $params) {
 
     // TODO Replace '$context['node']->simplenews['scid']' by machine name of category.
     // TODO Move $category into $context.
-    $category = simplenews_category_load($context['node']->simplenews['scid']);
-    $body = theme('simplenews_newsletter_body', array('build' => $build, 'category' => $category, 'language' => $message['language']));
+    $body = theme('simplenews_newsletter_body', array('build' => $build, 'category' => $context['category'], 'language' => $message['language']));
 
     // Buffer body text node and language specific
     $messages[$nid][$langcode]['body'] = $body;
@@ -2207,7 +2117,7 @@ function simplenews_build_node_mail(&$message, $params) {
     //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
     if (variable_get('simplenews_opt_inout_' . $scid, SIMPLENEWS_OPT_INOUT_DOUBLE) != SIMPLENEWS_OPT_INOUT_HIDDEN) {
       // Build and buffer message footer
-      $footer = theme('simplenews_newsletter_footer', array('node' => $context['node'], 'category' => $category, 'key' => $key, 'language' => $message['language']));
+      $footer = theme('simplenews_newsletter_footer', array('build' => $build, 'category' => $context['category'], 'key' => $key, 'language' => $message['language']));
       $messages[$nid][$langcode]['footer'] = $footer;
     }
 
@@ -2225,7 +2135,7 @@ function simplenews_build_node_mail(&$message, $params) {
   // Build message body, replace tokens.
   // Convert to plain text if required.
   $message['body']['body'] = token_replace($body, $context, array('sanatize' => FALSE));
-  if ($context['node']->simplenews['s_format'] == 'plain') {
+  if ($context['category']->format == 'plain') {
     $message['body']['body'] = simplenews_html_to_text($message['body']['body'], variable_get('simplenews_hyperlinks_' . $context['node']->simplenews['scid'], 1));
   }
 
@@ -2323,10 +2233,11 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
   }
 
   if (is_object($node)) {
-    $params['from'] = _simplenews_set_from($node);
-    $params['context']['newsletter'] = simplenews_newsletter_load($node->simplenews['scid']);
-    $params['context']['list'] = simplenews_get_mailing_list_by_category($node->simplenews['scid']);
     $params['context']['node'] = $node;
+    $params['context']['newsletter'] = simplenews_newsletter_load($node->simplenews['scid']);
+    $params['context']['category'] = simplenews_category_load($node->simplenews['scid']);
+    $params['context']['list'] = simplenews_get_mailing_list_by_category($node->simplenews['scid']);
+    $params['from'] = _simplenews_set_from($params['context']['category']);
 
     // Send mail
     if (module_exists('mimemail')) {
@@ -2334,7 +2245,7 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
       // drupal_mail() builds the content of the email but does NOT send.
       $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
       $to = isset($message['params']['context']['account']) ? $message['params']['context']['account'] : $message['to'];
-      $plain = $message['params']['context']['node']->simplenews['s_format'] == 'plain' ? TRUE : NULL;
+      $plain = $message['params']['context']['category']->format == 'plain' ? TRUE : NULL;
       $plain_text = $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
       $files = isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array();
       $message['result'] = mimemail(
@@ -2740,6 +2651,7 @@ function simplenews_category_save($category) {
   $category->name = trim($category->name);
   $category->machine_name = trim($category->machine_name);
 
+  // TODO Change this to db_merge
   if (!empty($category->scid) && !empty($category->name)) {
     db_update('simplenews_category')
       ->condition('scid', $category->scid)
@@ -2749,6 +2661,9 @@ function simplenews_category_save($category) {
         'machine_name' => $category->machine_name,
         'description' => $category->description,
         'weight' => $category->weight,
+        'format' => $category->format,
+        'priority' => $category->priority,
+        'receipt' => $category->receipt,
         'from_name' => $category->from_name,
         'from_address' => $category->from_address,
         'email_subject' => $category->email_subject,
@@ -2765,6 +2680,9 @@ function simplenews_category_save($category) {
         'machine_name' => $category->machine_name,
         'description' => $category->description,
         'weight' => $category->weight,
+        'format' => $category->format,
+        'priority' => $category->priority,
+        'receipt' => $category->receipt,
         'from_name' => $category->from_name,
         'from_address' => $category->from_address,
         'email_subject' => $category->email_subject,
@@ -2994,21 +2912,11 @@ function simplenews_newsletter_load_multiple($nids = array(), $conditions = arra
  *   Simplenews newsletter object.
  */
 function simplenews_newsletter_save($newsletter) {
-  // TODO TEMP
-  $newsletter->s_format = 'plain';
-  $newsletter->priority = '3';
-  $newsletter->receipt = '0';
-  // END TEMP
-
   db_merge('simplenews_newsletter')
     ->key(array('nid' => $newsletter->nid, 'vid' => $newsletter->vid))
     ->fields(array(
       'scid' => $newsletter->scid,
       's_status' => $newsletter->s_status,
-      // TODO Move format, priority, receipt to simplenews_category
-      's_format' => $newsletter->s_format,
-      'priority' => $newsletter->priority,
-      'receipt' => $newsletter->receipt,
     ))
     ->execute();
 }
@@ -3036,19 +2944,21 @@ function simplenews_newsletter_delete($newsletter) {
  * Build formatted from-name and email for a mail object.
  *
  * Each newsletter category can have a different from address.
- * The from name and address depend on the newsletter category scid which is included in the $node object
  *
- * @param object $node Node object of a simplenews newsletter
+ * @param $category
+ *   Newsletter category object.
  *
- * @return array [address] = from address; [formatted] = formatted from name and address
+ * @return Associative array with (un)formatted from address
+ *  'address'   => From address
+ *  'formatted' => Formatted, mime encoded, from name and address
  */
-function _simplenews_set_from($node = NULL) {
+function _simplenews_set_from($category = NULL) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $name_default = variable_get('site_name', 'Drupal');
 
-  if (isset($node->simplenews['scid'])) {
-    $address = variable_get('simplenews_from_address_' . $node->simplenews['scid'], variable_get('simplenews_from_address', $address_default));
-    $name = variable_get('simplenews_from_name_' . $node->simplenews['scid'], variable_get('simplenews_from_name', $name_default));
+  if ($category) {
+    $address = $category->from_address;
+    $name = $category->from_name;
   }
   else {
     $address = variable_get('simplenews_from_address', $address_default);
@@ -3067,22 +2977,24 @@ function _simplenews_set_from($node = NULL) {
 /**
  * Build header array with priority and receipt confirmation settings.
  *
- * @param $node: node object
- * @param $from: from email address
+ * @param $node
+ *   Newsletter category object.
+ * @param $from
+ *   Newsletter from email address
  *
  * @return Header array with priority and receipt confirmation info
  */
-function _simplenews_headers($node, $from) {
+function _simplenews_headers($category, $from) {
   $headers = array();
 
   // If receipt is requested, add headers.
-  if ($node->simplenews['receipt']) {
+  if ($category->receipt) {
     $headers['Disposition-Notification-To'] = $from;
     $headers['X-Confirm-Reading-To'] = $from;
   }
 
   // Add priority if set.
-  switch ($node->simplenews['priority']) {
+  switch ($category->priority) {
     case SIMPLENEWS_PRIORITY_HIGHEST:
       $headers['Priority'] = 'High';
       $headers['X-Priority'] = '1';
@@ -3445,27 +3357,6 @@ function _simplenews_tt_newsletter_name($newsletter, $langcode = NULL) {
 */
 }
 
-
-/**
- * Flatten a nested array
- */
-// TODO If advanced settings are moved to category, we can remove this code
-/*
- function _simplenews_flatten_array($array) {
-  $return = array();
-
-  foreach ($array as $key => $value) {
-    if (is_array($value)) {
-      $return += _simplenews_flatten_array($value);
-    }
-    else {
-      $return[$key] = $value;
-    }
-  }
-  return $return;
-}
-*/
-
 /**
  * Generate the hash key used for subscribe/unsubscribe link.
  */
@@ -3544,15 +3435,6 @@ function _simplenews_measure_usec($start = FALSE) {
  */
 function _simplenews_get_node_form_defaults() {
   $defaults = array(
-/*
-  // TODO Move advanced settings to Newsletter category.
-    'test_address' => variable_get('simplenews_test_address', variable_get('site_mail', ini_get('sendmail_from'))),
-    'advanced' => array(
-      's_format' => variable_get('simplenews_format', 'plain'),
-      'priority' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
-      'receipt' => variable_get('simplenews_receipt', 0),
-    ),
-*/
     'scid' => '0',
     'send' => user_access('send newsletter') ? variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE) : SIMPLENEWS_COMMAND_SEND_NONE,
     's_status' => SIMPLENEWS_COMMAND_SEND_NONE,
@@ -3614,7 +3496,7 @@ function simplenews_theme() {
     ),
     'simplenews_newsletter_footer' => array(
       'variables' => array(
-        'node' => NULL,
+        'build' => NULL,
         'category' => NULL,
         'key'=> NULL,
         'language' => NULL,
@@ -3803,8 +3685,12 @@ function theme_simplenews_newsletter_body($variables) {
  * @see simplenews-newsletter-footer.tpl.php
  */
 function template_preprocess_simplenews_newsletter_footer(&$variables) {
+  // We don't want to include links and comments in the email.
+  unset($variables['build']['links']);
+  unset($variables['build']['comments']);
+
   // TODO Replace 'format' by 'view_mode ?
-  $variables['format'] = $variables['node']->simplenews['s_format'];
+  $variables['format'] = $variables['category']->format;
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
 
