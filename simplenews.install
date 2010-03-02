@@ -358,6 +358,13 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of name value pairs that are related to the email address.',
+      ),
     ),
     'primary key' => array('msid'),
     'indexes' => array(
@@ -839,6 +846,19 @@ function simplenews_update_7000() {
   variable_del('simplenews_vid');
 }
 
+/**
+ * TODO
+ */
+function simplenews_update_7001() {
+  // Add data field to spool table to store user data in.
+  db_add_field('simplenews_mail_spool', 'data', array(
+    'type' => 'text',
+    'not null' => FALSE,
+    'size' => 'big',
+    'serialize' => TRUE,
+    'description' => 'A serialized array of name value pairs that are related to the email address.',
+  ));
 
+}
 // @todo Add doxygen comment to new update functions: http://drupal.org/node/224333#update_php
 // @todo D7 update_N() functions must return string or exception: http://drupal.org/node/224333#update_sql

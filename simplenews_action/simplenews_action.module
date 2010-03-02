@@ -119,19 +119,15 @@ function simplenews_send_newsletter_action_form($context) {
     $context['resend'] = FALSE;
   }
 
-  $categories = simplenews_categories_load_multiple();
-  $newsletter_categories = array();
-  foreach ($categories as $category) {
-    $newsletter_categories[$category->scid] = $category->name;
-  }
+  $categories = simplenews_category_list();
   //  $form['newsletter'] = array(
   //    '#title' => t('Newsletter'),
   //    '#type' => 'select',
-  //    '#options' => $newsletter_categories,
+  //    '#options' => $categories,
   //    '#default_value' => $context['newsletter'],
   //    '#description' => t('The newsletter series'),
   //  );
-  $newsletters = simplenews_newsletter_load_multiple(array(), array('scid' => array_keys($newsletter_categories)));
+  $newsletters = simplenews_newsletter_load_multiple(array(), array('scid' => array_keys($categories)));
   $newsletter_nodes = array();
   foreach ($newsletters as $newsletter) {
     $newsletter_nodes[$newsletter->nid] = $newsletter->title;

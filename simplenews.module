@@ -72,12 +72,6 @@ define('SIMPLENEWS_SEND_CHECK_INTERVAL', 100);
 define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
 
 /**
- * CAPTURE THE PHP MAX EXUCUTION TIME BEFORE drupal_cron_run() CHANGES THIS.
- * THIS IS A WORK AROUND FOR DRUPAL6.14 BUG. SEE http://drupal.org/node/584334
- */
-define('SIMPLENEWS_MAX_EXECUTION_TIME', ini_get('max_execution_time'));
-
-/**
  * SUBSCRIPTION STATUS
  */
 define('SIMPLENEWS_SUBSCRIPTION_INACTIVE', 0);
@@ -608,7 +602,7 @@ function simplenews_form_node_type_form_alter(&$form, $form_state) {
 
 function simplenews_form_alter(&$form, $form_state, $form_id) {
   // Simplenews newsletter node form
-  if (strpos($form_id, '_node_form') && isset($form['type'])) {
+  if (!empty($form['#node_edit_form'])) {
     if (in_array($form['type']['#value'], simplenews_get_content_types())) {
       _simplenews_node_form($form, $form_state);
     }
@@ -654,7 +648,7 @@ function _simplenews_node_form(&$form, $form_state) {
   );
   // TODO Move this to a 'field'?
   $options = array(t('- Select a category -'));
-  $options += simplenews_get_categories();
+  $options += simplenews_category_list();
   $form['simplenews']['scid'] = array(
     '#type' => 'select',
     '#title' => t('Newsletter category'),
@@ -1482,28 +1476,17 @@ function simplenews_get_subscription($account) {
 /**
  * TODO
  */
-function simplenews_get_subscriptions_by_category($scid) {
-  // TODO Add a hook to load other subscribers too.
-  $list = simplenews_get_mailing_list_by_category($scid);
-  return simplenews_get_subscriptions_by_list($list->slid);
-}
-
-/**
- * TODO
- */
 function simplenews_get_subscriptions_by_list($slid) {
-  // TODO Add data from 'simplenews_subscription' ?
   $subscriptions = array();
-  $query = db_select('simplenews_subscriber', 's');
-  $query->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
-  $query->fields('s', array('mail'))
-    ->condition('s.activated', 1)
-    ->condition('t.slid', $slid)
-    ->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+  $query = db_select('simplenews_subscriber', 'sn');
+  $query->innerJoin('simplenews_subscription', 'ss', 'ss.snid = sn.snid');
+  $query->fields('sn', array('mail', 'uid', 'language'))
+    ->fields('ss', array('status'))
+    ->condition('sn.activated', 1)
+    ->condition('ss.slid', $slid)
+    ->condition('ss.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
   foreach ($query->execute() as $subscriber) {
-    $subscriptions[] = array(
-      'mail' => $subscriber->mail,
-    );
+    $subscriptions[$subscriber->mail] = $subscriber;
   }
   return $subscriptions;
 }
@@ -1875,41 +1858,56 @@ function simplenews_block_form_submit($form, &$form_state) {
  *   NOTE: either snid, mail or uid is required.
  */
 function simplenews_send_node($node, $accounts = array()) {
-  $mails = array();
-
   if (is_numeric($node)) {
     $node = node_load($node);
   }
   if (is_object($node)) {
-    $node_data['nid'] = $node->nid;
-    $node_data['vid'] = $node->vid;
-    $node_data['scid'] = $node->simplenews['scid'];
+    $spool_data['nid'] = $node->nid;
+    $spool_data['vid'] = $node->vid;
+    $spool_data['scid'] = $node->simplenews['scid'];
 
-    if (empty($accounts)) {
-      // No accounts specified. Get email address of all accounts subscribed to this newsletter.
-      $mails = simplenews_get_subscriptions_by_category($node->simplenews['scid']);
+    // Get accounts subscribed to this newsletter.
+    // Using hook_simplenews_recipients modules can add recipients.
+    $list = simplenews_get_mailing_list_by_category($node->simplenews['scid']);
+    $recipients = simplenews_get_subscriptions_by_list($list->slid);
+    foreach (module_implements('simplenews_recipients_alter') as $module) {
+      $function = $module . '_simplenews_recipients_alter';
+      $function($recipients, $node->simplenews['scid']);
     }
-    else {
-      // Get email address of specified accounts.
+
+    // Build data array of specified accounts.
+    // First we use the recipient data collected by hook_simplenews_recipients().
+    // If this fails we get the data from $accounts
+    if ($accounts) {
+      $temp_recipients = array();
       foreach ($accounts as $account) {
-        $account = simplenews_get_subscription($account);
-        $mails[] = array(
-          'mail' => $account->mail,
-        );
+        if (isset($recipients[$account->mail])) {
+          $temp_recipients[$account->mail] = $recipients[$account->mail];
+        }
+        else {
+          // Set these accounts to 'subscribed'.
+          $account->status = 1;
+          $temp_recipients[$account->mail] = $account;
+        }
       }
+      $recipients = $temp_recipients;
     }
 
     // To send the newsletter, the node id and target email addresses
     // are stored in the spool.
+    // Only subscribed recipients are stored in the spool (status = 1).
+    foreach ($recipients as $mail => $recipient) {
+      if ($recipient->status) {
+        unset($recipient->status);
+        simplenews_save_spool(array_merge($spool_data, array('mail' => $mail), array('data' => $recipient)));
+      }
+    }
+
     // When cron is not used the newsletter is send immediately to the emails
     // in the spool. When cron is used newsletters are send to addresses in the
     // spool during the next (and following) cron run.
-    foreach ($mails as $mail) {
-      $data = array_merge($node_data, $mail);
-      simplenews_save_spool($data);
-    }
     if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
-      simplenews_mail_spool($node_data['nid'], $node_data['vid'], 999999);
+      simplenews_mail_spool($spool_data['nid'], $spool_data['vid'], 999999);
       drupal_set_message(t('Newsletter sent.'));
       simplenews_clear_spool();
     }
@@ -2205,25 +2203,29 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
 /**
  * Send a node to an email address.
  *
- * @param $nid node id of newsletter node
- * @param $vid revision id of newsletter node
- * @param $mail target email address
+ * @param object $message
+ *   Mail message object as returned by simplenews_load_spool():
+ *     $message->nid
+ *     $message->vid
+ *     $message->scid
+ *     $message->data
  * @param $key email key [node|test]
  *
  * @return TRUE if email is succesfully delivered by php mail()
  */
-function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
+function simplenews_mail_mail($message, $key = 'node') {
   static $cache;
 
-  // Get subscription data for recipient and language
-  $account = new stdClass();
-  $account->mail = $mail;
-  $subscription = simplenews_get_subscription($account);
-  $params['context']['account'] = $subscription;
+  $nid = $message->nid;
+  $vid = $message->vid;
+  $scid = $message->scid;
+  $account = $message->data;
+  $params['context']['account'] = $account;
 
   // Get node data for the mail
-  // Because node_load() only caches the most recent node
+  // Because node_load() only caches the most recent node revision
   // we cache here based on nid and vid.
+  // TODO Investigate if this caching thing is still applicable to D7
   if (isset($cache[$nid . ':' . $vid])) {
     $node = $cache[$nid . ':' . $vid];
   }
@@ -2234,16 +2236,16 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
 
   if (is_object($node)) {
     $params['context']['node'] = $node;
-    $params['context']['newsletter'] = simplenews_newsletter_load($node->simplenews['scid']);
-    $params['context']['category'] = simplenews_category_load($node->simplenews['scid']);
-    $params['context']['list'] = simplenews_get_mailing_list_by_category($node->simplenews['scid']);
+    $params['context']['newsletter'] = simplenews_newsletter_load($scid);
+    $params['context']['category'] = simplenews_category_load($scid);
+    $params['context']['list'] = simplenews_get_mailing_list_by_category($scid);
     $params['from'] = _simplenews_set_from($params['context']['category']);
 
     // Send mail
     if (module_exists('mimemail')) {
       // If mimemail module is installed ALL emails are send via this module.
       // drupal_mail() builds the content of the email but does NOT send.
-      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], FALSE);
+      $message = drupal_mail('simplenews', $key, $account->mail, $account->language, $params, $params['from']['formatted'], FALSE);
       $to = isset($message['params']['context']['account']) ? $message['params']['context']['account'] : $message['to'];
       $plain = $message['params']['context']['category']->format == 'plain' ? TRUE : NULL;
       $plain_text = $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
@@ -2261,7 +2263,7 @@ function simplenews_mail_mail($nid, $vid, $mail, $key = 'node') {
       );
     }
     else {
-      $message = drupal_mail('simplenews', $key, $subscription->mail, $subscription->language, $params, $params['from']['formatted'], TRUE);
+      $message = drupal_mail('simplenews', $key, $account->mail, $account->language, $params, $params['from']['formatted'], TRUE);
     }
 
     // Log sent result in watchdog.
@@ -2323,21 +2325,18 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
   // Send pending messages from database cache
   // A limited number of mails is retrieved from the spool
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
-  if ($messages = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
+  if ($spool = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $count_fail = $count_success = 0;
-
-    // Get PHP maximum execution time. 30 seconds default.
-    $max_execution_time = ini_get('max_execution_time') ? ini_get('max_execution_time') : SIMPLENEWS_MAX_EXECUTION_TIME;
 
     _simplenews_measure_usec(TRUE);
 
-    foreach ($messages as $key => $message) {
-      $result = simplenews_mail_mail($message['nid'], $message['vid'], $message['mail']);
+    foreach ($spool as $msid => $message) {
+      $result = simplenews_mail_mail($message);
 
       // Update spool status.
       // This is not optimal for performance but prevents duplicate emails
       // in case of PHP execution time overrun.
-      simplenews_update_spool(array($key), $result);
+      simplenews_update_spool(array($msid), $result);
       if ($result['status'] == SIMPLENEWS_SPOOL_DONE) {
         $count_success++;
       }
@@ -2377,29 +2376,31 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
 /**
  * Save mail message in mail cache table.
  *
- * @param array $message data array to be stored
- *  $message['mail']
- *  $message['nid']
- *  $message['vid']
- *  $message['scid']
- *  $message['status']  (Default: 1 = pending)
- *  $message['time']    (default: current unix timestamp)
+ * @param array $spool
+ *   Data array to be stored in the spool table.
+ *  $spool['mail']
+ *  $spool['nid']
+ *  $spool['vid']
+ *  $spool['scid']
+ *  $spool['status']  (Default: 1 = pending)
+ *  $spool['time']    (default: current unix timestamp)
 
- * @param array $message Mail message array
+ * @param array $spool Mail message array
  * @todo Replace time(): http://drupal.org/node/224333#time
  */
-function simplenews_save_spool($message) {
-  $status = isset($message['status']) ? $message['status'] : SIMPLENEWS_SPOOL_PENDING;
-  $time = isset($message['time']) ? $message['time'] : REQUEST_TIME;
+function simplenews_save_spool($spool) {
+  $status = isset($spool['status']) ? $spool['status'] : SIMPLENEWS_SPOOL_PENDING;
+  $time = isset($spool['time']) ? $spool['time'] : REQUEST_TIME;
 
   db_insert('simplenews_mail_spool')
     ->fields(array(
-      'mail' => $message['mail'],
-      'nid' => $message['nid'],
-      'nid' => $message['vid'],
-      'scid' => $message['scid'],
+      'mail' => $spool['mail'],
+      'nid' => $spool['nid'],
+      'vid' => $spool['vid'],
+      'scid' => $spool['scid'],
       'status' => $status,
       'timestamp' => $time,
+      'data' => serialize($spool['data']),
     ))
     ->execute();
 }
@@ -2412,17 +2413,18 @@ function simplenews_save_spool($message) {
  * @param integer $vid node version id
  * @param integer $limit The maximum number of mails to load from the spool
  *
- * @return array Mail message array
- *  $message['msid']
- *  $message['mail']
- *  $message['nid']
- *  $message['scid']
- *  $message['status']
- *  $message['time']
+ * @return array Spool data
+ *  $spool['msid']
+ *  $spool['mail']
+ *  $spool['nid']
+ *  $spool['scid']
+ *  $spool['status']
+ *  $spool['time']
  * @todo Convert output to array of objects.
  */
+// TODO Change limit default to 0. 0 = no limit.
 function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
-  $messages = array();
+  $spool = array();
 
   $query = db_select('simplenews_mail_spool', 's')
     ->fields('s')
@@ -2430,10 +2432,10 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
     ->range(0, $limit)
     ->orderBy('s.timestamp', 'ASC');
   foreach ($query->execute() as $data) {
-    // TODO Convert output to array of objects
-    $messages[$data->msid] = (array)$data;
+    $data->data = unserialize($data->data);
+    $spool[$data->msid] = $data;
   }
-  return $messages;
+  return $spool;
 }
 
 /**
@@ -2597,12 +2599,12 @@ function simplenews_category_load($scid, $reset = FALSE) {
 }
 
 /**
- * Get simplenews categories with translated names.
+ * Get list of simplenews categories with translated names.
  *
  * @return
  *   array of category names. Translated if required.
  */
-function simplenews_get_categories() {
+function simplenews_category_list() {
   $categories = simplenews_categories_load_multiple();
   $cats = array();
   foreach ($categories as $key => $category) {
@@ -2610,6 +2612,21 @@ function simplenews_get_categories() {
     $cats[$key] = $category->name;
   }
   return $cats;
+}
+
+/**
+ * Get array of simplenews category objects with translated names.
+ *
+ * @return
+ *   array of categories.
+ */
+function simplenews_get_categories() {
+  $categories = simplenews_categories_load_multiple();
+  $names = simplenews_category_list();
+  foreach ($categories as $key => $category) {
+    $categories[$key] = $names[$key];
+  }
+  return $categories;
 }
 
 /**
@@ -3259,6 +3276,50 @@ function simplenews_tokens($type, $tokens, array $data = array(), array $options
   }
 
   return $replacements;
+}
+
+/**
+ * Array merge with callback.
+ *
+ * Merge arrays as array_merge() but only
+ * if callback permits merge of elements with the same key.
+ *
+ * @param $array1
+ *   Initial array to merge
+ * @param $array2
+ *   Array to merge
+ * @param $callback
+ *   Callback function. Array elements with matching keys will be merged
+ *   if callback function returns true for the matching $array2 element.
+ * @return array
+ *   Resulting array
+ */
+function simplenews_array_merge($array1, $array2, $callback) {
+  if (!function_exists($callback)) {
+    return array_merge($array1, $array2);
+  }
+  foreach($array1 as $key => $data) {
+    if (isset($array2[$key])) {
+      if ($callback($data)) {
+        $array1[$key] = $array2[$key];
+      }
+    }
+  }
+  $array1 += array_diff_key($array2, $array1);
+  return $array1;
+}
+
+/**
+ * Check recipient status.
+ *
+ * @param $recipient
+ *   Subscriber object
+ * @return boolean
+ *   TRUE: status is 1; may receive email; subscribed
+ *   FALSE: status is 0; should not to receive email; unsubscribed
+ */
+function simplenews_check_status($recipient) {
+  return (bool)$recipient->status;
 }
 
 /**

@@ -43,7 +43,7 @@ function simplenews_issue_filters() {
       'scid-0'    => t('Unassigned newsletters'),
     ),
   );
-  foreach (simplenews_get_categories() as $scid => $name) {
+  foreach (simplenews_category_list() as $scid => $name) {
     $filters['category']['options']['scid-' . $scid] = $name;
   }
 
@@ -175,7 +175,7 @@ function simplenews_admin_issues() {
   $destination = drupal_get_destination();
 
   foreach ($query->execute() as $issue) {
-    $categories = simplenews_get_categories();
+    $categories = simplenews_category_list();
     $subscriber_count = simplenews_count_subscriptions($issue->scid);
     $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
     $send_status = $issue->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->s_status));
