@@ -391,7 +391,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     'priority' => variable_get('simplenews_priority', SIMPLENEWS_PRIORITY_NONE),
     'receipt' => variable_get('simplenews_receipt', 0),
     'from_name' => variable_get('simplenews_from_name', variable_get('site_name', 'Drupal')),
-    'email_subject' => '[[simplenews-newsletters-name]] [title-raw]',
+    'email_subject' => '[[simplenews-category:name]] [node:title]',
     'from_address' => variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from'))),
     'hyperlinks' => TRUE,
   );
@@ -544,18 +544,16 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#title' => t('Newsletter subject'),
     '#collapsible' => FALSE,
   );
-  //TODO It seems that core does not support any list of available tokens in the user interface :(
   $form['simplenews_subject']['token_help'] = array(
     '#title' => t('Replacement patterns'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  /*
   $form['simplenews_subject']['token_help']['help'] = array(
-    '#markup' => theme('token_help', 'simplenews') . theme('token_help', 'node'),
+    '#markup' => _simplenews_get_token_info(array('simplenews-category', 'node')),
   );
-  */
+
   $form['simplenews_subject']['email_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Email subject'),
@@ -1360,18 +1358,15 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
     '#collapsible' => FALSE,
   );
 
-  //TODO It seems that core does not support any list of available tokens in the user interface :(
   $form['simplenews_subscription']['subscription_mail']['token_help'] = array(
     '#title' => t('Replacement patterns'),
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  /*
   $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
-    '#markup' => theme('token_help', 'simplenews'),
+    '#markup' => _simplenews_get_token_info(array('simplenews-subscriber', 'simplenews-list', 'site')),
   );
-  */
 
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
     '#type' => 'textfield',

@@ -786,6 +786,25 @@ function simplenews_update_6200() {
 }
 
 /**
+ * Helperfunction to convert tokens in variables to D7 format.
+ */
+function _simplenews_convert_tokens_in_variable($variables) {
+  if (!is_array($variables)) {
+    $variables = array($variables);
+  }
+  
+  $old = array('[site-name]', '[user-mail]', '[site-url]/user', '[site-url]', '[simplenews-subscribe-url]', '[simplenews-unsubscribe-url]', '[simplenews-newsletter-url]', '[simplenews-newsletters-name]', '[simplenews-newsletters-url]', '[simplenews-receiver-mail]');
+  $new = array('[site:name]', '[user:mail]', '[site:login-url]', '[site:url]', '[simplenews-subscriber:subscribe-url]', '[simplenews-subscriber:unsubscribe-url]', '[simplenews-newsletter:url]', '[simplenews-list:name]', '[simplenews-list:url]', '[simplenews-subscriber:mail]');
+  
+  foreach ($variables as $variable) {
+    if ($text = variable_get($variable, FALSE)) {
+      $text = str_replace($old, $new, $text);
+      variable_set($variable, $text);
+    }
+  }
+}
+
+/**
  * Create table {simplenews_category} to replace taxonomy terms.
  * Migrate Newsletter taxonomy data to Newsletter categories.
  *
@@ -808,6 +827,10 @@ function simplenews_update_7000() {
   // TODO Test schema update !!
   // See: http://api.drupal.org/api/function/db_change_field/7
   // TODO Test data update !!
+  
+  // Convert tokens in variables to D7 format.
+  $variables = array('simplenews_confirm_subscribe_subject', 'simplenews_confirm_subscribe_unsubscribed', 'simplenews_confirm_subscribe_subscribed', 'simplenews_confirm_unsubscribe_subscribed', 'simplenews_confirm_unsubscribe_unsubscribed');
+  _simplenews_convert_tokens_in_variable($variables);
 
   // Create table 'simplenews_category'.
   $schema = array(
@@ -909,6 +932,8 @@ function simplenews_update_7000() {
   // Migrate Newsletter taxonomy data to Newsletter categories.
   $terms = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   foreach ($terms as $term) {
+    _simplenews_convert_tokens_in_variable('simplenews_email_subject_'. $term->tid);
+
     db_insert('simplenews_category')
       ->fields(array(
         'scid' => $term->tid,
@@ -1069,6 +1094,9 @@ function simplenews_update_7000() {
     variable_del('simplenews_opt_inout_'. $term->tid);
   }
   variable_del('simplenews_vid');
+  
+  // TODO Add return text about checking of Newsletter Category settings.
+  // TODO Add return text about Block checkboxes
 }
 
 /**
@@ -1084,3 +1112,4 @@ function simplenews_update_7001() {
     'description' => 'A serialized array of name value pairs that are related to the email address.',
   ));
 }
+
