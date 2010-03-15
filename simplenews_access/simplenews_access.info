@@ -1,0 +1,8 @@
+; $Id$
+name = Simplenews access
+description = Provide access control for Simplenews.
+dependencies[] = simplenews
+package = Mail
+core = 7.x
+
+files[] = simplenews_access.module
