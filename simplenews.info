@@ -1,7 +1,6 @@
 ; $Id$
 name = Simplenews
 description = Send newsletters to subscribed email addresses.
-dependencies[] = taxonomy
 package = Mail
 core = 7.x
 
