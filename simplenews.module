@@ -12,7 +12,6 @@
  * Simplnews node handling, sent email, newsletter block and general hooks
  *
  * @ingroup simplenews
- * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
  * @todo Where possible build re-usable functions wrapped around database calls.
  * @todo Investigate the use of static API: http://drupal.org/node/224333#static_variable_api
  * @todo Change documentation of hook_foo implementations: http://drupal.org/node/224333#implementation_hook_comment
@@ -256,7 +255,6 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_admin_settings'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => 1,
   );
   $items['admin/config/simplenews/newsletter'] = array(
     'title' => 'Newsletter',
@@ -266,7 +264,6 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_admin_settings_newsletter'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => 2,
   );
   $items['admin/config/simplenews/subscription'] = array(
     'title' => 'Subscription',
@@ -276,7 +273,6 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_admin_settings_subscription'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => 3,
   );
   $items['admin/config/simplenews/mail'] = array(
     'title' => 'Send mail',
@@ -286,7 +282,6 @@ function simplenews_menu() {
     'page arguments' => array('simplenews_admin_settings_mail'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'simplenews.admin.inc',
-    'weight' => 4,
   );
 
   $items['newsletter/confirm'] = array(
@@ -467,6 +462,8 @@ function simplenews_node_update($node) {
   if (!simplenews_check_node_types(array($node->type))) {
     return;
   }
+//dpm($node);
+  // TODO Check if this is an actual 'submit' action and not update as part of e.g. 'unpublish' on the node admin page
 
   $newsletter = (object)$node->simplenews;
   $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
@@ -537,11 +534,10 @@ function simplenews_node_load($nodes, $types) {
 function simplenews_check_node_types($types) {
   if ($sn_types = simplenews_get_content_types()) {
     foreach($types as $type) {
-      if (!in_array($type, $sn_types)) {
-        return FALSE;
+      if (in_array($type, $sn_types)) {
+        return TRUE;
       }
     }
-    return TRUE;
   }
   return FALSE;
 }
@@ -1938,7 +1934,7 @@ function simplenews_send_test($node) {
         $result = simplenews_mail_mail($message, 'test');
       }
     }
-    if ($result) {
+    if (isset($result)) {
       drupal_set_message(t('Test newsletter sent to %recipient.', array('%recipient' => $node->simplenews['test_address'])));
     }
   }
