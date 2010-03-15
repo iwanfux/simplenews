@@ -104,11 +104,7 @@ function simplenews_access_admin_by_role_submit($form, &$form_state) {
   }
 
   // Inform the user to rebuild the node access table when he is ready.
-  //TODO Why is simplenews_access_node_access_records() not called after node_access_needs_rebuild()
-  //     Or what alternative should be used for simplenews_access_node_access_records().
   node_access_needs_rebuild(TRUE);
-  //node_access_rebuild();
-
 }
 
 /**

@@ -65,4 +65,3 @@ function simplenews_access_schema() {
 function simplenews_access_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_access_%%'");
 }
-
