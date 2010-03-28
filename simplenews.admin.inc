@@ -1371,31 +1371,31 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
-    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subject'),
+    '#default_value' => simplenews_subscription_confirmation_text('subscribe_subject'),
     '#maxlength' => 180,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_unsubscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text of subscribe email'),
-    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_unsubscribed'),
+    '#default_value' => simplenews_subscription_confirmation_text('subscribe_unsubscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text for already subscribed visitor'),
-    '#default_value' => _simplenews_subscription_confirmation_text('subscribe_subscribed'),
+    '#default_value' => simplenews_subscription_confirmation_text('subscribe_subscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_subscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text of unsubscribe email'),
-    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_subscribed'),
+    '#default_value' => simplenews_subscription_confirmation_text('unsubscribe_subscribed'),
     '#rows' => 5,
   );
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_unsubscribe_unsubscribed'] = array(
     '#type' => 'textarea',
     '#title' => t('Body text for not yet subscribed visitor'),
-    '#default_value' => _simplenews_subscription_confirmation_text('unsubscribe_unsubscribed'),
+    '#default_value' => simplenews_subscription_confirmation_text('unsubscribe_unsubscribed'),
     '#rows' => 5,
   );
 
