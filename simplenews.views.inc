@@ -7,23 +7,23 @@
  */
 
 /**
- * Implementation of hook_views_data().
+ * Implements hook_views_data().
  */
 function simplenews_views_data() {
   // Basic table information.
 
   // Define the base group of this table. Fields that don't
   // have a group defined will go into this field by default.
-  $data['simplenews_newsletters']['table']['group']  = t('Simplenews');
+  $data['simplenews_newsletter']['table']['group']  = t('Simplenews');
 
-  $data['simplenews_newsletters']['table']['base'] = array(
+  $data['simplenews_newsletter']['table']['base'] = array(
     'field' => 'nid',
     'title' => t('Node'),
-    'help' => t('Using nodes as newsletters.'),
+    'help' => t('Using nodes as newsletter.'),
   );
 
   // joins
-  $data['simplenews_newsletters']['table']['join'] = array(
+  $data['simplenews_newsletter']['table']['join'] = array(
     //...to the node table
     'node' => array(
       'left_field' => 'nid',
@@ -35,17 +35,17 @@ function simplenews_views_data() {
   // Fields
 
   // newsletter sent status
-  $data['simplenews_newsletters']['s_status'] = array(
+  $data['simplenews_newsletter']['s_status'] = array(
     'title' => t('Sent status'),
     // The item it appears as on the UI,
     'help' => t('Newsletter sent status: Not sent, Pending (being sent or waiting for cron to run), Sent.'),
     // The help that appears on the UI,
     'field' => array(
-      'handler' => 'simplenews_handler_field_newsletter_s_status',
+      'handler' => 'simplenews_handler_field_newsletter_status',
       'click sortable' => TRUE,
     ),
     'filter' => array(
-      'handler' => 'simplenews_handler_filter_newsletter_s_status',
+      'handler' => 'simplenews_handler_filter_newsletter_status',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
@@ -54,15 +54,15 @@ function simplenews_views_data() {
   return $data;
 }
 
+/**
+ * Implements hook_views_handlers().
+ */
 function simplenews_views_handlers() {
   return array(
-    'handlers' => array(
-      'simplenews_handler_field_newsletter_s_status' => array(
-        'parent' => 'views_handler_field',
-      ),
-      'simplenews_handler_filter_newsletter_s_status' => array(
-        'parent' => 'views_handler_filter_in_operator',
-      ),
-    ),
+    // field handlers
+    'simplenews_handler_field_newsletter_status',
+
+    // filter handlers
+    'simplenews_handler_filter_newsletter_status',
   );
 }

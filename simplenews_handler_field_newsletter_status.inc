@@ -8,11 +8,10 @@
 
 /**
  * Display newsletter sent status.
- * @todo Is the use of render() correct here?: http://drupal.org/node/224333#menu_callback_array
  */
-class simplenews_handler_field_newsletter_s_status extends views_handler_field {
+class simplenews_handler_field_newsletter_status extends views_handler_field {
   function render($values) {
-    switch ($values->[$this->field_alias]) {
+    switch ($values->{$this->field_alias}) {
       case SIMPLENEWS_STATUS_SEND_NOT:
       default:
         return t('Not sent');
