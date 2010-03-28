@@ -425,11 +425,11 @@ function simplenews_node_insert($node) {
 
   $newsletter = (object)$node->simplenews;
   $send_with_permission = $newsletter->send == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
-  $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
+  $status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : SIMPLENEWS_STATUS_SEND_NOT;
   
   $newsletter->nid = $node->nid;
   $newsletter->vid = $node->vid;
-  $newsletter->s_status = $s_status;
+  $newsletter->status = $status;
   simplenews_newsletter_save($newsletter);
 
   // When this node is selected for translation
@@ -439,7 +439,7 @@ function simplenews_node_insert($node) {
       foreach ($translations as $translation) {
         // TODO For better performance this may be replaced with a new simplenews_newsletter_update function.
         $newsletter = simplenews_newsletter_load($translation->nid);
-        $newsletter->s_status = SIMPLENEWS_STATUS_SEND_PENDING;
+        $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
         simplenews_newsletter_save($newsletter);
       }
     }
@@ -467,11 +467,11 @@ function simplenews_node_update($node) {
 
   $newsletter = (object)$node->simplenews;
   $send_with_permission = $node->simplenews['send'] == SIMPLENEWS_COMMAND_SEND_NOW && user_access('send newsletter');
-  $s_status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : $newsletter->s_status;
+  $status = $send_with_permission ? SIMPLENEWS_STATUS_SEND_PENDING : $newsletter->status;
 
   $newsletter->nid = $node->nid;
   $newsletter->vid = $node->vid;
-  $newsletter->s_status = $s_status;
+  $newsletter->status = $status;
   simplenews_newsletter_save($newsletter);
 
   // When this node is translatable, all translations will be sent too.
@@ -480,7 +480,7 @@ function simplenews_node_update($node) {
       foreach ($translations as $translation) {
         // TODO For better performance this may be replaced with a new simplenews_newsletter_update function.
         $newsletter = simplenews_newsletter_load($translation->nid);
-        $newsletter->s_status = SIMPLENEWS_STATUS_SEND_PENDING;
+        $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
         simplenews_newsletter_save($newsletter);
       }
     }
@@ -660,7 +660,7 @@ function _simplenews_node_form(&$form, $form_state) {
   else {
     // Show newsletter sending options if newsletter has not been send yet.
     // If send a nodification is shown.
-    if (!isset($simplenews_values['s_status']) || (isset($simplenews_values['s_status']) && $simplenews_values['s_status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
+    if (!isset($simplenews_values['status']) || (isset($simplenews_values['status']) && $simplenews_values['status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
 
       // TODO move add_js to form theme function. It is not (re)loaded on validation error.
       // Add dynamic text for send button.
@@ -718,9 +718,9 @@ function _simplenews_node_form(&$form, $form_state) {
       );
     }
   }
-  $form['simplenews']['s_status'] = array(
+  $form['simplenews']['status'] = array(
     '#type' => 'hidden',
-    '#value' => isset($simplenews_values['s_status']) ? $simplenews_values['s_status'] : SIMPLENEWS_STATUS_SEND_NOT,
+    '#value' => isset($simplenews_values['status']) ? $simplenews_values['status'] : SIMPLENEWS_STATUS_SEND_NOT,
   );
 }
 
@@ -1709,7 +1709,7 @@ function simplenews_recent_newsletters($scid, $count = 5) {
       ->condition('n.nid', $nids)
       ->condition('sn.scid', $scid)
       ->condition('n.status', NODE_PUBLISHED)
-      ->condition('sn.s_status', SIMPLENEWS_STATUS_SEND_NOT, '<>')
+      ->condition('sn.status', SIMPLENEWS_STATUS_SEND_NOT, '<>')
       ->orderBy('n.created', 'DESC')
       ->range(0, $count);
     $titles = array();
@@ -2498,7 +2498,7 @@ function simplenews_send_status_update() {
   $query->join('node', 'n', 's.nid = n.nid AND s.vid = n.vid');
   $query->fields('s', array('nid', 'vid', 'scid'))
     ->fields('n', array('tnid'))
-    ->condition('s.s_status', SIMPLENEWS_STATUS_SEND_PENDING);
+    ->condition('s.status', SIMPLENEWS_STATUS_SEND_PENDING);
   foreach ($query->execute() as $newsletter) {
     // nid-vid are combined in one unique key.
     $counts[$newsletter->tnid][$newsletter->nid . '-' . $newsletter->vid] = simplenews_count_spool($newsletter->nid, $newsletter->vid);
@@ -2530,7 +2530,7 @@ function simplenews_send_status_update() {
       db_update('simplenews_newsletter')
         ->condition('nid', $nid)
         ->condition('vid', $vid)
-        ->fields(array('s_status' => SIMPLENEWS_STATUS_SEND_READY))
+        ->fields(array('status' => SIMPLENEWS_STATUS_SEND_READY))
         ->execute();
     }
   }
@@ -2917,7 +2917,7 @@ function simplenews_newsletter_save($newsletter) {
     ->key(array('nid' => $newsletter->nid, 'vid' => $newsletter->vid))
     ->fields(array(
       'scid' => $newsletter->scid,
-      's_status' => $newsletter->s_status,
+      'status' => $newsletter->status,
     ))
     ->execute();
 }
@@ -3598,7 +3598,7 @@ function _simplenews_get_node_form_defaults() {
   $defaults = array(
     'scid' => '0',
     'send' => user_access('send newsletter') ? variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_NONE) : SIMPLENEWS_COMMAND_SEND_NONE,
-    's_status' => SIMPLENEWS_COMMAND_SEND_NONE,
+    'status' => SIMPLENEWS_COMMAND_SEND_NONE,
   );
   return $defaults;
 }

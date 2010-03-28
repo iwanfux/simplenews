@@ -166,10 +166,11 @@ function simplenews_admin_issues() {
   $query->leftJoin('simplenews_category', 'sc', 'sn.scid = sc.scid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
   $query->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
-    ->fields('sn', array('s_status', 'scid'))
+    ->fields('sn', array('scid'))
     ->fields('sc', array('name'))
     ->limit(30)
     ->orderByHeader($header);
+  $query->addField('sn', 'status', 'sent_status');
 
   $options = array();
   $destination = drupal_get_destination();
@@ -178,7 +179,7 @@ function simplenews_admin_issues() {
     $categories = simplenews_category_list();
     $subscriber_count = simplenews_count_subscriptions($issue->scid);
     $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
-    $send_status = $issue->s_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->s_status));
+    $send_status = $issue->sent_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->sent_status));
 
     $options[$issue->nid] = array(
       'title' => l($issue->title, 'node/' . $issue->nid),
@@ -1624,6 +1625,7 @@ function theme_simplenews_subscription_list($form) {
  *   HTML string containing an image tag.
  */
 function theme_simplenews_status($variables) {
+dpm($variables);
   $source = $variables['source'];
   $status = $variables['status'];
   switch ($source) {

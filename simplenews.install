@@ -126,7 +126,7 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      's_status' => array(
+      'status' => array(
         'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent). ',
         'type' => 'int',
         'size' => 'tiny',
@@ -1113,3 +1113,15 @@ function simplenews_update_7001() {
   ));
 }
 
+/**
+ * Rename field {simplenews_mail_spool}.s_status to "status".
+ */
+function simplenews_update_7002() {
+  db_change_field('simplenews_newsletter', 's_status', 'status', array(
+    'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent). ',
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+}

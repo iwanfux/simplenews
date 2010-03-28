@@ -35,7 +35,7 @@ function simplenews_views_data() {
   // Fields
 
   // newsletter sent status
-  $data['simplenews_newsletter']['s_status'] = array(
+  $data['simplenews_newsletter']['status'] = array(
     'title' => t('Sent status'),
     // The item it appears as on the UI,
     'help' => t('Newsletter sent status: Not sent, Pending (being sent or waiting for cron to run), Sent.'),
