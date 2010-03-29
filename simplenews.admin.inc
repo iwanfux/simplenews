@@ -1625,7 +1625,6 @@ function theme_simplenews_subscription_list($form) {
  *   HTML string containing an image tag.
  */
 function theme_simplenews_status($variables) {
-dpm($variables);
   $source = $variables['source'];
   $status = $variables['status'];
   switch ($source) {

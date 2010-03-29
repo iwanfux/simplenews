@@ -2542,7 +2542,7 @@ function simplenews_send_status_update() {
 function simplenews_views_api() {
   return array(
   'api' => 3,
-  //'path' => drupal_get_path('module', 'simplenews') . '/includes'
+  'path' => drupal_get_path('module', 'simplenews') . '/views'
   );
 }
 
@@ -2563,6 +2563,17 @@ function simplenews_call_actions($op, $subscription) {
   foreach ($aids as $aid => $action_info) {
     actions_do($aid, $subscription, $context);
   }
+}
+
+/**
+ * Get path to simplenews category page.
+ *
+ * @param $category
+ *   Newsletter category object.
+ * @return drupal path
+ */
+function simplenews_category_path($category) {
+  return 'simplenews/category/'. $category->scid;
 }
 
 /**
