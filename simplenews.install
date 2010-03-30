@@ -444,6 +444,7 @@ function _simplenews_init_simplenews_category() {
     $category->priority       = SIMPLENEWS_PRIORITY_NONE;
     $category->receipt        = 0;
     $category->hyperlinks     = TRUE;
+    simplenews_category_save($category);
   }
   else {
     $category = reset($categories);
