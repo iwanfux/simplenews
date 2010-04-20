@@ -948,7 +948,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
       }
       break;
     case 'simplenews':
-      if (user_access('subscribe to newsletters')) {
+      if (user_access('subscribe to newsletters') && isset($edit['newsletters'])) {
         foreach ($edit['newsletters'] as $slid => $checked) {
           if ($checked) {
             simplenews_subscribe_user($account->mail, $slid, FALSE, 'website');
@@ -1302,13 +1302,13 @@ function simplenews_subscribe_user($mail, $slid, $confirm = TRUE, $source = 'unk
  *
  * The $confirm parameter determines the action:
  *   FALSE = The user is unsubscribed
- *   TRUE  = User receives an email to verify the address and complete the unsubscription
+ *   TRUE  = User receives an email to verify the address and complete the subscription cancellation
  *
  * @param string $mail The email address to unsubscribe from the mailing list.
  * @param integer $slid The term ID of the list.
  * @param boolean $confirm TRUE = send confirmation mail; FALSE = unsubscribe immediate from the list
  * @param string $source
- *   Indication for source of unsubscription. Simplenews uses these sources:
+ *   Indication of the unsubscribe source. Simplenews uses these sources:
  *    website: via any website form (with or without confirmation email)
  *    mass subscribe: mass admin UI
  *    mass unsubscribe: mass admin UI
@@ -1822,10 +1822,10 @@ function simplenews_block_form_submit($form, &$form_state) {
     case 'unsubscribe':
       simplenews_unsubscribe_user($form_state['values']['mail'], $slid, $confirm, 'website');
       if ($confirm) {
-        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete the unsubscription process.'));
+        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to cancel your subscription.'));
       }
       else {
-        drupal_set_message(t('You have been unsubscribed.'));
+        drupal_set_message(t('Your subscription has been cancelled.'));
       }
       break;
   }
@@ -2586,8 +2586,11 @@ function simplenews_category_path($category) {
  *   FALSE if category does not exist.
  */
 function simplenews_category_load($scid, $reset = FALSE) {
+  if (!is_numeric($scid)) {
+    return FALSE;
+  }
   $categories = simplenews_categories_load_multiple(array($scid), $reset);
-  return $categories ? reset($categories) : FALSE;
+  return $categories ? $categories[$scid] : FALSE;
 }
 
 /**
@@ -3189,11 +3192,11 @@ function simplenews_token_info() {
   // Tokens for simplenews subscriber.
   $subscriber['subscribe-url'] = array(
     'name' => t('Subscription URL'),
-    'description' => t('The URL of the subscription confirmation page.'),
+    'description' => t('The URL of the page where the subscription is confirmed.'),
   );
   $subscriber['unsubscribe-url'] = array(
-    'name' => t('Unsubscription URL'),
-    'description' => t('The URL of the unsubscription page.'),
+    'name' => t('Unsubscribe URL'),
+    'description' => t('The URL of the page where the cancellation of the subscription is confirmed.'),
   );
   $subscriber['mail'] = array(
     'name' => t('Subscriber email'),
@@ -3249,7 +3252,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       $list = $data['list'];
       $language = isset($account->language->language) ? $account->language->language : language_default()->language;
   
-      // Build hash for subscription/unsubscription URL.
+      // Build hash for the URL of the (un)subscribe confirmation page.
       $hash = '';
       if (isset($account->snid) && isset($list->slid)) {
         $hash = simplenews_generate_hash($account->mail, $account->snid, $list->slid);
@@ -3390,7 +3393,7 @@ function simplenews_help($path, $arg) {
       $help  = "<p>" . t('Simplenews publishes and sends newsletters to lists of subscribers. Both anonymous and authenticated users can opt-in to different mailing lists.') . "</p>\n";
       $help .= "<p>" . t('Simplenews uses nodes for <strong>newsletter issues</strong>. Newsletter issues are grouped by a <strong>newsletter taxonomy term</strong>. Node type and vocabulary are selectable. A newsletter is send to all email addresses which are subscribed to the newsletter. Newsletter issues can be sent only once. Large mailings should be sent by cron to balance the mailserver load.') . "</p>\n";
       $help .= "<p>" . t('Simplenews adds elements to the newsletter node add/edit form to manage newsletter format and sending of the newsletter issue. A newsletter issue can be sent for test before sending officially.') . "</p>\n";
-      $help .= "<p>" . t('Both anonymous and authenticated users can <strong>opt-in and opt-out</strong> to a newsletter. A confirmation message is sent to anonymous users at subscription and unsubscription. Users can (un)subscribe using a form and a block. A <strong>subscription block</strong> is available for each newsletter offering a subscription form, a link to recent newsletters and RSS feed. Email addresses can also be imported and exported via the subscription administration pages.') . "</p>\n";
+      $help .= "<p>" . t('Both anonymous and authenticated users can <strong>opt-in and opt-out</strong> to a newsletter. A confirmation message is sent to anonymous users when they (un)subscribe. Users can (un)subscribe using a form and a block. A <strong>subscription block</strong> is available for each newsletter offering a subscription form, a link to recent newsletters and RSS feed. Email addresses can also be imported and exported via the subscription administration pages.') . "</p>\n";
       $help .= "<h2>" . t('Configuration') . "</h2>\n";
       $help .= '<ul>';
       if (user_access('administer permissions')) {

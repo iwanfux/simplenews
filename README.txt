@@ -173,8 +173,28 @@ INSTALLATION
       Destination: node/123
       Destination URL: node/123/ok
 
-12. TIPS
+ 12. SINGLE OR DOUBLE OPT-IN AND OPT-OUT
 
+    Every newsletter can be set to be double opt-in/out (default), single
+    opt-in/out, or hidden.
+
+    Double: A confirmation email is sent to confirm the (un)subscribe action.
+            No confirmation is sent when a user is (un)subscribed by the
+            administrator or when the user subscribes when creating an account.
+    Single: No confirmation email is sent. (un)subscribe is immediately.
+    Hidden: The newsletter is not listed in newsletter lists. Use this for
+    mandatory newsletters. Only administrators or modules can add a user to this
+    mailing list.
+
+    Note that single opt-in/out or hidden (forced) subscription is in some
+    countries forbidden by law.
+
+    SECURITY NOTICE: a newsletter set to be single opt-in or opt-out is
+    vulnerable to Cross Site Request Forgeries. Email addresses may be
+    (un)subscribed without a notice. Do not use this setting in uncontrolled
+    environments (like the internet!).
+ 
+ 13. TIPS
     A subscription page is available at: /newsletter/subscriptions
 
     If your unsubscribe URL looks like:

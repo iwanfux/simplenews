@@ -383,8 +383,12 @@ function simplenews_schema() {
  * Implement hook_install().
  */
 function simplenews_install() {
-  // TODO Make this link conditional for availability of Help module.
-  drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.', array('!simplenews_help' => url('admin/help/simplenews'))));
+  if (module_exists('help')) {
+    drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.', array('!simplenews_help' => url('admin/help/simplenews'))));
+  }
+  else {
+    drupal_set_message(t('Simplenews was successfully installed.'));
+  }
   // TODO is it still possible/usefull to detect faulty installation
   //  drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
 
