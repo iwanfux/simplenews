@@ -342,7 +342,7 @@ function simplenews_node_view_alter($build) {
  * Implements hook_node_view.
  */
 function simplenews_node_view($node, $view_mode) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
 //dpm($view_mode);
@@ -366,7 +366,7 @@ function simplenews_node_view($node, $view_mode) {
  * Implements hook_node_validate.
  */
 function simplenews_node_validate($node, $form) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
 
@@ -402,7 +402,7 @@ function simplenews_node_validate($node, $form) {
  * Implements hook_node_presave.
  */
 function simplenews_node_presave($node) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
 
@@ -419,7 +419,7 @@ function simplenews_node_presave($node) {
  * // Solve this in a better way.
  */
 function simplenews_node_insert($node) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
 
@@ -459,7 +459,7 @@ function simplenews_node_insert($node) {
  */
 // TODO can we combine simplenews_node_update() and simplenews_node_insert() ?
 function simplenews_node_update($node) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
 //dpm($node);
@@ -499,7 +499,7 @@ function simplenews_node_update($node) {
  * Implements hook_node_delete.
  */
 function simplenews_node_delete($node) {
-  if (!simplenews_check_node_types(array($node->type))) {
+  if (!simplenews_check_node_types($node->type)) {
     return;
   }
   simplenews_newsletter_delete($node);
@@ -527,11 +527,14 @@ function simplenews_node_load($nodes, $types) {
  * Check if content type(s) is enabled for use as Simplenews newsletter.
  *
  * @param $types
- *   Array of content types.
+ *   Array of content types or single content type string.
  * @return boolean
  *   TRUE if at least one of $types is enabled for Simplenews.
  */
 function simplenews_check_node_types($types) {
+  if (!is_array($types)) {
+    $types = array($types);
+  }
   if ($sn_types = simplenews_get_content_types()) {
     foreach($types as $type) {
       if (in_array($type, $sn_types)) {
