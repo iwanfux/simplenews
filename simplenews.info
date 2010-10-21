@@ -4,6 +4,8 @@ description = Send newsletters to subscribed email addresses.
 package = Mail
 core = 7.x
 
+dependencies[] = taxonomy
+
 files[] = simplenews-block.tpl.php
 files[] = simplenews-newsletter-body.tpl.php
 files[] = simplenews-newsletter-footer.tpl.php
