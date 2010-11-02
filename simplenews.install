@@ -761,7 +761,6 @@ function _simplenews_convert_tokens_in_variable($variables) {
  * Delete deprecated simplenews variables.
  */
 function simplenews_update_7000() {
-  $schema = simplenews_schema();
   // TODO Test schema update !!
   // See: http://api.drupal.org/api/function/db_change_field/7
   // TODO Test data update !!
@@ -771,6 +770,90 @@ function simplenews_update_7000() {
   _simplenews_convert_tokens_in_variable($variables);
 
   // Create table 'simplenews_category'.
+  $schema['simplenews_category'] = array(
+    'description' => 'Simplenews newsletter categories.',
+    'fields' => array(
+      'tid' => array(
+        'description' => '{taxonomy_term_data}.tid used as newsletter category.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'format' => array(
+        'description' => 'Format of the newsletter email (plain, html).',
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'priority' => array(
+        'description' => 'Email priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'receipt' => array(
+        'description' => 'Boolean indicating request for email receipt confirmation according to RFC 2822.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+      ),
+      'from_name' => array(
+        'description' => 'Sender name for newsletter emails.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'email_subject' => array(
+        'description' => 'Subject of newsletter email. May contain tokens.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'from_address' => array(
+        'description' => 'Sender address for newsletter emails',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'hyperlinks' => array(
+        'description' => 'Flag indicating type of hyperlink conversion (1 = hyperlinks are in-line; 0 = hyperlinks are placed at email bottom).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'new_account' => array(
+        'description' => 'How to treat subscription at account creation (none = None; on = Default on; off = Default off; silent = Invisible subscription).',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'opt_inout' => array(
+        'description' => 'How to treat subscription confirmation (hidden = Newsletter is hidden from the user; single = Single opt-in; double = Double opt-in).',
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'block' => array(
+        'description' => 'For this category a subscription block is available.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('tid'),
+  );
   db_create_table('simplenews_category', $schema['simplenews_category']);
 
   // Migrate Newsletter taxonomy data to Newsletter categories.
