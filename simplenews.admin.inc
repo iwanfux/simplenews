@@ -604,7 +604,7 @@ function simplenews_admin_category_form_validate($form, &$form_state) {
 }
 
 function simplenews_admin_category_form_submit($form, &$form_state) {
-dpm($form_state);
+  //dpm($form_state);
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
   if ($op == t('Delete')) {
     $form_state['redirect'] = 'admin/structure/simplenews/' . $form_state['values']['tid'] . '/delete';
