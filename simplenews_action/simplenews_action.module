@@ -15,38 +15,28 @@
 function simplenews_action_info() {
   return array(
     'simplenews_send_newsletter_action' => array(
-      'description' => t('Send single simplenews newsletter'),
+      'label' => t('Send single simplenews newsletter'),
       'type' => 'simplenews',
       'configurable' => TRUE,
-      'hooks' => array(
-        'cron' => array('run'),
-        'user' => array('insert'),
-        'simplenews' => array('subscribe'),
-      ),
+      'triggers' => array('cron', 'user_insert', 'simplenews_subscribe'),
     ),
     'simplenews_cron_action' => array(
-      'description' => t('Send pending simplenews newsletters'),
+      'label' => t('Send pending simplenews newsletters'),
       'type' => 'simplenews',
       'configurable' => FALSE,
-      'hooks' => array(
-        'cron' => array('run'),
-      ),
+      'triggers' => array('cron'),
     ),
     'simplenews_subscribe_user_action' => array(
       'type' => 'simplenews',
-      'description' => t('Subscribe the user to a newsletter'),
+      'label' => t('Subscribe the user to a newsletter'),
       'configurable' => TRUE,
-      'hooks' => array(
-        'user' => array('insert', 'update'),
-      ),
+      'triggers' => array('user_insert', 'user_update'),
     ),
     'simplenews_unsubscribe_user_action' => array(
       'type' => 'simplenews',
-      'description' => t('Unsubscribe the user from a newsletter'),
+      'label' => t('Unsubscribe the user from a newsletter'),
       'configurable' => TRUE,
-      'hooks' => array(
-        'user' => array('update', 'delete'),
-      ),
+      'triggers' => array('user_update', 'user_delete'),
     ),
   );
 }
@@ -59,7 +49,8 @@ function simplenews_action_info() {
 function simplenews_action_info_alter(&$actions) {
   foreach ($actions as $id => $action) {
     if ($action['type'] == 'user' || $action['type'] == 'system') {
-      $actions[$id]['hooks']['simplenews'] = array('subscribe', 'unsubscribe');
+      $actions[$id]['triggers'][] = 'simplenews_subscribe';
+      $actions[$id]['triggers'][] = 'simplenews_unsubscribe';
     }
   }
 }
