@@ -1193,6 +1193,7 @@ function simplenews_user_view($account, $build_mode) {
     if (user_access('subscribe to newsletters')) {
       $account->content['simplenews']['my_newsletters'] = array(
         '#type' => 'user_profile_item',
+        '#title' => '',
         '#markup' => t('Manage <a href="!url">subscriptions</a>', array('!url' => url('user/'. $account->uid .'/edit/simplenews'))),
       );
     }
