@@ -1074,7 +1074,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
             $fields['language'] = $edit['language'];
           }
           if (!empty($fields)) {
-            $query = db_update('simplenews_subscriptions')
+            $query = db_update('simplenews_subscriber')
               ->condition('snid', $subscription->snid)
               ->fields($fields)
               ->execute();
