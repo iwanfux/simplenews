@@ -164,10 +164,11 @@ function simplenews_admin_issues() {
   simplenews_build_issue_filter_query($query);
   $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
   $query->leftJoin('simplenews_category', 'sc', 'sn.tid = sc.tid');
+  $query->leftJoin('taxonomy_term_data', 't', 'sc.tid = t.tid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
   $query->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
     ->fields('sn', array('tid'))
-    ->fields('sc', array('name'))
+    ->fields('t', array('name'))
     ->limit(30)
     ->orderByHeader($header);
   $query->addField('sn', 'status', 'sent_status');
