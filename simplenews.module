@@ -453,7 +453,7 @@ function simplenews_node_insert($node) {
   $newsletter->vid = $node->vid;
   $newsletter->status = $status;
   $terms = simplenews_get_term_values($node);
-  $newsletter['tid'] = $terms[0]['tid'];
+  $newsletter->tid = $terms[0]['tid'];
   simplenews_newsletter_save($newsletter);
 
   // When this node is selected for translation
