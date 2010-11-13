@@ -610,8 +610,7 @@ function simplenews_add_term_field($type) {
       'settings' => array(
         'allowed_values' => array(
           array(
-            'vid' => variable_get('simplenews_vid', 0),
-            'parent' => 0,
+            'vocabulary' => 'newsletter',
           ),
         ),
       ),
