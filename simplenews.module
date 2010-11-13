@@ -2257,7 +2257,7 @@ function simplenews_build_node_mail(&$message, $params) {
   $message['body']['footer'] = token_replace($footer, $context, array('sanitize' => FALSE));
 
   // Add user specific header data.
-  $message['headers']['List-Unsubscribe'] = token_replace('[simplenews-subscriber:unsubscribe-url]', $context, array('sanitize' => FALSE));
+  $message['headers']['List-Unsubscribe'] = '<'. token_replace('[simplenews-subscriber:unsubscribe-url]', $context, array('sanitize' => FALSE)) .'>';
 }
 
 /**
