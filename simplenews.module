@@ -1806,7 +1806,7 @@ function _simplenews_subscription_manager_form($subscription) {
     $form['subscriptions']['#title'] = t('Manage your newsletter subscriptions');
     $form['subscriptions']['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('email'),
+      '#title' => t('Email'),
       '#size' => 20,
       '#maxlength' => 128,
       '#weight' => 10,
