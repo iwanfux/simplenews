@@ -1014,7 +1014,7 @@ function simplenews_user_login(&$edit, $account) {
   // the $account->data variable.
   // We subscribe the user according to the (hidden) form elements.
   if (isset($account->data)) {
-    $data = unserialize($account->data);
+    $data = $account->data;
     $processed = FALSE;
 
     // Process hidden (automatic) subscriptions.
