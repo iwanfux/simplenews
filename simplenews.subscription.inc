@@ -120,30 +120,30 @@ function simplenews_confirm_subscription() {
     // (un)subscribe confirmation page. The additional arguments will be passed on
     // to the confirmation page.
     if (empty($arguments)) {
-      if ($op1 == 'remove') {
-        return drupal_get_form('simplenews_confirm_removal_form', $subs->mail, $category);
+      if ($op == 'remove') {
+        return drupal_get_form('simplenews_confirm_removal_form', $subscriber->mail, $category);
       }
-      elseif ($op1 == 'add') {
-        return drupal_get_form('simplenews_confirm_add_form', $subs->mail, $category);
+      elseif ($op == 'add') {
+        return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $category);
       }
     }
     else {
-      if ($op1 == 'remove') {
-        simplenews_unsubscribe_user($subs->mail, $tid, FALSE, 'website');
+      if ($op == 'remove') {
+        simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
           $path = $path .'/'. implode('/', $arguments);
           drupal_goto($path);
         }
-        drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subs->mail, '%newsletter' => $category->name)));
+        drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
-      elseif ($op1 == 'add') {
-        simplenews_subscribe_user($subs->mail, $tid, FALSE, 'website');
+      elseif ($op == 'add') {
+        simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_subscribe_page', '')) {
           $path = $path .'/'. implode('/', $arguments);
           drupal_goto($path);
         }
-        drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subs->mail, '%newsletter' => $category->name)));
+        drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
     }
