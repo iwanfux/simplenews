@@ -1352,7 +1352,7 @@ function simplenews_admin_settings_mail($form, &$form_state) {
     '#type' => 'checkbox',
     '#title' => t('Log emails'),
     '#default_value' => variable_get('simplenews_debug', FALSE),
-    '#description' => t('When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
+    '#description' => t('When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is sent to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
 
   return system_settings_form($form);

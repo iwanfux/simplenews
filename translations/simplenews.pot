@@ -434,7 +434,7 @@ msgid "Log emails"
 msgstr ""
 
 #: simplenews.admin.inc:797
-msgid "When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is send to the PHP mail() function. No status information is available of delivery by the PHP mail() function."
+msgid "When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is sent to the PHP mail() function. No status information is available of delivery by the PHP mail() function."
 msgstr ""
 
 #: simplenews.admin.inc:801
