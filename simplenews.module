@@ -389,11 +389,11 @@ function simplenews_node_validate($node, $form) {
     $terms = simplenews_get_term_values($node);
     if (!$terms) {
       form_set_error($field['field_name'], t('A newsletter category term is required.'));
-      watchdog('simplenews', t('@todo ... newsletter taxonomy is required, change settings.'), WATCHDOG_ERROR);
+      watchdog('simplenews', t('@todo ... newsletter taxonomy is required, change settings.'), array(), WATCHDOG_ERROR);
     }
     elseif (count($terms) > 1) {
       form_set_error($field['field_name'], t('Only one newsletter category term is allowed.'));
-      watchdog('simplenews', t('@todo ... newsletter taxonomy must be single value, change settings.'), WATCHDOG_ERROR);
+      watchdog('simplenews', t('@todo ... newsletter taxonomy must be single value, change settings.'), array(), WATCHDOG_ERROR);
     }
   }
 
@@ -610,6 +610,7 @@ function simplenews_add_term_field($type) {
       'settings' => array(
         'allowed_values' => array(
           array(
+            'parent' => 0,
             'vocabulary' => 'newsletter',
           ),
         ),
@@ -2417,7 +2418,7 @@ function simplenews_mail_mail($message, $key = 'node') {
       'status' => SIMPLENEWS_SPOOL_DONE,
       'error' => TRUE,
     );
-    watchdog('simplenews', 'Newsletter not send: newsletter issue does not exist (nid = @nid; vid = @vid).', array('@nid' => $message['nid'], '@vid' => $message['vid']), WATCHDOG_ERROR);
+    watchdog('simplenews', 'Newsletter not send: newsletter issue does not exist (nid = @nid; vid = @vid).', array('@nid' => $nid, '@vid' => $vid), WATCHDOG_ERROR);
   }
 
   return isset($message['result']) ? $message['result'] : FALSE;
