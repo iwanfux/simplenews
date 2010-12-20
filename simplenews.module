@@ -9,19 +9,19 @@
 
 /**
  * @file
- * Simplnews node handling, sent email, newsletter block and general hooks
+ * Simplenews node handling, sent email, newsletter block and general hooks
  *
  * @ingroup simplenews
  * @todo Where possible build re-usable functions wrapped around database calls.
  * @todo Investigate the use of static API: http://drupal.org/node/224333#static_variable_api
  * @todo Change documentation of hook_foo implementations: http://drupal.org/node/224333#implementation_hook_comment
- * @todo Concider context support for t(): http://drupal.org/node/224333#locale_context
+ * @todo Consider context support for t(): http://drupal.org/node/224333#locale_context
  * @todo Language code in t() now as array: http://drupal.org/node/224333#locale_context
  * @todo Coding standards: string concatenation, 'else if', type hinting
  * @todo Implement hook_requirements()?; http://api.drupal.org/api/function/hook_requirements/7
  * @todo Separate token function into simplenews.tokens.inc
  * @todo Replace statics with &drupal_static(__FUNCTION__); http://api.drupal.org/api/function/drupal_static/7
- * @todo Concider using hook_hook_info() to move hooks out of .module. http://drupal.org/update/modules/6/7#new_hook_hook_info
+ * @todo Consider using hook_hook_info() to move hooks out of .module. http://drupal.org/update/modules/6/7#new_hook_hook_info
  */
 
 /**
@@ -126,7 +126,7 @@ function simplenews_init() {
 
 /**
  * Implementation of hook_menu().
- * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  * @todo Review admin path due to D7's changed information architecture
  */
 function simplenews_menu() {
@@ -801,7 +801,7 @@ function _simplenews_node_form(&$form, $form_state) {
   }
   else {
     // Show newsletter sending options if newsletter has not been send yet.
-    // If send a nodification is shown.
+    // If send a notification is shown.
     if (!isset($simplenews_values['status']) || (isset($simplenews_values['status']) && $simplenews_values['status'] == SIMPLENEWS_STATUS_SEND_NOT)) {
 
       // TODO move add_js to form theme function. It is not (re)loaded on validation error.
@@ -914,7 +914,7 @@ function simplenews_cron() {
 /**
  * Implements hook_simplenews_category_delete().
  *
- * For the time beging we use mailing list and category in sync.
+ * For the time being we use mailing list and category in sync.
  * Deletes the newsletter list when category is deleted.
  */
 function simplenews_simplenews_category_delete($category) {
@@ -984,7 +984,7 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
  * Update uid and preferred language when the new account was already subscribed.
  */
 function simplenews_user_insert(&$edit, $account, $category) {
-  // Use the email addres to check if new account is already subscribed.
+  // Use the email address to check if new account is already subscribed.
   $subscriber = new stdClass();
   $subscriber->mail = $edit['mail'];
   $subscription = simplenews_get_subscription($subscriber);
@@ -1010,7 +1010,7 @@ function simplenews_user_insert(&$edit, $account, $category) {
  * @todo Check if $account->data is cleaned up by this function.
  */
 function simplenews_user_login(&$edit, $account) {
-  // The user registation form may contain (hidden) form element to
+  // The user registration form may contain (hidden) form element to
   // subscribe to newsletters. Data of these elements are stored in
   // the $account->data variable.
   // We subscribe the user according to the (hidden) form elements.
@@ -1328,7 +1328,7 @@ function simplenews_forms($form_id, $args) {
 function _simplenews_user_load($mail) {
   $account = user_load_by_mail($mail);
   if ($account === FALSE) {
-    // Construct anonymous user since we don't have a user that matches that e-amil.
+    // Construct anonymous user since we don't have a user that matches that e-mail.
     $account = new stdClass();
     $account->uid = 0;
     $account->mail = $mail;
@@ -1537,11 +1537,11 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
  *     newsletter_subscriptions : array of newsletter subscription objects
  *     uid  :  user id. 0 if account is anonymous user
  *     mail :  user email address. empty if email is unknown
- *     name :  always empty. Added for compatebility with user account object
+ *     name :  always empty. Added for compatibility with user account object
  *     language : language object. User preferred or default language
  *   )
  *
- * TODO: Concider changing the subscription object:
+ * TODO: Consider changing the subscription object:
  *   subscribed : array of subscription objects of newsletters the user is subscribed to
  *   unsubscribed : array of subscription objects of newsletters the user is unsubscribed from
  *   Both arrays have newsletter ID (tid) as key.
@@ -1551,7 +1551,7 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
  * TODO: Load subscription object into tids[].
  */
 function simplenews_get_subscription($account) {
-  // Load subscription data based on available account informatioin
+  // Load subscription data based on available account information
   // NOTE that the order of checking for snid, mail and uid is critical. mail must be checked *before* uid. See simplenews_subscribe_user()
   $query = db_select('simplenews_subscriber', 's');
   $query->leftJoin('users', 'u', 'u.uid = s.uid');
@@ -1864,7 +1864,7 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *
  * @see simplenews_block_form_validate()
  * @see simplenews_block_form_submit()
- * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_block_form($form, &$form_state, $tid) {
   global $user;
@@ -1969,7 +1969,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 }
 
 /**
- * Send newsletter node to subcribers.
+ * Send newsletter node to subscribers.
  *
  * @param integer or object $node Newsletter node to be sent. integer = nid; object = node object
  * @param array $accounts  account objects to send the newsletter to.
@@ -1978,7 +1978,7 @@ function simplenews_block_form_submit($form, &$form_state) {
  *     tid     = newsletter category ID
  *     uid      = user id. 0 if subscriber is anonymous user.
  *     mail     = user email address.
- *     name     = <empty>. Added for compatebility with user account object
+ *     name     = <empty>. Added for compatibility with user account object
  *     language = language object. User preferred of default language
  *   )
  *   NOTE: either snid, mail or uid is required.
@@ -2134,11 +2134,11 @@ function simplenews_build_node_mail(&$message, $params) {
   $key = $params['key'];
 
   // Message header, body and mail headers are buffered to increase
-  // perfomance when sending multiple mails. Buffered data only contains
+  // performance when sending multiple mails. Buffered data only contains
   // general data, no recipient specific content. Tokens are used
   // for recipient data and will later be replaced.
   // When mailing multiple newsletters in one page call or cron run,
-  // data is once stored and subsequently retreived from the
+  // data is once stored and subsequently retrieved from the
   // static $messages variable.
   // $message buffer is node and language specific.
   static $messages = array();
@@ -2151,7 +2151,7 @@ function simplenews_build_node_mail(&$message, $params) {
   $langcode = $message['language'];
   if (module_exists('translation')) {
     // If the node has translations and a translation is required
-    // the equivalent of the node in the required langugage is used
+    // the equivalent of the node in the required language is used
     // or the base node (nid == tnid) is used.
     if ($tnid = $context['node']->tnid) {
       if ($langcode != $context['node']->language) {
@@ -2191,7 +2191,7 @@ function simplenews_build_node_mail(&$message, $params) {
     // default theme. When no $custom_theme is set, the 
     // After theming the email $custom_theme is restored.
     global $custom_theme;
-    $org_cutom_theme = $custom_theme;
+    $org_custom_theme = $custom_theme;
     $custom_theme = '';
 
     $node = clone $context['node'];
@@ -2236,7 +2236,7 @@ function simplenews_build_node_mail(&$message, $params) {
     }
 
     // Restore the custom theme.
-    $custom_theme = $org_cutom_theme;
+    $custom_theme = $org_custom_theme;
   }
   else {
     // Get message data from buffer
@@ -2326,7 +2326,7 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
  *     $message->data
  * @param $key email key [node|test]
  *
- * @return TRUE if email is succesfully delivered by php mail()
+ * @return TRUE if email is successfully delivered by php mail()
  */
 function simplenews_mail_mail($message, $key = 'node') {
   static $cache;
@@ -2429,8 +2429,8 @@ function simplenews_mail_mail($message, $key = 'node') {
  *
  * Individual newsletter emails are stored in database spool.
  * Sending is triggered by cron or immediately when the node is saved.
- * Mail data is retreived from the spool, rendered and send one by one
- * If sending is succesful the message is marked as send in the spool.
+ * Mail data is retrieved from the spool, rendered and send one by one
+ * If sending is successful the message is marked as send in the spool.
  * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
@@ -2472,7 +2472,7 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
       }
     }
 
-    // Report sent result and elapsed time. On Windows systems retrusage() is
+    // Report sent result and elapsed time. On Windows systems getrusage() is
     // not implemented and hence no elapsed time is available.
     if (function_exists('getrusage')) {
       watchdog('simplenews', '%success emails sent in %sec seconds, %fail failed sending.', array('%success' => $count_success, '%sec' => round(_simplenews_measure_usec(), 1), '%fail' => $count_fail));
@@ -2520,9 +2520,9 @@ function simplenews_save_spool($spool) {
 }
 
 /**
- * Retreive data from mail spool
+ * Retrieve data from mail spool
  *
- * @param string  $status Status of data to be retreived (0 = hold, 1 = pending, 2 = send)
+ * @param string  $status Status of data to be retrieved (0 = hold, 1 = pending, 2 = send)
  * @param integer $nid node id
  * @param integer $vid node version id
  * @param integer $limit The maximum number of mails to load from the spool
@@ -2613,7 +2613,7 @@ function simplenews_clear_spool() {
  * The spool table holds data for emails to be sent and (optionally)
  * already send emails. The simplenews_newsletter table contains the overall
  * sent status of each newsletter issue (node).
- * Newsletter issues get the status pending when sending is innitiated. As
+ * Newsletter issues get the status pending when sending is initiated. As
  * long as unsend emails exist in the spool, the status of the newsletter remains
  * unsend. When no pending emails are found the newsletter status is set 'send'.
  *
@@ -2737,7 +2737,7 @@ function simplenews_category_list() {
   $categories = simplenews_categories_load_multiple();
   $cats = array();
   foreach ($categories as $key => $category) {
-    // TODO translate catgory names.
+    // TODO translate category names.
     $cats[$key] = $category->name;
   }
   return $cats;
@@ -3030,7 +3030,7 @@ function _simplenews_headers($category, $from) {
 /**
  * HTML to text conversion for HTML and special characters.
  *
- * Converts some special HTMLcharacters in addition to drupal_html_to_text()
+ * Converts some special HTML characters in addition to drupal_html_to_text()
  *
  * @param string $text Source text with HTML and special characters
  * @param boolean $inline_hyperlinks
@@ -3042,7 +3042,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   // By replacing <a> tag by only its URL the URLs will be placed inline
   // in the email body and are not converted to a numbered reference list
   // by drupal_html_to_text().
-  // URL are converted to abolute URL as drupal_html_to_text() would have.
+  // URL are converted to absolute URL as drupal_html_to_text() would have.
   if ($inline_hyperlinks) {
     $pattern = '@<a[^>]+?href="([^"]*)"[^>]*?>(.+?)</a>@is';
     $text = preg_replace_callback($pattern, '_simplenews_absolute_mail_urls', $text);
@@ -3059,7 +3059,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
 /**
  * Helper function for simplenews_html_to_text().
  *
- * Replaces URLs with abolute URLs.
+ * Replaces URLs with absolute URLs.
  */
 function _simplenews_absolute_mail_urls($match) {
   global $base_url, $base_path;
@@ -3426,7 +3426,7 @@ function simplenews_help($path, $arg) {
  * @return <string> translated newsletter name.
  */
 function _simplenews_tt_newsletter_name($newsletter, $langcode = NULL) {
-  // TODO TRanslate newsletter name
+  // TODO Translate newsletter name
   return $newsletter->name;
 /*
   global $language;

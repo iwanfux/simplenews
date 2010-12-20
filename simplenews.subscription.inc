@@ -158,7 +158,7 @@ function simplenews_confirm_subscription() {
  * Generate the confirm subscription form.
  *
  * @see simplenews_confirm_add_form_submit()
- * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
@@ -197,7 +197,7 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
  * Generate the confirm unsubscription form.
  *
  * @see simplenews_confirm_removal_form_submit()
- * @todo Add $form to drupal_get_form() calback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter) {
   $form = array();

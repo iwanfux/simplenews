@@ -23,7 +23,7 @@ function hook_simplenews_subscription_operations() {
 /**
  * Collect recipients for a simplenews newsletter.
  *
- * Get both subscribed and unusbscribed recipients per newsletter category.
+ * Get both subscribed and unsubscribed recipients per newsletter category.
  * Special care should be taken to handle unsubscribed users correctly.
  *
  * @param $recipients

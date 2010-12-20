@@ -7,7 +7,7 @@
  */
 
 /**
- * Filter bases on newsletter sent status.
+ * Filter based on newsletter sent status.
  */
 class simplenews_handler_filter_newsletter_status extends views_handler_filter_in_operator {
   function get_value_options() {

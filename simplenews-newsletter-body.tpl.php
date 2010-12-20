@@ -19,7 +19,7 @@
  * - $view_mode: Active view mode.
  *
  * @see template_preprocess_simplenews_newsletter_body()
- * @ee theme_simplenews_newsletter_body()
+ * @see theme_simplenews_newsletter_body()
  */
 ?>
 <h2><?php print $title; ?></h2>

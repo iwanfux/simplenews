@@ -174,8 +174,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
   function testSubscribeAnonymous() {
     // 0. Preparation
     // Login admin
-    // Set permisison for anonymous to subscribe
-    // Enable newletter block
+    // Set permission for anonymous to subscribe
+    // Enable newsletter block
     // Logout admin
     $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions'));
     $this->drupalLogin($admin_user);
@@ -289,8 +289,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
    function testSubscribeAuthenticated() {
     // 0. Preparation
     // Login admin
-    // Set permisison for anonymous to subscribe
-    // Enable newletter block
+    // Set permission for anonymous to subscribe
+    // Enable newsletter block
     // Logout admin
     // Login Subscriber
 

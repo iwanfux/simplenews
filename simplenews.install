@@ -187,7 +187,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'tid' => array(
-        'description' => 'The cateogry ({simplenews_category}.tid) the subscriber is subscribed to.',
+        'description' => 'The category ({simplenews_category}.tid) the subscriber is subscribed to.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -232,7 +232,7 @@ function simplenews_schema() {
         'not null' => TRUE,
       ),
       'mail' => array(
-        'description' => 'The formatted email address of mail message receipient.',
+        'description' => 'The formatted email address of mail message recipient.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -314,7 +314,7 @@ function simplenews_install() {
   else {
     drupal_set_message(t('Simplenews was successfully installed.'));
   }
-  // TODO is it still possible/usefull to detect faulty installation
+  // TODO is it still possible/useful to detect faulty installation
   // drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
 }
 
@@ -484,7 +484,7 @@ function simplenews_update_6001() {
         'default' => '',
       ),
       'mail' => array(
-        'description' => 'The formatted email address of mail message receipient.',
+        'description' => 'The formatted email address of mail message recipient.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -567,7 +567,7 @@ function simplenews_update_6004() {
         'not null' => TRUE,
       ),
       'mail' => array(
-        'description' => 'The formatted email address of mail message receipient.',
+        'description' => 'The formatted email address of mail message recipient.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -730,7 +730,7 @@ function simplenews_update_6200() {
 }
 
 /**
- * Helperfunction to convert tokens in variables to D7 format.
+ * Helper function to convert tokens in variables to D7 format.
  */
 function _simplenews_convert_tokens_in_variable($variables) {
   if (!is_array($variables)) {

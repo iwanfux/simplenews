@@ -209,7 +209,7 @@ function simplenews_admin_issues() {
  * Implements hook_simplenews_issue_operations().
  */
 function simplenews_simplenews_issue_operations() {
-// @todo: future ideas: 'pauze' => t('Pauze sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
+// @todo: future ideas: 'pause' => t('Pause sending'), 'resume' => t('Resume sending'), 'cancel' => t('Cancel sending'), 'publish' => t('Publish'), 'unpublish' => t('Unpublish'));
   $operations = array(
     'activate' => array(
       'label' => t('Send'),
@@ -1346,7 +1346,7 @@ function simplenews_admin_settings_mail($form, &$form_state) {
       14 => t('2 weeks'),
     ),
     '#default_value' => variable_get('simplenews_spool_expire', 0),
-    '#description' => t('Newsletter mails are spooled. How long must messages be retained in the spool after successfull sending. Keeping the message in the spool allows mail statistics (which is not yet implemented). If cron is not used, immediate expiration is advised.'),
+    '#description' => t('Newsletter mails are spooled. How long must messages be retained in the spool after successful sending. Keeping the message in the spool allows mail statistics (which is not yet implemented). If cron is not used, immediate expiration is advised.'),
   );
   $form['simplenews_mail_backend']['simplenews_debug'] = array(
     '#type' => 'checkbox',
