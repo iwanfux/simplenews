@@ -797,6 +797,9 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
   $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
   foreach ($emails as $email) {
     $email = trim($email);
+    if ($email == '') {
+      continue;
+    }
     if (valid_email_address($email)) {
       foreach ($checked_lists as $tid) {
         $category = simplenews_category_load($tid);
