@@ -123,6 +123,12 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'sent_subscriber_count' => array(
+        'description' => 'The count of subscribers to the newsletter when it was sent.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('nid'),
     'foreign keys' => array(
@@ -165,6 +171,13 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => '',
         'description' => 'Subscriber preferred language.',
+      ),
+      'timestamp' => array(
+        'description' => 'UNIX timestamp of when the user is (un)subscribed.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array('snid'),
@@ -285,6 +298,12 @@ function simplenews_schema() {
         'serialize' => TRUE,
         'description' => 'A serialized array of name value pairs that are related to the email address.',
       ),
+      'snid' => array(
+        'description' => 'Foreign key for subscriber table ({simplenews_subscriptions}.snid)',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        ),
     ),
     'primary key' => array('msid'),
     'indexes' => array(
@@ -295,6 +314,7 @@ function simplenews_schema() {
       'nid' => array('node' => 'nid'),
       'vid' => array('node' => 'vid'),
       'tid' => array('simplenews_category' => 'tid'),
+      'snid' => array('simplenews_subscription' => 'snid'),
     ),
   );
   return $schema;
