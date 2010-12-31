@@ -137,7 +137,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_newsletter_issues'),
     'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/structure/simplenews'] = array(
     'title' => 'Newsletters',
@@ -145,7 +145,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_categories'),
     'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
 /*
   // TODO Don't need this?
@@ -161,7 +161,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_category_form', 3),
     'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/structure/simplenews/%simplenews_category/delete'] = array(
     'title' => 'Newsletters',
@@ -169,7 +169,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_category_delete', 3),
     'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/structure/simplenews/add'] = array(
     'title' => 'Add newsletter category',
@@ -177,7 +177,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_category_form'),
     'access arguments' => array('administer newsletters'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
     'weight' => -9,
   );
 
@@ -187,7 +187,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_multiple_delete_confirm'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/people/simplenews'] = array(
     'title' => 'Newsletter subscriptions',
@@ -196,7 +196,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_subscription'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/people/simplenews/list'] = array(
     'title' => 'List',
@@ -208,7 +208,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_users_form', 4),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.subscription.inc',
+    'file' => 'includes/simplenews.subscription.inc',
   );
   $items['admin/people/simplenews/import'] = array(
     'title' => 'Mass subscribe',
@@ -216,7 +216,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_add'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
     'weight' => 8,
   );
   $items['admin/people/simplenews/unsubscribe'] = array(
@@ -225,7 +225,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_remove'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
     'weight' => 9,
   );
   $items['admin/people/simplenews/export'] = array(
@@ -234,7 +234,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_export'),
     'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
     'weight' => 10,
   );
 
@@ -254,7 +254,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings'),
     'access arguments' => array('administer simplenews settings'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/config/simplenews/newsletter'] = array(
     'title' => 'Newsletter',
@@ -263,7 +263,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_newsletter'),
     'access arguments' => array('administer simplenews settings'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/config/simplenews/subscription'] = array(
     'title' => 'Subscription',
@@ -272,7 +272,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_subscription'),
     'access arguments' => array('administer simplenews settings'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/config/simplenews/mail'] = array(
     'title' => 'Send mail',
@@ -281,7 +281,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_settings_mail'),
     'access arguments' => array('administer simplenews settings'),
-    'file' => 'simplenews.admin.inc',
+    'file' => 'includes/simplenews.admin.inc',
   );
 
   $items['newsletter/confirm'] = array(
@@ -289,7 +289,7 @@ function simplenews_menu() {
     'type' => MENU_CALLBACK,
     'page callback' => 'simplenews_confirm_subscription',
     'access arguments' => array('subscribe to newsletters'),
-    'file' => 'simplenews.subscription.inc',
+    'file' => 'includes/simplenews.subscription.inc',
   );
 
   $items['newsletter/subscriptions'] = array(
@@ -298,7 +298,7 @@ function simplenews_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_manager_form'),
     'access arguments' => array('subscribe to newsletters'),
-    'file' => 'simplenews.subscription.inc',
+    'file' => 'includes/simplenews.subscription.inc',
   );
 
   return $items;
@@ -3582,6 +3582,8 @@ function _simplenews_get_node_form_defaults() {
  * @todo Theme definitions must register how it integrates with drupal_render(): http://drupal.org/node/224333#hook_theme_render_changes
  */
 function simplenews_theme() {
+  $path = drupal_get_path('module', 'simplenews');
+  
   return array(
     'simplenews_admin_categories' => array(
       'render element' => 'form',
@@ -3590,9 +3592,11 @@ function simplenews_theme() {
       'render element' => 'tid',
       'template' => 'simplenews-block',
       'pattern' => 'simplenews_block__',
+      'path' => $path  . '/theme',
     ),
     'simplenews_status' => array(
       'file' => 'simplenews.admin.inc',
+      'path' => $path  . '/includes',
       'variables' => array(
         'source' => NULL,
         'status' => NULL,
@@ -3604,6 +3608,7 @@ function simplenews_theme() {
         'category' => NULL,
         'language' => NULL,
       ),
+      'path' => $path  . '/theme',
     ),
     'simplenews_newsletter_footer' => array(
       'variables' => array(
@@ -3612,14 +3617,17 @@ function simplenews_theme() {
         'key'=> NULL,
         'language' => NULL,
       ),
+      'path' => $path  . '/theme',
     ),
     'simplenews_subscription_list' => array(
       'render element' => 'form',
       'file' => 'simplenews.admin.inc',
+      'path' => $path  . '/includes',
     ),
     'simplenews_filter_form' => array(
       'render element' => 'form',
       'file' => 'simplenews.admin.inc',
+      'path' => $path  . '/includes',
     ),
     'simplenews_field' => array(
       'render element' => 'element',

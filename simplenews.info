@@ -6,15 +6,15 @@ core = 7.x
 
 dependencies[] = taxonomy
 
-files[] = simplenews-block.tpl.php
-files[] = simplenews-newsletter-body.tpl.php
-files[] = simplenews-newsletter-footer.tpl.php
-files[] = simplenews.admin.inc
+files[] = theme/simplenews-block.tpl.php
+files[] = theme/simplenews-newsletter-body.tpl.php
+files[] = theme/simplenews-newsletter-footer.tpl.php
+files[] = includes/simplenews.admin.inc
 files[] = simplenews.install
 files[] = simplenews.module
-files[] = simplenews.subscription.inc
-files[] = views/simplenews.views.inc
-files[] = views/handlers/simplenews_handler_field_newsletter_status.inc
-files[] = views/handlers/simplenews_handler_field_category_name.inc
-files[] = views/handlers/simplenews_handler_filter_newsletter_status.inc
+files[] = includes/simplenews.subscription.inc
+files[] = includes/views/simplenews.views.inc
+files[] = includes/views/handlers/simplenews_handler_field_newsletter_status.inc
+files[] = includes/views/handlers/simplenews_handler_field_category_name.inc
+files[] = includes/views/handlers/simplenews_handler_filter_newsletter_status.inc
 files[] = tests/simplenews.test
