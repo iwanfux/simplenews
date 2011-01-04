@@ -2676,7 +2676,7 @@ function simplenews_send_status_update() {
 function simplenews_views_api() {
   return array(
   'api' => 3,
-  'path' => drupal_get_path('module', 'simplenews') . '/views'
+  'path' => drupal_get_path('module', 'simplenews') . '/includes/views'
   );
 }
 
