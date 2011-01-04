@@ -176,6 +176,7 @@ function simplenews_admin_issues() {
   $options = array();
   $destination = drupal_get_destination();
 
+  module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   foreach ($query->execute() as $issue) {
     $categories = simplenews_category_list();
     $subscriber_count = simplenews_count_subscriptions($issue->tid);

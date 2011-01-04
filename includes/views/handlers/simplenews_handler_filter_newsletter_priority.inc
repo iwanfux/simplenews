@@ -13,7 +13,7 @@
 
 class simplenews_handler_filter_newsletter_priority extends views_handler_filter_in_operator {
   function get_value_options() {
-    module_load_include('inc', 'simplenews', 'simplenews.admin');
+    module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $this->value_options = simplenews_get_priority();
   }
 }
