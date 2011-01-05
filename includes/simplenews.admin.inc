@@ -499,14 +499,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#type' => 'select',
     '#title' => t('Email priority'),
     '#default_value' => $edit['priority'],
-    '#options' => array(
-      SIMPLENEWS_PRIORITY_NONE => t('none'),
-      SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
-      SIMPLENEWS_PRIORITY_HIGH => t('high'),
-      SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
-      SIMPLENEWS_PRIORITY_LOW => t('low'),
-      SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
-    ),
+    '#options' => simplenews_get_priority(),
   );
   $form['email']['receipt'] = array(
     '#type' => 'checkbox',
@@ -1736,4 +1729,15 @@ function theme_simplenews_subscription_filter_form($variables) {
   $output .= '</div>';
   $output .= drupal_render_children($form);
   return $output;
+}
+
+function simplenews_get_priority() {
+  return array(
+    SIMPLENEWS_PRIORITY_NONE => t('none'),
+    SIMPLENEWS_PRIORITY_HIGHEST => t('highest'),
+    SIMPLENEWS_PRIORITY_HIGH => t('high'),
+    SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
+    SIMPLENEWS_PRIORITY_LOW => t('low'),
+    SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),  
+  );
 }
