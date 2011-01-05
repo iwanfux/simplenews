@@ -1609,7 +1609,7 @@ function simplenews_get_subscriptions_by_list($tid) {
   $subscriptions = array();
   $query = db_select('simplenews_subscriber', 'sn');
   $query->innerJoin('simplenews_subscription', 'ss', 'ss.snid = sn.snid');
-  $query->fields('sn', array('mail', 'uid', 'language'))
+  $query->fields('sn', array('mail', 'uid', 'language', 'snid'))
     ->fields('ss', array('status'))
     ->condition('sn.activated', 1)
     ->condition('ss.tid', $tid)
@@ -3179,4 +3179,3 @@ function theme_simplenews_newsletter_footer($variables) {
   }
   return $output;
 }
-
