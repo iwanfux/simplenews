@@ -2106,6 +2106,13 @@ function simplenews_build_node_mail(&$message, $params) {
     $subject = str_replace(array("\r", "\n"), '', $subject);  // TODO Check if this is done by drupal_mail()
     $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
 
+    // Set the active language to the node's language.
+    // This needs to be done as otherwise the language used to send the mail
+    // is the language of the user logged in.
+    if (module_exists('i18n')) {
+         i18n_selection_mode('node', $node->language);
+    }
+    
     // Build message body
 // TODO move this code to a function. We need to do this twice for HTML and Plain text Alternative.
     // TODO: restore the format selection.
@@ -2132,7 +2139,12 @@ function simplenews_build_node_mail(&$message, $params) {
       $footer = theme('simplenews_newsletter_footer', array('build' => $build, 'category' => $category, 'key' => $key, 'language' => $message['language']));
       $messages[$nid][$langcode]['footer'] = $footer;
     }
-
+    
+    // Reset the language to the original settings.
+    if (module_exists('i18n')) {
+      i18n_selection_mode('reset');
+    }
+    
     // Restore the custom theme.
     $custom_theme = $org_custom_theme;
   }
