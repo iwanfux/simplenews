@@ -944,9 +944,10 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
 
   // Determine the lists to which a user can choose to subscribe.
   // Determine to which other list a user is automatically subscribed.
+
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $subscribe_new_account = variable_get('simplenews_new_account_' . $list->tid, 'none');
-    $opt_inout_method = variable_get('simplenews_opt_inout_' . $list->tid, 'double');
+    $subscribe_new_account = $list->new_account;
+    $opt_inout_method = $list->opt_inout;
     if (($subscribe_new_account == 'on' || $subscribe_new_account == 'off') && ($opt_inout_method == 'single' || $opt_inout_method == 'double')) {
       $options[$list->tid] = check_plain($list->name);
       $default_value[$list->tid] = $subscribe_new_account == 'on';
@@ -957,7 +958,7 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
       }
     }
   }
-
+  
   if (count($options)) {
     // TODO Change this text: use less words; 
     $form['simplenews'] = array(
@@ -986,18 +987,42 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
  *
  * Update uid and preferred language when the new account was already subscribed.
  */
-function simplenews_user_insert(&$edit, $account, $category) {
-  // Use the email address to check if new account is already subscribed.
+function simplenews_user_insert(&$edit, $account, $category) {  // Use the email address to check if new account is already subscribed.
   $subscriber = new stdClass();
   $subscriber->mail = $edit['mail'];
   $subscription = simplenews_get_subscription($subscriber);
-
   // If the user is subscribed, we update the subscriber with uid and language.
   if ($subscription->snid) {
-    // TODO Write a function so save/update a subscription and use it here.
-    $subsription->uid = $edit['uid'];
-    $subsription->language = $edit['language'];
+    // TODO Write a function to save/update a subscription and use it here.
+    $subscriber->uid = $edit['uid'];
+    $subscriber->language = $edit['language'];
+    $subscriber->activated = 1;
+    $subscriber->snid = $subscription->snid;
     simplenews_subscriber_save($subscriber);
+  }
+  
+  // Process subscription check boxes.
+  if (isset($edit['newsletters'])) {
+    $nl_tids = array_keys(array_filter($edit['newsletters']));
+    $newsletters = simplenews_categories_load_multiple($nl_tids, array('show_all' => TRUE));
+    foreach ($newsletters as $newsletter) {
+      simplenews_subscribe_user($account->mail, $newsletter->tid, FALSE, 'website', $edit['language']);
+      drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
+    }
+  }
+  
+  // set inactive if not created by an administrator. this needs a cleaner API.
+  if (!user_access('administer users')) {
+    // this user will be activated on first login (see simplenews_user_login)
+    db_query("
+      UPDATE {simplenews_subscriber}
+      SET activated = :a
+      WHERE uid = :uid",
+      array(
+        ':a' => 0,
+        ':uid' => $account->uid,
+      )
+    );
   }
   
   // $edit['newsletter'] contains newsletters the user should be subscribed to.
@@ -1017,6 +1042,21 @@ function simplenews_user_login(&$edit, $account) {
   // subscribe to newsletters. Data of these elements are stored in
   // the $account->data variable.
   // We subscribe the user according to the (hidden) form elements.
+ 
+  // Subscriptions of users that did sign up by themselves have to be
+  // activated first at their first login (-> account::access = 0)
+  if ($account->access == 0){
+    db_query("
+      UPDATE {simplenews_subscriber}
+      SET activated = :a
+      WHERE uid = :uid",
+      array(
+        ':a' => 1,
+        ':uid' => $account->uid,
+      )
+    );
+  }
+  
   if (isset($account->data)) {
     $data = $account->data;
     $processed = FALSE;
@@ -1041,11 +1081,11 @@ function simplenews_user_login(&$edit, $account) {
       $processed = TRUE;
     }
 
-    // If subscription data is processed, we update the user data to remove it.
+  // If subscription data is processed, we update the user data to remove it.
     if ($processed) {
       user_save($account, $data);
     }
-  }
+  }   
 }
 
 /**

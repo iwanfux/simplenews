@@ -63,9 +63,8 @@ function simplenews_send_node($node, $accounts = array()) {
     // Only subscribed recipients are stored in the spool (status = 1).
     
     db_query(
-      "INSERT INTO {simplenews_mail_spool} (mail, nid, vid, tid, status, timestamp, snid, data)
-      SELECT s.mail, :nid, :vid, t.tid, :stat, :time, s.snid, 
-      CONCAT('O:8:\"stdClass\":4:', CHAR(123),'s:4:\"mail\";s:',LENGTH(s.mail),':\"',s.mail,'\";s:3:\"uid\";s:',LENGTH(s.uid),':\"',s.uid, '\";s:8:\"language\";s:', LENGTH(s.language),':\"', s.language, '\";s:4:\"snid\";s:', LENGTH(s.snid), ':\"', s.snid, '\";', CHAR(125)) 
+      "INSERT INTO {simplenews_mail_spool} (mail, nid, vid, tid, status, timestamp, snid)
+      SELECT s.mail, :nid, :vid, t.tid, :stat, :time, s.snid 
       FROM {simplenews_subscriber} s 
       INNER JOIN {simplenews_subscription} t  
       ON s.snid = t.snid 
@@ -132,28 +131,33 @@ function simplenews_send_test($node) {
 /**
  * Send a node to an email address.
  *
- * @param object $message
+ * @param object $msgbase
  *   Mail message object as returned by simplenews_load_spool():
- *     $message->nid
- *     $message->vid
- *     $message->tid
- *     $message->data
+ *     $msgbase->nid
+ *     $msgbase->vid
+ *     $msgbase->tid
+ *     $msgbase->data
  * @param $key email key [node|test]
  *
  * @return TRUE if email is successfully delivered by php mail()
  */
-function simplenews_mail_mail($message, $key = 'node') {
+function simplenews_mail_mail($msgbase, $key = 'node') {
   static $cache;
 
-  $nid = $message->nid;
-  $vid = $message->vid;
-  $tid = $message->tid;
-  $account = $message->data;
-  $params['context']['account'] = $account;
+  $nid = $msgbase->nid;
+  $vid = $msgbase->vid;
+  $tid = $msgbase->tid;
+  
+  $subscriber = $msgbase->data;
+  if (!$subscriber) {
+    $subscriber = simplenews_get_subscription((object)array('mail' => $msgbase->mail));
+    //$account = user_load($msgbase->uid));
+  }
+  $params['context']['account'] = $subscriber;
 
   // Get node data for the mail
   // Because node_load() only caches the most recent node revision
-  // we cache here based on nid and vid.
+  // we cache here based  on nid and vid.
   // TODO Investigate if this caching thing is still applicable to D7
   if (isset($cache[$nid . ':' . $vid])) {
     $node = $cache[$nid . ':' . $vid];
@@ -173,7 +177,7 @@ function simplenews_mail_mail($message, $key = 'node') {
     if (module_exists('mimemail')) {
       // If mimemail module is installed ALL emails are send via this module.
       // drupal_mail() builds the content of the email but does NOT send.
-      $message = drupal_mail('simplenews', $key, $account->mail, $account->language, $params, $params['from']['formatted'], FALSE);
+      $message = drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['formatted'], FALSE);
       $to = isset($message['params']['context']['account']) ? $message['params']['context']['account'] : $message['to'];
       $plain = $message['params']['context']['category']->format == 'plain' ? TRUE : NULL;
       $plain_text = $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
@@ -191,7 +195,7 @@ function simplenews_mail_mail($message, $key = 'node') {
       );
     }
     else {
-      $message = drupal_mail('simplenews', $key, $account->mail, $account->language, $params, $params['from']['formatted'], TRUE);
+      $message = drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['formatted'], TRUE);
     }
 
     // Log sent result in watchdog.
@@ -253,13 +257,13 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
   // Send pending messages from database cache
   // A limited number of mails is retrieved from the spool
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
-  if ($spool = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
+  if ($spool_list = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
     $count_fail = $count_success = 0;
 
     _simplenews_measure_usec(TRUE);
 
-    foreach ($spool as $msid => $message) {
-      $result = simplenews_mail_mail($message);
+    foreach ($spool_list as $msid => $spool_data) {
+      $result = simplenews_mail_mail($spool_data);
 
       // Update spool status.
       // This is not optimal for performance but prevents duplicate emails
@@ -360,9 +364,14 @@ function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999
     ->condition('s.status', $status)
     ->range(0, $limit)
     ->orderBy('s.timestamp', 'ASC');
-  foreach ($query->execute() as $data) {
-    $data->data = unserialize($data->data);
-    $spool[$data->msid] = $data;
+  foreach ($query->execute() as $row) {
+    if (unserialize($row->data)) {
+      $row->data = unserialize($row->data);
+    }
+    else {
+      $row->data = simplenews_get_subscription((object)array('mail' => $row->mail));
+    }
+    $spool[$row->msid] = $row;
   }
   return $spool;
 }
