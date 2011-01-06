@@ -234,7 +234,7 @@ function simplenews_admin_issues_validate($form, &$form_state) {
       switch ($form_state['input']['operation']) {
         case 'send':
         //@todo If 'send': check if selected items are un-sent.
-        
+
       }
     }
   }
@@ -255,7 +255,7 @@ function simplenews_admin_issues_submit($form, &$form_state) {
       $args = array($nids);
     }
     call_user_func_array($function, $args);
-    
+
     drupal_set_message(t('The update has been performed.'));
   }
   else {
@@ -281,7 +281,7 @@ function simplenews_issue_send($nids) {
 function simplenews_issue_resend($nids) {
   //TODO
   // check if $nids are not pending: error
-  // send newsletter  
+  // send newsletter
 }
 
 /**
@@ -446,7 +446,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#default_value' => $edit['new_account'],
     '#description' => t('None: This newsletter is not listed on the user registration page.<br />Default on: This newsletter is listed on the user registion page and is selected by default.<br />Default off: This newsletter is listed on the user registion page and is not selected by default.<br />Silent: A new user is automatically subscribed to this newsletter. The newsletter is not listed on the user registration page.'),
   );
-  
+
   // Type of (un)subsribe confirmation
   $options = array(
     SIMPLENEWS_OPT_INOUT_HIDDEN => t('Hidden'),
@@ -577,7 +577,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#value' => t('Save'),
     '#weight' => 50,
   );
-  
+
   if ($edit['tid']) {
     $form['actions']['delete'] = array(
       '#type' => 'submit',
@@ -617,7 +617,7 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
   $term->weight       = $form_state['values']['weight'];
   taxonomy_term_save($term);
   $category->tid = $term->tid;
-  
+
   switch (simplenews_category_save($category)) {
     case SAVED_NEW:
       drupal_set_message(t('Created new newsletter category %name.', array('%name' => $category->name)));
@@ -650,11 +650,11 @@ function simplenews_admin_category_delete($form, &$form_state, $category) {
     '#markup' => '<p><strong>' . t('Note: All subscriptions associated with this newsletter will be lost.') . '</strong></p>',
   );
 
-  return confirm_form($form, 
-    t('Are you sure you want to delete category %name?', array('%name' => $category->name)), 
-    'admin/structure/simplenews', 
-    t('This action cannot be undone.'), 
-    t('Delete'), 
+  return confirm_form($form,
+    t('Are you sure you want to delete category %name?', array('%name' => $category->name)),
+    'admin/structure/simplenews',
+    t('This action cannot be undone.'),
+    t('Delete'),
     t('Cancel')
   );
 }
@@ -705,10 +705,10 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
   $confirm_question = format_plural(count($snids),
                                   'Are you sure you want to delete this subscription?',
                                   'Are you sure you want to delete these subscriptions?');
-  return confirm_form($form, 
-                      $confirm_question, 
-                      'admin/people/simplenews', 
-                      t('This action cannot be undone.'), 
+  return confirm_form($form,
+                      $confirm_question,
+                      'admin/people/simplenews',
+                      t('This action cannot be undone.'),
                       t('Delete'), t('Cancel'));
 }
 
@@ -758,7 +758,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
     $languages = language_list('enabled');
     foreach ($languages[1] as $langcode => $item) {
       $name = t($item->name);
-      $options[$langcode] = $name . ($item->native != $name ? ' ('. $item->native .')' : ''); 
+      $options[$langcode] = $name . ($item->native != $name ? ' (' . $item->native . ')' : '');
     }
     $form['language'] = array(
       '#type' => 'radios',
@@ -1127,7 +1127,7 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
       $args = array($snids);
     }
     call_user_func_array($function, $args);
-    
+
     drupal_set_message(t('The update has been performed.'));
   }
   else {
@@ -1146,7 +1146,7 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
  *   Status of the subscription (0, 1).
  */
 function simplenews_subscription_activate($snids, $status) {
-  foreach($snids as $snid) {
+  foreach ($snids as $snid) {
     $subscriber = simplenews_subscriber_load($snid);
     $subscriber->activated = $status;
     simplenews_subscriber_save($subscriber);
@@ -1738,6 +1738,6 @@ function simplenews_get_priority() {
     SIMPLENEWS_PRIORITY_HIGH => t('high'),
     SIMPLENEWS_PRIORITY_NORMAL => t('normal'),
     SIMPLENEWS_PRIORITY_LOW => t('low'),
-    SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),  
+    SIMPLENEWS_PRIORITY_LOWEST => t('lowest'),
   );
 }

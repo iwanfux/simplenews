@@ -103,7 +103,7 @@ function simplenews_confirm_subscription() {
   $arguments = func_get_args();
   $op = array_shift($arguments);
   $code = array_shift($arguments);
-  
+
   $md5 = drupal_substr($code, 0, 10);
   list($snid, $tid) = explode('t', drupal_substr($code, 10));
 
@@ -131,7 +131,7 @@ function simplenews_confirm_subscription() {
       if ($op == 'remove') {
         simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
-          $path = $path .'/'. implode('/', $arguments);
+          $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
         }
         drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
@@ -140,7 +140,7 @@ function simplenews_confirm_subscription() {
       elseif ($op == 'add') {
         simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_subscribe_page', '')) {
-          $path = $path .'/'. implode('/', $arguments);
+          $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
         }
         drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
@@ -175,18 +175,18 @@ function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
   );
   $form['#redirect'] = variable_get('simplenews_confirm_subscribe_page', '');
 
-  return confirm_form($form, 
-    t('Confirm subscription'), 
+  return confirm_form($form,
+    t('Confirm subscription'),
     '',
-    t('You can always unsubscribe later.'), 
-    t('Subscribe'), 
+    t('You can always unsubscribe later.'),
+    t('Subscribe'),
     t('Cancel')
   );
 }
 
 function simplenews_confirm_add_form_submit($form, &$form_state) {
   simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->tid, FALSE, 'website');
-  
+
   // Display message if user is directed to the front page.
   if (!$form['#redirect']) {
     drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
@@ -214,11 +214,11 @@ function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter
   );
   $form['#redirect'] = variable_get('simplenews_confirm_unsubscribe_page', '');
 
-  return confirm_form($form, 
-    t('Confirm remove subscription'), 
+  return confirm_form($form,
+    t('Confirm remove subscription'),
     '',
-    t('This action will unsubscribe you from the newsletter mailing list.'), 
-    t('Unsubscribe'), 
+    t('This action will unsubscribe you from the newsletter mailing list.'),
+    t('Unsubscribe'),
     t('Cancel')
   );
 }
