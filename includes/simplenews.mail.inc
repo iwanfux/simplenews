@@ -355,17 +355,18 @@ function simplenews_save_spool($spool) {
  *  $spool['time']
  * @todo Convert output to array of objects.
  */
-// TODO Change limit default to 0. 0 = no limit.
-function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 999999) {
+function simplenews_get_spool($status, $nid = NULL, $vid = NULL, $limit = 0) {
   $spool = array();
 
   $query = db_select('simplenews_mail_spool', 's')
     ->fields('s')
     ->condition('s.status', $status)
-    ->range(0, $limit)
     ->orderBy('s.timestamp', 'ASC');
+  if ($limit) {
+    $query->range(0, $limit);
+  }
   foreach ($query->execute() as $row) {
-    if (unserialize($row->data)) {
+    if (strlen($row->data)) {
       $row->data = unserialize($row->data);
     }
     else {

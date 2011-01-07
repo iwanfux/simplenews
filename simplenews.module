@@ -202,11 +202,11 @@ function simplenews_menu() {
     'title' => 'List',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/people/simplenews/edit/%'] = array(
+  $items['admin/people/simplenews/users/edit/%'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_users_form', 4),
+    'page arguments' => array('simplenews_admin_users_form', 5),
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'includes/simplenews.subscription.inc',
   );
@@ -238,50 +238,56 @@ function simplenews_menu() {
     'weight' => 10,
   );
 
+  // Configuration links.
   $items['admin/config/simplenews'] = array(
     'title' => 'Simplenews',
     'description' => 'Manage simplenews configuration.',
+    'position' => 'right',
+    'weight' => -10,
     'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('administer simplenews settings'),
+    'access arguments' => array('access administration pages'),
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
-
   $items['admin/config/simplenews/general'] = array(
     'title' => 'General',
     'description' => 'Simplenews vocabulary setting.',
-    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
+    'weight' => -20,
     'page arguments' => array('simplenews_admin_settings'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
+    'file path' => drupal_get_path('module', 'simplenews'),
   );
   $items['admin/config/simplenews/newsletter'] = array(
     'title' => 'Newsletter',
     'description' => 'Newsletter default settings and sender data.',
-    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
+    'weight' => -15,
     'page arguments' => array('simplenews_admin_settings_newsletter'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
+    'file path' => drupal_get_path('module', 'simplenews'),
   );
   $items['admin/config/simplenews/subscription'] = array(
     'title' => 'Subscription',
     'description' => 'Subscription settings, opt-in/out confirmation email text.',
-    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
+    'weight' => -10,
     'page arguments' => array('simplenews_admin_settings_subscription'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
+    'file path' => drupal_get_path('module', 'simplenews'),
   );
   $items['admin/config/simplenews/mail'] = array(
     'title' => 'Send mail',
     'description' => 'Send mail, cron and debug options.',
-    'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
+    'weight' => -5,
     'page arguments' => array('simplenews_admin_settings_mail'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
+    'file path' => drupal_get_path('module', 'simplenews'),
   );
 
   $items['newsletter/confirm'] = array(
@@ -1144,23 +1150,34 @@ function simplenews_user_presave(&$edit, $account, $category) {
  * Implements hook_user_cancel.
  */
 function simplenews_user_cancel($edit, $account, $method) {
+ // Deactivate subscriber when account is disabled via cancel user.
+  
+  if ($account) {
+    db_query("
+      UPDATE {simplenews_subscriber}
+      SET activated = :a
+      WHERE uid = :uid",
+      array(
+        ':a' => 0,
+        ':uid' => $account->uid,
+      )
+    );
+  }
+}
+
+/**
+ * Implements hook_user_delete.
+ */
+function simplenews_user_delete($edit, $account, $method) {
   // Delete subscription and all newsletter subscriptions when account is removed.
   // We don't use simplenews_get_subscription() here because the user is already
   // deleted from the {user} table.
-  // TODO investigate if we perhaps /can/ use simplenews_get_subscription().
   $subscribers = simplenews_subscribers_load_multiple(array(), array('mail' => $account->mail));
   $subscriber = $subscribers ? reset($subscribers) : FALSE;
-
+  
   if ($subscriber) {
-    if (variable_get('simplenews_sync_account', TRUE)) {
-      simplenews_subscription_delete(array('snid' => $subscriber->snid));
-      simplenews_subscriber_delete($subscriber->snid);
-    }
-    else {
-      // Set subscriber uid to 0 when account is removed.
-      $subscriber->uid = 0;
-      simplenews_subscriber_save($subscriber);
-    }
+    simplenews_subscription_delete(array('snid' => $subscriber->snid));
+    simplenews_subscriber_delete($subscriber);
   }
 }
 

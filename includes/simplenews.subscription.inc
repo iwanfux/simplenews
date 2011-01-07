@@ -237,7 +237,7 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
  * page for anonymous users.
  */
 function simplenews_admin_users_form($form, &$form_state, $snid = NULL) {
-  $form = simplenews_subscription_manager_form($form_state, $snid);
+  $form = simplenews_subscription_manager_form($form, $form_state, $snid);
   $form['#redirect'] = 'admin/content/simplenews/users';
   return $form;
 }
