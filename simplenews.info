@@ -6,12 +6,7 @@ core = 7.x
 
 dependencies[] = taxonomy
 
-files[] = simplenews.install
-files[] = simplenews.module
-files[] = includes/simplenews.subscription.inc
-files[] = includes/simplenews.admin.inc
-files[] = includes/simplenews.mail.inc
-files[] = includes/views/simplenews.views.inc
+
 files[] = includes/views/handlers/simplenews_handler_field_newsletter_status.inc
 files[] = includes/views/handlers/simplenews_handler_field_newsletter_priority.inc
 files[] = includes/views/handlers/simplenews_handler_field_category_hyperlinks.inc
@@ -22,7 +17,3 @@ files[] = includes/views/handlers/simplenews_handler_filter_newsletter_priority.
 files[] = includes/views/handlers/simplenews_handler_filter_category_hyperlinks.inc
 files[] = includes/views/handlers/simplenews_handler_filter_category_new_account.inc
 files[] = includes/views/handlers/simplenews_handler_filter_category_opt_inout.inc
-files[] = theme/simplenews-block.tpl.php
-files[] = theme/simplenews-newsletter-body.tpl.php
-files[] = theme/simplenews-newsletter-footer.tpl.php
-files[] = tests/simplenews.test

@@ -2192,7 +2192,15 @@ function simplenews_build_node_mail(&$message, $params) {
     //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
     if ($category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
       // Build and buffer message footer
-      $footer = theme('simplenews_newsletter_footer', array('build' => $build, 'category' => $category, 'key' => $key, 'language' => $message['language']));
+      $footer = theme('simplenews_newsletter_footer', 
+        array(
+          'build' => $build,
+          'category' => $category,
+          'context' => $context,
+          'key' => $key,
+          'language' => $message['language'],
+        )
+      );
       $messages[$nid][$langcode]['footer'] = $footer;
     }
     
@@ -2301,7 +2309,7 @@ function simplenews_call_actions($op, $subscription) {
   if (!module_exists('simplenews_action')) {
     return;
   }
-  $aids = _trigger_get_hook_aids('simplenews', $op);
+  $aids = trigger_get_assigned_actions('simplenews');
   $context = array(
     'hook' => 'simplenews',
     'op' => $op,
@@ -3026,6 +3034,7 @@ function simplenews_theme() {
       'variables' => array(
         'build' => NULL,
         'category' => NULL,
+        'context' => NULL,
         'key' => NULL,
         'language' => NULL,
       ),
