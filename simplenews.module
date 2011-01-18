@@ -3157,10 +3157,7 @@ function simplenews_node_tab_access($node = NULL){
 
 function simplenews_node_tab_send_form($form, &$form_state){
   // Prepare
-  //$values = $form_state['build_info']['args'][0]->simplenews;
-  //$node = node_load($values->nid);
   $node = $form_state['build_info']['args'][0];
-  
   $simplenews_values = (object)_simplenews_get_node_form_defaults();
   
   if (isset($node->simplenews) && !empty($node->simplenews)) {
@@ -3237,13 +3234,13 @@ function simplenews_node_tab_send_form($form, &$form_state){
     else {
       $form['simplenews']['none'] = array(
         '#type' => 'checkbox',
-        '#title' => t('This newsletter has been sent'),
         '#return_value' => 0,
         '#attributes' => array(
           'checked' => 'checked',
           'disabled' => 'disabled',
         ),
       );
+      $form['simplenews']['none']['#title'] = ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
       return $form;
     }
     $form['submit'] = array(
