@@ -27,17 +27,18 @@ function simplenews_send_node($node, $accounts = array()) {
   if (is_numeric($node)) {
     $node = node_load($node);
   }
+
   if (is_object($node)) {
     $spool_data['nid'] = $node->nid;
     $spool_data['vid'] = $node->vid;
-    $spool_data['tid'] = $node->simplenews['tid'];
+    $spool_data['tid'] = $node->simplenews->tid;
 
     // Get accounts subscribed to this newsletter.
     // Using hook_simplenews_recipients modules can add recipients.
-    $recipients = simplenews_get_subscriptions_by_list($node->simplenews['tid']);
+    $recipients = simplenews_get_subscriptions_by_list($node->simplenews->tid);
     foreach (module_implements('simplenews_recipients_alter') as $module) {
       $function = $module . '_simplenews_recipients_alter';
-      $function($recipients, $node->simplenews['tid']);
+      $function($recipients, $node->simplenews->tid);
     }
 
     // Build data array of specified accounts.
@@ -100,25 +101,24 @@ function simplenews_send_node($node, $accounts = array()) {
  *
  * @param integer or object $node Newsletter node to be sent. Integer = nid; Object = node object
  */
-function simplenews_send_test($node) {
+function simplenews_send_test($node, $test_addresses) {
   if (is_numeric($node)) {
     $node = node_load($node);
   }
   if (is_object($node)) {
     // Send the test newsletter to the test address(es) specified in the node.
     // Build array of test email addresses
-    $mails = explode(',', $node->simplenews['test_address']);
 
     // Send newsletter to test addresses.
     // Emails are send direct, not using the spool.
     $recipients = array('anonymous' => array(), 'user' => array());
-    foreach ($mails as $mail) {
+    foreach ($test_addresses as $mail) {
       $mail = trim($mail);
       if (!empty($mail)) {
         $message = new stdClass();
         $message->nid = $node->nid;
         $message->vid = $node->vid;
-        $message->tid = $node->simplenews['tid'];
+        $message->tid = $node->simplenews->tid;
         $message->data = simplenews_get_subscription((object)array('mail' => $mail));
         $account = _simplenews_user_load($mail);
         $subscription = simplenews_get_subscription($account);
@@ -128,7 +128,8 @@ function simplenews_send_test($node) {
         else {
           $recipients['anonymous'][] = $mail;
         }
-        $tmpres = simplenews_mail_mail($node->nid, $node->vid, $mail, 'test');
+        //$tmpres = simplenews_mail_mail($node->nid, $node->vid, $mail, 'test');
+        $tmpres = simplenews_mail_mail($message, 'test');
       }
     }
     if (count($recipients['user'])) {
