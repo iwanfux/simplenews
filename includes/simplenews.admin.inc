@@ -295,6 +295,7 @@ function simplenews_build_issue_filter_query(SelectQueryInterface $query) {
     foreach ($_SESSION['simplenews_issue_filter'] as $key => $value) {
       switch ($key) {
         case 'list':
+        case 'category':
           if ($value != 'all') {
             list($key, $value) = explode('-', $value, 2);
             $query->condition('sn.' . $key, $value);
