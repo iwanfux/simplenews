@@ -44,7 +44,6 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
   if (!$valid_email) {
     form_set_error('mail', t('The email address you supplied is not valid.'));
   }
-dsm($form_state['values']);
   $checked_newsletters = array();//array_filter($form_state['values'],'_simplenews_checked');
   foreach (simplenews_get_mailing_lists() as $newsletter) {
     if ($form_state['values']['newsletter-' . $newsletter->tid] == 1) {
@@ -66,7 +65,6 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Update'):
       $subscription_checkboxes = $form_state['categories'];//array_filter($form_state['values'],'is_int');
-      dsm($subscription_checkboxes);
       // Sort subscriptions (value=1) first, then unsubscriptions (value=0).
       // We first subscribe, then unsubscribe. This prevents deletion of subscribers.
       arsort($subscription_checkboxes, SORT_NUMERIC);
