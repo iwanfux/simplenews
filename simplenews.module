@@ -509,6 +509,13 @@ function simplenews_node_load($nodes, $types) {
 
   $newsletters = simplenews_newsletter_load_multiple(array_keys($nodes));
   foreach ($nodes as $nid => $node) {
+    // We can have multiple nodes where not all of them are simplenews enabled
+    // content type. So we need to check for each individual node is it
+    // simplenews enabled.
+    if (!simplenews_check_node_types($node->type)) {
+      continue;
+    }
+
     // Make sure every $node has valid newsletter data as object
     $newsletter = array();
     if (isset($newsletters[$nid])) {
