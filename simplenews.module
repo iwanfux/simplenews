@@ -451,6 +451,9 @@ function simplenews_node_insert($node) {
   simplenews_newsletter_save($newsletter);
 }
 
+/**
+ * Return default newsletter.
+ */
 function simplenews_newsletter_defaults($node = NULL) {
   $newsletter = array(
     'nid' => NULL,
@@ -469,6 +472,7 @@ function simplenews_newsletter_defaults($node = NULL) {
   
   return $newsletter;
 }
+
 /**
  * Implements hook_node_update.
  */
@@ -1016,9 +1020,10 @@ function simplenews_user_presave(&$edit, $account, $category) {
       }
       break;
     case 'simplenews':
-      if (user_access('subscribe to newsletters') && isset($edit['newsletters'])) {
-        foreach ($edit['newsletters'] as $tid => $checked) {
-          if ($checked) {
+      if (user_access('subscribe to newsletters')) {
+        foreach (simplenews_get_mailing_lists() as $item) {
+          $tid = $item->tid;
+          if ($edit['newsletter-' . $tid] == 1) {
             simplenews_subscribe_user($account->mail, $tid, FALSE, 'website');
           }
           else {
@@ -1462,6 +1467,29 @@ function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
 }
 
 /**
+ * Return a default subscriber object.
+ */
+function simplenews_subscriber_defaults($account = NULL) {
+  $subscriber = new stdClass();
+  $subscriber->snid = NULL;
+  $subscriber->name = '';
+  $subscriber->activated = 0;
+  $subscriber->uid = NULL;
+  $subscriber->mail = NULL;
+  $subscriber->language = language_default()->language;
+  $subscriber->tids = array();
+  $subscriber->newsletter_subscription = array();
+
+  if ($account) {
+    $subscriber->uid = $account->uid ? $account->uid : NULL;
+    $subscriber->mail = $account->mail ? $account->mail : NULL;
+    $subscriber->language = user_preferred_language($account)->language;
+  }
+
+  return $subscriber;
+}
+
+/**
  * Get the subscription object for the given account.
  *
  * Account is defined by (in order of preference) snid, email address or uid.
@@ -1511,6 +1539,11 @@ function simplenews_get_subscription($account) {
   elseif (isset($account->uid) && $account->uid > 0) {
     $query->condition('s.uid', $account->uid);
   }
+  else {
+    // No conditions applied!
+    return simplenews_subscriber_defaults($account);
+  }
+  $query->range(0, 1);
   $result = $query->execute();
 
   if ($result->rowCount()) {
@@ -1528,15 +1561,7 @@ function simplenews_get_subscription($account) {
   }
   else {
     // Account is unknown in subscription table. Create default subscription object
-    $subscription = new stdClass();
-    $subscription->snid = 0;
-    $subscription->name = '';
-    $subscription->activated = 0;
-    $subscription->uid = isset($account->uid) ? $account->uid : 0;
-    $subscription->mail = isset($account->mail) ? $account->mail : '';
-    $subscription->language = language_default()->language;
-    $subscription->tids = array();
-    $subscription->newsletter_subscription = array();
+    return simplenews_subscriber_defaults($account);
   }
 
   return $subscription;
