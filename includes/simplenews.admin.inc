@@ -789,6 +789,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
 function simplenews_subscription_list_add_submit($form, &$form_state) {
   $added = array();
   $invalid = array();
+  // TODO redo filter
   $checked_lists = array_keys(array_filter($form_state['values'],'_simplenews_checked'));
   $langcode = $form_state['values']['language'];
 
@@ -961,6 +962,7 @@ function simplenews_subscription_list_remove($form, &$form_state) {
 function simplenews_subscription_list_remove_submit($form, &$form_state) {
   $removed = array();
   $invalid = array();
+  // TODO redo filter
   $checked_lists = array_keys(array_filter($form_state['values'],'_simplenews_checked'));
 
   $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
