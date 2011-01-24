@@ -2748,7 +2748,7 @@ function simplenews_help($path, $arg) {
           $help = '<p>' . t('This is a Multilingual website. Enter text for confirmation subject and body in the default site language (@language).', array('@language' => $language_default->name)) . "</p>\n";
         }
         else {
-          $help = '<p>' . t('This is a Multilingual website. <a href="@url">Enable the String translation module</a> to enable translation of the confirmation subject and body.', array('@url' => url('admin/build/modules'))) . "</p>\n";
+          $help = '<p>' . t('This is a Multilingual website. <a href="@url">Enable the String translation module</a> to enable translation of the confirmation subject and body.', array('@url' => url('admin/modules'))) . "</p>\n";
         }
         return $help;
       }
