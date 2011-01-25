@@ -2706,13 +2706,13 @@ function simplenews_help($path, $arg) {
       $help .= "<h2>" . t('Configuration') . "</h2>\n";
       $help .= '<ul>';
       if (user_access('administer permissions')) {
-        $help .= '<li>' . l(t('Configure permissions'), 'admin/user/permissions', array('fragment' => 'module-simplenews')) . "</li>\n";
+        $help .= '<li>' . l(t('Configure permissions'), 'admin/people/permissions', array('fragment' => 'module-simplenews')) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
         $help .= '<li>' . l(t('Configure Simplenews'), 'admin/config/simplenews') . "</li>\n";
       }
       if (user_access('administer blocks')) {
-        $help .= '<li>' . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/build/block'))) . "</li>\n";
+        $help .= '<li>' . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/structure/block'))) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
         $help .= '<li>' . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/structure/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
@@ -2756,7 +2756,7 @@ function simplenews_help($path, $arg) {
     case 'admin/structure/simplenews/add':
       $help = '<p>' . t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') . "</p>\n";
       return $help;
-    case 'admin/content/node-type/simplenews/display/simplenews':
+    case 'admin/structure/types/manage/simplenews/display':
       $help = '<p>' . t("'Plain' display settings apply to the content of emails send in plain text format. 'HTML' display settings apply to both HTML and plain text alternative content of emails send in HTML format.") . "</p>\n";
       return $help;
   }
