@@ -106,6 +106,15 @@ function simplenews_send_test($node, $test_addresses) {
     $node = node_load($node);
   }
   if (is_object($node)) {
+    // Prevent session information from being saved while sending.
+    if ($original_session = drupal_save_session()) {
+      drupal_save_session(FALSE);
+    }
+
+    // Force the current user to anonymous to ensure consistent permissions.
+    $original_user = $GLOBALS['user'];
+    $GLOBALS['user'] = drupal_anonymous_user();
+
     // Send the test newsletter to the test address(es) specified in the node.
     // Build array of test email addresses
 
@@ -139,6 +148,11 @@ function simplenews_send_test($node, $test_addresses) {
     if (count($recipients['anonymous'])) {
       $recipients_txt = implode(', ', $recipients['anonymous']);
       drupal_set_message(t('Test newsletter sent to anonymous %recipient.', array('%recipient' => $recipients_txt)));
+    }
+
+    $GLOBALS['user'] = $original_user;
+    if ($original_session) {
+      drupal_save_session(TRUE);
     }
   }
 }
@@ -273,6 +287,15 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
   // A limited number of mails is retrieved from the spool
   $limit = isset($limit) ? $limit : variable_get('simplenews_throttle', 20);
   if ($spool_list = simplenews_get_spool(SIMPLENEWS_SPOOL_PENDING, $nid, $vid, $limit)) {
+    // Prevent session information from being saved while sending.
+    if ($original_session = drupal_save_session()) {
+      drupal_save_session(FALSE);
+    }
+
+    // Force the current user to anonymous to ensure consistent permissions.
+    $original_user = $GLOBALS['user'];
+    $GLOBALS['user'] = drupal_anonymous_user();
+
     $count_fail = $count_success = 0;
 
     _simplenews_measure_usec(TRUE);
@@ -316,6 +339,12 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
 
     variable_set('simplenews_last_cron', REQUEST_TIME);
     variable_set('simplenews_last_sent', $count_success);
+
+    // Restore the user.
+    $GLOBALS['user'] = $original_user;
+    if ($original_session) {
+      drupal_save_session(TRUE);
+    }
   }
 
 }
