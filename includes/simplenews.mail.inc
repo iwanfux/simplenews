@@ -202,30 +202,15 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
     $params['context']['category'] = simplenews_category_load($tid);
     $params['from'] = _simplenews_set_from($params['context']['category']);
 
+    // Optional params for Mime Mail.
+    $params['plain'] = $params['context']['category']->format == 'plain' ? TRUE : NULL;
+    // @todo Create the plaintext portion of the message, we don't have $message['body'] here.
+    // $params['plaintext'] = $params['plain'] ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
+    // @todo Get the attachments. Upload module no longer exists for Drupal 7.
+    // $params['attachments'] = isset($params['context']['node']->files) ? $params['context']['node']->files : array();;
+
     // Send mail
-    if (module_exists('mimemail')) {
-      // If mimemail module is installed ALL emails are send via this module.
-      // drupal_mail() builds the content of the email but does NOT send.
-      $message = drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['formatted'], FALSE);
-      $to = isset($message['params']['context']['account']) ? $message['params']['context']['account'] : $message['to'];
-      $plain = $message['params']['context']['category']->format == 'plain' ? TRUE : NULL;
-      $plain_text = $plain ? $message['body'] : simplenews_html_to_text($message['body'], TRUE);
-      $files = isset($message['params']['context']['node']->files) ? $message['params']['context']['node']->files : array();
-      $message['result'] = mimemail(
-        $message['from'], 
-        $to, 
-        $message['subject'], 
-        $message['body'], 
-        $plain, 
-        $message['headers'], 
-        $plain_text, 
-        $files, 
-        ''
-      );
-    }
-    else {
-      $message = drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['formatted'], TRUE);
-    }
+    $message = drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['formatted']);
 
     // Log sent result in watchdog.
     if (variable_get('simplenews_debug', FALSE)) {
