@@ -2072,9 +2072,10 @@ function simplenews_build_node_mail(&$message, $params) {
     // Set the active language to the node's language.
     // This needs to be done as otherwise the language used to send the mail
     // is the language of the user logged in.
-    if (module_exists('i18n')) {
-         i18n_selection_mode('node', $node->language);
-    }
+    // TODO rewrite this code to drupal 7 
+//    if (module_exists('i18n')) {
+//         i18n_selection_mode('node', $node->language);
+//    }
     
     // Build message body
 // TODO move this code to a function. We need to do this twice for HTML and Plain text Alternative.
@@ -2112,9 +2113,10 @@ function simplenews_build_node_mail(&$message, $params) {
     }
     
     // Reset the language to the original settings.
-    if (module_exists('i18n')) {
-      i18n_selection_mode('reset');
-    }
+    // TODO rewrite this code to drupal 7 
+//    if (module_exists('i18n')) {
+//      i18n_selection_mode('reset');
+//    }
     
     // Restore the custom theme.
     $custom_theme = $org_custom_theme;
