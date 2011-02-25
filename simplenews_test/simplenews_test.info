@@ -1,4 +1,3 @@
-; $Id$
 name = Simplenews test
 description = Simplenews helper module for automated simplenews tests.
 dependencies[] = simplenews
