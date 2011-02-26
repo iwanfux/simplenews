@@ -2371,6 +2371,12 @@ function simplenews_category_delete($category) {
       ->condition('tid', $category->tid)
       ->execute();
     module_invoke_all('simplenews_category_delete', $category);
+    variable_del('simplenews_from_name_'. $category->tid);
+    variable_del('simplenews_email_subject_'. $category->tid);
+    variable_del('simplenews_from_address_'. $category->tid);
+    variable_del('simplenews_hyperlinks_'. $category->tid);
+    variable_del('simplenews_new_account_'. $category->tid);
+    variable_del('simplenews_opt_inout_'. $category->tid);
   }
 }
 
