@@ -3162,10 +3162,10 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
  */
 function theme_simplenews_newsletter_footer($variables) {
   if ($variables['format'] == 'html') {
-    $output = '<p class="newsletter-footer"><a href="[simplenews-subscriber:subscribe-url]">' . $variables['unsubscribe_text'] . '</a></p>';
+    $output = '<p class="newsletter-footer"><a href="[simplenews-subscriber:unsubscribe-url]">' . $variables['unsubscribe_text'] . '</a></p>';
   }
   else {
-    $output = $variables['unsubscribe_text'] . ': [simplenews-subscriber:subscribe-url]';
+    $output = $variables['unsubscribe_text'] . ': [simplenews-subscriber:unsubscribe-url]';
   }
   if ($variables['key'] == 'test') {
     $output .= '- - - ' . $variables['test_message'] . ' - - -';
