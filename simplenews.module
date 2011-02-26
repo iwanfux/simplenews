@@ -1479,9 +1479,13 @@ function simplenews_subscriber_defaults($account = NULL) {
   $subscriber->tids = array();
   $subscriber->newsletter_subscription = array();
 
-  if ($account) {
+  if (isset($account->uid)) {
     $subscriber->uid = $account->uid ? $account->uid : NULL;
+  }
+  if (isset($account->mail)) {
     $subscriber->mail = $account->mail ? $account->mail : NULL;
+  }
+  if (isset($account->language)) {
     $subscriber->language = user_preferred_language($account)->language;
   }
 
