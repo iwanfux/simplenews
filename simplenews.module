@@ -312,6 +312,7 @@ function simplenews_menu() {
     'access arguments' => array(1),
     'page callback' => 'simplenews_node_tab_page',
     'page arguments' => array(1),
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
     'weight' => 2,
   );
 
