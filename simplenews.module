@@ -1859,12 +1859,6 @@ function simplenews_block_form($form, &$form_state, $tid) {
         '#attributes' => array('class' => 'simplenews-subscribe'),
       );
     }
-    // TODO display the label inline with the user name.
-    $form['display_mail'] = array(
-      '#type' => 'item',
-      '#title' => t('User'),
-      '#markup' => check_plain($user->name),
-    );
     $form['mail'] = array(
       '#type' => 'value',
       '#value' => $user->mail,
