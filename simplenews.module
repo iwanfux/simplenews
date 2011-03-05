@@ -380,8 +380,10 @@ function simplenews_node_view($node, $view_mode) {
  */
 function simplenews_get_term_values($node) {
   $category_field = simplenews_get_category_field($node->type);
-  if (isset($node->{$category_field['field_name']}[$node->language])) {
-    return $node->{$category_field['field_name']}[$node->language];
+  $taxonomy = $node->{$category_field['field_name']};
+  $term = current($taxonomy);
+  if (!empty($term)) {
+    return $term;
   }
   return FALSE;
 }
