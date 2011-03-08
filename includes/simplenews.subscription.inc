@@ -61,9 +61,9 @@ function simplenews_subscription_manager_form_validate($form, &$form_state) {
 }
 
 function simplenews_subscription_manager_form_submit($form, &$form_state) {
+  $subscription_checkboxes = $form_state['categories'];
   switch ($form_state['values']['op']) {
     case t('Update'):
-      $subscription_checkboxes = $form_state['categories'];//array_filter($form_state['values'],'is_int');
       // Sort subscriptions (value=1) first, then unsubscriptions (value=0).
       // We first subscribe, then unsubscribe. This prevents deletion of subscribers.
       arsort($subscription_checkboxes, SORT_NUMERIC);
