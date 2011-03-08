@@ -2731,7 +2731,7 @@ function simplenews_help($path, $arg) {
       return $help;
     case 'node/add/simplenews':
       $help  = '<ul>';
-      $help .= '<li>' . t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. Send a newsletter or a test newsletter by selecting the appropriate radio button and submitting the node.') . "</li>\n";
+      $help .= '<li>' . t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. To send this newsletter issue, first save the node, then use the "Newsletter" tab.') . "</li>\n";
       if (user_access('administer simplenews settings')) {
         $help .= '<li>' . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/config/simplenews/newsletter'))) . "</li>\n";
       }
