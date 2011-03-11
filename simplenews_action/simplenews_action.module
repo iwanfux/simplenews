@@ -118,10 +118,11 @@ function simplenews_action_send_newsletter_form($context) {
   //    '#default_value' => $context['newsletter'],
   //    '#description' => t('The newsletter series'),
   //  );
-  $newsletters = simplenews_newsletter_load_multiple(array(), array('scid' => array_keys($categories)));
+  $newsletters = simplenews_newsletter_load_multiple(array(), array('t.tid' => array_keys($categories)));
   $newsletter_nodes = array();
   foreach ($newsletters as $newsletter) {
-    $newsletter_nodes[$newsletter->nid] = $newsletter->title;
+    $issue = node_load($newsletter->nid);
+    $newsletter_nodes[$newsletter->nid] = $issue->title;
   }
   $form['newsletter_issue'] = array(
     '#title' => t('Newsletter issue'),
