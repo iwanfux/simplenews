@@ -3003,8 +3003,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/' . $tid);
   $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_' . $tid, 5));
   $variables['issue_list'] = theme('item_list', array('items' => $recent, 'title' => t('Previous issues'), 'type' => 'ul'));
-  // TODO replace path
-  $variables['rssfeed'] = theme('feed_icon', array('url' => url('taxonomy/term/' . $tid . '/0/feed'), 'title' => t('@newsletter feed', array('@newsletter' => $category->name))));
+  $variables['rssfeed'] = theme('feed_icon', array('url' => 'taxonomy/term/'. $tid .'/feed', 'title' => t('@newsletter feed', array('@newsletter' => $category->name))));
 
   // Block content control variables
   $variables['use_form'] = variable_get('simplenews_block_f_' . $tid, 1);
