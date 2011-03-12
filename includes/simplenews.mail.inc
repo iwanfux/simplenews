@@ -213,6 +213,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
 
     // Log sent result in watchdog.
     if (variable_get('simplenews_debug', FALSE)) {
+      $via_mimemail = '';
       if (module_exists('mimemail')) {
         $via_mimemail = t('Sent via Mime Mail');
       }
