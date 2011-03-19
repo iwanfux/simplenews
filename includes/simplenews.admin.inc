@@ -1604,8 +1604,10 @@ function simplenews_count_subscriptions($tid) {
   if (isset($subscription_count[$tid])) {
     return $subscription_count[$tid];
   }
-  $subscription_count[$tid] = db_query('SELECT snid FROM {simplenews_subscription} WHERE tid = :tid AND status = :status', array(':tid' => $tid, ':status' => SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED))->rowCount();
-
+  $subscription_count[$tid] = db_select('simplenews_subscription')
+    ->condition('tid', $tid)
+    ->condition('status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)
+    ->countQuery()->execute()->fetchField();
   return $subscription_count[$tid];
 }
 

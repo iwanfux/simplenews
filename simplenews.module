@@ -907,18 +907,14 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
     }
   }
   
-  // set inactive if not created by an administrator. this needs a cleaner API.
+  // set inactive if not created by an administrator.
+  // @todo This needs a cleaner API.
   if (!user_access('administer users')) {
     // this user will be activated on first login (see simplenews_user_login)
-    db_query("
-      UPDATE {simplenews_subscriber}
-      SET activated = :a
-      WHERE uid = :uid",
-      array(
-        ':a' => 0,
-        ':uid' => $account->uid,
-      )
-    );
+    $query = db_update('simplenews_subscriber')
+      ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
+      ->condition('uid', $account->uid)
+      ->execute();
   }
 
   // $edit['newsletter'] contains newsletters the user should be subscribed to.
@@ -942,15 +938,10 @@ function simplenews_user_login(&$edit, $account) {
   // Subscriptions of users that did sign up by themselves have to be
   // activated first at their first login (-> account::access = 0)
   if ($account->access == 0){
-    db_query("
-      UPDATE {simplenews_subscriber}
-      SET activated = :a
-      WHERE uid = :uid",
-      array(
-        ':a' => 1,
-        ':uid' => $account->uid,
-      )
-    );
+    $query = db_update('simplenews_subscriber')
+      ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_ACTIVE))
+      ->condition('uid', $account->uid)
+      ->execute();
   }
   
   if (isset($account->data)) {
@@ -1044,15 +1035,10 @@ function simplenews_user_cancel($edit, $account, $method) {
  // Deactivate subscriber when account is disabled via cancel user.
   
   if ($account) {
-    db_query("
-      UPDATE {simplenews_subscriber}
-      SET activated = :a
-      WHERE uid = :uid",
-      array(
-        ':a' => 0,
-        ':uid' => $account->uid,
-      )
-    );
+    $query = db_update('simplenews_subscriber')
+      ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
+      ->condition('uid', $account->uid)
+      ->execute();
   }
 }
 
@@ -1554,10 +1540,12 @@ function simplenews_get_subscription($account) {
 
   if ($result->rowCount()) {
     $subscription = $result->fetch();
-    $newsletter_subscriptions = db_query("SELECT * FROM {simplenews_subscription} WHERE snid = :snid", array(':snid' => $subscription->snid));
+    $query = db_select('simplenews_subscription', 'ss')
+      ->fields('ss')
+      ->condition('snid', $subscription->snid);
 
     $subscription->tids = array();
-    foreach ($newsletter_subscriptions as $newsletter_subscription) {
+    foreach ($query->execute() as $newsletter_subscription) {
       if ($newsletter_subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
         $subscription->tids[$newsletter_subscription->tid] = $newsletter_subscription->tid;
       }
@@ -1585,10 +1573,7 @@ function simplenews_get_subscriptions_by_list($tid) {
     ->condition('sn.activated', 1)
     ->condition('ss.tid', $tid)
     ->condition('ss.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-  foreach ($query->execute() as $subscriber) {
-    $subscriptions[$subscriber->mail] = $subscriber;
-  }
-  return $subscriptions;
+  return $query->execute()->fetchAllAssoc('mail');
 }
 
 /**
@@ -1677,10 +1662,7 @@ function simplenews_subscribers_load_multiple($snids = array(), $conditions = ar
       }
     }
 
-    $result = $query->execute();
-    foreach ($result as $subscriber) {
-      $subscribers[$subscriber->snid] = $subscriber;
-    }
+    $subscribers = $query->execute()->fetchAllAssoc('snid');
   }
   return $subscribers;
 }
@@ -2318,10 +2300,7 @@ function simplenews_categories_load_multiple($tids = array(), $conditions = arra
       }
     }
 
-    $result = $query->execute();
-    foreach ($result as $category) {
-      $categories[$category->tid] = $category;
-    }
+    $categories = $query->execute()->fetchAllAssoc('tid');
   }
   return $categories;
 }
@@ -2431,10 +2410,7 @@ function simplenews_newsletter_load_multiple($nids = array(), $conditions = arra
       }
     }
 
-    $result = $query->execute();
-    foreach ($result as $newsletter) {
-      $newsletters[$newsletter->nid] = $newsletter;
-    }
+    $newsletters = $query->execute()->fetchAllAssoc('nid');
   }
   return $newsletters;
 }

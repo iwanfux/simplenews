@@ -61,24 +61,23 @@ function simplenews_send_node($node, $accounts = array()) {
     // To send the newsletter, the node id and target email addresses
     // are stored in the spool.
     // Only subscribed recipients are stored in the spool (status = 1).
-    
-    db_query(
-      "INSERT INTO {simplenews_mail_spool} (mail, nid, vid, tid, status, timestamp, snid)
-      SELECT s.mail, :nid, :vid, t.tid, :stat, :time, s.snid 
-      FROM {simplenews_subscriber} s 
-      INNER JOIN {simplenews_subscription} t  
-      ON s.snid = t.snid 
-      WHERE s.activated = 1
-      AND t.tid = :tid 
-      AND t.status = 1",
-      array(
-        ':nid' => $spool_data['nid'],
-        ':vid' => $spool_data['vid'],
-        ':stat' => SIMPLENEWS_SPOOL_PENDING,
-        ':time' => time(),
-        ':tid' => $spool_data['tid'],
-      )
-    );
+
+    $select = db_select('simplenews_subscriber', 's');
+    $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
+    $select->addField('s', 'mail');
+    $select->addField('s', 'snid');
+    $select->addField('t', 'tid');
+    $select->addExpression($spool_data['nid'], 'nid');
+    $select->addExpression($spool_data['vid'], 'vid');
+    $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
+    $select->addExpression(REQUEST_TIME, 'timestamp');
+    $select->condition('t.tid', $spool_data['tid']);
+    $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+    $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
+
+    $query = db_insert('simplenews_mail_spool')
+      ->from($select)
+      ->execute();
 
     // When cron is not used the newsletter is send immediately to the emails
     // in the spool. When cron is used newsletters are send to addresses in the
@@ -439,8 +438,11 @@ function simplenews_update_spool($msids, $data) {
  * @return array Mail message array
  */
 function simplenews_count_spool($nid, $vid, $status = SIMPLENEWS_SPOOL_PENDING) {
-  $query = db_query("SELECT msid FROM {simplenews_mail_spool} WHERE nid = :nid AND vid = :vid AND status = :status", array(':nid' => $nid, ':vid' => $vid, ':status' => $status));
-  return $query->rowCount();
+  $query = db_select('simplenews_mail_spool')
+   ->condition('nid', $nid)
+   ->condition('vid', $vid)
+   ->condition('status', $status);
+  return $query->countQuery()->execute()->fetchField();
 }
 
 /**
