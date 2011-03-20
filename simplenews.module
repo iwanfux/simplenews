@@ -312,11 +312,22 @@ function simplenews_menu() {
     'access arguments' => array(1),
     'page callback' => 'simplenews_node_tab_page',
     'page arguments' => array(1),
-    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    'theme callback' => '_node_custom_theme',
+    'context' => MENU_LOCAL_TASK,
     'weight' => 2,
   );
 
   return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function simplenews_admin_paths() {
+  $paths = array(
+    'node/*/simplenews' => TRUE,
+  );
+  return $paths;
 }
 
 /**
@@ -3157,17 +3168,20 @@ function _simplenews_checked($value) {
  * Following 5 functions are for separated newsletter tab
  * 
  */
-function simplenews_node_tab_page($node = NULL){
-  $output = drupal_get_form('simplenews_node_tab_send_form', $node);
-  return $output;
+
+/**
+ * Menu callback; Newsletter tab page.
+ */
+function simplenews_node_tab_page($node){
+  drupal_set_title(t('<em>Newsletter</em> @title', array('@title' => $node->title)), PASS_THROUGH);
+  return drupal_get_form('simplenews_node_tab_send_form', $node);
 }
 
-function simplenews_node_tab_access($node = NULL){
-  if (in_array($node->type, simplenews_get_content_types()) && user_access('send newsletter')) {
-    return TRUE;
-  } else {
-    return FALSE;
-  }
+/**
+ * Access callback; Acces to Newsletter tab page.
+ */
+function simplenews_node_tab_access($node) {
+  return simplenews_check_node_types($node->type) && user_access('send newsletter');
 }
 
 function simplenews_node_tab_send_form($form, &$form_state){
