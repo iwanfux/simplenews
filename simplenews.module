@@ -917,6 +917,14 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
       drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
     }
   }
+
+  // Process hidden (automatic) subscriptions.
+  if (isset($edit['simplenews_hidden'])) {
+    foreach (explode(',', $edit['simplenews_hidden']) as $tid) {
+      simplenews_subscribe_user($account->mail, $tid, FALSE, 'automatically', $edit['language']);
+    }
+    unset($edit['simplenews_hidden']);
+  }
   
   // set inactive if not created by an administrator.
   // @todo This needs a cleaner API.
@@ -927,25 +935,14 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
       ->condition('uid', $account->uid)
       ->execute();
   }
-
-  // $edit['newsletter'] contains newsletters the user should be subscribed to.
-  // But we leave this untouched because we only subscribe a new account
-  // after account confirmation. In the meantime the content of $edit['newsletter']
-  // will be stored in $edit['data'] by user module.
 }
 
 /**
  * Implements hook_user_login.
  *
  * Subscribe user to a newsletter as per registration form.
- * @todo Check if $account->data is cleaned up by this function.
  */
 function simplenews_user_login(&$edit, $account) {
-  // The user registration form may contain (hidden) form element to
-  // subscribe to newsletters. Data of these elements are stored in
-  // the $account->data variable.
-  // We subscribe the user according to the (hidden) form elements.
- 
   // Subscriptions of users that did sign up by themselves have to be
   // activated first at their first login (-> account::access = 0)
   if ($account->access == 0){
@@ -954,36 +951,6 @@ function simplenews_user_login(&$edit, $account) {
       ->condition('uid', $account->uid)
       ->execute();
   }
-  
-  if (isset($account->data)) {
-    $data = $account->data;
-    $processed = FALSE;
-
-    // Process hidden (automatic) subscriptions.
-    if (isset($data['simplenews_hidden'])) {
-      foreach (explode(',', $data['simplenews_hidden']) as $tid) {
-        simplenews_subscribe_user($account->mail, $tid, FALSE, 'automatically');
-      }
-      $data['simplenews_hidden'] = NULL;
-      $processed = TRUE;
-    }
-
-    // Process subscription check boxes.
-    if (isset($data['newsletters'])) {
-      foreach (array_keys(array_filter($data['newsletters'])) as $tid) {
-        simplenews_subscribe_user($account->mail, $tid, FALSE, 'website');
-        $newsletters = simplenews_get_mailing_lists(TRUE);
-        drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletters[$tid]->name)));
-      }
-      $data['newsletters'] = NULL;
-      $processed = TRUE;
-    }
-
-  // If subscription data is processed, we update the user data to remove it.
-    if ($processed) {
-      user_save($account, $data);
-    }
-  }   
 }
 
 /**
