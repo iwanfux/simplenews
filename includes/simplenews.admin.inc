@@ -702,6 +702,10 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
     '#value' => 'delete',
   );
   $form['#submit'][] = 'simplenews_subscription_multiple_delete_confirm_submit';
+
+    // Return to the parent page.
+  $form_state['redirect'] = 'admin/people/simplenews';
+
   $confirm_question = format_plural(count($snids),
                                   'Are you sure you want to delete this subscription?',
                                   'Are you sure you want to delete these subscriptions?');
@@ -782,6 +786,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Subscribe'),
   );
+
   return $form;
 }
 
@@ -827,6 +832,9 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
     $invalid = implode(", ", $invalid);
     drupal_set_message(t('The following addresses were invalid: %invalid.', array('%invalid' => $invalid)), 'error');
   }
+
+  // Return to the parent page.
+  $form_state['redirect'] = 'admin/people/simplenews';
 }
 
 /**
@@ -836,7 +844,11 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * @todo Add checkboxes for subscribed and unsubscribed selection.
  */
 function simplenews_subscription_list_export($form, &$form_state) {
-  //TODO: Add (un)subscribed as filter to form.
+  // Get sensible default values for the form elements in this form.
+  $default['states'] = isset($_GET['states']) ? $_GET['states'] : array('active' => 'active');
+  $default['subscribed'] = isset($_GET['subscribed']) ? $_GET['subscribed'] : array('subscribed' => 'subscribed');
+  $default['lists'] = isset($_GET['lists']) ? $_GET['lists'] : array();
+
   $form['states'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Status'),
@@ -844,82 +856,109 @@ function simplenews_subscription_list_export($form, &$form_state) {
       'active' => t('Active users'),
       'inactive' => t('Inactive users'),
     ),
+    '#default_value' => $default['states'],
     '#description' => t('Subscriptions matching the selected states will be exported.'),
     '#required' => TRUE,
   );
+
+  $form['subscribed'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Subscribed'),
+    '#options' => array(
+      'subscribed' => t('Subscribed to the newsletter'),
+      'unsubscribed' => t('UnSubscribed from the newsletter'),
+    ),
+    '#default_value' => $default['subscribed'],
+    '#description' => t('Subscriptions matching the selected subscription states will be exported.'),
+    '#required' => TRUE,
+  );
+
   $lists = array();
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
     $lists[$list->tid] = check_plain($list->name);
   }
   $form['lists'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Subscribed to'),
+    '#title' => t('Newsletter'),
     '#options' => $lists,
+    '#default_value' => $default['lists'],
     '#description' => t('Subscriptions matching the selected newsletters will be exported.'),
     '#required' => TRUE,
   );
 
-  // Emails item is initially empty. It serves as place holder. Data is added by
-  // simplenews_admin_export_after_build().
-  $form['emails'] = array();
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Export'),
-  );
-  $form['#after_build'] = array('simplenews_admin_export_after_build');
-  $form['#redirect'] = FALSE;
-  return $form;
-}
-
-/**
- * Form alter_build callback.
- *
- * Adds export results to the subscriptions export form after submission.
- * @todo Something wrong. Email form element gets reset upon drupal_redirect_form().
- */
-function simplenews_admin_export_after_build($form, &$form_state) {
-  //TODO: Add (un)subscribed as filter to form.
-  if (isset($form_state['values']['op']) && $form_state['values']['op'] == t('Export')) {
-    $states = array_filter($form_state['values']['states']);
-    $lists = array_filter($form_state['values']['lists']);
-
-    // Build where clause for active/inactive state and newsletter selection.
-    if (isset($states['active'])) {
-      $active_states[] = 1;
-    }
-    if (isset($states['inactive'])) {
-      $active_states[] = 0;
-    }
-    $tids = array_keys(array_filter($lists));
-
-    // Get subscription data
-    $query = db_select('simplenews_subscriber', 'ss');
-    $query->innerJoin('simplenews_subscription', 'si', 'si.snid = ss.snid');
-    $query->fields('ss', array('mail'))
-      ->condition('ss.activated', $active_states)
-      ->condition('si.tid', $tids)
-      ->distinct();
-    foreach ($query->execute() as $mail) {
-      $mails[] = $mail->mail;
-    }
-
-    // Build form field containing exported emails.
-    // The field will be included in the form where at the ['emails'] place holder.
-    if (isset($mails)) {
-      $exported_mails = implode(", ", $mails);
-    }
-    else {
-      $exported_mails = t('No addresses were found.');
-    }
+  // Get export results and display them in a text area. Only get the results
+  // if the form is build after redirect, not after submit.
+  if (isset($_GET['states']) && empty($form_state['input'])) {
     $form['emails'] = array(
       '#type' => 'textarea',
       '#title' => t('Export results'),
       '#cols' => 60,
       '#rows' => 5,
-      '#value' => $exported_mails,
+      '#value' => _simplenews_subscription_list_export_get_emails($_GET['states'], $_GET['subscribed'], $_GET['lists']),
     );
   }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Export'),
+  );
   return $form;
+}
+
+function simplenews_subscription_list_export_submit($form, &$form_state) {
+  $form_values = $form_state['values'];
+
+  // Get data for query string and redirect back to the current page.
+  $options['query']['states'] = array_filter($form_values['states']);
+  $options['query']['subscribed'] = array_filter($form_values['subscribed']);
+  $options['query']['lists'] = array_keys(array_filter($form_values['lists']));
+  $form_state['redirect'] = array('admin/people/simplenews/export', $options);
+}
+
+/**
+ * Helper function to get comma separated list of emails to be exported.
+ *
+ * @param $states
+ *   Array of subscriber states to filter on.
+ * @param $subscribed
+ *   Array of subscription states to filter on.
+ * @param $lists
+ *   Array of taxonomy ids to fitler on.
+ * @return string
+ *   Comma separated list of email adresses.
+ */
+function _simplenews_subscription_list_export_get_emails($states, $subscribed, $lists) {
+
+  // Build conditions for active state, subscribed state and newsletter selection.
+  if (isset($states['active'])) {
+    $condition_active[] = 1;
+  }
+  if (isset($states['inactive'])) {
+    $condition_active[] = 0;
+  }
+  if (isset($subscribed['subscribed'])) {
+    $condition_subscribed[] = 1;
+  }
+  if (isset($subscribed['unsubscribed'])) {
+    $condition_subscribed[] = 0;
+  }
+  $tids = $lists;
+
+  // Get emails from the database.
+  $query = db_select('simplenews_subscriber', 'ss');
+  $query->innerJoin('simplenews_subscription', 'si', 'si.snid = ss.snid');
+  $query->fields('ss', array('mail'))
+    ->condition('ss.activated', $condition_active)
+    ->condition('si.status', $condition_subscribed)
+    ->condition('si.tid', $tids)
+    ->distinct();
+  $mails = $query->execute()->fetchCol(0);
+
+  // Return comma separated array of emails or empty text.
+  if ($mails) {
+    return implode(", ", $mails);
+  }
+  return t('No addresses were found.');
 }
 
 /**
@@ -995,6 +1034,9 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $invalid = implode(", ", $invalid);
     drupal_set_message(t('The following addresses were invalid: %invalid.', array('%invalid' => $invalid)), 'error');
   }
+
+  // Return to the parent page.
+  $form_state['redirect'] = 'admin/people/simplenews';
 }
 
 /**
