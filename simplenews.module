@@ -196,10 +196,6 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/people/simplenews/list'] = array(
-    'title' => 'List',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
   $items['admin/people/simplenews/users/edit/%'] = array(
     'title' => 'Subscriptions',
     'type' => MENU_CALLBACK,
@@ -210,7 +206,7 @@ function simplenews_menu() {
   );
   $items['admin/people/simplenews/import'] = array(
     'title' => 'Mass subscribe',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_LOCAL_ACTION,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_add'),
     'access arguments' => array('administer simplenews subscriptions'),
@@ -219,7 +215,7 @@ function simplenews_menu() {
   );
   $items['admin/people/simplenews/unsubscribe'] = array(
     'title' => 'Mass unsubscribe',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_LOCAL_ACTION,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_remove'),
     'access arguments' => array('administer simplenews subscriptions'),
@@ -228,7 +224,7 @@ function simplenews_menu() {
   );
   $items['admin/people/simplenews/export'] = array(
     'title' => 'Export',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_LOCAL_ACTION,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscription_list_export'),
     'access arguments' => array('administer simplenews subscriptions'),

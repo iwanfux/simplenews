@@ -326,17 +326,9 @@ function simplenews_schema() {
 function simplenews_install() {
   _simplenews_init_simplenews_vocabulary();
   _simplenews_init_simplenews_category();
+
   // add nodetype with newsletter vocabulary
   _simplenews_install_nodetype();
-  
-  if (module_exists('help')) {
-    drupal_set_message(t('Simplenews installation instructions are available on the <a href="!simplenews_help">Simplenews help page</a>.', array('!simplenews_help' => url('admin/help/simplenews'))));
-  }
-  else {
-    drupal_set_message(t('Simplenews was successfully installed.'));
-  }
-  // TODO is it still possible/useful to detect faulty installation
-  // drupal_set_message(t('The installation of Simplenews was not successful.'), 'error');
 }
 
 /**

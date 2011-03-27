@@ -5,6 +5,7 @@ core = 7.x
 configure = admin/config/simplenews
 dependencies[] = taxonomy
 
+configure = admin/config/simplenews
 
 files[] = includes/views/handlers/simplenews_handler_field_newsletter_status.inc
 files[] = includes/views/handlers/simplenews_handler_field_newsletter_priority.inc
