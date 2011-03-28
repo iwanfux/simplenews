@@ -1710,7 +1710,7 @@ function _simplenews_subscription_manager_form($subscription) {
 
   // Get newsletters for subscription form checkboxes.
   // Newsletters with opt-in/out method 'hidden' will not be listed.
-  foreach (simplenews_get_mailing_lists() as $newsletter) {
+  foreach (simplenews_get_mailing_lists(user_access('administer simplenews subscriptions')) as $newsletter) {
     $form['subscriptions']['newsletter-' . $newsletter->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($newsletter->name),
@@ -2265,7 +2265,7 @@ function simplenews_categories_load_multiple($tids = array(), $conditions = arra
       foreach ($conditions as $key => $condition) {
         if ($key == 'show_all') {
           if (!$condition) {
-            $query->condition('new_account', SIMPLENEWS_OPT_INOUT_HIDDEN, '<>');
+            $query->condition('opt_inout', SIMPLENEWS_OPT_INOUT_HIDDEN, '<>');
           }
         }
         else {
