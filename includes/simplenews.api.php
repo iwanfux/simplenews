@@ -89,6 +89,6 @@ function hook_simplenews_subscriber_insert($subscriber) {
 /**
  * TODO
  */
-function hook_simplenews_subscriber_delete($category) {
+function hook_simplenews_subscriber_delete($subscriber) {
   
 }
