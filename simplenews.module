@@ -3184,7 +3184,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
   else {
     // Show newsletter sending options if newsletter has not been send yet.
     // If send a notification is shown.
-    if ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_NOT) {
+    if ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_NOT) {
 
       // TODO move add_js to form theme function. It is not (re)loaded on validation error.
       // Add dynamic text for send button.
