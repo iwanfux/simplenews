@@ -3312,3 +3312,19 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
     simplenews_send_test($node, $form_state['test_addresses']);
   }
 }
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function simplenews_field_extra_fields() {
+  $return['user']['user'] = array(
+    'display' => array(
+      'simplenews' => array(
+        'label' => 'Newsletters',
+        'description' => t('Newsletter subscriptions of the user'),
+        'weight' => 5,
+      ),
+    ),
+  );
+  return $return;
+}
