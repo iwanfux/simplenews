@@ -1073,7 +1073,6 @@ function simplenews_subscription_list_form() {
   foreach (module_invoke_all('simplenews_subscription_operations') as $operation => $array) {
     $options[$operation] = $array['label'];
   }
-  $options = array('activate' => t('Activate'), 'inactivate' => t('Inactivate'), 'delete' => t('Delete'));
   $form['options']['operation'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -1149,7 +1148,7 @@ function simplenews_simplenews_subscription_operations() {
     ),
     'delete' => array(
       'label' => t('Delete'),
-      'callback' => NULL,
+      'callback' => 'simplenews_subscription_delete_multiple',
     ),
   );
   return $operations;
@@ -1204,6 +1203,23 @@ function simplenews_subscription_activate($snids, $status) {
     simplenews_subscriber_save($subscriber);
   }
 }
+
+/**
+ * Callback function to delete subscriptions.
+ *
+ * @param $snids
+ *   Array of snid's to be deleted.
+ */
+function simplenews_subscription_delete_multiple($snids = array()) {
+  foreach ($snids as $snid) {
+    // Delete Subscription
+    simplenews_subscription_delete(array('snid' => $snid));
+    // Delete subscriber
+    $subscriber = simplenews_subscriber_load($snid);
+    simplenews_subscriber_delete($subscriber);
+  }
+}
+
 
 /**
  * Menu callback: Simplenews admin settings - General.
