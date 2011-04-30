@@ -3328,3 +3328,26 @@ function simplenews_field_extra_fields() {
   );
   return $return;
 }
+
+
+/**
+ * Implementation of hook_node_access().
+ * Don't allow deletion when a newsletter is pending
+ */
+function simplenews_node_access($node, $op, $account) {
+  if ($op == 'delete') {
+    // Check if a newsletter is pending
+    $query = db_select('simplenews_newsletter', 'n');
+    $query->fields('n', array('status'));
+    $query->condition('n.nid', $node->nid);
+    $result = $query->execute();
+    if ($result->rowCount()) {
+      $status = $result->fetch();
+      if ($status->status == SIMPLENEWS_STATUS_SEND_PENDING) {
+        drupal_set_message(t('You can\'t delete this newsletter because it has not been sent to all its subscribers.'), 'warning');
+        return NODE_ACCESS_DENY;
+      }
+    }
+  }
+  return NODE_ACCESS_IGNORE;
+}
