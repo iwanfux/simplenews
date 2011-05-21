@@ -846,7 +846,7 @@ function simplenews_simplenews_category_delete($category) {
  * Implementation of hook_form_FORM_ID_alter().
  *
  * Add simplenews subscription fields to user register form.
- * @todo: mode this function to another place in the module.
+ * @todo mode this function to another place in the module.
  */
 function simplenews_form_user_register_form_alter(&$form, &$form_state) {
   $options = $default_value = $hidden = array();
@@ -1360,15 +1360,18 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
  *   FALSE = The user is unsubscribed
  *   TRUE  = User receives an email to verify the address and complete the subscription cancellation
  *
- * @param string $mail The email address to unsubscribe from the mailing list.
- * @param integer $tid The term ID of the list.
- * @param boolean $confirm TRUE = send confirmation mail; FALSE = unsubscribe immediate from the list
+ * @param string $mail
+ *   The email address to unsubscribe from the mailing list.
+ * @param integer $tid
+ *   The term ID of the list.
+ * @param boolean $confirm
+ *   If TRUE, send a confirmation mail; if FALSE, unsubscribe immediately.
  * @param string $source
- *   Indication of the unsubscribe source. Simplenews uses these sources:
- *    website: via any website form (with or without confirmation email)
- *    mass subscribe: mass admin UI
- *    mass unsubscribe: mass admin UI
- *    action: Drupal actions
+ *   Indicates the unsubscribe source. Simplenews uses these sources:
+ *   - website: Via any website form (with or without confirmation email).
+ *   - mass subscribe: Mass admin UI.
+ *   - mass unsubscribe: Mass admin UI.
+ *   - action: Drupal actions.
  */
 function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'unknown') {
   $account = (object) array(
@@ -1415,13 +1418,16 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
 /**
  * Check if the email address is subscribed to the given mailing list.
  *
- * @param string $mail email address
- * @param integer $tid mailing list id
+ * @param string $mail
+ *   The email address to be checkd.
+ * @param integer $tid
+ *   The mailing list id.
  *
- * @return boolean TRUE = email address is subscribed to given mailing list id
+ * @return boolean
+ *   TRUE if the email address is subscribed; otherwise false.
  *
- * @todo only return active subscriptions.
- * @todo This function can do without caching. simplenews_get_subscription() should cache.
+ * @todo Only return active subscriptions.
+ * @todo Caching should be done in simplenews_get_subscription().
  */
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   static $subscribed = array();
@@ -1471,36 +1477,38 @@ function simplenews_subscriber_defaults($account = NULL) {
  * If the account is not subscribed a default subscription object is returned
  * containing all available account info.
  *
- * @param object $account account details. Containing one or none of these items:
- *  object(
- *    snid :  subscription id
- *    mail :  email address
- *    uid  :  user id
- *  )
+ * @param object $account
+ *   The account details, which may contain the following properties:
+ *   - snid: The subscription id.
+ *   - mail: The email address.
+ *   - uid: The user uid.
  *
- * @return subscription object
- *   object(
- *     snid :  subscription id. 0 if account is not subscribed
- *     tids :  array of tid's of active subscriptions
- *     newsletter_subscriptions : array of newsletter subscription objects
- *     uid  :  user id. 0 if account is anonymous user
- *     mail :  user email address. empty if email is unknown
- *     name :  always empty. Added for compatibility with user account object
- *     language : language object. User preferred or default language
- *   )
+ * @return object
+ *   The subscription object, which contains the following properties:
+ *   - snid: The subscription id, or 0 if the account is not subscribed.
+ *   - tids: The array of tid's of active subscriptions for the account.
+ *   - newsletter_subscriptions: The array of newsletter subscription objects.
+ *   - uid: The user id, or 0 if the subscription is not associated with a user.
+ *   - mail: The user email address, or empty if unknown.
+ *   - name: An empty string added for compatibility with user account object.
+ *   - language: The user-prefered or default language object.
  *
- * @todo Consider changing the subscription object:
- *   subscribed : array of subscription objects of newsletters the user is subscribed to
- *   unsubscribed : array of subscription objects of newsletters the user is unsubscribed from
- *   Both arrays have newsletter ID (tid) as key.
- *   Drop 'tids' and 'newsletter_subscriptions'
- * @todo Cache the $subscription
+ * @todo Consider adding the following properties to the return object:
+ * - subscribed: An array of subscription objects of newsletters to which the
+ *   user is subscribed.
+ * - unsubscribed: An array of subscription objects of newsletters to which the
+ *   user is not subscribed.
+ * Both arrays should have newsletter ID (tid) as the key.  Then the 'tids' and
+ * 'newsletter_subscriptions' properties could be dropped.
+ * @todo Cache the $subscription object.
  * @todo Combine the two queries into one.
- * @todo Load subscription object into tids[].
+ * @todo Load the subscription object into the 'tids' array.
  */
 function simplenews_get_subscription($account) {
-  // Load subscription data based on available account information
-  // NOTE that the order of checking for snid, mail and uid is critical. mail must be checked *before* uid. See simplenews_subscribe_user()
+  // Load subscription data based on available account information.
+  // NOTE that the order of checking for 'snid', 'mail' and 'uid' is critical.
+  // The 'mail' property must be checked *before* 'uid'. See
+  // simplenews_subscribe_user()
   $query = db_select('simplenews_subscriber', 's');
   $query->leftJoin('users', 'u', 'u.uid = s.uid');
   $query->fields('s')
@@ -1537,7 +1545,8 @@ function simplenews_get_subscription($account) {
     $subscription->language = user_preferred_language($subscription)->language;
   }
   else {
-    // Account is unknown in subscription table. Create default subscription object
+    // The account was not found in the subscription table.
+    // Create and return a default subscription object.
     return simplenews_subscriber_defaults($account);
   }
 
@@ -1599,7 +1608,7 @@ function simplenews_subscription_save($subscription) {
  * Delete subscriptions.
  *
  * @param $conditions
- *   Associative array of conditions matching the records to be delete.
+ *   An associative array of conditions matching the records to be delete.
  *   Example: array('tid' => 5, 'snid' => 12)
  *   Delete the subscription of subscriber 12 to newsletter tid 5.
  */
@@ -1706,7 +1715,8 @@ function simplenews_subscriber_delete($subscriber) {
 /**
  * Build subscription manager form.
  *
- * @param object $subscription subscription object
+ * @param object $subscription
+ *   The subscription object.
  */
 function _simplenews_subscription_manager_form($subscription) {
   $form = array();
@@ -1772,11 +1782,12 @@ function _simplenews_subscription_manager_form($subscription) {
  * Create a list of recent newsletters.
  *
  * @param integer $tid
- *   Newsletter category id
+ *   The newsletter category id.
  * @param integer $count
- *   Number of newsletters
+ *   The number of newsletters.
  *
- * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
+ * @todo Replace 'class' string by array.
+ * @see http://drupal.org/node/224333#class_attribute_array
  * @todo Replace this list by a View.
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
@@ -1806,8 +1817,8 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *
  * @see simplenews_block_form_validate()
  * @see simplenews_block_form_submit()
- *
- * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
+ * @todo Add $form to drupal_get_form() callback functions.
+ * @see http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_block_form($form, &$form_state, $tid) {
   global $user;
@@ -1917,21 +1928,33 @@ function simplenews_block_form_submit($form, &$form_state) {
  * Send simplenews mails using drupal mail API
  * @see drupal_mail()
  *
- * @param $key: node | test | subscribe | unsubscribe
- * @param array $message message array
- *          [from]
- *          [headers][From]
- *          [language]            : preferred message language
- * @param array $params parameter array
- *          [context][node]       : node object of message to be sent
- *          [context][snid]       : used for $key = subscribe or unsubscribe
- *          [context][from_name]  : name of mail sender or site name (optional)
- *          [context][account]    : account details of recipient
- *          [from]                : array('address' => 'noreply@example.org', 'formatted' =>  'site name <noreply@example.org>')
- *          [newsletter]          : newsletter object (tid, name)
- *          [tokens]              : tokens for variable replacement. Defaults to: user_mail_tokens()
- *
- * @todo Replace drupal_clone: http://drupal.org/node/224333#drupal_clone
+ * @param string $key
+ *   Must be one of:
+ *   - node
+ *   - test
+ *   - subscribe
+ *   - unsubscribe
+ * @param array $message
+ *   The message array, containing at least the following keys:
+ *   - from
+ *   - headers: An array containing at least a 'From' key.
+ *   - language: The preferred message language.
+ * @param array $params
+ *   The parameter array, containing the following keys:
+ *   - context: An array containing the following keys:
+ *     - node: The node object of the message to be sent.
+ *     - snid: Used when $key is 'subscribe' or 'unsubscribe'.
+ *     - from_name: (optional) The mail sender or site name.
+ *     - account: The recipient account details.
+ *   - from: An array containing the following keys:
+ *     - address: The sender email address, e.g., 'noreply@example.com'.
+ *     - formatted: The formatted email address, e.g.,
+ *       '"site name" <noreply@example.com>'.
+ *   - newsletter: The newsletter object, containing the following properties:
+ *     - tid
+ *     - name
+ *   - tokens: (optional) An array of tokens for variable replacement. Defaults
+ *     to user_mail_tokens().
  */
 function simplenews_mail($key, &$message, $params) {
   $params['key'] = $key;
@@ -2048,7 +2071,7 @@ function simplenews_build_node_mail(&$message, $params) {
     // Set the active language to the node's language.
     // This needs to be done as otherwise the language used to send the mail
     // is the language of the user logged in.
-    // @todo rewrite this code to drupal 7
+    // @todo Rewrite this code for drupal 7.
 //    if (module_exists('i18n')) {
 //         i18n_selection_mode('node', $node->language);
 //    }
@@ -2089,7 +2112,7 @@ function simplenews_build_node_mail(&$message, $params) {
     }
 
     // Reset the language to the original settings.
-    // @todo rewrite this code to drupal 7
+    // @todo Rewrite this code for drupal 7.
 //    if (module_exists('i18n')) {
 //      i18n_selection_mode('reset');
 //    }
@@ -2452,9 +2475,9 @@ function simplenews_newsletter_delete($newsletter) {
  * @return string
  *   Formatted Token information
  *
- * @todo Add Token types description
- * @todo Use Theme function
- * @todo Is this available in Core??
+ * @todo Add Token types description.
+ * @todo Use Theme function.
+ * @todo Is this available in Core?
  */
 function _simplenews_get_token_info($modules) {
   $tokens = array();
@@ -2745,14 +2768,16 @@ function simplenews_help($path, $arg) {
 /**
  * Helper function to translate a newsletter name if required.
  *
- * @param <object> $newsletter
- *   Newsletter category object. Typically from simplenews_category_load().
- *    $newsletter -> tid    newsletter category id
- *    $newsletter -> name   newsletter name
- * @param <string> $langcode
- *   Optional language code (defaults to current global $language);
+ * @param object $newsletter
+ *   Newsletter category object, typically from simplenews_category_load().
+ *   Contains at least the following properties:
+ *   - tid: The newsletter category id.
+ *   - name: The newsletter name.
+ * @param string $langcode
+ *   (optional) The language code.  Defaults to $GLOBALS['language'].
  *
- * @return <string> translated newsletter name.
+ * @return string
+ *   The translated newsletter name.
  */
 function _simplenews_tt_newsletter_name($newsletter, $langcode = NULL) {
   // @todo Translate newsletter name

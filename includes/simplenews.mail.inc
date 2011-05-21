@@ -10,17 +10,19 @@
  /**
  * Send newsletter node to subscribers.
  *
- * @param integer or object $node Newsletter node to be sent. integer = nid; object = node object
- * @param array $accounts  account objects to send the newsletter to.
- *   account = object (
- *     snid     = subscription id. 0 if no subscription record exists
- *     tid     = newsletter category ID
- *     uid      = user id. 0 if subscriber is anonymous user.
- *     mail     = user email address.
- *     name     = <empty>. Added for compatibility with user account object
- *     language = language object. User preferred of default language
- *   )
- *   NOTE: either snid, mail or uid is required.
+ * @param mixed $node
+ *   The newsletter node to be sent.  If an integer, the node nid; if an object,
+ *   the node object.
+ * @param array $accounts
+ *   An array of recipient accounts for this newsletter.  Each account may
+ *   have the following properties, but either snid, mail, or uid must be
+ *   defined:
+ *   - snid: The subscription id, or 0 if no subscription record exists.
+ *   - tid: The newsletter category id.
+ *   - uid: The subscriber's uid, or 0 if the subscriber has no user account.
+ *   - mail: The subscriber's email address.
+ *   - name: Emtpy; added for compatibility with user account object.
+ *   - language: The language object of the subscriber's preferred language.
  */
 function simplenews_send_node($node, $accounts = array()) {
   if (is_numeric($node)) {
@@ -97,7 +99,9 @@ function simplenews_send_node($node, $accounts = array()) {
 /**
  * Send test version of newsletter.
  *
- * @param integer or object $node Newsletter node to be sent. Integer = nid; Object = node object
+ * @param mixed $node
+ *   The newsletter node to be sent. If an integer, the node nid; if an object,
+ *   the node object.
  */
 function simplenews_send_test($node, $test_addresses) {
   if (is_numeric($node)) {
@@ -159,14 +163,17 @@ function simplenews_send_test($node, $test_addresses) {
  * Send a node to an email address.
  *
  * @param object $msgbase
- *   Mail message object as returned by simplenews_load_spool():
- *     $msgbase->nid
- *     $msgbase->vid
- *     $msgbase->tid
- *     $msgbase->data
- * @param $key email key [node|test]
+ *   The mail message object as returned by simplenews_load_spool(), containing
+ *   the following properties:
+ *   - nid
+ *   - vid
+ *   - tid
+ *   - data
+ * @param $key
+ *   The email key, either 'node' or 'test'.
  *
- * @return TRUE if email is successfully delivered by php mail()
+ * @return boolean
+ *   TRUE if the email was successfully delivered; otherwise FALSE.
  */
 function simplenews_mail_mail($msgbase, $key = 'node') {
   static $cache;
@@ -337,16 +344,14 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
  * Save mail message in mail cache table.
  *
  * @param array $spool
- *   Data array to be stored in the spool table.
- *  $spool['mail']
- *  $spool['nid']
- *  $spool['vid']
- *  $spool['tid']
- *  $spool['status']  (Default: 1 = pending)
- *  $spool['time']    (default: current unix timestamp)
-
- * @param array $spool Mail message array
- * @todo Replace time(): http://drupal.org/node/224333#time
+ *   The message to be stored in the spool table, as an array containing the
+ *   following keys:
+ *   - mail
+ *   - nid
+ *   - vid
+ *   - tid
+ *   - status: (optional) Defaults to SIMPLENEWS_SPOOL_PENDING
+ *   - time: (optional) Defaults to REQUEST_TIME.
  */
 function simplenews_save_spool($spool) {
   $status = isset($spool['status']) ? $spool['status'] : SIMPLENEWS_SPOOL_PENDING;
@@ -366,6 +371,13 @@ function simplenews_save_spool($spool) {
     ->execute();
 }
 
+/*
+ * Returns the expiration time for IN_PROGRESS status.
+ *
+ * @return int
+ *   A unix timestamp. Any IN_PROGRESS messages with a timestamp older than
+ *   this will be re-allocated and re-sent.
+ */
 function simplenews_get_expiration_time() {
   $timeout = variable_get('simplenews_spool_progress_expiration', 3600);
   $expiration_time = REQUEST_TIME - $timeout;
@@ -373,21 +385,24 @@ function simplenews_get_expiration_time() {
 }
 
 /**
- * Retrieve data from mail spool
+ * This function allocates messages to be sent in current run.
  *
- * @param string  $status Status of data to be retrieved (0 = hold, 1 = pending, 2 = send)
- * @param integer $nid node id
- * @param integer $vid node version id
- * @param integer $limit The maximum number of mails to load from the spool
+ * Drupal acquire_lock guarantees that no concurrency issue happened.
+ * If the message status is SIMPLENEWS_SPOOL_IN_PROGRESS but the maximum send
+ * time has expired, the message id will be returned as a message which is not
+ * allocated to another process.
  *
- * @return array Spool data
- *  $spool['msid']
- *  $spool['mail']
- *  $spool['nid']
- *  $spool['tid']
- *  $spool['status']
- *  $spool['time']
- * @todo Convert output to array of objects.
+ * @param string  $status
+ *   The status of data to be retrieved.  Must be one of:
+ *   - 0: hold
+ *   - 1: pending
+ *   - 2: send
+ *   - 3: in progress
+ * @param integer $limit
+ *   The maximum number of mails to load from the spool.
+ *
+ * @return array
+ *   An array of message ids to be sent in the current run.
  */
 function simplenews_get_spool($status, $limit = NULL) {
   $messages = array();
@@ -395,7 +410,7 @@ function simplenews_get_spool($status, $limit = NULL) {
   $params = array();
 
   if (!is_array($status)) {
-   $status = array($status);
+    $status = array($status);
   }
 
   foreach ($status as $s) {
@@ -461,9 +476,13 @@ function simplenews_get_spool($status, $limit = NULL) {
  * @param array $msids
  *   Array of Mail spool ids to be updated
  * @param array $data
- *   Array containing email sent results
- *    'status' => (0 = hold, 1 = pending, 2 = send)
- *    'error' => error id (optional; defaults to '')
+ *   Array containing email sent results, with the following keys:
+ *   - status: An integer indicating the updated status. Must be one of:
+ *     - 0: hold
+ *     - 1: pending
+ *     - 2: send
+ *     - 3: in progress
+ *   - error: (optional) The error id.  Defaults to 0 (no error).
  */
 function simplenews_update_spool($msids, $data) {
   db_update('simplenews_mail_spool')
@@ -479,11 +498,15 @@ function simplenews_update_spool($msids, $data) {
 /**
  * Count data in mail spool table.
  *
- * @param integer $nid newsletter node id
- * @param integer $vid newsletter revision id
- * @param string $status email sent status
+ * @param integer $nid
+ *   Newsletter node id.
+ * @param integer $vid
+ *   Newsletter revision id.
+ * @param array $status
+ *   Array of status flags.
  *
- * @return array Mail message array
+ * @return integer
+ *   Count of mail spool elements which own the attributes passed in as params.
  */
 function simplenews_count_spool($nid, $vid, $status = array(SIMPLENEWS_SPOOL_PENDING, SIMPLENEWS_SPOOL_IN_PROGRESS)) {
   $clauses = array();
@@ -498,8 +521,8 @@ function simplenews_count_spool($nid, $vid, $status = array(SIMPLENEWS_SPOOL_PEN
   }
 
   $query = db_select('simplenews_mail_spool')
-   ->condition('nid', $nid)
-   ->condition('vid', $vid)
+    ->condition('nid', $nid)
+    ->condition('vid', $vid)
     ->where(implode(' OR ', $clauses));
   return $query->countQuery()->execute()->fetchField();
 }
@@ -678,11 +701,13 @@ function _simplenews_set_from($category = NULL) {
  *
  * Converts some special HTML characters in addition to drupal_html_to_text()
  *
- * @param string $text Source text with HTML and special characters
+ * @param string $text
+ *   The source text with HTML and special characters.
  * @param boolean $inline_hyperlinks
  *   TRUE: URLs will be placed inline.
  *   FALSE: URLs will be converted to numbered reference list.
- * @return string Target text with HTML and special characters replaced
+ * @return string
+ *   The target text with HTML and special characters replaced.
  */
 function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   // By replacing <a> tag by only its URL the URLs will be placed inline
@@ -765,8 +790,11 @@ function _simplenews_html_replace() {
 /**
  * Helper function to measure PHP execution time in microseconds.
  *
- * @param bool $start TRUE reset the time and start counting.
- * @return float: elapsed PHP execution time since start.
+ * @param bool $start
+ *   If TRUE, reset the time and start counting.
+ *
+ * @return float
+ *   The elapsed PHP execution time since the last start.
  */
 function _simplenews_measure_usec($start = FALSE) {
   // Windows systems don't implement getrusage(). There is no alternative.
