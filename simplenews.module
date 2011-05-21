@@ -3351,3 +3351,23 @@ function simplenews_node_access($node, $op, $account) {
   }
   return NODE_ACCESS_IGNORE;
 }
+
+/**
+ * Implements hook_cronapi().
+ *
+ * As initiated by elysia_cron.
+ * http://drupal.org/project/elysia_cron
+ **/
+function simplenews_cronapi($op) {
+
+  switch ($op) {
+    case 'list':
+      return array(
+        'simplenews_cron' => t('Process simplenews mail spool'),
+      );
+    case 'rule':
+      return '5 * * * *';
+    case 'execute':
+      break;
+  }
+}
