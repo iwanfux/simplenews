@@ -742,12 +742,12 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#rows' => 5,
     '#description' => t('Email addresses must be separated by comma, space or newline.'),
   );
- 
+
   $form['lists'] = array(
     '#type' => 'fieldset',
     '#description' => t('Subscribe to'),
    );
-   
+
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
     $form['lists'][$list->tid] = array(
       '#type' => 'checkbox',
@@ -980,7 +980,7 @@ function simplenews_subscription_list_remove($form, &$form_state) {
     '#type' => 'fieldset',
     '#description' => t('Unsubscribe from'),
   );
-  
+
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
     $form['lists'][$list->tid] = array(
       '#type' => 'checkbox',
@@ -989,7 +989,7 @@ function simplenews_subscription_list_remove($form, &$form_state) {
       '#default_value' => FALSE,
     );
   }
-  
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Unsubscribe'),

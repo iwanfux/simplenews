@@ -57,7 +57,7 @@ function simplenews_send_node($node, $accounts = array()) {
       }
       $recipients = $temp_recipients;
     }
-    
+
     // To send the newsletter, the node id and target email addresses
     // are stored in the spool.
     // Only subscribed recipients are stored in the spool (status = 1).
@@ -174,7 +174,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
   $nid = $msgbase->nid;
   $vid = $msgbase->vid;
   $tid = $msgbase->tid;
-  
+
   $subscriber = $msgbase->data;
   if (!$subscriber) {
     $subscriber = simplenews_get_subscription((object)array('mail' => $msgbase->mail));
@@ -484,7 +484,7 @@ function simplenews_send_status_update() {
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  $query = db_select('simplenews_newsletter', 's'); 
+  $query = db_select('simplenews_newsletter', 's');
   $query->innerJoin('node', 'n', 's.nid = n.nid AND s.vid = n.vid');
   $query->fields('s', array('nid', 'vid', 'tid'))
     ->fields('n', array('tnid'))
@@ -717,7 +717,7 @@ function _simplenews_measure_usec($start = FALSE) {
 
   static $start_time;
   $usage = getrusage();
-  $now = (float)($usage['ru_stime.tv_sec'] . '.' . $usage['ru_stime.tv_usec']) + (float)($usage['ru_utime.tv_sec'] . '.' . $usage['ru_utime.tv_usec']); 
+  $now = (float)($usage['ru_stime.tv_sec'] . '.' . $usage['ru_stime.tv_usec']) + (float)($usage['ru_utime.tv_sec'] . '.' . $usage['ru_utime.tv_usec']);
 
   if ($start) {
     $start_time = $now;

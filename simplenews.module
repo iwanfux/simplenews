@@ -300,7 +300,7 @@ function simplenews_menu() {
     'access arguments' => array('subscribe to newsletters'),
     'file' => 'includes/simplenews.subscription.inc',
   );
-  
+
   $items['node/%node/simplenews'] = array(
     'title' => 'Newsletter',
     'type' => MENU_LOCAL_TASK,
@@ -428,7 +428,7 @@ function simplenews_node_presave($node) {
   if (!simplenews_check_node_types($node->type)) {
     return;
   }
-  
+
   // Note that $node is NO full node object, see node_form_validate().
   // Complete $node!
   $newsletter = simplenews_newsletter_load($node->nid);
@@ -471,14 +471,14 @@ function simplenews_newsletter_defaults($node = NULL) {
     'status' => SIMPLENEWS_STATUS_SEND_NOT,
     'sent_subscriber_count' => 0,
   );
-  
+
   if ($node) {
     $newsletter['nid'] = $node->nid;
     $newsletter['vid'] = $node->vid;
     $terms = simplenews_get_term_values($node);
     $newsletter['tid'] = $terms[0]['tid'];
   }
-  
+
   return $newsletter;
 }
 
@@ -496,7 +496,7 @@ function simplenews_node_update($node) {
   if (!$newsletter) {
     $newsletter = (object)simplenews_newsletter_defaults($node);
   }
-  
+
   simplenews_newsletter_save($newsletter);
 }
 
@@ -765,7 +765,7 @@ function _simplenews_node_form(&$form, $form_state) {
     '#collapsed' => TRUE,
     '#description' => t('These tokens can be used in all text fields and will be replaced on-screen and in the email. Note that receiver-* tokens are not suitable for on-screen use.'),
   );
-  
+
   $form['simplenews_token_help']['help'] = array(
     '#markup' => _simplenews_get_token_info(array('simplenews-newsletter', 'simplenews-category', 'site')),
   );
@@ -861,7 +861,7 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
       }
     }
   }
-  
+
   if (count($options)) {
     // TODO Change this text: use less words;
     $form['simplenews'] = array(
@@ -903,7 +903,7 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
     $subscriber->snid = $subscription->snid;
     simplenews_subscriber_save($subscriber);
   }
-  
+
   // Process subscription check boxes.
   if (isset($edit['newsletters'])) {
     $nl_tids = array_keys(array_filter($edit['newsletters']));
@@ -921,7 +921,7 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
     }
     unset($edit['simplenews_hidden']);
   }
-  
+
   // set inactive if not created by an administrator.
   // @todo This needs a cleaner API.
   if (!user_access('administer users')) {
@@ -1007,7 +1007,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
  */
 function simplenews_user_cancel($edit, $account, $method) {
  // Deactivate subscriber when account is disabled via cancel user.
-  
+
   if ($account) {
     $query = db_update('simplenews_subscriber')
       ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
@@ -1025,7 +1025,7 @@ function simplenews_user_delete($account) {
   // deleted from the {user} table.
   $subscribers = simplenews_subscribers_load_multiple(array(), array('mail' => $account->mail));
   $subscriber = $subscribers ? reset($subscribers) : FALSE;
-  
+
   if ($subscriber) {
     simplenews_subscription_delete(array('snid' => $subscriber->snid));
     simplenews_subscriber_delete($subscriber);
@@ -1703,7 +1703,7 @@ function _simplenews_subscription_manager_form($subscription) {
   $options = array();
   $default_value = array();
   global $language;
-  
+
   $form['subscriptions'] = array(
     '#type' => 'fieldset',
     '#description' => t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'),
@@ -2029,11 +2029,11 @@ function simplenews_build_node_mail(&$message, $params) {
     // Set the active language to the node's language.
     // This needs to be done as otherwise the language used to send the mail
     // is the language of the user logged in.
-    // TODO rewrite this code to drupal 7 
+    // TODO rewrite this code to drupal 7
 //    if (module_exists('i18n')) {
 //         i18n_selection_mode('node', $node->language);
 //    }
-    
+
     // Build message body
 // TODO move this code to a function. We need to do this twice for HTML and Plain text Alternative.
     // TODO: restore the format selection.
@@ -2057,7 +2057,7 @@ function simplenews_build_node_mail(&$message, $params) {
     //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
     if ($category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
       // Build and buffer message footer
-      $footer = theme('simplenews_newsletter_footer', 
+      $footer = theme('simplenews_newsletter_footer',
         array(
           'build' => $build,
           'category' => $category,
@@ -2068,13 +2068,13 @@ function simplenews_build_node_mail(&$message, $params) {
       );
       $messages[$nid][$langcode]['footer'] = $footer;
     }
-    
+
     // Reset the language to the original settings.
-    // TODO rewrite this code to drupal 7 
+    // TODO rewrite this code to drupal 7
 //    if (module_exists('i18n')) {
 //      i18n_selection_mode('reset');
 //    }
-    
+
     // Restore the custom theme.
     $custom_theme = $org_custom_theme;
   }
@@ -3130,7 +3130,7 @@ function _simplenews_checked($value) {
 
 /**
  * Following 5 functions are for separated newsletter tab
- * 
+ *
  */
 
 /**
@@ -3152,7 +3152,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
   // Prepare
   $node = $form_state['build_info']['args'][0];
   $simplenews_values = (object)_simplenews_get_node_form_defaults();
-  
+
   if (isset($node->simplenews) && !empty($node->simplenews)) {
     $simplenews_values = $node->simplenews;
   }
@@ -3172,7 +3172,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
     '#collapsed' => FALSE,
     '#tree' => TRUE,
   );
-  
+
   // Translations of newsletters don't have the 'send' option. Only the
   // translation source (and non translated) newsletters will get these options.
   if (module_exists('translation') && translation_supported_type($node->type)
@@ -3189,12 +3189,12 @@ function simplenews_node_tab_send_form($form, &$form_state){
       // TODO move add_js to form theme function. It is not (re)loaded on validation error.
       // Add dynamic text for send button.
       drupal_add_js(drupal_get_path('module', 'simplenews') . '/simplenews.js', 'file');
-      
+
       $options = array(
         SIMPLENEWS_COMMAND_SEND_TEST => t('Send one test newsletter to the test address'),
         SIMPLENEWS_COMMAND_SEND_NOW => t('Send newsletter'),
       );
-      
+
       $send_default = variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_TEST);
       $form['simplenews']['send'] = array(
         '#type' => 'radios',
@@ -3274,7 +3274,7 @@ function simplenews_node_tab_send_form_validate($form, &$form_state) {
 function simplenews_node_tab_send_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
-  
+
   // When this node is selected for translation
   // all translation of this node will be sent too.
   if (module_exists('translation') && translation_supported_type($node->type) && $node->tnid > 0) {
@@ -3302,7 +3302,7 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
       simplenews_newsletter_save($newsletter);
     }
   }
-  
+
   // Send newsletter to all subscribers or send test newsletter
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {

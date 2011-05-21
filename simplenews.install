@@ -754,10 +754,10 @@ function _simplenews_convert_tokens_in_variable($variables) {
   if (!is_array($variables)) {
     $variables = array($variables);
   }
-  
+
   $old = array('[site-name]', '[user-mail]', '[site-url]/user', '[site-url]', '[simplenews-subscribe-url]', '[simplenews-unsubscribe-url]', '[simplenews-newsletter-url]', '[simplenews-newsletters-name]', '[simplenews-newsletters-url]', '[simplenews-receiver-mail]');
   $new = array('[site:name]', '[user:mail]', '[site:login-url]', '[site:url]', '[simplenews-subscriber:subscribe-url]', '[simplenews-subscriber:unsubscribe-url]', '[simplenews-newsletter:url]', '[simplenews-list:name]', '[simplenews-list:url]', '[simplenews-subscriber:mail]');
-  
+
   foreach ($variables as $variable) {
     if ($text = variable_get($variable, FALSE)) {
       $text = str_replace($old, $new, $text);
@@ -782,7 +782,7 @@ function simplenews_update_7000() {
   // TODO Test schema update !!
   // See: http://api.drupal.org/api/function/db_change_field/7
   // TODO Test data update !!
-  
+
   // Convert tokens in variables to D7 format.
   $variables = array('simplenews_confirm_subscribe_subject', 'simplenews_confirm_subscribe_unsubscribed', 'simplenews_confirm_subscribe_subscribed', 'simplenews_confirm_unsubscribe_subscribed', 'simplenews_confirm_unsubscribe_unsubscribed');
   _simplenews_convert_tokens_in_variable($variables);
@@ -919,7 +919,7 @@ function simplenews_update_7000() {
   // Change field {simplenews_subscription}.tid description
   db_drop_primary_key('simplenews_snid_tid');
   db_rename_table('simplenews_snid_tid', 'simplenews_subscription');
-  
+
   // Add {simplenews_mail_spool}.data to store subscriber data.
   db_add_field('simplenews_mail_spool', 'data', array(
     'type' => 'text',
@@ -948,7 +948,7 @@ function simplenews_update_7000() {
     variable_del('simplenews_new_account_'. $term->tid);
     variable_del('simplenews_opt_inout_'. $term->tid);
   }
-  
+
   // TODO Add return text about checking of Newsletter Category settings.
   // TODO Add return text about Block checkboxes
 }
