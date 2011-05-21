@@ -82,6 +82,7 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
 
 /**
  * Implementation of hook_permission().
+ *
  * @todo Change array format and add titles where required: http://drupal.org/node/224333#descriptions_permissions
  * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
  * @todo Review the use of 'administer nodes': http://drupal.org/node/224333#bypass_node_access
@@ -89,34 +90,35 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
  */
 function simplenews_permission() {
   return array(
-    // TODO Change to administer newsletter categories. And update existing permissions in hook_update_N.
+    // @todo Change to administer newsletter categories. And update existing permissions in hook_update_N.
     'administer newsletters' => array(
       'title' => t('administer newsletters'),
-      'description' => t('TODO Add a description for administer newsletters'),
+      'description' => t('@todo Add a description for administer newsletters'),
     ),
     'administer simplenews subscriptions' => array(
       'title' => t('administer simplenews subscriptions'),
-      'description' => t('TODO Add a description for administer simplenews subscriptions'),
+      'description' => t('@todo Add a description for administer simplenews subscriptions'),
     ),
     'administer simplenews settings' => array(
       'title' => t('administer simplenews settings'),
-      'description' => t('TODO Add a description for administer simplenews settings'),
+      'description' => t('@todo Add a description for administer simplenews settings'),
     ),
     'send newsletter' => array(
       'title' => t('send newsletter'),
-      'description' => t('TODO Add a description for send newsletter'),
+      'description' => t('@todo Add a description for send newsletter'),
     ),
     'subscribe to newsletters' => array(
       'title' => t('subscribe to newsletters'),
-      'description' => t('TODO Add a description for subscribe/unsubscribe to newsletters'),
+      'description' => t('@todo Add a description for subscribe/unsubscribe to newsletters'),
     ),
   );
 }
 
 /**
  * Implementation of hook_init().
+ *
  * @todo Check parameters of drupal_add_css: http://drupal.org/node/224333#drupal_add_js_options
- * TODO move this to a specific form theme function ?
+ * @todo move this to a specific form theme function ?
  */
 function simplenews_init() {
   drupal_add_css(drupal_get_path('module', 'simplenews') . '/simplenews.css');
@@ -124,6 +126,7 @@ function simplenews_init() {
 
 /**
  * Implementation of hook_menu().
+ *
  * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  * @todo Review admin path due to D7's changed information architecture
  */
@@ -146,7 +149,7 @@ function simplenews_menu() {
     'file' => 'includes/simplenews.admin.inc',
   );
 /*
-  // TODO Don't need this?
+  // @todo Don't need this?
   $items['admin/content/simplenews/list'] = array(
     'title' => 'List newsletters',
     'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -353,6 +356,7 @@ function simplenews_node_type_update($info) {
  * Implementation of hook_node_view_alter().
  */
 /*
+// @todo check this code, port it
 function simplenews_node_view_alter($build) {
   if (!simplenews_check_node_types(array($build['#node']->type))) {
     return;
@@ -372,11 +376,11 @@ function simplenews_node_view($node, $view_mode) {
   if (strpos($view_mode, 'email_') === 0) {
 
     if (isset($build['body'])) {
-      // TODO Where to perform the token replacement?
+      // @todo Where to perform the token replacement?
       //$build['body'] = token_replace($build['body'], array('node' => $node));
     }
     if (isset($build['teaser'])) {
-      // TODO Where to perform the token replacement?
+      // @todo Where to perform the token replacement?
       //$build['teaser'] = token_replace($build['teaser'], array('node' => $node));
     }
   }
@@ -442,7 +446,7 @@ function simplenews_node_presave($node) {
 /**
  * Implementation of hook_node_insert().
  *
- * // TODO simplenews_node_insert() and simplenews_node_update() have a lot in common.
+ * // @todo simplenews_node_insert() and simplenews_node_update() have a lot in common.
  * // Solve this in a better way.
  */
 function simplenews_node_insert($node) {
@@ -485,12 +489,12 @@ function simplenews_newsletter_defaults($node = NULL) {
 /**
  * Implementation of hook_node_update().
  */
-// TODO can we combine simplenews_node_update() and simplenews_node_insert() ?
+// @todo can we combine simplenews_node_update() and simplenews_node_insert() ?
 function simplenews_node_update($node) {
   if (!simplenews_check_node_types($node->type)) {
     return;
   }
-  // TODO Check if this is an actual 'submit' action and not update as part of e.g. 'unpublish' on the node admin page
+  // @todo Check if this is an actual 'submit' action and not update as part of e.g. 'unpublish' on the node admin page
 
   $newsletter = $node->simplenews;
   if (!$newsletter) {
@@ -677,6 +681,7 @@ function simplenews_get_category_field($bundle_name) {
  * Implementation of hook_field_extra_fields().
  */
 /*
+// @todo check this code, port it
 function simplenews_field_extra_fields() {
   $extra = array();
 
@@ -863,13 +868,13 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
   }
 
   if (count($options)) {
-    // TODO Change this text: use less words;
+    // @todo Change this text: use less words;
     $form['simplenews'] = array(
       '#type' => 'fieldset',
       '#description' => t('Select the newsletter(s) to which you wish to subscribe.'),
       '#weight' => 5,
     );
-    // TODO Change 'newsletters' to 'list'.
+    // @todo Change 'newsletters' to 'list'.
     $form['simplenews']['newsletters'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
@@ -896,7 +901,7 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
   $subscription = simplenews_get_subscription($subscriber);
   // If the user is subscribed, we update the subscriber with uid and language.
   if ($subscription->snid) {
-    // TODO Write a function to save/update a subscription and use it here.
+    // @todo Write a function to save/update a subscription and use it here.
     $subscriber->uid = $edit['uid'];
     $subscriber->language = $edit['language'];
     $subscriber->activated = 1;
@@ -966,7 +971,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
         // Only process existing subscriptions.
         if ($subscription->snid) {
           // Update mail, status and language if they are changed.
-          // TODO convert this code to simplenews_subscriber_save().
+          // @todo convert this code to simplenews_subscriber_save().
           $fields = array();
           if (isset($edit['mail'])) {
             $fields['mail'] = $edit['mail'];
@@ -1041,7 +1046,7 @@ function simplenews_user_categories() {
     'title' => t('Newsletters'),
     'weight' => 10,
     'access callback' => 'user_access',
-    // TODO Need custom access control to restrict users own for only?
+    // @todo Need custom access control to restrict users own for only?
     'access arguments' => array('subscribe to newsletters'),
   );
   return $output;
@@ -1054,7 +1059,7 @@ function simplenews_user_categories() {
  */
 function simplenews_form_user_profile_form_alter(&$form, &$form_state) {
   if ($form['#user_category'] == 'simplenews') {
-    // TODO Can users access each others form?
+    // @todo Can users access each others form?
     $subscription = simplenews_get_subscription((object)$form['#user']);
     $form += _simplenews_subscription_manager_form($subscription);
     $form['subscriptions']['#title'] =  t('Newsletter subscriptions');
@@ -1085,7 +1090,7 @@ function simplenews_user_view($account, $build_mode) {
       }
     }
     if (isset($links)) {
-      // TODO replace with theme('links', $links) to form a list of newsletters?
+      // @todo replace with theme('links', $links) to form a list of newsletters?
       $links = implode(', ', $links);
     }
     else {
@@ -1113,6 +1118,7 @@ function simplenews_user_view($account, $build_mode) {
 
 /**
  * Implementation of hook_block().
+ *
  * @todo break-up by $op: http://drupal.org/node/224333#remove_op
  */
 function simplenews_block_OLD($op = 'list', $delta = 0, $edit = array()) { }
@@ -1124,10 +1130,10 @@ function simplenews_block_info() {
   $blocks = array();
   // Only list a block if the newsletter is not 'hidden' and marked to provide a block.
   foreach (simplenews_categories_load_multiple(array(), array('block' => '1', 'show_all' => FALSE)) as $category) {
-    //TODO: 1. without form -> by role; 2. with form -> user caching with refresh on subscribe/unsubscribe (option as setting) or no caching
+    //@todo 1. without form -> by role; 2. with form -> user caching with refresh on subscribe/unsubscribe (option as setting) or no caching
     $blocks[$category->tid] = array(
       'info' => t('Newsletter: @title', array('@title' => $category->name)),
-      // TODO Use block's own settings?
+      // @todo Use block's own settings?
       'cache' => variable_get('simplenews_block_f_' . $category->tid, 1) ? DRUPAL_NO_CACHE : DRUPAL_CACHE_PER_ROLE,
     );
   }
@@ -1234,6 +1240,7 @@ function simplenews_forms($form_id, $args) {
  *     mail,   email address
  *     uid,    uid or 0 for anonymous
  *   )
+ *
  * @todo Rewrite to use the new user_load(): http://drupal.org/node/224333#user_load_multiple
  */
 function _simplenews_user_load($mail) {
@@ -1328,8 +1335,8 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
   }
   elseif (!isset($subscriber->tids[$tid])) {
     // Subscribe the user if not already subscribed.
-    // TODO rewrite if subscription object is loaded in $subscriber->tids[$tid]
-    // TODO See simplenews_get_subscription()
+    // @todo rewrite if subscription object is loaded in $subscriber->tids[$tid]
+    // @todo See simplenews_get_subscription()
     $subscription = new stdClass();
     $subscription->snid = $subscriber->snid;
     $subscription->tid = $tid;
@@ -1386,8 +1393,8 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
   }
   elseif (isset($subscriber->tids[$tid])) {
     // Unsubscribe the user from the mailing list.
-    // TODO rewrite if subscription object is loaded in $subscriber->tids[$tid]
-    // TODO See simplenews_get_subscription()
+    // @todo rewrite if subscription object is loaded in $subscriber->tids[$tid]
+    // @todo See simplenews_get_subscription()
     $subscription = new stdClass();
     $subscription->snid = $subscriber->snid;
     $subscription->tid = $tid;
@@ -1411,9 +1418,10 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
  * @param integer $tid mailing list id
  *
  * @return boolean TRUE = email address is subscribed to given mailing list id
+ *
+ * @todo only return active subscriptions.
+ * @todo This function can do without caching. simplenews_get_subscription() should cache.
  */
-// TODO only return active subscriptions.
-// TODO This function can do without caching. simplenews_get_subscription() should cache.
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
   static $subscribed = array();
 
@@ -1480,14 +1488,14 @@ function simplenews_subscriber_defaults($account = NULL) {
  *     language : language object. User preferred or default language
  *   )
  *
- * TODO: Consider changing the subscription object:
+ * @todo Consider changing the subscription object:
  *   subscribed : array of subscription objects of newsletters the user is subscribed to
  *   unsubscribed : array of subscription objects of newsletters the user is unsubscribed from
  *   Both arrays have newsletter ID (tid) as key.
  *   Drop 'tids' and 'newsletter_subscriptions'
- * TODO: Cache the $subscription
- * TODO: Combine the two queries into one.
- * TODO: Load subscription object into tids[].
+ * @todo Cache the $subscription
+ * @todo Combine the two queries into one.
+ * @todo Load subscription object into tids[].
  */
 function simplenews_get_subscription($account) {
   // Load subscription data based on available account information
@@ -1536,7 +1544,7 @@ function simplenews_get_subscription($account) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_get_subscriptions_by_list($tid) {
   $subscriptions = array();
@@ -1557,8 +1565,9 @@ function simplenews_get_subscriptions_by_list($tid) {
  *   Array of selection conditions. e.g. array('tid' => 5, 'snid' => 12).
  * @param $data
  *   Associative array of database fields to be updated.
+ *
+ * @todo Replace with simplenews_subscription_save() ?
  */
-//TODO Replace with simplenews_subscription_save() ?
 function simplenews_subscription_update($conditions = array(), $data) {
   $query = db_update('simplenews_subscription');
   foreach ($conditions as $key => $condition) {
@@ -1569,7 +1578,7 @@ function simplenews_subscription_update($conditions = array(), $data) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_subscription_save($subscription) {
   db_merge('simplenews_subscription')
@@ -1616,13 +1625,13 @@ function simplenews_subscriber_load($snid, $reset = FALSE) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_subscribers_load_multiple($snids = array(), $conditions = array(), $reset = FALSE) {
   static $subscribers;
 
   // Only cache if we load all records from the database.
-  // TODO Caching could be improved.
+  // @todo Caching could be improved.
   if ($subscribers || $snids || $conditions || $reset) {
     $subscribers = array();
     $query = db_select('simplenews_subscriber', 'ss')
@@ -1682,7 +1691,7 @@ function simplenews_subscriber_save(&$subscriber) {
  */
 function simplenews_subscriber_delete($subscriber) {
   if (!is_object($subscriber)) {
-    // TODO: What's the purpose of this test? Eventually loading the subscriber?
+    // @todo What's the purpose of this test? Eventually loading the subscriber?
   }
 
   if ($subscriber) {
@@ -1765,8 +1774,9 @@ function _simplenews_subscription_manager_form($subscription) {
  *   Newsletter category id
  * @param integer $count
  *   Number of newsletters
+ *
  * @todo Replace 'class' string by array: http://drupal.org/node/224333#class_attribute_array
- * TODO Replace this list by a View.
+ * @todo Replace this list by a View.
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
   $titles = '';
@@ -1795,6 +1805,7 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *
  * @see simplenews_block_form_validate()
  * @see simplenews_block_form_submit()
+ *
  * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_block_form($form, &$form_state, $tid) {
@@ -1851,12 +1862,18 @@ function simplenews_block_form($form, &$form_state, $tid) {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_block_form_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['mail'])) {
     form_set_error('mail', t("The email address you supplied is not valid."));
   }
 }
 
+/**
+ * @todo
+ */
 function simplenews_block_form_submit($form, &$form_state) {
   global $user;
   $tid = $form['#tid'];
@@ -1912,6 +1929,7 @@ function simplenews_block_form_submit($form, &$form_state) {
  *          [from]                : array('address' => 'noreply@example.org', 'formatted' =>  'site name <noreply@example.org>')
  *          [newsletter]          : newsletter object (tid, name)
  *          [tokens]              : tokens for variable replacement. Defaults to: user_mail_tokens()
+ *
  * @todo Replace drupal_clone: http://drupal.org/node/224333#drupal_clone
  */
 function simplenews_mail($key, &$message, $params) {
@@ -1964,7 +1982,7 @@ function simplenews_build_node_mail(&$message, $params) {
   // When translation is used, the availability of translations is checked
   // and when available the translation of the preferred language is selected.
   $nid = $context['node']->nid;
-  // TODO Make language selection a separate function.
+  // @todo Make language selection a separate function.
   $langcode = $message['language'];
   if (module_exists('translation')) {
     // If the node has translations and a translation is required
@@ -2023,24 +2041,24 @@ function simplenews_build_node_mail(&$message, $params) {
     // Line breaks are removed from the email subject to prevent injection of
     // malicious data into the email header.
     $subject = token_replace($category->email_subject, $context, array('sanitize' => FALSE));
-    $subject = str_replace(array("\r", "\n"), '', $subject);  // TODO Check if this is done by drupal_mail()
+    $subject = str_replace(array("\r", "\n"), '', $subject);  // @todo Check if this is done by drupal_mail()
     $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
 
     // Set the active language to the node's language.
     // This needs to be done as otherwise the language used to send the mail
     // is the language of the user logged in.
-    // TODO rewrite this code to drupal 7
+    // @todo rewrite this code to drupal 7
 //    if (module_exists('i18n')) {
 //         i18n_selection_mode('node', $node->language);
 //    }
 
     // Build message body
-// TODO move this code to a function. We need to do this twice for HTML and Plain text Alternative.
-    // TODO: restore the format selection.
+// @todo move this code to a function. We need to do this twice for HTML and Plain text Alternative.
+    // @todo restore the format selection.
     //$build = node_view($node, 'email_' . $category->format);
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
     $build = node_view($node, 'email_plain');
-    // TODO Use simplenews_newsletter_body as #theme?
+    // @todo Use simplenews_newsletter_body as #theme?
     unset($build['#theme']);
     foreach (element_children($build) as $child) {
       $build[$child]['#theme'] = 'simplenews_field';
@@ -2052,7 +2070,7 @@ function simplenews_build_node_mail(&$message, $params) {
     // Buffer body text node and language specific
     $messages[$nid][$langcode]['body'] = $body;
 
-    // TODO Move hidden footer into preprocess function.
+    // @todo Move hidden footer into preprocess function.
     //      We need to replace this concept. A footer is depending on the subscription list, not anymore on the newsletter category.
     //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
     if ($category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
@@ -2070,7 +2088,7 @@ function simplenews_build_node_mail(&$message, $params) {
     }
 
     // Reset the language to the original settings.
-    // TODO rewrite this code to drupal 7
+    // @todo rewrite this code to drupal 7
 //    if (module_exists('i18n')) {
 //      i18n_selection_mode('reset');
 //    }
@@ -2224,7 +2242,7 @@ function simplenews_category_list() {
   $categories = simplenews_categories_load_multiple();
   $cats = array();
   foreach ($categories as $key => $category) {
-    // TODO translate category names.
+    // @todo translate category names.
     $cats[$key] = $category->name;
   }
   return $cats;
@@ -2246,7 +2264,7 @@ function simplenews_get_categories() {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_categories_load_multiple($tids = array(), $conditions = array(), $reset = FALSE) {
   static $categories;
@@ -2350,7 +2368,7 @@ function simplenews_get_mailing_lists($show_all = FALSE) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_newsletter_load($nid, $vid = NULL, $reset = FALSE) {
   $conditions = array();
@@ -2362,7 +2380,7 @@ function simplenews_newsletter_load($nid, $vid = NULL, $reset = FALSE) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function simplenews_newsletter_load_multiple($nids = array(), $conditions = array(), $reset = FALSE) {
   static $newsletters;
@@ -2432,9 +2450,10 @@ function simplenews_newsletter_delete($newsletter) {
  *   Array of module names
  * @return string
  *   Formatted Token information
- * TODO Add Token types description
- * TODO Use Theme function
- * TODO Is this available in Core??
+ *
+ * @todo Add Token types description
+ * @todo Use Theme function
+ * @todo Is this available in Core??
  */
 function _simplenews_get_token_info($modules) {
   $tokens = array();
@@ -2462,17 +2481,17 @@ function _simplenews_get_token_info($modules) {
 function simplenews_token_info() {
   $types['simplenews-subscriber'] = array(
     'name' => t('Simplenews subscriber'),
-    'description' => t('TODO .'),
+    'description' => t('@todo .'),
     'needs-data' => 'simplenews-subscriber',
   );
   $types['simplenews-newsletter'] = array(
     'name' => t('Simplenews newsletter'),
-    'description' => t('TODO .'),
+    'description' => t('@todo .'),
     'needs-data' => 'simplenews-newsletter',
   );
   $types['simplenews-category'] = array(
     'name' => t('Simplenews newsletter category'),
-    'description' => t('TODO .'),
+    'description' => t('@todo .'),
     'needs-data' => 'simplenews-category',
   );
 
@@ -2519,8 +2538,8 @@ function simplenews_token_info() {
 /**
  * Implementation of hook_tokens().
  *
- * TODO I'm not completely happy with the separation of 'simplenews' and 'simplenews-newsletter'. Perhaps we need more groups: subscriber, issue, ...
- * TODO Need to know more how token can be used by the admin before the thing with $data['node'] and 'newsletter-url' token can be fixed.
+ * @todo I'm not completely happy with the separation of 'simplenews' and 'simplenews-newsletter'. Perhaps we need more groups: subscriber, issue, ...
+ * @todo Need to know more how token can be used by the admin before the thing with $data['node'] and 'newsletter-url' token can be fixed.
  */
 function simplenews_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
@@ -2573,7 +2592,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       foreach ($tokens as $name => $original) {
         switch ($name) {
           case 'name':
-            // TODO translate category name
+            // @todo translate category name
             if (isset($category->name)) {
               $replacements[$original] = $sanitize ? check_plain($category->name) : $category->name;
             }
@@ -2583,7 +2602,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
             break;
 
           case 'url':
-            // TODO replace path
+            // @todo replace path
             $replacements[$original] = url('taxonomy/term/' . $category->tid);
             break;
         }
@@ -2653,8 +2672,9 @@ function simplenews_private_key() {
 
 /**
  * Implementation of hook_help().
+ *
+ * @todo Rewrite help text to match the new terminology, the new data architecture, the new admin pages, the news node-form interface.
  */
-// TODO: Rewrite help text to match the new terminology, the new data architecture, the new admin pages, the news node-form interface.
 function simplenews_help($path, $arg) {
   switch ($path) {
     case 'admin/help#simplenews':
@@ -2734,7 +2754,7 @@ function simplenews_help($path, $arg) {
  * @return <string> translated newsletter name.
  */
 function _simplenews_tt_newsletter_name($newsletter, $langcode = NULL) {
-  // TODO Translate newsletter name
+  // @todo Translate newsletter name
   return $newsletter->name;
 /*
   global $language;
@@ -2863,6 +2883,7 @@ function _simplenews_get_node_form_defaults() {
 
 /**
  * Implementation of hook_theme().
+ *
  * @todo Theme definitions must register how it integrates with drupal_render(): http://drupal.org/node/224333#hook_theme_render_changes
  */
 function simplenews_theme() {
@@ -2950,7 +2971,7 @@ function template_preprocess_simplenews_block(&$variables) {
     $variables['form'] = drupal_get_form('simplenews_block_form_' . $tid);
     $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions');
   }
-  // TODO replace path
+  // @todo replace path
   $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/' . $tid);
   $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_' . $tid, 5));
   $variables['issue_list'] = theme('item_list', array('items' => $recent, 'title' => t('Previous issues'), 'type' => 'ul'));
@@ -2968,7 +2989,7 @@ function template_preprocess_simplenews_block(&$variables) {
 }
 
 /**
- * TODO
+ * @todo
  *
  * @see template_preprocess_field()
  * @see theme_simplenews_field().
@@ -2997,11 +3018,11 @@ function template_preprocess_simplenews_field(&$variables, $hook) {
 }
 
 /**
- * TODO
+ * @todo
  *
  * @see theme_field().
  */
-// TODO: make simplenews_field.tpl.php
+// @todo make simplenews_field.tpl.php
 function theme_simplenews_field($variables) {
   $output = '';
   switch ($variables['view_mode']) {
@@ -3068,7 +3089,7 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function theme_simplenews_newsletter_body($variables) {
   $output  = '<h2>' . $variables['title'] . "</h2>\n";
@@ -3091,7 +3112,7 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
 
-  // TODO Replace 'format' by 'view_mode ?
+  // @todo Replace 'format' by 'view_mode ?
   $variables['format'] = $variables['category']->format;
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
@@ -3105,7 +3126,7 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 }
 
 /**
- * TODO
+ * @todo
  */
 function theme_simplenews_newsletter_footer($variables) {
   if ($variables['format'] == 'html') {
@@ -3148,6 +3169,9 @@ function simplenews_node_tab_access($node) {
   return simplenews_check_node_types($node->type) && user_access('send newsletter');
 }
 
+/**
+ * @todo
+ */
 function simplenews_node_tab_send_form($form, &$form_state){
   // Prepare
   $node = $form_state['build_info']['args'][0];
@@ -3164,7 +3188,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
     '#value' => $node->nid,
   );
 
-  // TODO delete this fieldset?
+  // @todo delete this fieldset?
   $form['simplenews'] = array(
     '#type' => 'fieldset',
     '#title' => t('Send newsletter'),
@@ -3178,7 +3202,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
   if (module_exists('translation') && translation_supported_type($node->type)
     && (isset($node->translate) && ($node->tnid > 0) && ($node->tnid != $node->nid))) {
     $form['simplenews']['#description'] = t('This newsletter issue is part of a translation set. Sending this set is controlled from the <a href="@link">translation source newsletter</a>.', array('@link' => url('node/' . $node->tnid)));
-    // TODO Translated nodes must also have the same Category!
+    // @todo Translated nodes must also have the same Category!
     //      Move the category in here and give the user feedback.
   }
   else {
@@ -3186,7 +3210,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
     // If send a notification is shown.
     if ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_NOT) {
 
-      // TODO move add_js to form theme function. It is not (re)loaded on validation error.
+      // @todo move add_js to form theme function. It is not (re)loaded on validation error.
       // Add dynamic text for send button.
       drupal_add_js(drupal_get_path('module', 'simplenews') . '/simplenews.js', 'file');
 
@@ -3244,6 +3268,9 @@ function simplenews_node_tab_send_form($form, &$form_state){
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_node_tab_send_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
@@ -3251,7 +3278,7 @@ function simplenews_node_tab_send_form_validate($form, &$form_state) {
   $default_address = variable_get('simplenews_test_address', variable_get('site_mail', ini_get('sendmail_from')));
   $mails = array($default_address);
   if (isset($values['simplenews']['send']) && $values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST && variable_get('simplenews_test_address_override', 0)) {
-   // TODO Can we simplify and use only two kind of messages?
+   // @todo Can we simplify and use only two kind of messages?
     if (!empty($values['simplenews']['test_address'])) {
       $mails = explode(',', $values['simplenews']['test_address']);
       foreach ($mails as $mail) {
@@ -3271,6 +3298,9 @@ function simplenews_node_tab_send_form_validate($form, &$form_state) {
   $form_state['test_addresses'] = $mails;
 }
 
+/**
+ * @todo
+ */
 function simplenews_node_tab_send_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
@@ -3332,6 +3362,7 @@ function simplenews_field_extra_fields() {
 
 /**
  * Implementation of hook_node_access().
+ *
  * Don't allow deletion when a newsletter is pending
  */
 function simplenews_node_access($node, $op, $account) {

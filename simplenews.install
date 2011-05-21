@@ -231,7 +231,7 @@ function simplenews_schema() {
       'snid' => array('simplenews_subscriber' => 'snid'),
       'tid' => array('simplenews_category' => 'tid'),
     ),
-    // TODO add foreign keys to other tables too?
+    // @todo add foreign keys to other tables too?
   );
 
   $schema['simplenews_mail_spool'] = array(
@@ -405,7 +405,7 @@ function _simplenews_init_simplenews_category() {
       if (!isset($categories[$term->tid])) {
         $category = new stdClass();
         $category->tid = $term->tid;
-        // TODO use a function for category default values
+        // @todo use a function for category default values
         $category->from_name      = variable_get('site_name', 'Drupal');
         $category->email_subject  ='[[simplenews-category:name]] [node:title]';
         $category->from_address   = variable_get('site_mail', ini_get('sendmail_from'));
@@ -779,9 +779,9 @@ function _simplenews_convert_tokens_in_variable($variables) {
  * Delete deprecated simplenews variables.
  */
 function simplenews_update_7000() {
-  // TODO Test schema update !!
+  // @todo Test schema update !!
   // See: http://api.drupal.org/api/function/db_change_field/7
-  // TODO Test data update !!
+  // @todo Test data update !!
 
   // Convert tokens in variables to D7 format.
   $variables = array('simplenews_confirm_subscribe_subject', 'simplenews_confirm_subscribe_unsubscribed', 'simplenews_confirm_subscribe_subscribed', 'simplenews_confirm_unsubscribe_subscribed', 'simplenews_confirm_unsubscribe_unsubscribed');
@@ -876,7 +876,7 @@ function simplenews_update_7000() {
 
   // Migrate Newsletter taxonomy data to Newsletter categories.
   $terms = taxonomy_get_tree(variable_get('simplenews_vid', ''));
-  // TODO Check if simplenews blocks are still active after core update.
+  // @todo Check if simplenews blocks are still active after core update.
   //      If not, there is no purpose in migrating the block status ('block' => 0).
   $blocks = _simplenews_get_blocks();
   foreach ($terms as $term) {
@@ -949,6 +949,6 @@ function simplenews_update_7000() {
     variable_del('simplenews_opt_inout_'. $term->tid);
   }
 
-  // TODO Add return text about checking of Newsletter Category settings.
-  // TODO Add return text about Block checkboxes
+  // @todo Add return text about checking of Newsletter Category settings.
+  // @todo Add return text about Block checkboxes
 }

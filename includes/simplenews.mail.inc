@@ -185,7 +185,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
   // Get node data for the mail
   // Because node_load() only caches the most recent node revision
   // we cache here based  on nid and vid.
-  // TODO Investigate if this caching thing is still applicable to D7
+  // @todo Investigate if this caching thing is still applicable to D7
   if (isset($cache[$nid . ':' . $vid])) {
     $node = $cache[$nid . ':' . $vid];
   }
@@ -216,7 +216,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
       if (module_exists('mimemail')) {
         $via_mimemail = t('Sent via Mime Mail');
       }
-      //TODO Add line break before %mimemail.
+      // @todo Add line break before %mimemail.
       if ($message['result']) {
         watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to %mimemail', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject'], '%mimemail' => $via_mimemail), WATCHDOG_DEBUG);
       }

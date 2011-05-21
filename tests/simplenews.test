@@ -115,7 +115,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     }
     if (isset($settings['issue count'])) {
       $edit['simplenews_block_i_'. $tid] = $settings['issue count'];
-    // TODO: check the count
+    // @todo check the count
     }
     if (isset($settings['rss feed'])) {
       $edit['simplenews_block_r_'. $tid] = $settings['rss feed'];

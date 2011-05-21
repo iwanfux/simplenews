@@ -6,14 +6,14 @@
  */
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_issue_operations() {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_subscription_operations() {
 
@@ -35,9 +35,10 @@ function hook_simplenews_subscription_operations() {
  *     recipient->language  Language code of preferred email language
  * @param $scid
  *   Newsletter category ID.
+ *
+ * @todo Is 'uid' also required?
+ *      recipient->uid       User ID of recipient (0 for anonymous)
  */
-// TODO Is 'uid' also required?
-//      recipient->uid       User ID of recipient (0 for anonymous)
 function hook_simplenews_recipients_alter(&$recipients, $tid) {
   $category = simplenews_category_load($tid);
   $recipients = simplenews_array_merge($recipients, simplenews_get_subscriptions_by_list($category->tid), 'simplenews_check_status');
@@ -45,49 +46,49 @@ function hook_simplenews_recipients_alter(&$recipients, $tid) {
 
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_category_insert($category) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_category_update($category) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_category_delete($category) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_mailing_list_insert($list) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_subscriber_update($subscriber) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_subscriber_insert($subscriber) {
 
 }
 
 /**
- * TODO
+ * @todo
  */
 function hook_simplenews_subscriber_delete($subscriber) {
 

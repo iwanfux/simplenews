@@ -5,6 +5,7 @@
  * Provide actions for simplenews.
  *
  * @ingroup simplenews
+ *
  * @todo Check and rework actions/trigger code for trigger API overhaul: http://drupal.org/node/224333#trigger_overhaul
  */
 
@@ -97,7 +98,7 @@ function simplenews_action_send_newsletter(&$object, $context = array()) {
  * Implementation of a configurable Drupal action. Send newsletter
  */
 function simplenews_action_send_newsletter_form($context) {
-  //TODO improve usability by adding a pre-selection of newsletters before the newsletter issue selection
+  // @todo improve usability by adding a pre-selection of newsletters before the newsletter issue selection
   //     Requires AHAH function to select newsletters issues based on selected newsletter
   //
   //  if (!isset($context['newsletter'])) {
@@ -241,8 +242,9 @@ function simplenews_action_subscribe_user_submit($form, $form_state) {
  *    $context['slid']    Mailing list id
  *    $context['name']    List name
  *
- *   @see simplenews_action_unsubscribe_user_form()
- *   @see simplenews_action_unsubscribe_user_submit()
+ * @see simplenews_action_unsubscribe_user_form()
+ * @see simplenews_action_unsubscribe_user_submit()
+ *
  * @todo Replace time(): http://drupal.org/node/224333#time
  */
 function simplenews_action_unsubscribe_user(&$object, $context = array()) {
@@ -250,7 +252,7 @@ function simplenews_action_unsubscribe_user(&$object, $context = array()) {
     if (isset($context['slid'])) {
       // This action is only called in the context of user. User data is in $context.
       $account = $context['account'];
-      //TODO: Unsubscribing should be done by simplenews_unsubscribe_user but simplenews_get_user_subscription fails because the user is already removed
+      // @todo Unsubscribing should be done by simplenews_unsubscribe_user but simplenews_get_user_subscription fails because the user is already removed
       $subscriber = reset(simplenews_subscriber_load_multiple(array(), array('mail' => $account->mail)));
       $data = array(
         'status' => SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED,

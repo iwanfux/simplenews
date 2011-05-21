@@ -16,7 +16,7 @@
  */
 function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
 /*
-  // TODO Fix the delete operation
+  // @todo Fix the delete operation
   if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
     return simplenews_issue_multiple_delete_confirm($form, $form_state);
   }
@@ -97,6 +97,9 @@ function _simplenews_issue_filter_default() {
   );
 }
 
+/**
+ * @todo
+ */
 function simplenews_issue_filter_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
@@ -223,6 +226,9 @@ function simplenews_simplenews_issue_operations() {
   return $operations;
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_issues_validate($form, &$form_state) {
   if (isset($form_state['input']['operation'])) {
     $nids = array_keys(array_filter($form_state['input']['issues']));
@@ -239,6 +245,9 @@ function simplenews_admin_issues_validate($form, &$form_state) {
   }
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_issues_submit($form, &$form_state) {
   // Call operation functions as defined in hook_simplenews_issue_operations().
   $operations = module_invoke_all('simplenews_issue_operations');
@@ -265,20 +274,20 @@ function simplenews_admin_issues_submit($form, &$form_state) {
 }
 
 /**
- * ...
+ * @todo
  */
 function simplenews_issue_send($nids) {
-  //TODO
+  //@todo
   // check if $nids are not pending: error
   // check if newsletters are not sent: error
   // send newsletter
 }
 
 /**
- * ...
+ * @todo
  */
 function simplenews_issue_resend($nids) {
-  //TODO
+  //@todo
   // check if $nids are not pending: error
   // send newsletter
 }
@@ -334,6 +343,9 @@ function simplenews_admin_categories() {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_categories_submit($form, &$form_state) {
   foreach ($form_state['values'] as $tid => $category) {
     if (is_numeric($tid) && $form[$tid]['#category']->weight != $category['weight']) {
@@ -344,6 +356,9 @@ function simplenews_admin_categories_submit($form, &$form_state) {
   drupal_set_message(t('Your configuration has been saved.'));
 }
 
+/**
+ * @todo
+ */
 function theme_simplenews_admin_categories($variables) {
   $form = $variables['form'];
 
@@ -588,6 +603,9 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_category_form_validate($form, &$form_state) {
   if ($form_state['clicked_button']['#value'] != t('Delete')) {
 
@@ -598,6 +616,9 @@ function simplenews_admin_category_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_category_form_submit($form, &$form_state) {
   //dpm($form_state);
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
@@ -659,6 +680,9 @@ function simplenews_admin_category_delete($form, &$form_state, $category) {
   );
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_category_delete_submit($form, &$form_state) {
   $tid = $form_state['values']['tid'];
   $name = $form_state['values']['name'];
@@ -677,6 +701,7 @@ function simplenews_admin_category_delete_submit($form, &$form_state) {
  * Menu callback: Delete multiple subscriptions.
  *
  * @see simplenews_subscription_multiple_delete_confirm_submit()
+ *
  * @todo: rework based on node_multiple_delete_confirm().
  * @todo Bug? confirm_form() does not wait for confirmation.
  */
@@ -716,9 +741,12 @@ function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
                       t('Delete'), t('Cancel'));
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_state) {
   if ($form_state['values']['confirm']) {
-    // TODO delete subscriber + delete all subscription of these subscribers
+    // @todo delete subscriber + delete all subscription of these subscribers
     //simplenews_subscription_delete(array_keys($form_state['values']['snids']));
     //simplenews_subscriber_delete(array_keys($form_state['values']['snids']));
     drupal_set_message(t('The subscriptions have been deleted.'));
@@ -730,6 +758,7 @@ function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_st
  * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_add_submit()
+ *
  * @todo Add 32char description field as subsription source
  */
 function simplenews_subscription_list_add($form, &$form_state) {
@@ -790,10 +819,13 @@ function simplenews_subscription_list_add($form, &$form_state) {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_list_add_submit($form, &$form_state) {
   $added = array();
   $invalid = array();
-  // TODO redo filter
+  // @todo redo filter
   $checked_lists = array_keys(array_filter($form_state['values'],'_simplenews_checked'));
   $langcode = $form_state['values']['language'];
 
@@ -841,6 +873,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
  * Menu callback: Export email address of subscriptions.
  *
  * @see simplenews_admin_export_after_build()
+ *
  * @todo Add checkboxes for subscribed and unsubscribed selection.
  */
 function simplenews_subscription_list_export($form, &$form_state) {
@@ -905,6 +938,9 @@ function simplenews_subscription_list_export($form, &$form_state) {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_list_export_submit($form, &$form_state) {
   $form_values = $form_state['values'];
 
@@ -965,6 +1001,7 @@ function _simplenews_subscription_list_export_get_emails($states, $subscribed, $
  * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_remove_submit()
+ *
  * @todo Add 32char description field as unsubsription source
  */
 function simplenews_subscription_list_remove($form, &$form_state) {
@@ -997,10 +1034,13 @@ function simplenews_subscription_list_remove($form, &$form_state) {
   return $form;
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_list_remove_submit($form, &$form_state) {
   $removed = array();
   $invalid = array();
-  // TODO redo filter
+  // @todo redo filter
   $checked_lists = array_keys(array_filter($form_state['values'],'_simplenews_checked'));
 
   $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
@@ -1059,6 +1099,7 @@ function simplenews_admin_subscription() {
  *
  * @see simplenews_subscription_list_form_validate()
  * @see simplenews_subscription_list_form_submit()
+ *
  * @todo Subscriber maintanance needs overhaul now we have more data availabale.
  */
 function simplenews_subscription_list_form() {
@@ -1094,7 +1135,7 @@ function simplenews_subscription_list_form() {
     'operations' => array('data' => t('Operations')),
   );
 
-  // TODO Make only subscribed user appear on this list. Ignore the unsubscribed records.
+  // @todo Make only subscribed user appear on this list. Ignore the unsubscribed records.
   $query = db_select('simplenews_subscriber', 'sn')->extend('PagerDefault')->extend('TableSort');
   simplenews_build_subscription_filter_query($query);
   $query->leftJoin('users', 'u', 'sn.uid = u.uid');
@@ -1154,6 +1195,9 @@ function simplenews_simplenews_subscription_operations() {
   return $operations;
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_list_form_validate($form, &$form_state) {
   if (isset($form_state['values']['operation'])) {
     $snids = array_keys(array_filter($form_state['values']['subscribers']));
@@ -1163,6 +1207,9 @@ function simplenews_subscription_list_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_list_form_submit($form, &$form_state) {
   // Call operation functions as defined in hook_simplenews_subscription_operations().
   $operations = module_invoke_all('simplenews_subscription_operations');
@@ -1223,8 +1270,9 @@ function simplenews_subscription_delete_multiple($snids = array()) {
 
 /**
  * Menu callback: Simplenews admin settings - General.
+ *
+ * @todo Delete this for if there is not more use for it.
  */
-// TODO Delete this for if there is not more use for it.
 function simplenews_admin_settings($form, &$form_state) {
   $vid = variable_get('simplenews_vid', '');
   $form = array();
@@ -1293,7 +1341,7 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
     '#description' => $description,
     '#default_value' => variable_get('simplenews_format', 'plain'),
   );
-  // TODO Do we need these master defaults for 'priority' and 'receipt'?
+  // @todo Do we need these master defaults for 'priority' and 'receipt'?
   $form['simplenews_default_options']['simplenews_priority'] = array(
     '#type' => 'select',
     '#title' => t('Priority'),
@@ -1359,6 +1407,9 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
   return system_settings_form($form);
 }
 
+/**
+ * @todo
+ */
 function simplenews_admin_settings_newsletter_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['simplenews_from_address'])) {
     form_set_error($field_name, t("The sender's email address you supplied is not valid."));
@@ -1611,6 +1662,9 @@ function _simplenews_subscription_filter_default() {
   );
 }
 
+/**
+ * @todo
+ */
 function simplenews_subscription_filter_form_submit($form, &$form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
@@ -1671,6 +1725,7 @@ function simplenews_count_subscriptions($tid) {
 
 /**
  * Theme subscription administration overview.
+ *
  * @todo Rework the use of drupal_render: http://drupal.org/node/224333#menu_callback_array
  * @todo Perhaps use drupal_render_children(): http://drupal.org/node/224333#drupal_render_children
  */

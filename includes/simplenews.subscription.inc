@@ -102,7 +102,7 @@ function simplenews_subscription_manager_form_submit($form, &$form_state) {
  * @see simplenews_confirm_add_form()
  * @see simplenews_confirm_removal_form()
  *
- * TODO Add parameter description here.
+ * @todo Add parameter description here.
  */
 function simplenews_confirm_subscription() {
   $arguments = func_get_args();
