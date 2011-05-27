@@ -880,7 +880,7 @@ function simplenews_update_7000() {
   //      If not, there is no purpose in migrating the block status ('block' => 0).
   $blocks = _simplenews_get_blocks();
   foreach ($terms as $term) {
-    _simplenews_convert_tokens_in_variable('simplenews_email_subject_'. $term->tid);
+    _simplenews_convert_tokens_in_variable('simplenews_email_subject_' . $term->tid);
 
     db_insert('simplenews_category')
       ->fields(array(
@@ -888,12 +888,12 @@ function simplenews_update_7000() {
         'format' => 'plain',
         'priority' => '0',
         'receipt' => '0',
-        'from_name' => variable_get('simplenews_from_name_'. $term->tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal'))),
-        'email_subject' => variable_get('simplenews_email_subject_'. $term->tid, '[[simplenews-newsletters-name]] [title-raw]'),
-        'from_address' => variable_get('simplenews_from_address_'. $term->tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
-        'hyperlinks' => variable_get('simplenews_hyperlinks_'. $term->tid, 1),
-        'new_account' => variable_get('simplenews_new_account_'. $term->tid, 'none'),
-        'opt_inout' => variable_get('simplenews_opt_inout_'. $term->tid, 'double'),
+        'from_name' => variable_get('simplenews_from_name_' . $term->tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal'))),
+        'email_subject' => variable_get('simplenews_email_subject_' . $term->tid, '[[simplenews-newsletters-name]] [title-raw]'),
+        'from_address' => variable_get('simplenews_from_address_' . $term->tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
+        'hyperlinks' => variable_get('simplenews_hyperlinks_' . $term->tid, 1),
+        'new_account' => variable_get('simplenews_new_account_' . $term->tid, 'none'),
+        'opt_inout' => variable_get('simplenews_opt_inout_' . $term->tid, 'double'),
         'block' => isset($blocks[$term->tid]) ? 1 : 0,
         ))
       ->execute();
@@ -941,12 +941,12 @@ function simplenews_update_7000() {
   // Delete deprecated variables.
   $terms = taxonomy_get_tree(variable_get('simplenews_vid', ''));
   foreach ($terms as $term) {
-    variable_del('simplenews_from_name_'. $term->tid);
-    variable_del('simplenews_email_subject_'. $term->tid);
-    variable_del('simplenews_from_address_'. $term->tid);
-    variable_del('simplenews_hyperlinks_'. $term->tid);
-    variable_del('simplenews_new_account_'. $term->tid);
-    variable_del('simplenews_opt_inout_'. $term->tid);
+    variable_del('simplenews_from_name_' . $term->tid);
+    variable_del('simplenews_email_subject_' . $term->tid);
+    variable_del('simplenews_from_address_' . $term->tid);
+    variable_del('simplenews_hyperlinks_' . $term->tid);
+    variable_del('simplenews_new_account_' . $term->tid);
+    variable_del('simplenews_opt_inout_' . $term->tid);
   }
 
   // @todo Add return text about checking of Newsletter Category settings.

@@ -16,7 +16,7 @@
  * @todo Change documentation of hook_foo implementations: http://drupal.org/node/224333#implementation_hook_comment
  * @todo Consider context support for t(): http://drupal.org/node/224333#locale_context
  * @todo Language code in t() now as array: http://drupal.org/node/224333#locale_context
- * @todo Coding standards: string concatenation, 'else if', type hinting
+ * @todo Coding standards: type hinting
  * @todo Implement hook_requirements()?; http://api.drupal.org/api/function/hook_requirements/7
  * @todo Separate token function into simplenews.tokens.inc
  * @todo Replace statics with &drupal_static(__FUNCTION__); http://api.drupal.org/api/function/drupal_static/7
@@ -1165,11 +1165,11 @@ function simplenews_block_configure($delta = '') {
     '#return_value' => 1,
     '#default_value' => variable_get('simplenews_block_l_' . $delta, 1),
   );
-  $form['simplenews_block_' . $delta]['simplenews_block_i_status_'.  $delta] = array(
+  $form['simplenews_block_' . $delta]['simplenews_block_i_status_' .  $delta] = array(
     '#type' => 'checkbox',
     '#title' => t('Display previous issues'),
     '#return_value' => 1,
-    '#default_value' => variable_get('simplenews_block_i_status_'. $delta, 0),
+    '#default_value' => variable_get('simplenews_block_i_status_' . $delta, 0),
   );
   $form['simplenews_block_' . $delta]['simplenews_block_i_' . $delta] = array(
     '#type' => 'select',
@@ -2364,12 +2364,12 @@ function simplenews_category_delete($category) {
       ->condition('tid', $category->tid)
       ->execute();
     module_invoke_all('simplenews_category_delete', $category);
-    variable_del('simplenews_from_name_'. $category->tid);
-    variable_del('simplenews_email_subject_'. $category->tid);
-    variable_del('simplenews_from_address_'. $category->tid);
-    variable_del('simplenews_hyperlinks_'. $category->tid);
-    variable_del('simplenews_new_account_'. $category->tid);
-    variable_del('simplenews_opt_inout_'. $category->tid);
+    variable_del('simplenews_from_name_' . $category->tid);
+    variable_del('simplenews_email_subject_' . $category->tid);
+    variable_del('simplenews_from_address_' . $category->tid);
+    variable_del('simplenews_hyperlinks_' . $category->tid);
+    variable_del('simplenews_new_account_' . $category->tid);
+    variable_del('simplenews_opt_inout_' . $category->tid);
   }
 }
 
@@ -3001,7 +3001,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['newsletter_link'] = l(t('Previous issues'), 'taxonomy/term/' . $tid);
   $recent = simplenews_recent_newsletters($tid, variable_get('simplenews_block_i_' . $tid, 5));
   $variables['issue_list'] = theme('item_list', array('items' => $recent, 'title' => t('Previous issues'), 'type' => 'ul'));
-  $variables['rssfeed'] = theme('feed_icon', array('url' => 'taxonomy/term/'. $tid .'/feed', 'title' => t('@newsletter feed', array('@newsletter' => $category->name))));
+  $variables['rssfeed'] = theme('feed_icon', array('url' => 'taxonomy/term/' . $tid . '/feed', 'title' => t('@newsletter feed', array('@newsletter' => $category->name))));
 
   // Block content control variables
   $variables['use_form'] = variable_get('simplenews_block_f_' . $tid, 1);
