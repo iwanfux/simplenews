@@ -12,14 +12,12 @@
  *
  * @ingroup simplenews
  * @todo Where possible build re-usable functions wrapped around database calls.
- * @todo Investigate the use of static API: http://drupal.org/node/224333#static_variable_api
  * @todo Change documentation of hook_foo implementations: http://drupal.org/node/224333#implementation_hook_comment
  * @todo Consider context support for t(): http://drupal.org/node/224333#locale_context
  * @todo Language code in t() now as array: http://drupal.org/node/224333#locale_context
  * @todo Coding standards: type hinting
  * @todo Implement hook_requirements()?; http://api.drupal.org/api/function/hook_requirements/7
  * @todo Separate token function into simplenews.tokens.inc
- * @todo Replace statics with &drupal_static(__FUNCTION__); http://api.drupal.org/api/function/drupal_static/7
  * @todo Consider using hook_hook_info() to move hooks out of .module. http://drupal.org/update/modules/6/7#new_hook_hook_info
  */
 
@@ -580,9 +578,9 @@ function simplenews_check_node_types($types) {
  *   Array of node-types which can be used a simplenews newsletter.
  */
 function simplenews_get_content_types($reset = FALSE) {
-  static $simplenews_types;
+  $simplenews_types = &drupal_static(__FUNCTION__, array());
 
-  if (!isset($simplenews_types) || $reset) {
+  if (!$simplenews_types || $reset) {
     foreach (node_type_get_types() as $name => $type) {
       if (variable_get('simplenews_content_type_' . $name, FALSE)) {
         $simplenews_types[] = $name;
@@ -1430,7 +1428,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
  * @todo Caching should be done in simplenews_get_subscription().
  */
 function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
-  static $subscribed = array();
+  $subscribed = &drupal_static(__FUNCTION__, array());
 
   if ($reset) {
     $subscribed = array();
@@ -1638,11 +1636,11 @@ function simplenews_subscriber_load($snid, $reset = FALSE) {
  * @todo
  */
 function simplenews_subscribers_load_multiple($snids = array(), $conditions = array(), $reset = FALSE) {
-  static $subscribers;
+  $subscribers = &drupal_static(__FUNCTION__, array());
 
   // Only cache if we load all records from the database.
   // @todo Caching could be improved.
-  if ($subscribers || $snids || $conditions || $reset) {
+  if (!$subscribers || $snids || $conditions || $reset) {
     $subscribers = array();
     $query = db_select('simplenews_subscriber', 'ss')
       ->fields('ss');
@@ -2000,7 +1998,7 @@ function simplenews_build_node_mail(&$message, $params) {
   // data is once stored and subsequently retrieved from the
   // static $messages variable.
   // $message buffer is node and language specific.
-  static $messages = array();
+  $messages = &drupal_static(__FUNCTION__, array());
 
   // By default the the node is send which is supplied in the function call.
   // When translation is used, the availability of translations is checked
@@ -2291,7 +2289,7 @@ function simplenews_get_categories() {
  * @todo
  */
 function simplenews_categories_load_multiple($tids = array(), $conditions = array(), $reset = FALSE) {
-  static $categories;
+  $categories = &drupal_static(__FUNCTION__, array());
 
   // Only cache if we load all records from the database. This could be improved.
   if (!$categories || $tids || $conditions || $reset) {
@@ -2381,7 +2379,7 @@ function simplenews_category_delete($category) {
  *   TRUE  = Show all mailing lists.
  */
 function simplenews_get_mailing_lists($show_all = FALSE) {
-  static $lists;
+  $lists = &drupal_static(__FUNCTION__, array());
   $all = $show_all ? 'all' : 'not_all';
 
   if (!isset($lists[$all])) {
@@ -2407,7 +2405,7 @@ function simplenews_newsletter_load($nid, $vid = NULL, $reset = FALSE) {
  * @todo
  */
 function simplenews_newsletter_load_multiple($nids = array(), $conditions = array(), $reset = FALSE) {
-  static $newsletters;
+  $newsletters = &drupal_static(__FUNCTION__, array());
 
   // We only cache if all records are loaded from the database,
   // unless reset is forced.

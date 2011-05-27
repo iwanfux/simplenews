@@ -176,7 +176,7 @@ function simplenews_send_test($node, $test_addresses) {
  *   TRUE if the email was successfully delivered; otherwise FALSE.
  */
 function simplenews_mail_mail($msgbase, $key = 'node') {
-  static $cache;
+  $cache = &drupal_static(__FUNCTION__);
 
   $nid = $msgbase->nid;
   $vid = $msgbase->vid;
@@ -734,7 +734,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
  */
 function _simplenews_absolute_mail_urls($match) {
   global $base_url, $base_path;
-  static $regexp;
+  $regexp = &drupal_static(__FUNCTION__);
   $url = $label = '';
 
   if ($match) {
@@ -802,7 +802,7 @@ function _simplenews_measure_usec($start = FALSE) {
     return;
   }
 
-  static $start_time;
+  $start_time = &drupal_static(__FUNCTION__);
   $usage = getrusage();
   $now = (float)($usage['ru_stime.tv_sec'] . '.' . $usage['ru_stime.tv_usec']) + (float)($usage['ru_utime.tv_sec'] . '.' . $usage['ru_utime.tv_usec']);
 

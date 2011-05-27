@@ -1711,7 +1711,7 @@ function simplenews_build_subscription_filter_query(SelectQueryInterface $query)
  * @return number of subscribers.
  */
 function simplenews_count_subscriptions($tid) {
-  static $subscription_count;
+  $subscription_count = &drupal_static(__FUNCTION__);
 
   if (isset($subscription_count[$tid])) {
     return $subscription_count[$tid];
