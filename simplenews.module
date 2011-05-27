@@ -911,10 +911,12 @@ function simplenews_user_insert(&$edit, $account, $category) {  // Use the email
   // Process subscription check boxes.
   if (isset($edit['newsletters'])) {
     $nl_tids = array_keys(array_filter($edit['newsletters']));
-    $newsletters = simplenews_categories_load_multiple($nl_tids, array('show_all' => TRUE));
-    foreach ($newsletters as $newsletter) {
-      simplenews_subscribe_user($account->mail, $newsletter->tid, FALSE, 'website', $edit['language']);
-      drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
+    if (!empty($nl_tids)) {
+      $newsletters = simplenews_categories_load_multiple($nl_tids, array('show_all' => TRUE));
+      foreach ($newsletters as $newsletter) {
+        simplenews_subscribe_user($account->mail, $newsletter->tid, FALSE, 'website', $edit['language']);
+        drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
+      }
     }
   }
 
