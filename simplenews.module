@@ -1118,13 +1118,6 @@ function simplenews_user_view($account, $build_mode) {
 }
 
 /**
- * Implementation of hook_block().
- *
- * @todo break-up by $op: http://drupal.org/node/224333#remove_op
- */
-function simplenews_block_OLD($op = 'list', $delta = 0, $edit = array()) { }
-
-/**
  * Implementation of hook_block_info().
  */
 function simplenews_block_info() {
@@ -1887,6 +1880,9 @@ function simplenews_block_form_validate($form, &$form_state) {
  * @todo
  */
 function simplenews_block_form_submit($form, &$form_state) {
+  // @todo ask for login if mail address is already registered.
+  // @todo redirect on success
+
   global $user;
   $tid = $form['#tid'];
   $account = _simplenews_user_load($form_state['values']['mail']);
