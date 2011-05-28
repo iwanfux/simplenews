@@ -131,8 +131,14 @@ function simplenews_schema() {
     ),
     'primary key' => array('nid'),
     'foreign keys' => array(
-      'nid' => array('node' => 'nid'),
-      'vid' => array('node' => 'vid'),
+      'nid' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'vid' => array(
+        'table' => 'node',
+        'columns' => array('vid' => 'vid'),
+      ),
     ),
   );
 
@@ -185,7 +191,10 @@ function simplenews_schema() {
       'uid' => array('uid'),
     ),
     'foreign keys' => array(
-      'uid' => array('users' => 'uid'),
+      'uid' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
     ),
   );
 
@@ -228,8 +237,14 @@ function simplenews_schema() {
     ),
     'primary key' => array('snid', 'tid'),
     'foreign keys' => array(
-      'snid' => array('simplenews_subscriber' => 'snid'),
-      'tid' => array('simplenews_category' => 'tid'),
+      'snid' => array(
+        'table' => 'simplenews_subscriber',
+        'columns' => array('snid' => 'snid'),
+      ),
+      'tid' => array(
+        'table' => 'simplenews_category',
+        'columns' => array('tid' => 'tid'),
+      )
     ),
     // @todo add foreign keys to other tables too?
   );
@@ -300,21 +315,36 @@ function simplenews_schema() {
       'snid' => array(
         'description' => 'Foreign key for subscriber table ({simplenews_subscriptions}.snid)',
         'type' => 'int',
-        'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
-        ),
+      ),
     ),
     'primary key' => array('msid'),
     'indexes' => array(
       'tid' => array('tid'),
       'status' => array('status'),
+      'snid_tid' => array('snid', 'tid'),
     ),
     'foreign keys' => array(
-      'nid' => array('node' => 'nid'),
-      'vid' => array('node' => 'vid'),
-      'tid' => array('simplenews_category' => 'tid'),
-      'snid' => array('simplenews_subscription' => 'snid'),
+      'nid' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'vid' => array(
+        'table' => 'node',
+        'columns' => array('vid' => 'vid'),
+      ),
+      'tid' => array(
+        'table' => 'simplenews_category',
+        'columns' => array('tid'),
+      ),
+      'snid_tid' => array(
+        'table' => 'simplenews_subscription',
+        'columns' => array(
+          'snid' => 'snid',
+          'tid' => 'tid',
+        ),
+      ),
     ),
   );
   return $schema;
@@ -951,4 +981,11 @@ function simplenews_update_7000() {
 
   // @todo Add return text about checking of Newsletter Category settings.
   // @todo Add return text about Block checkboxes
+}
+
+/**
+ * Create key snid_tid on simplenews_mail_spool table.
+ */
+function simplenews_update_7001() {
+  db_add_index('simplenews_mail_spool', 'snid_tid', array('snid', 'tid'));
 }
