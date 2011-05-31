@@ -517,7 +517,7 @@ function simplenews_count_spool($nid, $vid, $status = array(SIMPLENEWS_SPOOL_PEN
   }
 
   foreach ($status as $s) {
-    $clauses[] = "s.status = $s";
+    $clauses[] = "status = $s";
   }
 
   $query = db_select('simplenews_mail_spool')
