@@ -967,7 +967,7 @@ function simplenews_user_presave(&$edit, $account, $category) {
   switch ($category) {
     case 'account':
       // We only process existing accounts.
-      if ($account->uid) {
+      if (!empty($account->uid)) {
         $subscription = simplenews_get_subscription((object)array('uid' => $account->uid));
         // Only process existing subscriptions.
         if ($subscription->snid) {
