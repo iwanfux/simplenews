@@ -417,8 +417,8 @@ function simplenews_get_spool($status, $limit = NULL) {
     if ($s == SIMPLENEWS_SPOOL_IN_PROGRESS) {
       // Select messages which are allocated by another process, but whose
       // maximum send time has expired.
-      $clauses[] = '(s.status = :status AND s.timestamp < :expiration)';
-      $params[':status'] = $s;
+      $clauses[] = '(s.status = :statusinprogress AND s.timestamp < :expiration)';
+      $params[':statusinprogress'] = $s;
       $params[':expiration'] = simplenews_get_expiration_time();
     }
     else {
