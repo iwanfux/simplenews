@@ -1135,11 +1135,11 @@ function simplenews_subscription_list_form() {
     'operations' => array('data' => t('Operations')),
   );
 
-  // @todo Make only subscribed user appear on this list. Ignore the unsubscribed records.
   $query = db_select('simplenews_subscriber', 'sn')->extend('PagerDefault')->extend('TableSort');
   simplenews_build_subscription_filter_query($query);
   $query->leftJoin('users', 'u', 'sn.uid = u.uid');
   $query->innerJoin('simplenews_subscription', 'su', 'sn.snid = su.snid');
+  $query->condition('su.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
   $query->addField('u', 'name', 'name');
   $result = $query
     ->fields('sn', array('snid', 'activated', 'mail', 'uid', 'language'))
