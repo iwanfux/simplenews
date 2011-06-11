@@ -857,7 +857,9 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
     $opt_inout_method = $list->opt_inout;
     if (($subscribe_new_account == 'on' || $subscribe_new_account == 'off') && ($opt_inout_method == 'single' || $opt_inout_method == 'double')) {
       $options[$list->tid] = check_plain($list->name);
-      $default_value[$list->tid] = $subscribe_new_account == 'on';
+      if ($subscribe_new_account == 'on') {
+        $default_value[] = $list->tid;
+      }
     }
     else {
       if ($subscribe_new_account == 'silent' || ($subscribe_new_account == 'on' && $opt_inout_method == SIMPLENEWS_OPT_INOUT_HIDDEN)) {
