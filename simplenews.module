@@ -1788,20 +1788,17 @@ function _simplenews_subscription_manager_form($subscription) {
  */
 function simplenews_recent_newsletters($tid, $count = 5) {
   $titles = '';
-  if (!empty($nids)) {
-    $query = db_select('node', 'n');
-    $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
-    $query->fields('n', array('nid', 'title'))
-      ->condition('n.nid', $nids)
-      ->condition('sn.tid', $tid)
-      ->condition('n.status', NODE_PUBLISHED)
-      ->condition('sn.status', SIMPLENEWS_STATUS_SEND_NOT, '<>')
-      ->orderBy('n.created', 'DESC')
-      ->range(0, $count);
-    $titles = array();
-    foreach ($query->execute() as $item) {
-      $titles[$item->nid]['data'] = l($item->title, 'node/' . $item->nid);
-    }
+  $query = db_select('node', 'n');
+  $query->innerJoin('simplenews_newsletter', 'sn', 'n.nid = sn.nid');
+  $query->fields('n', array('nid', 'title'))
+    ->condition('sn.tid', $tid)
+    ->condition('n.status', NODE_PUBLISHED)
+    ->condition('sn.status', SIMPLENEWS_STATUS_SEND_NOT, '<>')
+    ->orderBy('n.created', 'DESC')
+    ->range(0, $count);
+  $titles = array();
+  foreach ($query->execute() as $item) {
+    $titles[$item->nid]['data'] = l($item->title, 'node/' . $item->nid);
   }
   return $titles;
 }
