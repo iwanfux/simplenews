@@ -2502,17 +2502,17 @@ function simplenews_token_info() {
   $types['simplenews-subscriber'] = array(
     'name' => t('Simplenews subscriber'),
     'description' => t('@todo .'),
-    'needs-data' => 'simplenews-subscriber',
+    'needs-data' => 'account',
   );
   $types['simplenews-newsletter'] = array(
     'name' => t('Simplenews newsletter'),
     'description' => t('@todo .'),
-    'needs-data' => 'simplenews-newsletter',
+    'needs-data' => 'node',
   );
   $types['simplenews-category'] = array(
     'name' => t('Simplenews newsletter category'),
     'description' => t('@todo .'),
-    'needs-data' => 'simplenews-category',
+    'needs-data' => 'category',
   );
 
   // Tokens for simplenews subscriber.
