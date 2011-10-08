@@ -1731,7 +1731,7 @@ function _simplenews_subscription_manager_form($subscription) {
     $form['subscriptions']['newsletter-' . $newsletter->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain($newsletter->name),
-      '#description' => $newsletter->description,
+      '#description' => check_plain($newsletter->description),
       '#default_value' => in_array($newsletter->tid, $subscription->tids),
     );
   }
