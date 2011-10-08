@@ -1131,7 +1131,7 @@ function simplenews_subscription_list_form() {
     'mail' => array('data' => t('Email'), 'field' => 'sn.mail', 'sort' => 'asc'),
     'username' => array('data' => t('Username'), 'field' => 'u.name'),
     'status' => array('data' => t('Status'), 'field' => 'sn.activated'),
-    'language' => array('data' => t('Language'), 'field' => 'ss.language'),
+    'language' => array('data' => t('Language'), 'field' => 'sn.language'),
     'operations' => array('data' => t('Operations')),
   );
 
