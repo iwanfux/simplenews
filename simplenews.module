@@ -1513,7 +1513,7 @@ function simplenews_get_subscription($account) {
     $query->condition('s.snid', $account->snid);
   }
   elseif (isset($account->mail)) {
-    $query->where('LOWER(s.mail) = LOWER(:mail)', array(':mail' => $account->mail));
+    $query->condition('s.mail', $account->mail, 'LIKE');
   }
   elseif (isset($account->uid) && $account->uid > 0) {
     $query->condition('s.uid', $account->uid);
