@@ -341,14 +341,14 @@ function simplenews_newsletter_access() {
  * Implementation of hook_node_type_delete().
  */
 function simplenews_node_type_delete($info) {
-  simplenews_get_content_types(TRUE);
+  drupal_static_reset('simplenews_get_content_types');
 }
 
 /**
  * Implementation of hook_node_type_update().
  */
 function simplenews_node_type_update($info) {
-  simplenews_get_content_types(TRUE);
+  simplenews_get_content_types('simplenews_get_content_types');
 }
 
 /**
@@ -571,16 +571,13 @@ function simplenews_check_node_types($types) {
 /**
  * Get all node types supported by Simplenews.
  *
- * @param $reset
- *   TRUE: reset internal cache.
- *
  * @return
  *   Array of node-types which can be used a simplenews newsletter.
  */
-function simplenews_get_content_types($reset = FALSE) {
+function simplenews_get_content_types() {
   $simplenews_types = &drupal_static(__FUNCTION__, array());
 
-  if (!$simplenews_types || $reset) {
+  if (!$simplenews_types) {
     foreach (node_type_get_types() as $name => $type) {
       if (variable_get('simplenews_content_type_' . $name, FALSE)) {
         $simplenews_types[] = $name;
@@ -1425,12 +1422,8 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
  * @todo Only return active subscriptions.
  * @todo Caching should be done in simplenews_get_subscription().
  */
-function simplenews_user_is_subscribed($mail, $tid, $reset = FALSE) {
+function simplenews_user_is_subscribed($mail, $tid) {
   $subscribed = &drupal_static(__FUNCTION__, array());
-
-  if ($reset) {
-    $subscribed = array();
-  }
 
   if (!isset($subscribed[$mail][$tid])) {
     $subscription = simplenews_get_subscription((object)array('mail' => $mail));
