@@ -759,17 +759,20 @@ function simplenews_form_alter(&$form, &$form_state, $form_id) {
  * @todo
  */
 function _simplenews_node_form(&$form, $form_state) {
-  $form['simplenews_token_help'] = array(
-    '#title' => t('Replacement patterns'),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#description' => t('These tokens can be used in all text fields and will be replaced on-screen and in the email. Note that receiver-* tokens are not suitable for on-screen use.'),
-  );
+  if (module_exists('token')) {
+    $form['simplenews_token_help'] = array(
+      '#title' => t('Replacement patterns'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#description' => t('These tokens can be used in all text fields and will be replaced on-screen and in the email. Note that receiver-* tokens are not suitable for on-screen use.'),
+    );
 
-  $form['simplenews_token_help']['help'] = array(
-    '#markup' => _simplenews_get_token_info(array('simplenews-newsletter', 'simplenews-category', 'site')),
-  );
+    $form['simplenews_token_help']['browser'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('simplenews-newsletter', 'simplenews-category'),
+    );
+  }
 }
 
 /**
@@ -2454,38 +2457,6 @@ function simplenews_newsletter_delete($newsletter) {
       ->condition('vid', $newsletter->vid)
       ->execute();
   }
-}
-
-/**
- * Return HTML formatted list of token info.
- *
- * @param $modules
- *   Array of module names
- * @return string
- *   Formatted Token information
- *
- * @todo Add Token types description.
- * @todo Use Theme function.
- * @todo Is this available in Core?
- */
-function _simplenews_get_token_info($modules) {
-  $tokens = array();
-  $token_info = token_info();
-  foreach ($modules as $module) {
-    if (isset($token_info['tokens'][$module])) {
-      foreach ($token_info['tokens'][$module] as $key => $info) {
-        $tokens["[$module:$key]"] = $info['description'];
-      }
-    }
-  }
-
-  $output = '<dl>';
-  foreach ($tokens as $name => $description) {
-    $output .= '<dt>' . $name . '</dt>';
-    $output .= '<dd>' . $description . '</dd>';
-  }
-  $output .= "</dl>\n";
-  return $output;
 }
 
 /**

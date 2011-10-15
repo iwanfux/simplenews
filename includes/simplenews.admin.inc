@@ -543,15 +543,18 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#title' => t('Newsletter subject'),
     '#collapsible' => FALSE,
   );
-  $form['simplenews_subject']['token_help'] = array(
-    '#title' => t('Replacement patterns'),
-    '#type' => 'fieldset',
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-  $form['simplenews_subject']['token_help']['help'] = array(
-    '#markup' => _simplenews_get_token_info(array('simplenews-category', 'node')),
-  );
+  if (module_exists('token')) {
+    $form['simplenews_subject']['token_help'] = array(
+      '#title' => t('Replacement patterns'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['simplenews_subject']['token_help']['browser'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('simplenews-category', 'node'),
+    );
+  }
 
   $form['simplenews_subject']['email_subject'] = array(
     '#type' => 'textfield',
@@ -1527,8 +1530,9 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
-  $form['simplenews_subscription']['subscription_mail']['token_help']['help'] = array(
-    '#markup' => _simplenews_get_token_info(array('simplenews-subscriber', 'simplenews-list', 'site')),
+  $form['simplenews_subscription']['subscription_mail']['token_help']['browser'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('simplenews-category', 'node'),
   );
 
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(
