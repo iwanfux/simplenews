@@ -82,33 +82,26 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
 /**
  * Implementation of hook_permission().
  *
- * @todo Change array format and add titles where required: http://drupal.org/node/224333#descriptions_permissions
  * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
  * @todo Review the use of 'administer nodes': http://drupal.org/node/224333#bypass_node_access
- * @todo hook_perm() renamed: http://drupal.org/node/224333#hook_permission
  */
 function simplenews_permission() {
   return array(
     // @todo Change to administer newsletter categories. And update existing permissions in hook_update_N.
     'administer newsletters' => array(
-      'title' => t('administer newsletters'),
-      'description' => t('@todo Add a description for administer newsletters'),
+      'title' => t('Administer newsletters'),
     ),
     'administer simplenews subscriptions' => array(
-      'title' => t('administer simplenews subscriptions'),
-      'description' => t('@todo Add a description for administer simplenews subscriptions'),
+      'title' => t('Administer simplenews subscriptions'),
     ),
     'administer simplenews settings' => array(
-      'title' => t('administer simplenews settings'),
-      'description' => t('@todo Add a description for administer simplenews settings'),
+      'title' => t('Administer simplenews settings'),
     ),
     'send newsletter' => array(
-      'title' => t('send newsletter'),
-      'description' => t('@todo Add a description for send newsletter'),
+      'title' => t('Send newsletter'),
     ),
     'subscribe to newsletters' => array(
-      'title' => t('subscribe to newsletters'),
-      'description' => t('@todo Add a description for subscribe/unsubscribe to newsletters'),
+      'title' => t('Subscribe to newsletters'),
     ),
   );
 }
@@ -1806,7 +1799,6 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *
  * @see simplenews_block_form_validate()
  * @see simplenews_block_form_submit()
- * @todo Add $form to drupal_get_form() callback functions.
  * @see http://drupal.org/node/224333#hook_forms_signature
  */
 function simplenews_block_form($form, &$form_state, $tid) {
@@ -2463,19 +2455,17 @@ function simplenews_newsletter_delete($newsletter) {
  * Implementation of hook_token_info().
  */
 function simplenews_token_info() {
+  // @todo Add desription to the types and extend available tokens.
   $types['simplenews-subscriber'] = array(
     'name' => t('Simplenews subscriber'),
-    'description' => t('@todo .'),
     'needs-data' => 'account',
   );
   $types['simplenews-newsletter'] = array(
     'name' => t('Simplenews newsletter'),
-    'description' => t('@todo .'),
     'needs-data' => 'node',
   );
   $types['simplenews-category'] = array(
     'name' => t('Simplenews newsletter category'),
-    'description' => t('@todo .'),
     'needs-data' => 'category',
   );
 

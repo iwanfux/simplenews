@@ -1311,7 +1311,6 @@ function simplenews_admin_settings($form, &$form_state) {
     '#title' => t('Newsletter category field'),
     '#options' =>  $field_options,
     '#required' => TRUE,
-    '#description' => t('@todo'),
     '#default_value' => variable_get('simplenews_category_field', 'field_simplenews_term'),
   );
 
