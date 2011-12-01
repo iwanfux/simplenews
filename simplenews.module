@@ -341,7 +341,24 @@ function simplenews_node_type_delete($info) {
  * Implementation of hook_node_type_update().
  */
 function simplenews_node_type_update($info) {
-  simplenews_get_content_types('simplenews_get_content_types');
+  drupal_static_reset('simplenews_get_content_types');
+  if (simplenews_check_node_types($info->type)) {
+    simplenews_add_term_field($info);
+  }
+  else {
+    simplenews_remove_term_field($info);
+  }
+}
+
+/**
+ * Implements hook_node_type_insert().
+ */
+function simplenews_node_type_insert($info) {
+  // Avoid using simplenews_check_node_type() because the node type cache
+  // has not been cleared yet.
+  if (variable_get('simplenews_content_type_' . $info->type, FALSE)) {
+    simplenews_add_term_field($info);
+  }
 }
 
 /**
@@ -646,6 +663,19 @@ function simplenews_add_term_field($type) {
 }
 
 /**
+ * Remove the taxonomy term field for the newsletter category.
+ *
+ * @param $type
+ *   A node type object.
+ */
+function simplenews_remove_term_field($type) {
+  $instance = field_info_instance('node', 'field_simplenews_term', $type->type);
+  if ($instance) {
+    field_delete_instance($instance);
+  }
+}
+
+/**
  * Get the fieldname(s) from a content type that hold the newsletter category term.
  *
  * @param $bundle_name
@@ -733,8 +763,7 @@ function simplenews_taxonomy_term_delete($term) {
   // will also delete the subscriptions to the category.
   if ($term->vid == variable_get('simplenews_vid', 0)) {
     $category = simplenews_category_load($term->tid);
-    // Add name and description from $term object, as the term object has
-    // already been deleted and those properties failed to load.
+    // Add name and description from $term object.
     $category->name = $term->name;
     $category->description = $term->description;
     simplenews_category_delete($category);

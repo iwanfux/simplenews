@@ -714,12 +714,6 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost(NULL, $edit, t('Save content type'));
 
-    // @todo: This should probably happen automatically.
-    drupal_static_reset('_node_types_build');
-    node_types_rebuild();
-    $node_type = node_type_get_type($type);
-    simplenews_add_term_field($node_type);
-
     // Verify that the newsletter settings are shown.
     $this->drupalGet('node/add/' . $type);
     $this->assertText(t('Newsletter category'));
@@ -749,7 +743,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Verify that the newsletter settings are not shown.
     $this->drupalGet('node/add/' . $type);
     $this->assertNoText(t('Replacement patterns'));
-    // @todo: Test removal of newsletter category fieldset.
+    $this->assertNoText(t('Newsletter category'));
 
     // @todo: Test node update/delete.
 
