@@ -732,7 +732,12 @@ function simplenews_taxonomy_term_delete($term) {
   // taxonomy term. So we delete the category. simplenews_category_delete()
   // will also delete the subscriptions to the category.
   if ($term->vid == variable_get('simplenews_vid', 0)) {
-    simplenews_category_delete($term->tid);
+    $category = simplenews_category_load($term->tid);
+    // Add name and description from $term object, as the term object has
+    // already been deleted and those properties failed to load.
+    $category->name = $term->name;
+    $category->description = $term->description;
+    simplenews_category_delete($category);
   }
 }
 
@@ -2281,7 +2286,9 @@ function simplenews_categories_load_multiple($tids = array(), $conditions = arra
   if (!$categories || $tids || $conditions || $reset) {
     $categories = array();
     $query = db_select('simplenews_category', 'sc');
-    $query->innerJoin('taxonomy_term_data', 't', 't.tid = sc.tid');
+    // This function might be called when the corresponding taxonomy term was
+    // already deleted.
+    $query->leftJoin('taxonomy_term_data', 't', 't.tid = sc.tid');
     $query->fields('sc')
       ->fields('t', array('name', 'description', 'weight'))
       ->orderBy('t.weight', 'ASC');

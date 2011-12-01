@@ -1,9 +1,0 @@
-name = Simplenews test
-description = Simplenews helper module for automated simplenews tests.
-dependencies[] = simplenews
-package = Testing
-hidden = TRUE
-core = 7.x
-
-files[] = simplenews_test.install
-files[] = simplenews_test.module
