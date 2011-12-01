@@ -203,8 +203,11 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[0]['body'];
+    $this->fail($body);
     $pattern = '@the link below\.[\r\n]+?(http:/.*)@';
+
     preg_match($pattern, $body, $match);
+    $this->fail($match);
     $confirm_url = $match[1];
 
     $pattern = '@http:/.*/newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
