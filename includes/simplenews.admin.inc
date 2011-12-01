@@ -1727,65 +1727,6 @@ function simplenews_count_subscriptions($tid) {
 }
 
 /**
- * Theme subscription administration overview.
- *
- * @todo Rework the use of drupal_render: http://drupal.org/node/224333#menu_callback_array
- * @todo Perhaps use drupal_render_children(): http://drupal.org/node/224333#drupal_render_children
- */
-function theme_simplenews_subscription_list($form) {
-  // Subscription table header
-  $header = array(
-    theme('table_select_header_cell'),
-    array(
-      'data' => t('Email'),
-      'field' => 'ss.mail',
-      'sort' => 'asc',
-    ),
-    array(
-      'data' => t('Username'),
-      'field' => 'u.name',
-    ),
-    array(
-      'data' => t('Status'),
-      'field' => 'ss.activated',
-    ),
-    array(
-      'data' => t('Language'),
-      'field' => 'ss.language'
-    ),
-    t('Operations'));
-
-  // Subscription table
-  $output = drupal_render($form['options']);
-  if (isset($form['mail']) && is_array($form['mail'])) {
-    foreach (element_children($form['mail']) as $key) {
-      $row = array();
-      $row[] = drupal_render($form['snids'][$key]);
-      $row[] = drupal_render($form['mail'][$key]);
-      $row[] = drupal_render($form['name'][$key]);
-      $row[] = drupal_render($form['status'][$key]);
-      $row[] = drupal_render($form['operations'][$key]);
-      $rows[] = $row;
-    }
-  }
-  else {
-    $rows[] = array(array(
-        'data' => t('No subscriptions available.'),
-        'colspan' => '4',
-      ));
-  }
-
-  // Render table header, pager and form
-  $output .= theme('table', array('header' => $header, 'rows' => $rows));
-  if ($form['pager']['#value']) {
-    $output .= drupal_render($form['pager']);
-  }
-  $output .= drupal_render($form);
-
-  return $output;
-}
-
-/**
  * Return a status image.
  *
  * @param $variables An associative array containing:
