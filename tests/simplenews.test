@@ -203,15 +203,12 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[0]['body'];
-    $this->fail($body);
-    $pattern = '@the link below\.[\r\n]+?(http:/.*)@';
 
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
-    $this->fail($match);
-    $confirm_url = $match[1];
-
-    $pattern = '@http:/.*/newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $this->assertTrue(preg_match($pattern, $confirm_url), t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -240,12 +237,11 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[1]['body'];
-    $pattern = '@the link below\.[\r\n]+?(http:/.*)@';
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
-    $confirm_url = $match[1];
-
-    $pattern = '@http:/.*/newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $this->assertTrue(preg_match($pattern, $confirm_url), t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
