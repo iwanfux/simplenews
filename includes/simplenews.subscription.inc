@@ -674,7 +674,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
     else {
       $form['language']['language'] = array(
         '#type' => 'select',
-        '#default_value' => $subscription->language->language,
+        '#default_value' => $subscription->language,
         '#options' => $language_options,
       );
     }
