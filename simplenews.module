@@ -1202,8 +1202,8 @@ function simplenews_block_view($delta = '') {
     return NULL;
   }
   else {
+    $newsletters = simplenews_categories_load_multiple(array(), array('block' => '1', 'show_all' => FALSE));
 
-    $newsletters = simplenews_get_mailing_lists();
     // Only display a block if $delta is a valid newsletter term id.
     if (in_array($delta, array_keys($newsletters))) {
       // $delta is validated, the block can be displayed.
