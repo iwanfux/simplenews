@@ -326,7 +326,7 @@ function simplenews_admin_categories() {
   if ($categories = simplenews_categories_load_multiple(array(), array('show_all' => TRUE))) {
     foreach ($categories as $category) {
       $form[$category->tid]['#category'] = $category;
-      $form[$category->tid]['name'] = array('#markup' => check_plain($category->name));
+      $form[$category->tid]['name'] = array('#markup' => check_plain(_simplenews_newsletter_name($category)));
       $form[$category->tid]['weight'] = array('#type' => 'weight', '#delta' => 10, '#default_value' => $category->weight);
       $form[$category->tid]['edit'] = array('#type' => 'link', '#title' => t('edit newsletter category'), '#href' => "admin/structure/simplenews/$category->tid/edit");
     }
@@ -644,13 +644,13 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
 
   switch (simplenews_category_save($category)) {
     case SAVED_NEW:
-      drupal_set_message(t('Created new newsletter category %name.', array('%name' => $category->name)));
-      watchdog('simplenews', 'Created new newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
+      drupal_set_message(t('Created new newsletter category %name.', array('%name' => _simplenews_newsletter_name($category))));
+      watchdog('simplenews', 'Created new newsletter category %name.', array('%name' => _simplenews_newsletter_name($category)), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
       break;
 
     case SAVED_UPDATED:
-      drupal_set_message(t('Updated newsletter category %name.', array('%name' => $category->name)));
-      watchdog('simplenews', 'Updated newsletter category %name.', array('%name' => $category->name), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
+      drupal_set_message(t('Updated newsletter category %name.', array('%name' => _simplenews_newsletter_name($category))));
+      watchdog('simplenews', 'Updated newsletter category %name.', array('%name' => _simplenews_newsletter_name($category)), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
       break;
   }
 
@@ -668,14 +668,14 @@ function simplenews_admin_category_delete($form, &$form_state, $category) {
   // Store some category values for submit handling.
   $form = array();
   $form['tid'] = array('#type' => 'value', '#value' => $category->tid);
-  $form['name'] = array('#type' => 'value', '#value' => $category->name);
+  $form['name'] = array('#type' => 'value', '#value' => _simplenews_newsletter_name($category));
 
   $form['notice'] = array(
     '#markup' => '<p><strong>' . t('Note: All subscriptions associated with this newsletter will be lost.') . '</strong></p>',
   );
 
   return confirm_form($form,
-    t('Are you sure you want to delete category %name?', array('%name' => $category->name)),
+    t('Are you sure you want to delete category %name?', array('%name' => _simplenews_newsletter_name($category))),
     'admin/structure/simplenews',
     t('This action cannot be undone.'),
     t('Delete'),
@@ -783,8 +783,8 @@ function simplenews_subscription_list_add($form, &$form_state) {
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
     $form['lists'][$list->tid] = array(
       '#type' => 'checkbox',
-      '#title' => check_plain($list->name),
-      '#description'  => $list->description,
+      '#title' => check_plain(_simplenews_newsletter_name($list)),
+      '#description'  => _simplenews_newsletter_description($list),
       '#default_value' => FALSE,
     );
   }
@@ -911,7 +911,7 @@ function simplenews_subscription_list_export($form, &$form_state) {
 
   $lists = array();
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $lists[$list->tid] = check_plain($list->name);
+    $lists[$list->tid] = check_plain(_simplenews_newsletter_name($list));
   }
   $form['lists'] = array(
     '#type' => 'checkboxes',
@@ -1024,8 +1024,8 @@ function simplenews_subscription_list_remove($form, &$form_state) {
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
     $form['lists'][$list->tid] = array(
       '#type' => 'checkbox',
-      '#title' => check_plain($list->name),
-      '#description'  => $list->description,
+      '#title' => check_plain(_simplenews_newsletter_name($list)),
+      '#description'  => _simplenews_newsletter_description($list),
       '#default_value' => FALSE,
     );
   }
@@ -1066,7 +1066,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $lists = simplenews_get_mailing_lists(TRUE);
     $list_names = array();
     foreach ($checked_lists as $tid) {
-      $list_names[] = $lists[$tid]->name;
+      $list_names[] = _simplenews_newsletter_name($lists[$tid]);
     }
     drupal_set_message(t('The addresses were unsubscribed from the following newsletters: %newsletters.', array('%newsletters' => implode(', ', $list_names))));
   }
@@ -1598,7 +1598,7 @@ function simplenews_subscription_filters() {
     ),
   );
   foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $filters['list']['options']['tid-' . $list->tid] = $list->name;
+    $filters['list']['options']['tid-' . $list->tid] = _simplenews_newsletter_name($list);
   }
 
   // Email filter

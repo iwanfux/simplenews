@@ -209,7 +209,7 @@ function simplenews_action_subscribe_user_form($context) {
   $lists = simplenews_get_mailing_lists(TRUE);
   $options = array();
   foreach ($tree as $newsletter) {
-    $options[$list->slid] = $list->name;
+    $options[$list->slid] = _simplenews_newsletter_name($list);
   }
   $form['list'] = array(
     '#title' => t('Mailing list'),
@@ -277,7 +277,7 @@ function simplenews_action_unsubscribe_user_form($context) {
   $lists = simplenews_get_mailing_lists(TRUE);
   $options = array();
   foreach ($tree as $newsletter) {
-    $options[$list->slid] = $list->name;
+    $options[$list->slid] = _simplenews_newsletter_name($list);
   }
   $form['list'] = array(
     '#title' => t('Mailing list'),

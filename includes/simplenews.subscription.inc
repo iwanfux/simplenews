@@ -504,7 +504,7 @@ function simplenews_confirm_subscription() {
           $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
         }
-        drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
+        drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
       elseif ($op == 'add') {
@@ -513,7 +513,7 @@ function simplenews_confirm_subscription() {
           $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
         }
-        drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => $category->name)));
+        drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
     }
@@ -532,7 +532,7 @@ function simplenews_confirm_subscription() {
 function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
@@ -557,7 +557,7 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
 
   if (!$path =  variable_get('simplenews_confirm_subscribe_page', '')){
     $path = variable_get('site_frontpage', 'node');
-    drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+    drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => _simplenews_newsletter_name($form_state['values']['newsletter']))));
   }
 
   $form_state['redirect'] = $path;
@@ -571,7 +571,7 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
 function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
@@ -596,7 +596,7 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
 
   if (!$path =  variable_get('simplenews_confirm_unsubscribe_page', '')){
     $path = variable_get('site_frontpage', 'node');
-    drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+    drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => _simplenews_newsletter_name($form_state['values']['newsletter']))));
   }
 
   $form_state['redirect'] = $path;
