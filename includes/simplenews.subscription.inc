@@ -668,7 +668,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
       // fapi error: disabled not supported for select type. workaround: output markup
       $form['language']['language'] = array(
         '#type' => 'markup',
-        '#value' => $language_options[$subscription->language->language],
+        '#value' => $language_options[$subscription->language],
       );
     }
     else {
