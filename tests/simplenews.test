@@ -229,7 +229,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mail = $this->randomEmail(8, 'testmail');
     $edit = array(
-      "newsletter-$tid" => '1',
+      "newsletters[$tid]" => '1',
       'mail' => $mail,
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
@@ -301,7 +301,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Assert confirmation message
 
     $edit = array(
-      "newsletter-$tid" => 0,
+      "newsletters[$tid]" => 0,
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Update'));
     $this->assertRaw(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $subscriber_user->mail)), t('Authenticated user unsubscribed on the subscriptions page.'));
@@ -311,7 +311,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Assert confirmation message
 
     $edit = array(
-      "newsletter-$tid" => '1',
+      "newsletters[$tid]" => '1',
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Update'));
     $this->assertRaw(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $subscriber_user->mail)), t('Authenticated user subscribed on the subscriptions page.'));
@@ -321,7 +321,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Assert confirmation message
 
     $edit = array(
-      "newsletter-$tid" => 0,
+      "newsletters[$tid]" => 0,
     );
     $url = 'user/' . $subscriber_user->uid . '/edit/simplenews';
     $this->drupalPost($url, $edit, t('Save'));
@@ -332,7 +332,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Assert confirmation message
 
     $edit = array(
-      "newsletter-$tid" => '1',
+      "newsletters[$tid]" => '1',
     );
     $url = 'user/' . $subscriber_user->uid . '/edit/simplenews';
     $this->drupalPost($url, $edit, t('Save'));
@@ -495,20 +495,20 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
         }
         else if ($category->new_account == 'on' || $category->name == 'off-double-block' || $category->new_account == 'silent') {
           // All on, silent and the explicitly selected category should be checked.
-          $this->assertFieldChecked('edit-newsletter-' . $category->tid);
+          $this->assertFieldChecked('edit-newsletters-' . $category->tid);
         }
         else {
-          $this->assertNoFieldChecked('edit-newsletter-' . $category->tid);
+          $this->assertNoFieldChecked('edit-newsletters-' . $category->tid);
         }
       }
     }
 
     // Unsubscribe from a newsletter category.
     $edit = array(
-      'newsletter-' . $off_double_block_tid => FALSE,
+      'newsletters[' . $off_double_block_tid . ']' => FALSE,
     );
     $this->drupalPost(NULL, $edit, t('Save'));
-    $this->assertNoFieldChecked('edit-newsletter-' . $off_double_block_tid);
+    $this->assertNoFieldChecked('edit-newsletters-' . $off_double_block_tid);
   }
 
   /**
