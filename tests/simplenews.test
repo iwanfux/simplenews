@@ -704,6 +704,10 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     foreach ($subscribers[$first] as $mail) {
       $this->assertNoText($mail);
     }
+
+    // @todo Test Admin subscriber edit category
+    // @todo Test Admin subscriber edit preferred language $subscription->language
+    // @todo Test Admin subscriber edit Active / Inactive
   }
 
   /**
