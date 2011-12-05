@@ -328,7 +328,11 @@ function simplenews_admin_categories() {
       $form[$category->tid]['#category'] = $category;
       $form[$category->tid]['name'] = array('#markup' => check_plain(_simplenews_newsletter_name($category)));
       $form[$category->tid]['weight'] = array('#type' => 'weight', '#delta' => 10, '#default_value' => $category->weight);
-      $form[$category->tid]['edit'] = array('#type' => 'link', '#title' => t('edit newsletter category'), '#href' => "admin/structure/simplenews/$category->tid/edit");
+      $form[$category->tid]['edit'] = array(
+        '#type' => 'link',
+        '#title' => t('edit newsletter category'),
+        '#href' => "admin/config/services/simplenews/categories/$category->tid/edit",
+      );
     }
   }
 
@@ -385,7 +389,7 @@ function theme_simplenews_admin_categories($variables) {
     drupal_add_tabledrag('newsletter-category', 'order', 'self', 'simplenews-category-weight');
   }
   $header[] = array('data' => t('Operations'), 'colspan' => '3');
-  return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No newsletter categories. <a href="@link">Add category</a>.', array('@link' => url('admin/structure/simplenews/add'))), 'attributes' => array('id' => 'newsletter-category'))) . drupal_render_children($form);
+  return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No newsletter categories. <a href="@link">Add category</a>.', array('@link' => url('admin/config/services/simplenews/add'))), 'attributes' => array('id' => 'newsletter-category'))) . drupal_render_children($form);
 }
 
 /**
@@ -626,7 +630,7 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
   //dpm($form_state);
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
   if ($op == t('Delete')) {
-    $form_state['redirect'] = 'admin/structure/simplenews/' . $form_state['values']['tid'] . '/delete';
+    $form_state['redirect'] = 'admin/config/services/simplenews/categories/' . $form_state['values']['tid'] . '/delete';
     return;
   }
 
@@ -645,18 +649,18 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
   switch (simplenews_category_save($category)) {
     case SAVED_NEW:
       drupal_set_message(t('Created new newsletter category %name.', array('%name' => _simplenews_newsletter_name($category))));
-      watchdog('simplenews', 'Created new newsletter category %name.', array('%name' => _simplenews_newsletter_name($category)), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
+      watchdog('simplenews', 'Created new newsletter category %name.', array('%name' => _simplenews_newsletter_name($category), WATCHDOG_NOTICE, l(t('edit'), 'admin/config/services/simplenews/categories/' . $category->tid . '/edit')));
       break;
 
     case SAVED_UPDATED:
       drupal_set_message(t('Updated newsletter category %name.', array('%name' => _simplenews_newsletter_name($category))));
-      watchdog('simplenews', 'Updated newsletter category %name.', array('%name' => _simplenews_newsletter_name($category)), WATCHDOG_NOTICE, l(t('edit'), 'admin/structure/simplenews/' . $category->tid . '/edit'));
+      watchdog('simplenews', 'Updated newsletter category %name.', array('%name' => _simplenews_newsletter_name($category)), WATCHDOG_NOTICE, l(t('edit'), 'admin/config/services/simplenews/categories/' . $category->tid . '/edit'));
       break;
   }
 
   $form_state['values']['tid'] = $category->tid;
   $form_state['tid'] = $category->tid;
-  $form_state['redirect'] = 'admin/structure/simplenews';
+  $form_state['redirect'] = 'admin/config/services/simplenews';
 }
 
 /**
@@ -676,7 +680,7 @@ function simplenews_admin_category_delete($form, &$form_state, $category) {
 
   return confirm_form($form,
     t('Are you sure you want to delete category %name?', array('%name' => _simplenews_newsletter_name($category))),
-    'admin/structure/simplenews',
+    'admin/config/services/simplenews',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -696,7 +700,7 @@ function simplenews_admin_category_delete_submit($form, &$form_state) {
   taxonomy_term_delete($tid);
   drupal_set_message(t('Newsletter category %name has been deleted.', array('%name' => $name)));
 
-  $form_state['redirect'] = 'admin/structure/simplenews';
+  $form_state['redirect'] = 'admin/config/services/simplenews';
   return;
 }
 

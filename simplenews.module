@@ -118,9 +118,6 @@ function simplenews_init() {
 
 /**
  * Implementation of hook_menu().
- *
- * @todo Add $form to drupal_get_form() callback functions: http://drupal.org/node/224333#hook_forms_signature
- * @todo Review admin path due to D7's changed information architecture
  */
 function simplenews_menu() {
     $items['admin/content/simplenews'] = array(
@@ -132,39 +129,36 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/structure/simplenews'] = array(
+  $items['admin/config/services/simplenews'] = array(
     'title' => 'Newsletters',
-    'description' => 'List, add and edit newsletter categories.',
+    'description' => 'Configure your sites newsletters.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_categories'),
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
-/*
-  // @todo Don't need this?
-  $items['admin/content/simplenews/list'] = array(
-    'title' => 'List newsletters',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  );
-*/
-  $items['admin/structure/simplenews/%simplenews_category/edit'] = array(
+
+
+  $items['admin/config/services/simplenews/categories'] = array(
     'title' => 'Newsletters',
-    'type' => MENU_CALLBACK,
+     'type' => MENU_DEFAULT_LOCAL_TASK,
+   );
+
+  $items['admin/config/services/simplenews/categories/%simplenews_category/edit'] = array(
+    'title' => 'Newsletters',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_category_form', 3),
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/structure/simplenews/%simplenews_category/delete'] = array(
+  $items['admin/config/services/simplenews/categories/%simplenews_category/delete'] = array(
     'title' => 'Newsletters',
-    'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_admin_category_delete', 3),
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/structure/simplenews/add'] = array(
+  $items['admin/config/services/simplenews/add'] = array(
     'title' => 'Add newsletter category',
     'type' => MENU_LOCAL_ACTION,
     'page callback' => 'drupal_get_form',
@@ -193,7 +187,6 @@ function simplenews_menu() {
   );
   $items['admin/people/simplenews/users/edit/%'] = array(
     'title' => 'Subscriptions',
-    'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('simplenews_subscriptions_admin_form', 5),
     'access arguments' => array('administer simplenews subscriptions'),
@@ -226,29 +219,23 @@ function simplenews_menu() {
     'file' => 'includes/simplenews.admin.inc',
     'weight' => 10,
   );
-
-  // Configuration links.
-  $items['admin/config/simplenews'] = array(
-    'title' => 'Simplenews',
-    'description' => 'Manage simplenews configuration.',
-    'position' => 'right',
-    'weight' => -10,
-    'page callback' => 'system_admin_menu_block_page',
-    'access arguments' => array('access administration pages'),
-    'file' => 'system.admin.inc',
-    'file path' => drupal_get_path('module', 'system'),
-  );
-  $items['admin/config/simplenews/general'] = array(
-    'title' => 'General',
+  $items['admin/config/services/simplenews/settings'] = array(
+    'title' => 'Settings',
     'description' => 'Simplenews vocabulary setting.',
     'page callback' => 'drupal_get_form',
-    'weight' => -20,
+    'weight' => 20,
     'page arguments' => array('simplenews_admin_settings'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
+    'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/config/simplenews/newsletter'] = array(
+  $items['admin/config/services/simplenews/settings/general'] = array(
+    'title' => 'General',
+    'weight' => -20,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/services/simplenews/settings/newsletter'] = array(
     'title' => 'Newsletter',
     'description' => 'Newsletter default settings and sender data.',
     'page callback' => 'drupal_get_form',
@@ -257,8 +244,9 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
+    'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/config/simplenews/subscription'] = array(
+  $items['admin/config/services/simplenews/settings/subscription'] = array(
     'title' => 'Subscription',
     'description' => 'Subscription settings, opt-in/out confirmation email text.',
     'page callback' => 'drupal_get_form',
@@ -267,8 +255,9 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
+    'type' => MENU_LOCAL_TASK,
   );
-  $items['admin/config/simplenews/mail'] = array(
+  $items['admin/config/services/simplenews/settings/mail'] = array(
     'title' => 'Send mail',
     'description' => 'Send mail, cron and debug options.',
     'page callback' => 'drupal_get_form',
@@ -277,6 +266,7 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
+    'type' => MENU_LOCAL_TASK,
   );
 
   $items['newsletter/confirm'] = array(
@@ -2554,7 +2544,7 @@ function simplenews_help($path, $arg) {
         $help .= '<li>' . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/structure/block'))) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
-        $help .= '<li>' . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/structure/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
+        $help .= '<li>' . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/config/services/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
       }
       $help .= '</ul>';
 
@@ -2567,19 +2557,19 @@ function simplenews_help($path, $arg) {
         $help .= '<li>' . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/config/simplenews/newsletter'))) . "</li>\n";
       }
       if (user_access('administer newsletters')) {
-        $help .= '<li>' . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/structure/simplenews'))) . "</li>\n";
+        $help .= '<li>' . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews'))) . "</li>\n";
       }
       $help .= '</ul>';
       return $help;
-    case 'admin/config/simplenews/newsletter':
+    case 'admin/config/services/simplenews/newsletter':
       $help = '<ul>';
-      $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/structure/simplenews'))) . "</li>\n";
+      $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/config/services/simplenews'))) . "</li>\n";
       if (!module_exists('mimemail')) {
         $help .= '<li>' . t('Install <a href="!mime_mail_url">Mime Mail</a> or <a href="!html_mail_url">HTML Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_mail_url' => 'http://drupal.org/project/htmlmail')) . "</li>\n";
       }
       $help .= '</ul>';
       return $help;
-    case 'admin/config/simplenews/subscription':
+    case 'admin/config/services/simplenews/subscription':
       if (variable_get('language_count', 1) > 1) {
         if (module_exists('i18nstrings')) {
           global $language;
@@ -2592,7 +2582,10 @@ function simplenews_help($path, $arg) {
         return $help;
       }
       break;
-    case 'admin/structure/simplenews/add':
+    case 'admin/config/services/simplenews':
+      $help = '<p>' . t('Newsletter allow you to send periodic e-mails to subscribers. See <a href="!manage_subscribers">Newsletter subscriptions</a> for a listing of the subscribers', array('!manage_subscribers' => url('admin/people/simplenews')));
+      return $help;
+    case 'admin/config/services/simplenews/add':
       $help = '<p>' . t('You can create different newsletters (or subjects) to categorize your news (e.g. Cats news, Dogs news, ...).') . "</p>\n";
       return $help;
     case 'admin/structure/types/manage/simplenews/display':

@@ -380,7 +380,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions', 'administer newsletters', 'administer simplenews subscriptions'));
     $this->drupalLogin($admin_user);
 
-    $this->drupalGet('admin/structure/simplenews');
+    $this->drupalGet('admin/config/services/simplenews');
 
     // Create a category for all possible setting combinations.
     $new_account = array('none', 'off', 'on', 'silent');
@@ -533,7 +533,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $edit = array(
       'name' => $name = $this->randomName(),
     );
-    $this->drupalPost('admin/structure/simplenews/add', $edit, t('Save'));
+    $this->drupalPost('admin/config/services/simplenews/add', $edit, t('Save'));
 
     // Add a number of users to each category separately and then add another
     // bunch to both.
@@ -764,5 +764,57 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Delete content type.
     // @todo: Add assertions.
     $this->drupalPost('admin/structure/types/manage/' . $type . '/delete', array(), t('Delete'));
+  }
+}
+
+/**
+ * Upgrade test from 6.x-1.x
+ */
+class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
+  public static function getInfo() {
+    return array(
+      'name'  => 'Simplenews 6.x-1.x upgrade path',
+      'description'  => 'Simplenews 6.x-1.x upgrade path tests.',
+      'group' => 'Simplenews',
+    );
+  }
+
+  public function setUp() {
+    // Path to the database dump files.
+    $this->databaseDumpFiles = array(
+      drupal_get_path('module', 'simplenews') . '/tests/d6_simplenews_61.php',
+    );
+    parent::setUp();
+  }
+
+  /**
+   * Test a successful upgrade.
+   */
+  public function testSimplenewsUpgrade() {
+    // Delete everything except taxnomy and simplenews from system to
+    // prevent their update functions to be run.
+    $this->uninstallModulesExcept(array('taxonomy', 'simplenews'));
+
+    // Disable simplenews, the update hooks will be executed anyway.
+    db_update('system')
+      ->fields(array(
+        'status' => 0,
+      ))
+      ->condition('name', 'simplenews')
+      ->execute();
+
+    $this->assertTrue($this->performUpgrade(), t('Upgraded successfully.'));
+
+    // Enable simplenews.
+    $edit = array(
+      'modules[Mail][simplenews][enable]' => 1,
+    );
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+
+
+    $this->drupalGet('admin/config/services/simplenews');
+    $this->assertText('Drupal 6 newsletter');
+    $this->assertText('Test');
+
   }
 }
