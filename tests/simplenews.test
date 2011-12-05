@@ -768,6 +768,130 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 }
 
 /**
+ * Tests for I18N integration.
+ */
+class SimpleNewsI18nTestCase extends SimplenewsTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  function getInfo() {
+    return array(
+      'name' => t('Simplenews I18n'),
+      'description' => t('Translation of newsletter categories'),
+      'group' => t('Simplenews'),
+      'dependencies' => array('i18n_taxonomy'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp(array('i18n_taxonomy'));
+    $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters'));
+    $this->drupalLogin($this->admin_user);
+    $this->setUpLanguages();
+  }
+
+  /**
+   * Install a the specified language if it has not been already. Otherwise make sure that
+   * the language is enabled.
+   *
+   * Copied from Drupali18nTestCase::addLanguage().
+   *
+   * @param $language_code
+   *   The language code the check.
+   */
+  function addLanguage($language_code) {
+    // Check to make sure that language has not already been installed.
+    $this->drupalGet('admin/config/regional/language');
+
+    if (strpos($this->drupalGetContent(), 'enabled[' . $language_code . ']') === FALSE) {
+      // Doesn't have language installed so add it.
+      $edit = array();
+      $edit['langcode'] = $language_code;
+      $this->drupalPost('admin/config/regional/language/add', $edit, t('Add language'));
+
+      // Make sure we are not using a stale list.
+      drupal_static_reset('language_list');
+      $languages = language_list('language');
+      $this->assertTrue(array_key_exists($language_code, $languages), t('Language was installed successfully.'));
+
+      if (array_key_exists($language_code, $languages)) {
+        $this->assertRaw(t('The language %language has been created and can now be used. More information is available on the <a href="@locale-help">help screen</a>.', array('%language' => $languages[$language_code]->name, '@locale-help' => url('admin/help/locale'))), t('Language has been created.'));
+      }
+    }
+    elseif ($this->xpath('//input[@type="checkbox" and @name=:name and @checked="checked"]', array(':name' => 'enabled[' . $language_code . ']'))) {
+      // It's installed and enabled. No need to do anything.
+      $this->assertTrue(true, 'Language [' . $language_code . '] already installed and enabled.');
+    }
+    else {
+      // It's installed but not enabled. Enable it.
+      $this->assertTrue(true, 'Language [' . $language_code . '] already installed.');
+      $this->drupalPost(NULL, array('enabled[' . $language_code . ']' => TRUE), t('Save configuration'));
+      $this->assertRaw(t('Configuration saved.'), t('Language successfully enabled.'));
+    }
+  }
+
+  function testCategoryTranslation() {
+    $this->drupalLogin($this->admin_user);
+    // Make Input Format "Filtered Text" translatable
+    $edit = array(
+      'i18n_string_allowed_formats[filtered_html]' => 'filtered_html',
+      'i18n_string_allowed_formats[plain_text]' => 'plain_text',
+    );
+    $this->drupalPost('admin/config/regional/i18n/strings', $edit, t('Save configuration'));
+
+    $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', 0));
+    $vocabulary->i18n_mode = I18N_MODE_LOCALIZE;
+    taxonomy_vocabulary_save($vocabulary);
+    drupal_static_reset('i18n_taxonomy_vocabulary_mode');
+
+    // Refresh strings.
+    module_invoke_all('i18n_string_refresh', 'taxonomy');
+
+    $tid = array_shift(simplenews_categories_load_multiple())->tid;
+    // Translate term to spanish.
+    list($textgroup, $context) = i18n_string_context(array('taxonomy', 'term', $tid, 'name'));
+    i18n_string_textgroup($textgroup)->update_translation($context, 'es', $es_name = $this->randomName());
+    list($textgroup, $context) = i18n_string_context(array('taxonomy', 'term', $tid, 'description'));
+    i18n_string_textgroup($textgroup)->update_translation($context, 'es', $es_description = $this->randomName());
+
+    // Visit newsletter selection page in english.
+    $this->drupalGet('user/' . $this->admin_user->uid . '/edit/simplenews');
+    $this->assertText(t('Drupal newsletter'));
+    $this->assertText(t('Drupal newsletter categories.'));
+
+    // And now in spanish.
+    $this->drupalGet('es/user/' . $this->admin_user->uid . '/edit/simplenews');
+    $this->assertText($es_name, t('Category name is translated.'));
+    $this->assertText($es_description, t('Category description is translated'));
+  }
+
+  /**
+   * Set up configuration for multiple languages.
+   *
+   * Copied from Drupali18nTestCase::setUpLanguages().
+   */
+  function setUpLanguages($admin_permissions = array()) {
+
+    // Add languages.
+    $this->default_language = 'en';
+    $this->secondary_language = 'es';
+    $this->addLanguage($this->default_language);
+    $this->addLanguage($this->secondary_language);
+
+    // Enable URL language detection and selection to make the language switcher
+    // block appear.
+    $edit = array('language[enabled][locale-url]' => TRUE);
+    $this->drupalPost('admin/config/regional/language/configure', $edit, t('Save settings'));
+    $this->assertRaw(t('Language negotiation configuration saved.'), t('URL language detection enabled.'));
+    $this->drupalGet('admin/config/regional/language/configure');
+
+    drupal_static_reset('locale_url_outbound_alter');
+    drupal_static_reset('language_list');
+  }
+}
+
+/**
  * Upgrade test from 6.x-1.x
  */
 class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
