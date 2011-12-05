@@ -1109,7 +1109,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
   function setUp() {
     parent::setUp();
 
-    $this->user = $this->drupalCreateUser(array('administer newsletters', 'send newsletter', 'administer nodes', 'administer simplenews subscriptions', 'create simplenews content', 'edit any simplenews content', 'view own unpublished content'));
+    $this->user = $this->drupalCreateUser(array('administer newsletters', 'send newsletter', 'administer nodes', 'administer simplenews subscriptions', 'create simplenews content', 'edit any simplenews content', 'view own unpublished content', 'delete any simplenews content'));
     $this->drupalLogin($this->user);
 
     // Subscribe a few users.
@@ -1469,5 +1469,81 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $newsletter = simplenews_newsletter_load($node->nid);
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $newsletter->status, t('Newsletter sending not started.'));
     $this->assertEqual(2, $newsletter->tid, t('Newsletter has tid 2.'));
+  }
+
+
+  /**
+   * Create a newsletter, send mails and then delete.
+   */
+  function testDelete() {
+    // Verify that the newsletter settings are shown.
+    $this->drupalGet('node/add/simplenews');
+    $this->assertText(t('Newsletter category'));
+
+    // Prevent deleting the mail spool entries automatically.
+    variable_set('simplenews_spool_expire', 1);
+
+    $edit = array(
+      'title' => $this->randomName(),
+    );
+    $this->drupalPost(NULL, $edit, ('Save'));
+    $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+    $node = node_load($matches[1]);
+
+    $this->clickLink(t('Newsletter'));
+    $this->assertText(t('Send one test newsletter to the test address'));
+    $this->assertText(t('Send newsletter'));
+    $this->assertNoText(t('Send newsletter when published'), t('Send on publish is not shown for published nodes.'));
+
+    // Verify state.
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $newsletter->status, t('Newsletter not sent yet.'));
+
+    // Send now.
+    $this->drupalPost(NULL, array('simplenews[send]' => SIMPLENEWS_COMMAND_SEND_NOW), t('Submit'));
+
+    // Verify state.
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_PENDING, $newsletter->status, t('Newsletter sending pending.'));
+
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $this->assertEqual(5, $spooled, t('5 mails remaining in spool.'));
+
+    // Verify that deleting isn't possible right now.
+    $this->clickLink(t('Edit'));
+    $this->assertText(t("You can't delete this newsletter because it has not been sent to all its subscribers."));
+    $this->assertNoText(t('Delete'));
+
+    // Send mails.
+    simplenews_cron();
+
+    // Verify state.
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, $newsletter->status, t('Newsletter sending finished'));
+
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $this->assertEqual(5, $spooled, t('Mails are kept in simplenews_mail_spool after being sent.'));
+
+    // Verify mails.
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(5, count($mails), t('All mails were sent.'));
+    foreach ($mails as $mail) {
+      $this->assertEqual($mail['subject'], '[Drupal newsletter] ' . $edit['title'], t('Mail has correct subject'));
+      $this->assertTrue(isset($this->subscribers[$mail['to']]), t('Found valid recipient'));
+      unset($this->subscribers[$mail['to']]);
+    }
+    $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+
+    // Now delete.
+    $this->clickLink(t('Edit'));
+    $this->drupalPost(NULL, array(), t('Delete'));
+    $this->drupalPost(NULL, array(), t('Delete'));
+
+    // Verify.
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertFalse($newsletter);
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $this->assertEqual(0, $spooled, t('No mails remaining in spool.'));
+
   }
 }

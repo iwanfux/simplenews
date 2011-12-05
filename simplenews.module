@@ -475,6 +475,19 @@ function simplenews_node_delete($node) {
     return;
   }
   simplenews_newsletter_delete($node);
+  // Check if pending emails of this newsletter issue exist and delete these too.
+  module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+  $count = simplenews_clear_spool_node($node);
+  if ($count) {
+    drupal_set_message(t('Newsletter %title was deleted but had @count pending emails. They can no longer be sent.', array(
+      '%title' => $node->title,
+      '@count' => $count,
+     )), 'warning');
+    watchdog('simplenews', 'Newsletter %title deleted with @count pending emails. Emails can no longer be sent.', array(
+      '%title' => $node->title,
+      '@count' => $count,
+     ), WATCHDOG_ALERT);
+  }
   drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->title)));
 }
 

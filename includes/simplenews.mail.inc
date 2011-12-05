@@ -255,6 +255,8 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
  * Mail data is retrieved from the spool, rendered and send one by one
  * If sending is successful the message is marked as send in the spool.
  * @todo Replace time(): http://drupal.org/node/224333#time
+ *
+ * TODO: Redesign API to allow language counter in multilingual sends.
  */
 function simplenews_mail_spool($nid = NULL, $limit = NULL) {
   $check_counter = 0;
@@ -513,14 +515,28 @@ function simplenews_count_spool($nid, $status = array(SIMPLENEWS_SPOOL_PENDING, 
  * All records with status 'send' and time stamp before the expiration date
  * are removed from the spool.
  * @todo Replace time(): http://drupal.org/node/224333#time
+ *
+ * @return Count deleted
  */
 function simplenews_clear_spool() {
   $expiration_time = REQUEST_TIME - variable_get('simplenews_spool_expire', 0) * 86400;
-  db_delete('simplenews_mail_spool')
+  return db_delete('simplenews_mail_spool')
     ->condition('status', SIMPLENEWS_SPOOL_DONE)
     ->condition('timestamp', $expiration_time, '<=')
     ->execute();
 }
+
+/**
+ * Remove records from mail spool table for node.
+ *
+ * @return Count deleted
+ */
+function simplenews_clear_spool_node($node) {
+  return db_delete('simplenews_mail_spool')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
 
 /**
  * Update newsletter sent status.
