@@ -103,12 +103,6 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'vid' => array(
-        'description' => 'The {node}.vid that identifies the version used as newsletter.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'tid' => array(
         'description' => 'The newsletter category {simplenews_category}.tid this newsletter belongs to.',
         'type' => 'int',
@@ -134,10 +128,6 @@ function simplenews_schema() {
       'nid' => array(
         'table' => 'node',
         'columns' => array('nid' => 'nid'),
-      ),
-      'vid' => array(
-        'table' => 'node',
-        'columns' => array('vid' => 'vid'),
       ),
     ),
   );
@@ -271,12 +261,6 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'vid' => array(
-        'description' => 'The {node}.vid of this newsletter.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'tid' => array(
         'description' => 'The {simplenews_category}.tid this newsletter belongs to.',
         'type' => 'int',
@@ -329,10 +313,6 @@ function simplenews_schema() {
       'nid' => array(
         'table' => 'node',
         'columns' => array('nid' => 'nid'),
-      ),
-      'vid' => array(
-        'table' => 'node',
-        'columns' => array('vid' => 'vid'),
       ),
       'tid' => array(
         'table' => 'simplenews_category',
@@ -731,4 +711,5 @@ function simplenews_update_7002() {
     db_drop_field('simplenews_mail_spool', 'vid');
   }
 }
+
 

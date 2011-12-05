@@ -86,25 +86,6 @@ function simplenews_views_data() {
     ),
   );
 
-  $data['simplenews_mail_spool']['vid'] = array(
-    'title' => t('Vid'),
-    'help' => t('The {node}.vid of this newsletter.'),
-    'field' => array(
-      'handler' => 'views_handler_field_numeric',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
   $data['simplenews_mail_spool']['tid'] = array(
     'title' => t('Term ID'),
     'help' => t('The {term_data}.tid this newsletter issue belongs to.'),

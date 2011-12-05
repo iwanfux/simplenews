@@ -31,7 +31,6 @@ function simplenews_send_node($node, $accounts = array()) {
 
   if (is_object($node)) {
     $spool_data['nid'] = $node->nid;
-    $spool_data['vid'] = $node->vid;
     $spool_data['tid'] = $node->simplenews->tid;
 
     // Get accounts subscribed to this newsletter.
@@ -70,7 +69,6 @@ function simplenews_send_node($node, $accounts = array()) {
     $select->addField('s', 'snid');
     $select->addField('t', 'tid');
     $select->addExpression($spool_data['nid'], 'nid');
-    $select->addExpression($spool_data['vid'], 'vid');
     $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
     $select->addExpression(REQUEST_TIME, 'timestamp');
     $select->condition('t.tid', $spool_data['tid']);
@@ -85,7 +83,7 @@ function simplenews_send_node($node, $accounts = array()) {
     // in the spool. When cron is used newsletters are send to addresses in the
     // spool during the next (and following) cron run.
     if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
-      simplenews_mail_spool($spool_data['nid'], $spool_data['vid'], 999999);
+      simplenews_mail_spool($spool_data['nid'], 999999);
       drupal_set_message(t('Newsletter sent.'));
       simplenews_clear_spool();
       simplenews_send_status_update();
@@ -129,7 +127,6 @@ function simplenews_send_test($node, $test_addresses) {
       if (!empty($mail)) {
         $message = new stdClass();
         $message->nid = $node->nid;
-        $message->vid = $node->vid;
         $message->tid = $node->simplenews->tid;
         $message->data = simplenews_get_subscription((object)array('mail' => $mail));
         $account = _simplenews_user_load($mail);
@@ -140,7 +137,6 @@ function simplenews_send_test($node, $test_addresses) {
         else {
           $recipients['anonymous'][] = $mail;
         }
-        //$tmpres = simplenews_mail_mail($node->nid, $node->vid, $mail, 'test');
         $tmpres = simplenews_mail_mail($message, 'test');
       }
     }
@@ -167,7 +163,6 @@ function simplenews_send_test($node, $test_addresses) {
  *   The mail message object as returned by simplenews_load_spool(), containing
  *   the following properties:
  *   - nid
- *   - vid
  *   - tid
  *   - data
  * @param $key
@@ -177,10 +172,8 @@ function simplenews_send_test($node, $test_addresses) {
  *   TRUE if the email was successfully delivered; otherwise FALSE.
  */
 function simplenews_mail_mail($msgbase, $key = 'node') {
-  $cache = &drupal_static(__FUNCTION__);
 
   $nid = $msgbase->nid;
-  $vid = $msgbase->vid;
   $tid = $msgbase->tid;
 
   $subscriber = $msgbase->data;
@@ -191,16 +184,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
   $params['context']['account'] = $subscriber;
 
   // Get node data for the mail
-  // Because node_load() only caches the most recent node revision
-  // we cache here based  on nid and vid.
-  // @todo Investigate if this caching thing is still applicable to D7
-  if (isset($cache[$nid . ':' . $vid])) {
-    $node = $cache[$nid . ':' . $vid];
-  }
-  else {
-    $node = node_load($nid, $vid);
-    $cache[$nid . ':' . $vid] = $node;
-  }
+  $node = node_load($nid);
 
   if (is_object($node)) {
     $params['context']['node'] = $node;
@@ -257,7 +241,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
       'status' => SIMPLENEWS_SPOOL_DONE,
       'error' => TRUE,
     );
-    watchdog('simplenews', 'Newsletter not send: newsletter issue does not exist (nid = @nid; vid = @vid).', array('@nid' => $nid, '@vid' => $vid), WATCHDOG_ERROR);
+    watchdog('simplenews', 'Newsletter not send: newsletter issue does not exist (nid = @nid).', array('@nid' => $nid), WATCHDOG_ERROR);
   }
 
   return isset($message['result']) ? $message['result'] : FALSE;
@@ -272,7 +256,7 @@ function simplenews_mail_mail($msgbase, $key = 'node') {
  * If sending is successful the message is marked as send in the spool.
  * @todo Replace time(): http://drupal.org/node/224333#time
  */
-function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
+function simplenews_mail_spool($nid = NULL, $limit = NULL) {
   $check_counter = 0;
 
   // Send pending messages from database cache
@@ -349,7 +333,6 @@ function simplenews_mail_spool($nid = NULL, $vid = NULL, $limit = NULL) {
  *   following keys:
  *   - mail
  *   - nid
- *   - vid
  *   - tid
  *   - status: (optional) Defaults to SIMPLENEWS_SPOOL_PENDING
  *   - time: (optional) Defaults to REQUEST_TIME.
@@ -362,7 +345,6 @@ function simplenews_save_spool($spool) {
     ->fields(array(
       'mail' => $spool['mail'],
       'nid' => $spool['nid'],
-      'vid' => $spool['vid'],
       'tid' => $spool['tid'],
       'snid' => $spool['snid'],
       'status' => $status,
@@ -501,15 +483,13 @@ function simplenews_update_spool($msids, $data) {
  *
  * @param integer $nid
  *   Newsletter node id.
- * @param integer $vid
- *   Newsletter revision id.
  * @param array $status
  *   Array of status flags.
  *
  * @return integer
  *   Count of mail spool elements which own the attributes passed in as params.
  */
-function simplenews_count_spool($nid, $vid, $status = array(SIMPLENEWS_SPOOL_PENDING, SIMPLENEWS_SPOOL_IN_PROGRESS)) {
+function simplenews_count_spool($nid, $status = array(SIMPLENEWS_SPOOL_PENDING, SIMPLENEWS_SPOOL_IN_PROGRESS)) {
   $clauses = array();
   $params = array();
 
@@ -523,7 +503,6 @@ function simplenews_count_spool($nid, $vid, $status = array(SIMPLENEWS_SPOOL_PEN
 
   $query = db_select('simplenews_mail_spool')
     ->condition('nid', $nid)
-    ->condition('vid', $vid)
     ->where(implode(' OR ', $clauses));
   return $query->countQuery()->execute()->fetchField();
 }
@@ -568,13 +547,12 @@ function simplenews_send_status_update() {
 
   // For each pending newsletter count the number of pending emails in the spool.
   $query = db_select('simplenews_newsletter', 's');
-  $query->innerJoin('node', 'n', 's.nid = n.nid AND s.vid = n.vid');
-  $query->fields('s', array('nid', 'vid', 'tid'))
+  $query->innerJoin('node', 'n', 's.nid = n.nid');
+  $query->fields('s', array('nid', 'tid'))
     ->fields('n', array('tnid'))
     ->condition('s.status', SIMPLENEWS_STATUS_SEND_PENDING);
   foreach ($query->execute() as $newsletter) {
-    // nid-vid are combined in one unique key.
-    $counts[$newsletter->tnid][$newsletter->nid . '-' . $newsletter->vid] = simplenews_count_spool($newsletter->nid, $newsletter->vid);
+    $counts[$newsletter->tnid][$newsletter->nid] = simplenews_count_spool($newsletter->nid);
   }
 
   // Determine which nodes are send per translation group and per individual node.
@@ -582,27 +560,23 @@ function simplenews_send_status_update() {
     // The sum of emails per tnid is the combined status result for the group of translated nodes.
     // Untranslated nodes have tnid == 0 which will be ignored later.
     $sum[$tnid] = array_sum($node_count);
-    foreach ($node_count as $nidvid => $count) {
+    foreach ($node_count as $nid => $count) {
       // Translated nodes (tnid != 0)
       if ($tnid != '0' && $sum[$tnid] == '0') {
-        $send[] = $nidvid;
+        $send[] = $nid;
       }
       // Untranslated nodes (tnid == 0)
       elseif ($tnid == '0' && $count == '0') {
-        $send[] = $nidvid;
+        $send[] = $nid;
       }
     }
   }
 
   // Update overall newsletter status
   if (!empty($send)) {
-    foreach ($send as $nidvid) {
-      // Split the combined key 'nid-vid'
-      $nid = strtok($nidvid, '-');
-      $vid = strtok('-');
+    foreach ($send as $nid) {
       db_update('simplenews_newsletter')
         ->condition('nid', $nid)
-        ->condition('vid', $vid)
         ->fields(array('status' => SIMPLENEWS_STATUS_SEND_READY))
         ->execute();
     }

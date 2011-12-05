@@ -78,7 +78,7 @@ function simplenews_action_send_newsletter(&$object, $context = array()) {
     }
 
     // Get sent status of this newsletter. The newsletter sent status is used not the sent status of individual emails.
-    $newsletter = simplenews_newsletter_load($context['nid'], $context['vid']);
+    $newsletter = simplenews_newsletter_load($context['nid']);
 
     // Send newsletter if resend is allowed OR newsletter is not yet send.
     if ($context['resend'] OR $newsletter->s_status == SIMPLENEWS_STATUS_SEND_NOT) {

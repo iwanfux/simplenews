@@ -168,7 +168,7 @@ function simplenews_admin_issues() {
   $query->leftJoin('simplenews_category', 'sc', 'sn.tid = sc.tid');
   $query->leftJoin('taxonomy_term_data', 't', 'sc.tid = t.tid');
   //$query->leftJoin('users', 'u', 'ss.uid = u.uid');
-  $query->fields('n', array('nid', 'vid', 'title', 'created', 'status'))
+  $query->fields('n', array('nid', 'title', 'created', 'status'))
     ->fields('sn', array('tid'))
     ->fields('t', array('name'))
     ->limit(30)

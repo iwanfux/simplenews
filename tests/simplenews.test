@@ -1254,6 +1254,10 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
     $this->assertEqual(5, $spooled, t('5 mails have been added to the mail spool'));
 
+    // Check warning message on node edit form.
+    $this->clickLink(t('Edit'));
+    $this->assertText(t('This newsletter issue is currently being sent. Any changes will be reflected in the e-mails which have not been sent yet.'));
+
     // Run cron.
     simplenews_cron();
 
