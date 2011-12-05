@@ -88,6 +88,7 @@ function simplenews_send_node($node, $accounts = array()) {
       simplenews_mail_spool($spool_data['nid'], $spool_data['vid'], 999999);
       drupal_set_message(t('Newsletter sent.'));
       simplenews_clear_spool();
+      simplenews_send_status_update();
     }
     else {
       drupal_set_message(t('Newsletter pending.'));

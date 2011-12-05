@@ -36,6 +36,7 @@ define('SIMPLENEWS_PRIORITY_LOWEST', 5);
  */
 define('SIMPLENEWS_COMMAND_SEND_TEST', 0);
 define('SIMPLENEWS_COMMAND_SEND_NOW', 1);
+define('SIMPLENEWS_COMMAND_SEND_PUBLISH', 3);
 
 /**
  * NEWSLETTER SUBSCRIPTION STATUS
@@ -49,6 +50,7 @@ define('SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED', 0);
 define('SIMPLENEWS_STATUS_SEND_NOT', 0);
 define('SIMPLENEWS_STATUS_SEND_PENDING', 1);
 define('SIMPLENEWS_STATUS_SEND_READY', 2);
+define('SIMPLENEWS_STATUS_SEND_PUBLISH', 3);
 
 /**
  * MAIL SPOOL SENT STATUS
@@ -403,42 +405,15 @@ function simplenews_node_validate($node, $form) {
 }
 
 /**
- * Implementation of hook_node_presave().
- */
-function simplenews_node_presave($node) {
-  if (!simplenews_check_node_types($node->type)) {
-    return;
-  }
-
-  // Note that $node is NO full node object, see node_form_validate().
-  // Complete $node!
-  $newsletter = simplenews_newsletter_load($node->nid);
-  //$newsletter = simplenews_newsletter_load($node->nid, $node->vid);
-  if (!$newsletter) {
-    $newsletter = (object)simplenews_newsletter_defaults($node);
-  }
-  $node->simplenews = $newsletter;
-}
-
-/**
  * Implementation of hook_node_insert().
- *
- * // @todo simplenews_node_insert() and simplenews_node_update() have a lot in common.
- * // Solve this in a better way.
  */
 function simplenews_node_insert($node) {
   if (!simplenews_check_node_types($node->type)) {
     return;
   }
 
-  $newsletter = $node->simplenews;
-
-  $newsletter->nid = $node->nid;
-  $newsletter->vid = $node->vid;
-  $newsletter->status = SIMPLENEWS_STATUS_SEND_NOT;
-  $terms = simplenews_get_term_values($node);
-  $newsletter->tid = $terms[0]['tid'];
-  simplenews_newsletter_save($newsletter);
+  $node->simplenews = (object)simplenews_newsletter_defaults($node);
+  simplenews_newsletter_save($node->simplenews);
 }
 
 /**
@@ -466,19 +441,32 @@ function simplenews_newsletter_defaults($node = NULL) {
 /**
  * Implementation of hook_node_update().
  */
-// @todo can we combine simplenews_node_update() and simplenews_node_insert() ?
 function simplenews_node_update($node) {
   if (!simplenews_check_node_types($node->type)) {
     return;
   }
-  // @todo Check if this is an actual 'submit' action and not update as part of e.g. 'unpublish' on the node admin page
 
-  $newsletter = $node->simplenews;
-  if (!$newsletter) {
-    $newsletter = (object)simplenews_newsletter_defaults($node);
+  $node->simplenews = simplenews_newsletter_load($node->nid);
+  if (!$node->simplenews) {
+    $node->simplenews = (object)simplenews_newsletter_defaults($node);
+  }
+  else {
+    // Update tid.
+    $terms = simplenews_get_term_values($node);
+    $node->simplenews->tid = $terms[0]['tid'];
   }
 
-  simplenews_newsletter_save($newsletter);
+  // Check if the newsletter is set to send on publish and needs to be send.
+  if ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_PUBLISH && $node->status == NODE_PUBLISHED) {
+    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+    simplenews_update_sent_status($node);
+    simplenews_send_node($node);
+  }
+  else {
+    // simplenews_update_sent_status() already saves the node, only need to do
+    // it when not sending.
+    simplenews_newsletter_save($node->simplenews);
+  }
 }
 
 /**
@@ -3059,13 +3047,18 @@ function simplenews_node_tab_access($node) {
 /**
  * @todo
  */
-function simplenews_node_tab_send_form($form, &$form_state){
-  // Prepare
-  $node = $form_state['build_info']['args'][0];
-  $simplenews_values = (object)_simplenews_get_node_form_defaults();
-
-  if (isset($node->simplenews) && !empty($node->simplenews)) {
+function simplenews_node_tab_send_form($form, &$form_state, $node){
+  // First check if there already is a loaded simplenews object.
+  if (!empty($node->simplenews)) {
     $simplenews_values = $node->simplenews;
+  }
+  // If not, try to load it based on the node id.
+  else if ($loaded = simplenews_newsletter_load($node->nid)) {
+    $simplenews_values = $loaded;
+  }
+  // If that fails too, fall back to the defaults.
+  else {
+    $simplenews_values = (object)_simplenews_get_node_form_defaults($node);
   }
 
   $form = array();
@@ -3095,18 +3088,26 @@ function simplenews_node_tab_send_form($form, &$form_state){
   else {
     // Show newsletter sending options if newsletter has not been send yet.
     // If send a notification is shown.
-    if ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_NOT) {
-
-      // @todo move add_js to form theme function. It is not (re)loaded on validation error.
-      // Add dynamic text for send button.
-      drupal_add_js(drupal_get_path('module', 'simplenews') . '/simplenews.js', 'file');
+    if ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_NOT || $simplenews_values->status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
 
       $options = array(
         SIMPLENEWS_COMMAND_SEND_TEST => t('Send one test newsletter to the test address'),
-        SIMPLENEWS_COMMAND_SEND_NOW => t('Send newsletter'),
       );
 
-      $send_default = variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_TEST);
+      // Add option to send on publish when the node is unpublished.
+      if ($node->status == NODE_NOT_PUBLISHED) {
+        $options[SIMPLENEWS_COMMAND_SEND_PUBLISH] = t('Send newsletter when published');
+      }
+      else {
+        $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
+      }
+
+      if ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
+        $send_default = SIMPLENEWS_STATUS_SEND_PUBLISH;
+      }
+      else {
+        $send_default = variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_TEST);
+      }
       $form['simplenews']['send'] = array(
         '#type' => 'radios',
         '#title' => t('Send newsletter'),
@@ -3123,7 +3124,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
           '#type' => 'textfield',
           '#title' => t('Test email addresses'),
           '#description' => t('A comma-separated list of email addresses to be used as test addresses.'),
-          '#default_value' => isset($simplenews_values->test_address) ? $simplenews_values->test_address : variable_get('simplenews_test_address', $address_default),
+          '#default_value' => variable_get('simplenews_test_address', $address_default),
           '#size' => 60,
           '#maxlength' => 128,
         );
@@ -3144,7 +3145,7 @@ function simplenews_node_tab_send_form($form, &$form_state){
           'disabled' => 'disabled',
         ),
       );
-      $form['simplenews']['none']['#title'] = ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
+      $form['simplenews']['none']['#title'] = ($simplenews_values->status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
       return $form;
     }
     $form['submit'] = array(
@@ -3192,42 +3193,67 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
 
-  // When this node is selected for translation
-  // all translation of this node will be sent too.
-  if (module_exists('translation') && translation_supported_type($node->type) && $node->tnid > 0) {
-    if ($translations = translation_node_get_translations($node->tnid)) {
-      foreach ($translations as $translation) {
-        if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
-          $newsletter = simplenews_newsletter_load($translation->nid);
-          if (!$newsletter) {
-            $node = node_load($translation->nid);
-            $newsletter = simplenews_newsletter_defaults($node);
-          }
-          $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
-          simplenews_newsletter_save($newsletter);
-        }
-      }
-    }
-  }
-  else {
-    if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
-      $newsletter = simplenews_newsletter_load($node->nid);
-      if (!$newsletter) {
-        $newsletter = simplenews_newsletter_defaults($node);
-      }
-      $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
-      simplenews_newsletter_save($newsletter);
-    }
-  }
-
   // Send newsletter to all subscribers or send test newsletter
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
+    simplenews_update_sent_status($node);
     simplenews_send_node($node);
   }
   elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node, $form_state['test_addresses']);
   }
+
+  // If the selected command is send on publish, just set the newsletter status.
+  if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_PUBLISH) {
+    $newsletter = simplenews_newsletter_load($node->nid);
+    if (!$newsletter) {
+      $newsletter = simplenews_newsletter_defaults($node);
+    }
+    $newsletter->status = SIMPLENEWS_STATUS_SEND_PUBLISH;
+    simplenews_newsletter_save($newsletter);
+    drupal_set_message(t('The newsletter will be sent when the content is published.'));
+  }
+}
+
+/**
+ * Update the sent status of a node.
+ *
+ * If the node part of a translation set, all corresponding translations are
+ * updated as well.
+ *
+ * @param $node
+ *   The node object to be updated.
+ * @param $status
+ *   The new status, defaults to SIMPLENEWS_STATUS_SEND_PENDING.
+ */
+function simplenews_update_sent_status($node, $status = SIMPLENEWS_STATUS_SEND_PENDING) {
+  // When this node is selected for translation, all translation of this node
+  // will be sent too.
+  if (module_exists('translation') && translation_supported_type($node->type) && $node->tnid > 0) {
+    if ($translations = translation_node_get_translations($node->tnid)) {
+      foreach ($translations as $translation) {
+        $newsletter = simplenews_newsletter_load($translation->nid);
+        if (!$newsletter) {
+          $node = node_load($translation->nid);
+          $newsletter = (object) simplenews_newsletter_defaults($node);
+        }
+        $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
+        simplenews_newsletter_save($newsletter);
+      }
+    }
+  }
+
+  if (!empty($node->simplenews)) {
+    $newsletter = $node->simplenews;
+  }
+  else {
+    $newsletter = simplenews_newsletter_load($node->nid);
+  }
+  if (!$newsletter) {
+    $newsletter = (object)simplenews_newsletter_defaults($node);
+  }
+  $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
+  simplenews_newsletter_save($newsletter);
 }
 
 /**

@@ -116,7 +116,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'status' => array(
-        'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent). ',
+        'description' => 'sent status of the newsletter issue (0 = not sent; 1 = pending; 2 = sent, 3 = send on publish).',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
@@ -719,3 +719,16 @@ function simplenews_update_7001() {
     db_add_index('simplenews_mail_spool', 'snid_tid', array('snid', 'tid'));
   }
 }
+
+/**
+ * Drop support for node revisioning.
+ */
+function simplenews_update_7002() {
+  if (db_field_exists('simplenews_newsletter', 'vid')) {
+    db_drop_field('simplenews_newsletter', 'vid');
+  }
+  if (db_field_exists('simplenews_mail_spool', 'vid')) {
+    db_drop_field('simplenews_mail_spool', 'vid');
+  }
+}
+
