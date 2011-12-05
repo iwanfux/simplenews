@@ -515,6 +515,8 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertNoFieldChecked('edit-newsletters-' . $off_double_block_tid);
+
+    // @todo Enable / Disable Block http://drupal.org/node/1190478
   }
 
   /**
