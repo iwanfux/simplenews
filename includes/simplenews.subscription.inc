@@ -169,18 +169,10 @@ function simplenews_block_form_validate($form, &$form_state) {
  * FAPI BLOCK subscription form_submit.
  */
 function simplenews_block_form_submit($form, &$form_state) {
-  global $user;
   $tid = $form['#tid'];
   $account = _simplenews_user_load($form_state['values']['mail']);
 
-  // If email belongs to the current registered user, don't send confirmation.
-  // Other addresses receive a confirmation if double opt-in is selected.
-  if ($account->uid && $account->uid == $user->uid) {
-    $confirm = FALSE;
-  }
-  else {
-    $confirm = variable_get('simplenews_opt_inout_'. $tid, 'double') == 'double';
-  }
+  $confirm = simplenews_require_double_opt_in($tid, $account);
 
   switch ($form_state['values']['action']) {
     case 'subscribe':
@@ -327,12 +319,9 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
     case t('Subscribe'):
       $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
-        $confirm = FALSE;
         if ($checked) {
-          if (empty($account->uid)) {
-            $confirm = variable_get('simplenews_opt_inout_'. $tid, 'double') == 'double';
-            $confirm_any |= $confirm;
-          }
+          $confirm = simplenews_require_double_opt_in($tid, $account);
+          $confirm_any |= $confirm;
           simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
         }
       }
@@ -346,12 +335,9 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
     case t('Unsubscribe'):
       $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
-        $confirm = FALSE;
         if ($checked) {
-          if (empty($account->uid)) {
-            $confirm = variable_get('simplenews_opt_inout_'. $tid, 'double') == 'double';
-            $confirm_any |= $confirm;
-          }
+          $confirm = simplenews_require_double_opt_in($tid, $account);
+          $confirm_any |= $confirm;
           simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
         }
       }

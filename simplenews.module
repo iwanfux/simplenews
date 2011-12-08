@@ -3316,3 +3316,19 @@ function simplenews_cronapi($op) {
       break;
   }
 }
+
+/**
+ * Returns TRUE if the newsletter category requires double opt in.
+ */
+function simplenews_require_double_opt_in($tid, $account) {
+  global $user;
+  // If email belongs to the current registered user, don't send confirmation.
+  // Other addresses receive a confirmation if double opt-in is selected.
+  if (!empty($account->uid) && !empty($user->uid) && $account->uid == $user->uid) {
+    return FALSE;
+  }
+  else {
+    $category = simplenews_category_load($tid);
+    return $category->opt_inout == 'double';
+  }
+}

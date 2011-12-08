@@ -254,6 +254,65 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // @todo 3. Subscribe anonymous via multi block
   }
 
+
+  /**
+   * Test anonymous subscription with single opt in.
+   *
+   * Steps performed:
+   *   0. Preparation
+   *   1. Subscribe anonymous via block
+   */
+  function testSubscribeAnonymousSingle() {
+    // 0. Preparation
+    // Login admin
+    // Create single opt in newsletter.
+    // Set permission for anonymous to subscribe
+    // Enable newsletter block
+    // Logout admin
+    $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions', 'administer newsletters'));
+    $this->drupalLogin($admin_user);
+    $this->setAnonymousUserSubscription(TRUE);
+
+    // Setup subscription block with subscription form.
+    $block_settings = array(
+      'message' => $this->randomName(4),
+      'form' => '1',
+      'link to previous' => FALSE,
+      'previous issues' => FALSE,
+      'rss feed' => TRUE,
+    );
+
+    $this->drupalGet('admin/config/services/simplenews');
+    $this->clickLink(t('Add newsletter category'));
+    $edit = array(
+      'name' => $this->randomName(),
+      'description' => $this->randomString(20),
+      'opt_inout' => 'single',
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // @todo: Don't hardcode this.
+    $tid = 2;
+    $this->setupSubscriptionBlock($tid, $block_settings);
+
+    $this->drupalLogout();
+
+    // 1. Subscribe anonymous via block
+    // Subscribe + submit
+    // Assert confirmation message
+    // Verify subscription state.
+
+    $mail = $this->randomEmail(8, 'testmail');
+    $edit = array(
+      'mail' => $mail,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->assertText(t('You have been subscribed.'), t('Anonymous subscriber added to newsletter'));
+
+    $account = (object)array('mail' => $mail);
+    $subscriber = simplenews_get_subscription($account);
+  }
+
   /**
    * testSubscribeAuthenticated
    *
