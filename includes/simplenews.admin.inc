@@ -218,10 +218,6 @@ function simplenews_simplenews_issue_operations() {
       'label' => t('Send'),
       'callback' => 'simplenews_issue_send',
     ),
-    'inactivate' => array(
-      'label' => t('Resend'),
-      'callback' => 'simplenews_issue_resend',
-    ),
   );
   return $operations;
 }
@@ -280,15 +276,6 @@ function simplenews_issue_send($nids) {
   //@todo
   // check if $nids are not pending: error
   // check if newsletters are not sent: error
-  // send newsletter
-}
-
-/**
- * @todo
- */
-function simplenews_issue_resend($nids) {
-  //@todo
-  // check if $nids are not pending: error
   // send newsletter
 }
 
