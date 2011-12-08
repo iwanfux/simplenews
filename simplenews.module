@@ -149,14 +149,14 @@ function simplenews_menu() {
   $items['admin/config/services/simplenews/categories/%simplenews_category/edit'] = array(
     'title' => 'Newsletters',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_category_form', 3),
+    'page arguments' => array('simplenews_admin_category_form', 5),
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
   $items['admin/config/services/simplenews/categories/%simplenews_category/delete'] = array(
     'title' => 'Newsletters',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_category_delete', 3),
+    'page arguments' => array('simplenews_admin_category_delete', 5),
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );

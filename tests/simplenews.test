@@ -516,7 +516,29 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertNoFieldChecked('edit-newsletters-' . $off_double_block_tid);
 
-    // @todo Enable / Disable Block http://drupal.org/node/1190478
+    // Get a category which has the block enabled.
+    foreach ($categories as $category) {
+      // The default category is missing the from mail address. Use another one.
+      if ($category->block == TRUE && $category->tid != 1) {
+        $edit_category = $category;
+        break;
+      }
+    }
+
+    $this->drupalLogin($admin_user);
+
+    $this->drupalGet('admin/config/services/simplenews/categories/' . $edit_category->tid . '/edit');
+    $this->assertFieldByName('name', $edit_category->name, t('Category name is displayed when editing'));
+    $this->assertFieldByName('description', $edit_category->description, t('Category description is displayed when editing'));
+
+    $edit = array('block' => FALSE);
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    $updated_category = simplenews_category_load($edit_category->tid);
+    $this->assertEqual(0, $updated_category->block, t('Block for category disabled'));
+
+    $this->drupalGet('admin/structure/block');
+    $this->assertNoText($edit_category->name, t('Category block was removed'));
   }
 
   /**
