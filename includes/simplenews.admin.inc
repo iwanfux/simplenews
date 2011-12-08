@@ -182,7 +182,7 @@ function simplenews_admin_issues() {
   foreach ($query->execute() as $issue) {
     $categories = simplenews_category_list();
     $subscriber_count = simplenews_count_subscriptions($issue->tid);
-    $pending_count = simplenews_count_spool($issue->nid, $issue->vid);
+    $pending_count = simplenews_count_spool($issue->nid);
     $send_status = $issue->sent_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->sent_status));
 
     $options[$issue->nid] = array(
