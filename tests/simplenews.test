@@ -1080,6 +1080,67 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
   }
 
+
+
+  /**
+   * Send a newsletter using cron.
+   */
+  function testSendMultipleNoCron() {
+    // Disable cron.
+    variable_set('simplenews_use_cron', FALSE);
+
+    // Verify that the newsletter settings are shown.
+    $nodes = array();
+    for ($i = 0; $i < 3; $i++) {
+      $this->drupalGet('node/add/simplenews');
+      $this->assertText(t('Newsletter category'));
+
+      $edit = array(
+        'title' => $this->randomName(),
+        // The last newsletter shouldn't be published.
+        'status' => $i != 2,
+      );
+      $this->drupalPost(NULL, $edit, ('Save'));
+      $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+      $nodes[] = node_load($matches[1]);
+
+      // Verify state.
+      $newsletter = simplenews_newsletter_load($matches[1]);
+      $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $newsletter->status, t('Newsletter not sent yet.'));
+    }
+
+    // Send the first and last newsletter on the newsletter overview.
+    list ($first, $second, $unpublished) = $nodes;
+
+    $edit = array(
+      'issues[' . $first->nid . ']' => $first->nid,
+      'issues[' . $unpublished->nid . ']' => $unpublished->nid  ,
+      'operation' => 'activate',
+    );
+    $this->drupalPost('admin/content/simplenews', $edit, t('Update'));
+
+    $this->assertText(t('Newsletter sent'));
+    $this->assertText(t('Newsletter @title is unpublished and will be sent on publish', array('@title' => $unpublished->title)));
+
+    // Verify states.
+    $newsletter = simplenews_newsletter_load($first->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, $newsletter->status, t('First Newsletter sending finished'));
+    $newsletter = simplenews_newsletter_load($second->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $newsletter->status, t('Second Newsletter not sent'));
+    $newsletter = simplenews_newsletter_load($unpublished->nid);
+    $this->assertEqual(SIMPLENEWS_STATUS_SEND_PUBLISH, $newsletter->status, t('Newsletter set to send on publish'));
+
+    // Verify mails.
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(5, count($mails), t('All mails were sent.'));
+    foreach ($mails as $mail) {
+      $this->assertEqual($mail['subject'], '[Drupal newsletter] ' . $first->title, t('Mail has correct subject'));
+      $this->assertTrue(isset($this->subscribers[$mail['to']]), t('Found valid recipient'));
+      unset($this->subscribers[$mail['to']]);
+    }
+    $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+  }
+
   /**
    * Send a newsletter using cron and a low throttle.
    */

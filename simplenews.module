@@ -3252,7 +3252,7 @@ function simplenews_update_sent_status($node, $status = SIMPLENEWS_STATUS_SEND_P
   if (!$newsletter) {
     $newsletter = (object)simplenews_newsletter_defaults($node);
   }
-  $newsletter->status = SIMPLENEWS_STATUS_SEND_PENDING;
+  $newsletter->status = $status;
   simplenews_newsletter_save($newsletter);
 }
 

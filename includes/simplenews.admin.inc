@@ -259,8 +259,6 @@ function simplenews_admin_issues_submit($form, &$form_state) {
       $args = array($nids);
     }
     call_user_func_array($function, $args);
-
-    drupal_set_message(t('The update has been performed.'));
   }
   else {
     // We need to rebuild the form to go to a second step. For example, to
@@ -270,13 +268,25 @@ function simplenews_admin_issues_submit($form, &$form_state) {
 }
 
 /**
- * @todo
+ * Callback to send newsletters.
  */
 function simplenews_issue_send($nids) {
-  //@todo
-  // check if $nids are not pending: error
-  // check if newsletters are not sent: error
-  // send newsletter
+  foreach (node_load_multiple($nids) as $node) {
+
+    $newsletter = simplenews_newsletter_load($node->nid);
+    if ($newsletter->status != SIMPLENEWS_STATUS_SEND_NOT) {
+      continue;
+    }
+
+    if ($node->status == NODE_NOT_PUBLISHED) {
+      simplenews_update_sent_status($node, SIMPLENEWS_COMMAND_SEND_PUBLISH);
+      drupal_set_message(t('Newsletter %title is unpublished and will be sent on publish', array('%title' => $node->title)));
+      continue;
+    }
+
+    simplenews_update_sent_status($node);
+    simplenews_send_node($node);
+  }
 }
 
 /**
@@ -1757,9 +1767,10 @@ function theme_simplenews_status($variables) {
         SIMPLENEWS_STATUS_SEND_READY => 'sn-sent.png',
       );
       $title = array(
-        SIMPLENEWS_STATUS_SEND_NOT => '-',
+        SIMPLENEWS_STATUS_SEND_NOT => t('Not yet sent'),
         SIMPLENEWS_STATUS_SEND_PENDING => t('Currently sending by cron'),
         SIMPLENEWS_STATUS_SEND_READY => t('Sent'),
+        SIMPLENEWS_STATUS_SEND_PUBLISH => t('Send on publish'),
       );
       break;
   }
