@@ -1720,10 +1720,12 @@ function simplenews_count_subscriptions($tid) {
   if (isset($subscription_count[$tid])) {
     return $subscription_count[$tid];
   }
-  $subscription_count[$tid] = db_select('simplenews_subscription')
-    ->condition('tid', $tid)
-    ->condition('status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED)
-    ->countQuery()->execute()->fetchField();
+  $query = db_select('simplenews_subscription', 'ss');
+  $query->leftJoin('simplenews_subscriber', 'sn', 'sn.snid = ss.snid');
+  $query->condition('tid', $tid)
+    ->condition('sn.activated', 1)
+    ->condition('status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+  $subscription_count[$tid] = $query->countQuery()->execute()->fetchField();
   return $subscription_count[$tid];
 }
 

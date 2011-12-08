@@ -642,7 +642,8 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Make sure that user_save() does not update the user object, as it will
     // override the pass_raw property which we'll need to log this user in
     // later on.
-    user_save(clone $user, array('mail' => current($subscribers['all'])));
+    $user_mail = current($subscribers['all']);
+    user_save(clone $user, array('mail' => $user_mail));
 
     $delimiters = array(',', ' ', "\n");
 
@@ -768,6 +769,20 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->assertEqual(2, count($exported_mails));
     $this->assertTrue(in_array($all_mail, $exported_mails));
     $this->assertTrue(in_array($first_mail, $exported_mails));
+
+    // Make sure the user is subscribed to the first tid.
+    simplenews_subscribe_user($user_mail, $first, FALSE);
+    $before_count = simplenews_count_subscriptions($first);
+
+    // Block the user.
+    user_save(clone $user, array('status' => 0));
+
+    $this->drupalGet('admin/people/simplenews');
+
+    // Verify updated subscriptions count.
+    drupal_static_reset('simplenews_count_subscriptions');
+    $after_count = simplenews_count_subscriptions($first);
+    $this->assertEqual($before_count - 1, $after_count, t('Blocked users are not counted in subscription count.'));
 
     // Delete newsletter category.
     $this->drupalPost('taxonomy/term/' . $first . '/edit', array(), t('Delete'));
