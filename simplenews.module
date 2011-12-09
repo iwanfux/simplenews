@@ -2401,7 +2401,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
     case 'simplenews-subscriber':
       $account = $data['account'];
       $category = $data['category'];
-      $language = isset($account->language->language) ? $account->language->language : language_default()->language;
+      $language = isset($account->language->language) ? $account->language : user_preferred_language($account);
 
       // Build hash for the URL of the (un)subscribe confirmation page.
       $hash = '';
