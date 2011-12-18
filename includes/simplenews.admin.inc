@@ -285,7 +285,7 @@ function simplenews_issue_send($nids) {
     }
 
     simplenews_update_sent_status($node);
-    simplenews_send_node($node);
+    simplenews_add_node_to_spool($node);
   }
 }
 
@@ -1445,8 +1445,25 @@ function simplenews_admin_settings_mail($form, &$form_state) {
     '#default_value' => variable_get('simplenews_use_cron', TRUE),
     '#description' => t('When checked cron will be used to send newsletters (recommended). Test newsletters and confirmation emails will be sent immediately. Leave unchecked for testing purposes.'),
   );
+
+  $sources = simplenews_get_source_caches();
+  $sources_labels = array();
+  $sources_descriptions = '';
+  foreach ($sources as $name => $source) {
+    $sources_labels[$name] = $source['label'];
+    $sources_descriptions .= t('<strong>@label</strong>: @description <br />', array('@label' => $source['label'], '@description' => $source['description']));
+  }
+
+  $form['simplenews_mail_backend']['simplenews_source_cache'] = array(
+    '#type' => 'select',
+    '#title' => t('Cache'),
+    '#description' => t('Chosing a different cache implementation allows for a different behavior during sending mails.') . '<br /><br />' . $sources_descriptions,
+    '#options' => $sources_labels,
+    '#default_value' => variable_get('simplenews_source_cache', 'SimplenewsSourceNodeCached'),
+  );
+
   $throttle = drupal_map_assoc(array(1, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));
-  $throttle[999999] = t('Unlimited');
+  $throttle[SIMPLENEWS_UNLIMITED] = t('Unlimited');
   if (function_exists('getrusage')) {
     $description_extra = '<br />' . t('Cron execution must not exceed the PHP maximum execution time of %max seconds. You find the time spend to send emails in the <a href="/admin/reports/dblog">Recent log entries</a>.', array('%max' => ini_get('max_execution_time')));
   }

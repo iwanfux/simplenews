@@ -88,7 +88,7 @@ function simplenews_action_send_newsletter(&$object, $context = array()) {
         simplenews_newsletter_save($newsletter);
       }
       module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-      simplenews_send_node($context['nid'], $accounts);
+      simplenews_add_node_to_spool($context['nid'], $accounts);
     }
     watchdog('action', 'Simplenews newsletter %title send.', array('%title' => $context['title']));
   }

@@ -875,12 +875,12 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
       'name' => t('Simplenews I18n'),
       'description' => t('Translation of newsletter categories'),
       'group' => t('Simplenews'),
-      'dependencies' => array('i18n_taxonomy'),
+      'dependencies' => array('i18n_taxonomy', 'variable'),
     );
   }
 
   function setUp() {
-    parent::setUp(array('i18n_taxonomy'));
+    parent::setUp(array('locale', 'i18n', 'variable', 'i18n_string', 'i18n_translation', 'i18n_taxonomy'));
     $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters'));
     $this->drupalLogin($this->admin_user);
     $this->setUpLanguages();

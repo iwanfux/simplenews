@@ -82,6 +82,11 @@ define('SIMPLENEWS_OPT_INOUT_SINGLE', 'single');
 define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
 
 /**
+ * Used when sending an unlimited amount of mails from the spool.
+ */
+define('SIMPLENEWS_UNLIMITED', -1);
+
+/**
  * Implementation of hook_permission().
  *
  * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
@@ -458,7 +463,7 @@ function simplenews_node_update($node) {
   if ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_PUBLISH && $node->status == NODE_PUBLISHED) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     simplenews_update_sent_status($node);
-    simplenews_send_node($node);
+    simplenews_add_node_to_spool($node);
   }
   else {
     // simplenews_update_sent_status() already saves the node, only need to do
@@ -792,7 +797,7 @@ function simplenews_field_ui_view_modes_tabs() {
  */
 function simplenews_cron() {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  simplenews_mail_spool();
+  simplenews_mail_spool(variable_get('simplenews_throttle', 20));
   simplenews_clear_spool();
   // Update sent status for newsletter admin panel.
   simplenews_send_status_update();
@@ -1837,12 +1842,12 @@ function simplenews_recent_newsletters($tid, $count = 5) {
  *     to user_mail_tokens().
  */
 function simplenews_mail($key, &$message, $params) {
-  $params['key'] = $key;
+  module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
 
   switch ($key) {
     case 'node':
     case 'test':
-      simplenews_build_node_mail($message, $params);
+      simplenews_build_newsletter_mail($message, $params['simplenews_source']);
       break;
     case 'subscribe':
       simplenews_build_subscribe_mail($message, $params);
@@ -1858,226 +1863,6 @@ function simplenews_mail($key, &$message, $params) {
     watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
   }
 }
-
-/**
- * Build subject and body of the test and normal newsletter email.
- *
- * @param array $message
- *   Message array as used by hook_mail().
- * @param array $params
- *   Parameter array as used by hook_mail().
- */
-function simplenews_build_node_mail(&$message, $params) {
-  $context = $params['context'];
-  $category = $context['category'];
-  $key = $params['key'];
-
-  // Message header, body and mail headers are buffered to increase
-  // performance when sending multiple mails. Buffered data only contains
-  // general data, no recipient specific content. Tokens are used
-  // for recipient data and will later be replaced.
-  // When mailing multiple newsletters in one page call or cron run,
-  // data is once stored and subsequently retrieved from the
-  // static $messages variable.
-  // $message buffer is node and language specific.
-  $messages = &drupal_static(__FUNCTION__, array());
-
-  // By default the the node is send which is supplied in the function call.
-  // When translation is used, the availability of translations is checked
-  // and when available the translation of the preferred language is selected.
-  $nid = $context['node']->nid;
-  // @todo Make language selection a separate function.
-  $langcode = $message['language'];
-  if (module_exists('translation')) {
-    // If the node has translations and a translation is required
-    // the equivalent of the node in the required language is used
-    // or the base node (nid == tnid) is used.
-    if ($tnid = $context['node']->tnid) {
-      if ($langcode != $context['node']->language) {
-        $translations = translation_node_get_translations($tnid);
-        // A translation is available in the preferred language.
-        if ($translation = $translations[$langcode]) {
-          $nid = $translation->nid;
-          $langcode = $translation->language;
-        }
-        else {
-          // No translation found which matches the preferred language.
-          foreach ($translations as $translation) {
-            if ($translation->nid == $tnid) {
-              $nid = $tnid;
-              $langcode = $translation->language;
-              break;
-            }
-          }
-        }
-      }
-    }
-    // If a translation of the node is used and this node is not available in
-    // the message buffer, then load this node.
-    if ($nid != $context['node']->nid && !isset($messages[$nid][$langcode])) {
-      $context['node'] = node_load($nid);
-    }
-  }
-
-  // Check if this node-language pair has been buffered.
-  // If not, build the message and store it for later use.
-  if (!isset($messages[$nid][$langcode])) {
-
-    // Use the default theme to render the email content.
-    // We temporary clear the $custom_theme to prevent the admin theme
-    // from being used when the newsletter is sent from the
-    // node add/edit form and the admin theme is other than the
-    // default theme. When no $custom_theme is set, the
-    // After theming the email $custom_theme is restored.
-    global $custom_theme;
-    $org_custom_theme = $custom_theme;
-    $custom_theme = '';
-
-    $node = clone $context['node'];
-
-    // Add simplenews specific header data
-    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    $headers = array_merge($message['headers'], _simplenews_headers($category, $params['from']['address']));
-    $headers['From'] = $params['from']['formatted'];
-    $message['headers'] = $messages[$nid][$langcode]['headers'] = $headers;
-
-    // Build email subject and perform some sanitizing.
-    // Line breaks are removed from the email subject to prevent injection of
-    // malicious data into the email header.
-    $subject = token_replace($category->email_subject, $context, array('sanitize' => FALSE));
-    $subject = str_replace(array("\r", "\n"), '', $subject);  // @todo Check if this is done by drupal_mail()
-    $message['subject'] = $messages[$nid][$langcode]['subject'] = $subject;
-
-    // Set the active language to the node's language.
-    // This needs to be done as otherwise the language used to send the mail
-    // is the language of the user logged in.
-    // @todo Rewrite this code for drupal 7.
-//    if (module_exists('i18n')) {
-//         i18n_selection_mode('node', $node->language);
-//    }
-
-    // Build message body
-// @todo move this code to a function. We need to do this twice for HTML and Plain text Alternative.
-    // @todo restore the format selection.
-    //$build = node_view($node, 'email_' . $category->format);
-    // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
-    $build = node_view($node, 'email_plain');
-    // @todo Use simplenews_newsletter_body as #theme?
-    unset($build['#theme']);
-    foreach (element_children($build) as $child) {
-      $build[$child]['#theme'] = 'simplenews_field';
-    }
-// END move this code to a function.
-
-    $body = theme('simplenews_newsletter_body', array('build' => $build, 'category' => $category, 'language' => $message['language']));
-
-    // Buffer body text node and language specific
-    $messages[$nid][$langcode]['body'] = $body;
-
-    // @todo Move hidden footer into preprocess function.
-    //      We need to replace this concept. A footer is depending on the subscription list, not anymore on the newsletter category.
-    //      In the future this will also depend on whether the receiver is subscribed to a list or not a list member at all.
-    if ($category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
-      // Build and buffer message footer
-      $footer = theme('simplenews_newsletter_footer',
-        array(
-          'build' => $build,
-          'category' => $category,
-          'context' => $context,
-          'key' => $key,
-          'language' => $message['language'],
-        )
-      );
-      $messages[$nid][$langcode]['footer'] = $footer;
-    }
-
-    // Reset the language to the original settings.
-    // @todo Rewrite this code for drupal 7.
-//    if (module_exists('i18n')) {
-//      i18n_selection_mode('reset');
-//    }
-
-    // Restore the custom theme.
-    $custom_theme = $org_custom_theme;
-  }
-  else {
-    // Get message data from buffer
-    $message['headers'] = $messages[$nid][$langcode]['headers'];
-    $message['subject'] = $messages[$nid][$langcode]['subject'];
-    $body               = $messages[$nid][$langcode]['body'];
-    $footer             = $messages[$nid][$langcode]['footer'];
-  }
-
-  // Build message body, replace tokens.
-  // Convert to plain text if required.
-  $message['body']['body'] = token_replace($body, $context, array('sanitize' => FALSE));
-  if ($category->format == 'plain') {
-    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    $message['body']['body'] = simplenews_html_to_text($message['body']['body'], $category->hyperlinks);
-  }
-
-  // Build message footer, replace tokens.
-  $message['body']['footer'] = token_replace($footer, $context, array('sanitize' => FALSE));
-
-  // Add user specific header data.
-  $message['headers']['List-Unsubscribe'] = '<' . token_replace('[simplenews-subscriber:unsubscribe-url]', $context, array('sanitize' => FALSE)) . '>';
-}
-
-/**
- * Build subject and body of the subscribe confirmation email.
- *
- * @param array $message
- *   Message array as used by hook_mail().
- * @param array $params
- *   Parameter array as used by hook_mail().
- */
-function simplenews_build_subscribe_mail(&$message, $params) {
-  $context = $params['context'];
-  $langcode = $message['language'];
-
-  // Use formatted from address "name" <mail_address>
-  $message['headers']['From'] = $params['from']['formatted'];
-
-  $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
-  $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
-
-  if (simplenews_user_is_subscribed($context['account']->mail, $context['category']->tid)) {
-    $body = simplenews_subscription_confirmation_text('subscribe_subscribed', $langcode);
-  }
-  else {
-    $body = simplenews_subscription_confirmation_text('subscribe_unsubscribed', $langcode);
-  }
-    $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
-}
-
-/**
- * Build subject and body of the unsubscribe confirmation email.
- *
- * @param array $message
- *   Message array as used by hook_mail().
- * @param array $params
- *   Parameter array as used by hook_mail().
- */
-function simplenews_build_unsubscribe_mail(&$message, $params) {
-  $context = $params['context'];
-  $langcode = $message['language'];
-
-  // Use formatted from address "name" <mail_address>
-  $message['headers']['From'] = $params['from']['formatted'];
-
-  $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
-  $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
-
-  if (simplenews_user_is_subscribed($context['account']->mail, $context['category']->tid)) {
-    $body = simplenews_subscription_confirmation_text('unsubscribe_subscribed', $langcode);
-    $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
-  }
-  else {
-    $body = simplenews_subscription_confirmation_text('unsubscribe_unsubscribed', $langcode);
-    $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
-  }
-}
-
 
 /**
  * Implementation of hook_views_api().
@@ -3211,7 +2996,7 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
     simplenews_update_sent_status($node);
-    simplenews_send_node($node);
+    simplenews_add_node_to_spool($node);
   }
   elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node, $form_state['test_addresses']);
@@ -3344,4 +3129,92 @@ function simplenews_require_double_opt_in($tid, $account) {
     $category = simplenews_category_load($tid);
     return $category->opt_inout == 'double';
   }
+}
+
+/**
+ * Returns the available simplenews sources.
+ */
+function simplenews_get_source_caches() {
+  $sources = module_invoke_all('simplenews_source_cache_info');
+  drupal_alter('simplenews_source_cache_info', $sources);
+  return $sources;
+}
+
+/**
+ * Implements hook_simplenews_source_cache_info().
+ */
+function simplenews_simplenews_source_cache_info() {
+  return array(
+    'SimplenewsSourceCacheNone' => array(
+      'label' => t('No caching'),
+      'description' => t('This allows to theme each newsletter separately.'),
+    ),
+    'SimplenewsSourceNodeCached' => array(
+      'label' => t('Cached content source'),
+      'description' => t('This caches the rendered content to be sent for multiple recipients. It is not possible to use subscriber specific theming but tokens can be used for personalization.'),
+    ),
+  );
+}
+
+
+/**
+ * Impersonates another user.
+ *
+ * Each time this function is called, the active user is saved and $new_user
+ * becomes the active user. Multiple calls to this function can be nested,
+ * and session saving will be disabled until all impersonation attempts have
+ * been reverted using user_revert_user().
+ *
+ * @todo: This function is a backport of http://drupal.org/node/287292. Switch
+ * to that once available.
+ *
+ * @param $new_user
+ *   User to impersonate, either a UID or a user object.
+ *
+ * @return
+ *   Current user object.
+ *
+ * @see simplenews_revert_user()
+ */
+function simplenews_impersonate_user($new_user = NULL) {
+  global $user;
+  $user_original = &drupal_static(__FUNCTION__);
+
+  if (!isset($new_user)) {
+    if (isset($user_original) && !empty($user_original)) {
+      // Restore the previous user from the stack.
+      $user = array_pop($user_original);
+
+      // Re-enable session saving if we are no longer impersonating a user.
+      if (empty($user_original)) {
+        drupal_save_session(TRUE);
+      }
+    }
+  }
+  else {
+    // Push the original user onto the stack and prevent session saving.
+    $user_original[] = $user;
+    drupal_save_session(FALSE);
+
+    if (is_numeric($new_user)) {
+      $user = user_load($new_user);
+    }
+    else {
+      $user = is_object($new_user) ? $new_user : (object) $new_user;
+    }
+  }
+
+  return $user;
+}
+
+/**
+ * Reverts to the previous user after impersonating.
+ *
+ * @return
+ *   Current user.
+ *
+ * @see simplenews_impersonate_user()
+ */
+function simplenews_revert_user() {
+  return simplenews_impersonate_user();
 }
