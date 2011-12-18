@@ -2351,9 +2351,7 @@ function simplenews_help($path, $arg) {
     case 'admin/config/services/simplenews/newsletter':
       $help = '<ul>';
       $help .= '<li>' . t('These settings are default to all newsletters. Newsletter specific settings can be found at the <a href="@page">newsletter\'s settings page</a>.', array('@page' => url('admin/config/services/simplenews'))) . "</li>\n";
-      if (!module_exists('mimemail')) {
-        $help .= '<li>' . t('Install <a href="!mime_mail_url">Mime Mail</a> or <a href="!html_mail_url">HTML Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_mail_url' => 'http://drupal.org/project/htmlmail')) . "</li>\n";
-      }
+      $help .= '<li>' . t('Install <a href="!mime_mail_url">Mime Mail</a> or <a href="!html_mail_url">HTML Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_mail_url' => 'http://drupal.org/project/htmlmail')) . "</li>\n";
       $help .= '</ul>';
       return $help;
     case 'admin/config/services/simplenews/subscription':
@@ -2432,18 +2430,13 @@ function simplenews_generate_hash($mail, $snid, $tid) {
 }
 
 /**
- * Determine possible mail format options.
- *
- * Mime Mail or HTML Mail module must be installed to send HTML mails.
+ * Returns simplenews format options.
  */
 function simplenews_format_options() {
-  $options = array(
-    'plain' => t('plain'),
+  return array(
+    'plain' => t('Plain'),
+    'html' => t('HTML'),
   );
-  if (module_exists('mimemail') || module_exists('htmlmail')) {
-    $options['html'] = t('html');
-  }
-  return $options;
 }
 
 /**

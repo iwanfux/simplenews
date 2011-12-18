@@ -1331,12 +1331,8 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
     '#collapsible' => FALSE,
     '#description' => t('These options will be the defaults for new newsletters, but can be overridden in the newsletter editing form.'),
   );
-  $description = t('Default newsletter format.');
-  if (!module_exists('mimemail')) {
-    $description .= ' ' . t('Install <a href="!mime_mail_url">Mime Mail</a> module or <a href="!html_url">HTML Mail</a> module to send newsletters in HTML format.',
-                            array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_url' => 'http://drupal.org/project/htmlmail')
-                          );
-  }
+  $links = array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_url' => 'http://drupal.org/project/htmlmail');
+  $description = t('Default newsletter format. Install <a href="!mime_mail_url">Mime Mail</a> module or <a href="!html_url">HTML Mail</a> module to send newsletters in HTML format.', $links);
   $form['simplenews_default_options']['simplenews_format'] = array(
     '#type' => 'select',
     '#title' => t('Format'),
@@ -1426,19 +1422,6 @@ function simplenews_admin_settings_mail($form, &$form_state) {
   $address_default = variable_get('site_mail', ini_get('sendmail_from'));
   $form = array();
 
-  if (module_exists('mimemail')) {
-    $form['simplenews_mail_backend']['simplenews_mail_system'] = array(
-      '#type' => 'select',
-      '#title' => t('Mail system'),
-      '#options' => array(
-        'DefaultMailSystem' => t('Default'),
-        'MimeMailSystem' => 'MimeMail',
-      ),
-      '#default_value' => variable_get('simplenews_mail_system', 'DefaultMailSystem'),
-      '#description' => t('The mail system to use for Simplenews messages.'),
-    );
-  }
-
   $form['simplenews_mail_backend']['simplenews_use_cron'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use cron to send newsletters'),
@@ -1495,22 +1478,7 @@ function simplenews_admin_settings_mail($form, &$form_state) {
     '#default_value' => variable_get('simplenews_debug', FALSE),
     '#description' => t('When checked all outgoing simplenews emails are logged in the system log. A logged email does not guarantee that it is send or will be delivered. It only indicates that a message is sent to the PHP mail() function. No status information is available of delivery by the PHP mail() function.'),
   );
-
-  $form['#submit'][] = 'simplenews_admin_settings_mail_submit';
-
   return system_settings_form($form);
-}
-
-/**
- * Set the mail system variable for Simplenews.
- */
-function simplenews_admin_settings_mail_submit($form, &$form_state) {
-  if (module_exists('mimemail')) {
-    $mail_system = variable_get('mail_system', array('default-system' => 'DefaultMailSystem'));
-    $simplenews_system = $form_state['values']['simplenews_mail_system'];
-    $mail_system['simplenews'] = $simplenews_system;
-    variable_set('mail_system', $mail_system);
-  }
 }
 
 /**
