@@ -350,22 +350,39 @@ function simplenews_node_type_insert($info) {
 }
 
 /**
- * Implementation of hook_node_view().
+ * Implements hook_node_view().
  */
 function simplenews_node_view($node, $view_mode) {
   if (!simplenews_check_node_types($node->type)) {
     return;
   }
-  // Replace the tokens when view mode is 'email_*'.
-  if (strpos($view_mode, 'email_') === 0) {
 
-    if (isset($build['body'])) {
-      // @todo Where to perform the token replacement?
-      //$build['body'] = token_replace($build['body'], array('node' => $node));
+
+  $context = array(
+    'node' => $node,
+    'category' => simplenews_category_load(simplenews_newsletter_load($node->nid)->tid),
+  );
+
+  // If the current user is a subscriber, extend context.
+  if ($GLOBALS['user']->uid > 0 && $subscriber = simplenews_get_subscription($GLOBALS['user'])) {
+    $context['simplenews_subscriber'] = $subscriber;
+  }
+
+  // Loop over all render array elements.
+  foreach (element_children($node->content) as $key) {
+    $element = &$node->content[$key];
+    // Make sure this is a field.
+    if (!isset($element['#field_type'])) {
+      continue;
     }
-    if (isset($build['teaser'])) {
-      // @todo Where to perform the token replacement?
-      //$build['teaser'] = token_replace($build['teaser'], array('node' => $node));
+    // Loop over all field values.
+    foreach (element_children($element) as $field_key) {
+      $item = &$element[$field_key];
+      // Only fields which result in simple markup elements are supported for
+      // token replacements for now.
+      if (isset($item['#markup'])) {
+        $item['#markup'] = token_replace($item['#markup'], $context, array());
+      }
     }
   }
 }
@@ -747,12 +764,12 @@ function _simplenews_node_form(&$form, $form_state) {
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => t('These tokens can be used in all text fields and will be replaced on-screen and in the email. Note that receiver-* tokens are not suitable for on-screen use.'),
+      '#description' => t('These tokens can be used in all text fields except subject and will be replaced on-screen and in the email.'),
     );
 
     $form['simplenews_token_help']['browser'] = array(
       '#theme' => 'token_tree',
-      '#token_types' => array('simplenews-newsletter', 'simplenews-category'),
+      '#token_types' => array('simplenews-category', 'simplenews-subscriber', 'node'),
     );
   }
 }
@@ -1334,7 +1351,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     $params['from'] = _simplenews_set_from();
     $params['context']['category'] = simplenews_category_load($tid);
-    $params['context']['account'] = $subscriber;
+    $params['context']['simplenews_subscriber'] = $subscriber;
     drupal_mail('simplenews', 'subscribe', $mail, $subscriber->language, $params, $params['from']['address']);
   }
   elseif (!isset($subscriber->tids[$tid])) {
@@ -2121,14 +2138,12 @@ function simplenews_token_info() {
   // @todo Add desription to the types and extend available tokens.
   $types['simplenews-subscriber'] = array(
     'name' => t('Simplenews subscriber'),
-    'needs-data' => 'account',
-  );
-  $types['simplenews-newsletter'] = array(
-    'name' => t('Simplenews newsletter'),
-    'needs-data' => 'node',
+    'description' => t('Tokens related to the newsletter recipient'),
+    'needs-data' => 'simplenews_subscriber',
   );
   $types['simplenews-category'] = array(
     'name' => t('Simplenews newsletter category'),
+    'description' => t('Tokens related to the newsletter category'),
     'needs-data' => 'category',
   );
 
@@ -2146,10 +2161,10 @@ function simplenews_token_info() {
     'description' => t('The email address of the newsletter receiver.'),
   );
 
-  // Tokens for simplenews newsletter.
-  $newsletter['url'] = array(
-    'name' => t('Newsletter URL'),
-    'description' => t('The URL of this newsletter.'),
+  $subscriber['user'] = array(
+    'name' => t('Corresponding user'),
+    'description' => t('The user object that corresponds to this subscriber. This is not set for anonymous subscribers.'),
+    'type' => 'user',
   );
 
   // Tokens for simplenews newsletter category.
@@ -2161,12 +2176,16 @@ function simplenews_token_info() {
     'name' => t('Newsletter category URL'),
     'description' => t('The URL of the page listing the issues of this newsletter category.'),
   );
+  $category['term'] = array(
+    'name' => t('Corresponding term'),
+    'description' => t('The taxonomy term of this newsletter category'),
+    'type' => 'term',
+  );
 
   return array(
     'types' => $types,
     'tokens' => array(
       'simplenews-subscriber' => $subscriber,
-      'simplenews-newsletter' => $newsletter,
       'simplenews-category' => $category,
     ),
   );
@@ -2175,8 +2194,6 @@ function simplenews_token_info() {
 /**
  * Implementation of hook_tokens().
  *
- * @todo I'm not completely happy with the separation of 'simplenews' and 'simplenews-newsletter'. Perhaps we need more groups: subscriber, issue, ...
- * @todo Need to know more how token can be used by the admin before the thing with $data['node'] and 'newsletter-url' token can be fixed.
  */
 function simplenews_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
@@ -2184,14 +2201,14 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
 
   switch ($type) {
     case 'simplenews-subscriber':
-      $account = $data['account'];
+      $subscriber = $data['simplenews_subscriber'];
       $category = $data['category'];
-      $language = isset($account->language->language) ? $account->language : user_preferred_language($account);
+      $language = isset($subscriber->language->language) ? $subscriber->language : user_preferred_language($subscriber);
 
       // Build hash for the URL of the (un)subscribe confirmation page.
       $hash = '';
-      if (isset($account->snid) && isset($category->tid)) {
-        $hash = simplenews_generate_hash($account->mail, $account->snid, $category->tid);
+      if (isset($subscriber->snid) && isset($category->tid)) {
+        $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $category->tid);
       }
 
       foreach ($tokens as $name => $original) {
@@ -2206,22 +2223,15 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
             break;
 
           case 'mail':
-            $replacements[$original] = $sanitize ? check_plain($account->mail) : $account->mail;
+            $replacements[$original] = $sanitize ? check_plain($subscriber->mail) : $subscriber->mail;
             break;
         }
       }
-      break;
 
-    case 'simplenews-newsletter':
-      $node = $data['node'];
-      $language = $node->language;
-      foreach ($tokens as $name => $original) {
-        switch ($name) {
-          case 'url':
-            $replacements[$original] = url('node/' . $node->nid, array('absolute' => TRUE, 'language' => $language));
-            break;
-        }
+      if (($user_tokens = token_find_with_prefix($tokens, 'user')) && !empty($subscriber->uid)) {
+        $replacements += token_generate('user', $user_tokens, array('user' => user_load($subscriber->uid)), $options);
       }
+
       break;
 
     case 'simplenews-category':
@@ -2239,10 +2249,14 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
             break;
 
           case 'url':
-            // @todo replace path
-            $replacements[$original] = url('taxonomy/term/' . $category->tid);
+            $uri = entity_uri('taxonomy_term', $category);
+            $replacements[$original] = url($uri['path'], $uri['options']);
             break;
         }
+      }
+
+      if ($term_tokens = token_find_with_prefix($tokens, 'term')) {
+        $replacements += token_generate('taxonomy_term', $term_tokens, array('taxonomy_term' => $category), $options);
       }
       break;
   }

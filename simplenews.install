@@ -712,4 +712,10 @@ function simplenews_update_7002() {
   }
 }
 
+/**
+ * [simplenews-newsletter] tokens have been removed in favor of [node] tokens.
+ */
+function simplenews_update_7003() {
+  drupal_set_message(t('The [simplenews-newsletter] tokens have been removed in favor of [node] tokens. Existing newsletters might need to be updated accordingly.'), 'warning');
+}
 

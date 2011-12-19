@@ -480,7 +480,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   function getTokenContext() {
     return array(
       'category' => $this->getCategory(),
-      'account' => $this->getSubscriber(),
+      'simplenews_subscriber' => $this->getSubscriber(),
       'node' => $this->getNode(),
     );
   }

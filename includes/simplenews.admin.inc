@@ -553,7 +553,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     );
     $form['simplenews_subject']['token_help']['browser'] = array(
       '#theme' => 'token_tree',
-      '#token_types' => array('simplenews-category', 'node'),
+      '#token_types' => array('simplenews-category', 'node', 'simplenews-subscriber'),
     );
   }
 
@@ -1517,7 +1517,7 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
   );
   $form['simplenews_subscription']['subscription_mail']['token_help']['browser'] = array(
       '#theme' => 'token_tree',
-      '#token_types' => array('simplenews-category', 'node'),
+      '#token_types' => array('simplenews-category', 'simplenews-subscriber'),
   );
 
   $form['simplenews_subscription']['subscription_mail']['simplenews_confirm_subscribe_subject'] = array(

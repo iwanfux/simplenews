@@ -727,7 +727,7 @@ function simplenews_build_subscribe_mail(&$message, $params) {
   $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
   $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
 
-  if (simplenews_user_is_subscribed($context['account']->mail, $context['category']->tid)) {
+  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['category']->tid)) {
     $body = simplenews_subscription_confirmation_text('subscribe_subscribed', $langcode);
   }
   else {
@@ -754,7 +754,7 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
   $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
   $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
 
-  if (simplenews_user_is_subscribed($context['account']->mail, $context['category']->tid)) {
+  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['category']->tid)) {
     $body = simplenews_subscription_confirmation_text('unsubscribe_subscribed', $langcode);
     $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
   }
