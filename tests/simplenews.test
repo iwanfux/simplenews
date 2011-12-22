@@ -1547,3 +1547,178 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
 
   }
 }
+
+/**
+ * Test cases for creating and sending newsletters.
+ */
+class SimplenewsSourceTestCase extends SimplenewsTestCase {
+  /**
+   * Implementation of getInfo().
+   */
+  function getInfo() {
+    return array(
+      'name' => t('Source tests'),
+      'description' => t('Tests for the new source interfaces and concepts.'),
+      'group' => t('Simplenews'),
+    );
+  }
+
+  function setUp() {
+    parent::setUp();
+
+    $this->user = $this->drupalCreateUser(array('administer newsletters', 'send newsletter', 'administer nodes', 'administer simplenews subscriptions', 'create simplenews content', 'edit any simplenews content', 'view own unpublished content', 'delete any simplenews content', 'administer simplenews settings'));
+    $this->drupalLogin($this->user);
+  }
+
+  function subscribeUsers($count = 100) {
+    // Subscribe users.
+    $this->subscribers = array();
+    for ($i = 0; $i < $count; $i++) {
+      $mail = $this->randomEmail();
+      $this->subscribers[$mail] = $mail;
+    }
+
+    $this->drupalGet('admin/people/simplenews');
+    $this->clickLink(t('Mass subscribe'));
+    $edit = array(
+      'emails' => implode(',', $this->subscribers),
+      // @todo: Don't hardcode the default tid.
+      '1' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+  }
+
+  /**
+   * Tests that sending a minimal implementation of the source interface works.
+   */
+  function testSendMinimalSourceImplementation() {
+    // Create a basic plaintext test source and send it.
+    $plain_source = new SimplenewsSourceTest('plain');
+    simplenews_send_source($plain_source);
+    $mails = $this->drupalGetMails();
+    $mail = $mails[0];
+
+    // Assert resulting mail.
+    $this->assertEqual('simplenews_node', $mail['id']);
+    $this->assertEqual('simplenews', $mail['module']);
+    $this->assertEqual('node', $mail['key']);
+    $this->assertEqual($plain_source->getRecipient(), $mail['to']);
+    $this->assertEqual($plain_source->getFromFormatted(), $mail['from']);
+    $this->assertEqual($plain_source->getLanguage(), $mail['language']);
+    $this->assertTrue($mail['params']['plain']);
+
+    $this->assertFalse(isset($mail['params']['plaintext']));
+    $this->assertFalse(isset($mail['params']['attachments']));
+
+    $this->assertEqual($plain_source->getSubject(), $mail['subject']);
+    $this->assertTrue(strpos($mail['body'], 'the plain body') !== FALSE);
+    $this->assertTrue(strpos($mail['body'], 'the plain footer') !== FALSE);
+
+    $html_source = new SimplenewsSourceTest('html');
+    simplenews_send_source($html_source);
+    $mails = $this->drupalGetMails();
+    $mail = $mails[1];
+
+    // Assert resulting mail.
+    $this->assertEqual('simplenews_node', $mail['id']);
+    $this->assertEqual('simplenews', $mail['module']);
+    $this->assertEqual('node', $mail['key']);
+    $this->assertEqual($plain_source->getRecipient(), $mail['to']);
+    $this->assertEqual($plain_source->getFromFormatted(), $mail['from']);
+    $this->assertEqual($plain_source->getLanguage(), $mail['language']);
+    $this->assertEqual(NULL, $mail['params']['plain']);
+
+    $this->assertTrue(isset($mail['params']['plaintext']));
+    $this->assertTrue(strpos($mail['params']['plaintext'], 'the plain body') !== FALSE);
+    $this->assertTrue(strpos($mail['params']['plaintext'], 'the plain footer') !== FALSE);
+    $this->assertTrue(isset($mail['params']['attachments']));
+    $this->assertEqual('example://test.png', $mail['params']['attachments'][0]['uri']);
+
+    $this->assertEqual($plain_source->getSubject(), $mail['subject']);
+    $this->assertTrue(strpos($mail['body'], 'the body') !== FALSE);
+    $this->assertTrue(strpos($mail['body'], 'the footer') !== FALSE);
+  }
+
+  /**
+   * Test sending a newsletter to 100 recipients with caching enabled.
+   */
+  function testSendCaching() {
+
+    $this->subscribeUsers(100);
+    // Enable build caching.
+    $edit = array(
+      'simplenews_source_cache' => 'SimplenewsSourceCacheBuild',
+    );
+    $this->drupalPost('admin/config/services/simplenews/settings/mail', $edit, t('Save configuration'));
+
+    $edit = array(
+      'title' => $this->randomName(),
+      'body[und][0][value]' => "Mail token: [simplenews-subscriber:mail]",
+    );
+    $this->drupalPost('node/add/simplenews', $edit, ('Save'));
+    $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+    $node = node_load($matches[1]);
+
+    // Add node to spool.
+    simplenews_add_node_to_spool($node);
+
+    $before = microtime(TRUE);
+    simplenews_mail_spool();
+    $after = microtime(TRUE);
+
+    // Make sure that 100 mails have been sent.
+    $this->assertEqual(100, count($this->drupalGetMails()));
+
+    // Test that tokens are correctly replaced.
+    foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
+      // Make sure that the same mail was used in the body token as it has been
+      // sent to. Also verify that the mail is plaintext.
+      $this->assertTrue(strpos($mail['body'], $mail['to']) !== FALSE);
+      $this->assertFalse(strpos($mail['body'], '<strong>'));
+    }
+
+    // Report time. @todo: Find a way to actually do some assertions here.
+    $this->pass(t('Mails have been sent in @sec seconds with build caching enabled.', array('@sec' => round($after - $before, 3))));
+  }
+
+  /**
+   * Test with disabled caching.
+   */
+  function testSendNoCaching() {
+    $this->subscribeUsers(100);
+    // Disable caching.
+    $edit = array(
+      'simplenews_source_cache' => 'SimplenewsSourceCacheNone',
+    );
+    $this->drupalPost('admin/config/services/simplenews/settings/mail', $edit, t('Save configuration'));
+
+    $edit = array(
+      'title' => $this->randomName(),
+      'body[und][0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
+    );
+    $this->drupalPost('node/add/simplenews', $edit, ('Save'));
+    $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+    $node = node_load($matches[1]);
+
+    // Add node to spool.
+    simplenews_add_node_to_spool($node);
+
+    $before = microtime(TRUE);
+    simplenews_mail_spool();
+    $after = microtime(TRUE);
+
+    // Make sure that 100 mails have been sent.
+    $this->assertEqual(100, count($this->drupalGetMails()));
+
+    // Test that tokens are correctly replaced.
+    foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
+      // Make sure that the same mail was used in the body token as it has been
+      // sent to. Also verify that the mail is plaintext.
+      $this->assertTrue(strpos($mail['body'], $mail['to']) !== FALSE);
+      $this->assertFalse(strpos($mail['body'], '<strong>'));
+    }
+
+    // Report time. @todo: Find a way to actually do some assertions here.
+    $this->pass(t('Mails have been sent in @sec seconds with caching disabled.', array('@sec' => round($after - $before, 3))));
+  }
+}

@@ -1442,7 +1442,7 @@ function simplenews_admin_settings_mail($form, &$form_state) {
     '#title' => t('Cache'),
     '#description' => t('Chosing a different cache implementation allows for a different behavior during sending mails.') . '<br /><br />' . $sources_descriptions,
     '#options' => $sources_labels,
-    '#default_value' => variable_get('simplenews_source_cache', 'SimplenewsSourceNodeCached'),
+    '#default_value' => variable_get('simplenews_source_cache', 'SimplenewsSourceCacheBuild'),
   );
 
   $throttle = drupal_map_assoc(array(1, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000));

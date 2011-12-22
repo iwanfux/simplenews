@@ -28,6 +28,8 @@ interface SimplenewsSourceInterface {
 
   /**
    * Returns the mail body.
+   *
+   * The body should either be plaintext or html, depending on the format.
    */
   function getBody();
 
@@ -38,8 +40,15 @@ interface SimplenewsSourceInterface {
 
   /**
    * Returns the mail footer.
+   *
+   * The footer should either be plaintext or html, depending on the format.
    */
   function getFooter();
+
+  /**
+   * Returns the plain footer.
+   */
+  function getPlainFooter();
 
   /**
    * Returns the mail format.
@@ -617,8 +626,8 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
     $this->resetContentLanguage();
 
-    $this->build = $build;
-    return $build;
+    $this->build[$format] = $build;
+    return $this->build[$format];
   }
 
   /**
@@ -635,7 +644,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       return $cache;
     }
     $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'category' => $this->getCategory(), 'language' => $this->getLanguage()));
-    $this->cache->set('build', 'body', $body);
+    $this->cache->set('build', 'body:' . $format, $body);
     return $body;
   }
 
@@ -643,13 +652,32 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getBody().
    */
   public function getBody() {
+    return $this->getBodyWithFormat($this->getFormat());
+  }
 
+  /**
+   * Implements SimplenewsSourceInterface::getBody().
+   */
+  public function getPlainBody() {
+    return $this->getBodyWithFormat('plain');
+  }
+
+   /**
+   * Get the body with the requested format.
+   *
+   * @param $format
+   *   Either html or plain.
+   *
+   * @return
+   *   The rendered mail body as a string.
+   */
+  protected function getBodyWithFormat($format) {
     // Impersonate the subscriber if he is a user.
     if ($uid = $this->getSubscriber()->uid) {
       simplenews_impersonate_user($uid);
     }
 
-    if ($cache = $this->cache->get('final', 'body')) {
+    if ($cache = $this->cache->get('final', 'body:' . $format)) {
       return $cache;
     }
 
@@ -657,34 +685,11 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
     // Build message body, replace tokens.
     $body = token_replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
-    $this->cache->set('final', 'body', $body);
-
-    // Switch back to the previous user.
-    if ($uid) {
-      simplenews_revert_user();
+    if ($format == 'plain') {
+      // Convert HTML to text if requested to do so.
+      $body = simplenews_html_to_text($body, $this->getCategory()->hyperlinks);
     }
-    return $body;
-  }
-
-  /**
-   * Implements SimplenewsSourceInterface::getBody().
-   */
-  public function getPlainBody() {
-
-    // Impersonate the subscriber if he is a user.
-    if ($uid = $this->getSubscriber()->uid) {
-      simplenews_impersonate_user($uid);
-    }
-
-    if ($cache = $this->cache->get('final', 'body:plain')) {
-      return $cache;
-    }
-    $body = $this->buildBody('plain');
-
-    // Build message body, replace tokens.
-    $body = token_replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
-    $body = simplenews_html_to_text($body, $this->getCategory()->hyperlinks);
-    $this->cache->set('final', 'body:plain', $body);
+    $this->cache->set('final', 'body:' . $format, $body);
 
     // Switch back to the previous user.
     if ($uid) {
@@ -695,29 +700,37 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
   /**
    * Builds the themed footer.
+   *
+   * @param $format
+   *   (Optional) Set the format of this footer build, overrides the default
+   *   format.
    */
-  protected function buildFooter() {
-    if ($cache = $this->cache->get('build', 'footer')) {
+  protected function buildFooter($format = NULL) {
+    if (empty($format)) {
+      $format = $this->getFormat();
+    }
+
+    if ($cache = $this->cache->get('build', 'footer:' . $format)) {
       return $cache;
     }
 
     // Build and buffer message footer
     $footer = theme('simplenews_newsletter_footer', array(
-      'build' => $this->build(),
+      'build' => $this->build($format),
       'category' => $this->getCategory(),
       'context' => $this->getTokenContext(),
       'key' => $this->getKey(),
       'language' => $this->getLanguage(),
       )
     );
-    $this->cache->set('build', 'footer', $footer);
+    $this->cache->set('build', 'footer:' . $format, $footer);
     return $footer;
   }
 
   /**
    * Implements SimplenewsSourceInterface::getFooter().
    */
-  function getFooter() {
+  public function getFooter() {
     if ($cache = $this->cache->get('final', 'footer')) {
       return $cache;
     }
@@ -727,6 +740,22 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     }
 
     $this->cache->set('build', 'footer', $final_footer);
+    return $final_footer;
+  }
+
+  /**
+   * Implements SimplenewsSourceInterface::getPlainFooter().
+   */
+  public function getPlainFooter() {
+    if ($cache = $this->cache->get('final', 'footer:plain')) {
+      return $cache;
+    }
+
+    if ($this->category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
+      $final_footer = token_replace($this->buildFooter('plain'), $this->getTokenContext(), array('sanitize' => FALSE));
+    }
+
+    $this->cache->set('build', 'footer:plain', $final_footer);
     return $final_footer;
   }
 
@@ -872,4 +901,79 @@ class SimplenewsSourceCacheBuild extends SimplenewsSourceCacheStatic {
     return in_array($group, array('data', 'build'));
   }
 
+}
+
+/**
+ * Example source implementation used for tests.
+ */
+class SimplenewsSourceTest implements SimplenewsSourceInterface {
+
+  protected $format;
+
+  public function __construct($format) {
+    $this->format = $format;
+  }
+
+  public function getAttachments() {
+    return array(
+      array(
+        'uri' => 'example://test.png',
+        'filemime' => 'x-example',
+        'filename' => 'test.png',
+      ),
+    );
+  }
+
+  public function getBody() {
+    return $this->getFormat() == 'plain' ? $this->getPlainBody() : 'the body';
+  }
+
+  public function getFooter() {
+    return $this->getFormat() == 'plain' ? $this->getPlainFooter() : 'the footer';
+  }
+
+  public function getPlainFooter() {
+    return 'the plain footer';
+  }
+
+  public function getFormat() {
+    return $this->format;
+  }
+
+  public function getFromAddress() {
+    return 'test@example.org';
+  }
+
+  public function getFromFormatted() {
+    return 'Test <test@example.org>';
+  }
+
+  public function getHeaders(array $headers) {
+    $headers['X-Simplenews-Test'] = 'OK';
+    return $headers;
+  }
+
+  public function getKey() {
+    return 'node';
+  }
+
+  public function getLanguage() {
+    return 'en';
+  }
+
+  public function getPlainBody() {
+    return 'the plain body';
+  }
+
+  public function getRecipient() {
+    return 'recipient@example.org';
+  }
+
+  public function getSubject() {
+    return 'the subject';
+  }
+
+  public function getTokenContext() {
+    return array();
+  }
 }

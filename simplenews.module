@@ -357,6 +357,11 @@ function simplenews_node_view($node, $view_mode) {
     return;
   }
 
+  // Only do token replacements for view modes other than the our own email view
+  // modes. Token replacements for them will happen later on.
+  if (strpos($view_mode, 'email_') !== FALSE) {
+    return;
+  }
 
   $context = array(
     'node' => $node,
@@ -3156,7 +3161,7 @@ function simplenews_simplenews_source_cache_info() {
       'label' => t('No caching'),
       'description' => t('This allows to theme each newsletter separately.'),
     ),
-    'SimplenewsSourceNodeCached' => array(
+    'SimplenewsSourceCacheBuild' => array(
       'label' => t('Cached content source'),
       'description' => t('This caches the rendered content to be sent for multiple recipients. It is not possible to use subscriber specific theming but tokens can be used for personalization.'),
     ),

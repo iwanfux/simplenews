@@ -13,18 +13,8 @@
  * @param mixed $node
  *   The newsletter node to be sent.  If an integer, the node nid; if an object,
  *   the node object.
- * @param array $accounts
- *   An array of recipient accounts for this newsletter.  Each account may
- *   have the following properties, but either snid, mail, or uid must be
- *   defined:
- *   - snid: The subscription id, or 0 if no subscription record exists.
- *   - tid: The newsletter category id.
- *   - uid: The subscriber's uid, or 0 if the subscriber has no user account.
- *   - mail: The subscriber's email address.
- *   - name: Emtpy; added for compatibility with user account object.
- *   - language: The language object of the subscriber's preferred language.
  */
-function simplenews_add_node_to_spool($node, $accounts = array()) {
+function simplenews_add_node_to_spool($node) {
   if (is_numeric($node)) {
     $node = node_load($node);
   }
@@ -244,30 +234,6 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED) {
 
     simplenews_revert_user();
   }
-}
-
-/**
- * Returns the source object for the provided spool data.
- *
- * @param $spool_data
- *   The mail message object as returned by simplenews_load_spool(), containing
- *   the following properties:
- *   - nid
- *   - tid
- *   - data
- *
- * @return SimplenewsSourceInterface
- *   An impementation of the source interface.
- */
-function simplenews_get_source_from_spool($spool_list) {
-  $source_class = variable_get('simplenews_source', 'SimplenewsSourceNode');
-
-  // Check if this is a valid source.
-  if (!class_exists($source_class) || !($source_class instanceof SimplenewsSpoolSourceInterface)) {
-    // If not, fall back to default.
-    $source_class = 'SimplenewsSourceNode';
-  }
-  return $source_class;
 }
 
 /**
@@ -695,13 +661,13 @@ function simplenews_build_newsletter_mail(&$message, SimplenewsSourceInterface $
   // Get message data from source.
   $message['headers'] = $source->getHeaders($message['headers']);
   $message['subject'] = $source->getSubject();
-  $message['body']['body'] = $source->getFormat() == 'html' ? $source->getBody() : $source->getPlainBody();
+  $message['body']['body'] = $source->getBody();
   $message['body']['footer'] = $source->getFooter();
 
   // Optional params for HTML mails.
   if ($source->getFormat() == 'html') {
     $message['params']['plain'] = NULL;
-    $message['params']['plaintext'] = $source->getPlainBody();
+    $message['params']['plaintext'] = $source->getPlainBody() . "\n" . $source->getPlainFooter();
     $message['params']['attachments'] = $source->getAttachments();
   }
   else {
