@@ -1171,7 +1171,11 @@ function simplenews_subscription_list_form() {
     '#empty' => t('No subscribers available.'),
   );
 
-  $form['pager'] = array('#theme' => 'pager');
+  $form['pager'] = array(
+    // Calling theme('pager') directly so that it the first call after the
+    // pager query executed above.
+    '#markup' => theme('pager'),
+  );
 
   return $form;
 }
