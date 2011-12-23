@@ -1371,9 +1371,6 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
     $subscription->source = $source;
     simplenews_subscription_save($subscription);
     $subscriber->tids[$tid] = $tid;
-
-    // Execute simplenews subscribe trigger.
-    simplenews_call_actions('subscribe', $subscriber);
   }
   module_invoke_all('simplenews_subscribe_user', $subscriber);
   return TRUE;
@@ -1433,9 +1430,6 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
     $subscription->source = $source;
     simplenews_subscription_save($subscription);
     $subscriber->tids[$tid] = $tid;
-
-    // Execute simplenews unsubscribe trigger
-    simplenews_call_actions('unsubscribe', $subscriber);
   }
   module_invoke_all('simplenews_unsubscribe_user', $subscriber);
   return TRUE;
@@ -1894,25 +1888,6 @@ function simplenews_views_api() {
   'api' => 3,
   'path' => drupal_get_path('module', 'simplenews') . '/includes/views'
   );
-}
-
-/**
- * Call simplenews actions.
- */
-function simplenews_call_actions($op, $subscription) {
-  // Only call actions when the simplenews_action module is enabled.
-  if (!module_exists('simplenews_action')) {
-    return;
-  }
-  $aids = trigger_get_assigned_actions('simplenews');
-  $context = array(
-    'hook' => 'simplenews',
-    'op' => $op,
-    'account' => $subscription,
-  );
-  foreach ($aids as $aid => $action_info) {
-    actions_do($aid, $subscription, $context);
-  }
 }
 
 /**

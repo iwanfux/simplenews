@@ -1,8 +1,0 @@
-name = Simplenews action
-description = Provide actions for Simplenews.
-dependencies[] = simplenews
-dependencies[] = trigger
-package = Mail
-core = 7.x
-
-files[] = simplenews_action.module
