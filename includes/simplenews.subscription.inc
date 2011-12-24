@@ -135,7 +135,7 @@ function simplenews_block_form($form, &$form_state, $tid) {
   else {
     $form['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('Email'),
+      '#title' => t('E-mail'),
       '#size' => 20,
       '#maxlength' => 128,
       '#required' => TRUE,
@@ -161,7 +161,7 @@ function simplenews_block_form($form, &$form_state, $tid) {
  */
 function simplenews_block_form_validate($form, &$form_state) {
   if (!valid_email_address($form_state['values']['mail'])) {
-    form_set_error('mail', t("The email address you supplied is not valid."));
+    form_set_error('mail', t("The e-mail address you supplied is not valid."));
   }
 }
 
@@ -178,7 +178,7 @@ function simplenews_block_form_submit($form, &$form_state) {
     case 'subscribe':
       simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
       if ($confirm) {
-        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
+        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
       else {
         drupal_set_message(t('You have been subscribed.'));
@@ -187,7 +187,7 @@ function simplenews_block_form_submit($form, &$form_state) {
     case 'unsubscribe':
       simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
       if ($confirm) {
-        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to cancel your subscription.'));
+        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
       }
       else {
         drupal_set_message(t('You have been unsubscribed.'));
@@ -220,7 +220,6 @@ function simplenews_subscriptions_page_form($form, &$form_state) {
 
   $form['subscriptions'] = array(
     '#type' => 'fieldset',
-    '#description' => t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'),
   );
   $form['subscriptions']['newsletters'] = array(
     '#type' => 'checkboxes',
@@ -232,6 +231,7 @@ function simplenews_subscriptions_page_form($form, &$form_state) {
   // Anonymous users see an email box and will receive confirmations
   if ($subscription->mail) {
     $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $subscription->mail));
+    $form['subscriptions']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
     $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $subscription->mail);
     $form['update'] = array(
       '#type' => 'submit',
@@ -242,9 +242,10 @@ function simplenews_subscriptions_page_form($form, &$form_state) {
   }
   else {
     $form['subscriptions']['#title'] = t('Manage your newsletter subscriptions');
+    $form['subscriptions']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
     $form['subscriptions']['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('email'),
+      '#title' => t('E-mail'),
       '#size' => 20,
       '#maxlength' => 128,
       '#weight' => 10,
@@ -276,13 +277,12 @@ function simplenews_subscriptions_page_form($form, &$form_state) {
 function simplenews_subscriptions_page_form_validate($form, &$form_state) {
   $valid_email = valid_email_address($form_state['values']['mail']);
   if (!$valid_email) {
-    form_set_error('mail', t('The email address you supplied is not valid.'));
+    form_set_error('mail', t('The e-mail address you supplied is not valid.'));
   }
-  $account = (object) array('mail' => $form_state['values']['mail']);
-  $subscription = simplenews_get_subscription($account);
 
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  if (!count($checked_newsletters) && !$subscription) {
+  // Anonymous users must select at least one newsletter.
+  if (!count($checked_newsletters) && !$GLOBALS['user']->uid) {
     form_set_error('newsletters', t('You must select at least one newsletter.'));
   }
 }
@@ -326,10 +326,10 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
         }
       }
       if ($confirm_any) {
-        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'));
+        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
       else {
-        drupal_set_message(t('You were added to the chosen mailing list.'));
+        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
       }
       break;
     case t('Unsubscribe'):
@@ -342,10 +342,10 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
         }
       }
       if ($confirm_any) {
-        drupal_set_message(t('You will receive a confirmation email shortly containing further instructions on how to cancel your subscription.'));
+        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
       }
       else {
-        drupal_set_message(t('You were added to the chosen mailing list.'));
+        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
       }
       break;
   }
@@ -401,7 +401,7 @@ function simplenews_subscriptions_multi_block_form($form, &$form_state) {
   else {
     $form['mail'] = array(
       '#type' => 'textfield',
-      '#title' => t('Email'),
+      '#title' => t('E-mail'),
       '#size' => 20,
       '#maxlength' => 128,
       '#weight' => 10,
@@ -647,7 +647,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
     $form['language'] = array(
       '#type' => 'fieldset',
       '#title' => 'Preferred language',
-      '#description' => t('The emails will be localized in language chosen. Real users have their preference in account settings.'),
+      '#description' => t('The e-mails will be localized in language chosen. Real users have their preference in account settings.'),
       '#disabled' => FALSE,
     );
     if ($subscription->uid) {
@@ -689,7 +689,7 @@ function simplenews_subscriptions_admin_form_validate($form, &$form_state) {
 
   $valid_email = valid_email_address($form_state['values']['mail']);
   if (!$valid_email) {
-    form_set_error('mail', t('The email address you supplied is not valid.'));
+    form_set_error('mail', t('The e-mail address you supplied is not valid.'));
   }
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
   if (!count($checked_newsletters) && !$subscription) {

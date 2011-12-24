@@ -132,8 +132,8 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     }
 
     // Simplify confirmation form submission by hiding the subscribe block on
-    // that page.
-    $edit['pages'] = 'newsletter/confirm/add/*';
+    // that page. Same for the newsletter/subscriptions page.
+    $edit['pages'] = "newsletter/confirm/add/*\nnewsletter/subscriptions";
 
     $this->drupalPost('admin/structure/block/manage/simplenews/' . $tid . '/configure', $edit, t('Save block'));
     $this->assertText('The block configuration has been saved.', 'The newsletter block configuration has been saved.');
@@ -200,7 +200,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       'mail' => $mail,
     );
     $this->drupalPost(NULL, $edit, t('Subscribe'));
-    $this->assertText(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation email sent.'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
     $body = $mails[0]['body'];
@@ -234,7 +234,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       'mail' => $mail,
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
-    $this->assertText(t('You will receive a confirmation email shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation email sent.'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
     $body = $mails[1]['body'];
@@ -251,7 +251,80 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
 
-    // @todo 3. Subscribe anonymous via multi block
+    // 3. Subscribe anonymous via multi block
+
+    $this->drupalLogin($admin_user);
+
+    // Enable the multi-sign up block.
+    $this->setupSubscriptionBlock(0);
+
+    // Disable the category block.
+    $edit = array(
+      'blocks[simplenews_' . $tid . '][region]' => -1,
+    );
+    $this->drupalPost(NULL, $edit, t('Save blocks'));
+
+    $this->drupalLogout();
+
+    // Try to submit multi-signup form without selecting a category.
+    $mail = $this->randomEmail(8, 'testmail');
+    $edit = array(
+      'mail' => $mail,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->assertText(t('You must select at least one newsletter.'));
+
+    // Now fill out the form and try again. The e-mail should still be listed.
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[2]['body'];
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
+    preg_match($pattern, $body, $match);
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Subscribe'));
+    $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
+
+    // Now the same with the newsletter/subscriptions page.
+    $mail = $this->randomEmail(8, 'testmail');
+    $edit = array(
+      'mail' => $mail,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+    $this->assertText(t('You must select at least one newsletter.'));
+
+    // Now fill out the form and try again.
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[3]['body'];
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
+    preg_match($pattern, $body, $match);
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Subscribe'));
+    $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
   }
 
 
@@ -401,7 +474,77 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost($url, $edit, t('Save'));
     $this->assertRaw(t('The changes have been saved.', array('%mail' => $subscriber_user->mail)), t('Authenticated user unsubscribed on the account page.'));
 
-    // @todo 6. Subscribe authenticated via multi block
+    // Subscribe authenticated via multi block
+    $this->drupalLogin($admin_user);
+
+    // Enable the multi-sign up block.
+    $this->setupSubscriptionBlock(0);
+
+    // Disable the category block.
+    $edit = array(
+      'blocks[simplenews_' . $tid . '][region]' => -1,
+    );
+    $this->drupalPost(NULL, $edit, t('Save blocks'));
+
+    $this->drupalLogout();
+
+    // Try to submit multi-signup form without selecting a category.
+    $subscriber_user2 = $this->drupalCreateUser(array('subscribe to newsletters'));
+    $this->drupalLogin($subscriber_user2);
+
+    $this->assertNoField('mail');
+    $this->drupalPost(NULL, array(), t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->mail)));
+
+    // Nothing should have happened.
+    $this->assertNoFieldChecked('edit-newsletters-' . $tid);
+
+    // Now fill out the form and try again.
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->mail)));
+
+    $this->assertFieldChecked('edit-newsletters-' . $tid);
+
+    // Unsubscribe.
+    $edit = array(
+      'newsletters[' . $tid . ']' => FALSE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->mail)));
+
+    $this->assertNoFieldChecked('edit-newsletters-' . $tid);
+
+    // And now the same for the newsletter/subscriptions page.
+    $subscriber_user3 = $this->drupalCreateUser(array('subscribe to newsletters'));
+    $this->drupalLogin($subscriber_user3);
+
+    $this->assertNoField('mail');
+    $this->drupalPost('newsletter/subscriptions', array(), t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->mail)));
+
+    // Nothing should have happened.
+    $this->assertNoFieldChecked('edit-newsletters-' . $tid);
+
+    // Now fill out the form and try again.
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->mail)));
+
+    $this->assertFieldChecked('edit-newsletters-' . $tid);
+
+    // Unsubscribe.
+    $edit = array(
+      'newsletters[' . $tid . ']' => FALSE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->mail)));
+
+    $this->assertNoFieldChecked('edit-newsletters-' . $tid);
   }
 
 }
