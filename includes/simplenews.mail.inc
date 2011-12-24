@@ -4,54 +4,52 @@
  * @file
  * Simplenews email send and spool handling
  *
- * @ingroup simplenews
+ * @ingroup mail
  */
 
- /**
- * Send newsletter node to subscribers.
+/**
+ * Add the newsletter node to the mail spool.
  *
- * @param mixed $node
- *   The newsletter node to be sent.  If an integer, the node nid; if an object,
- *   the node object.
+ * Depending on the configuration, the node will either be sent immediatly
+ * afterwards or during cron runs.
+ *
+ * @param $node
+ *   The newsletter node to be sent.
  */
 function simplenews_add_node_to_spool($node) {
-  if (is_numeric($node)) {
-    $node = node_load($node);
+  // To send the newsletter, the node id and target email addresses
+  // are stored in the spool.
+  // Only subscribed recipients are stored in the spool (status = 1).
+  $select = db_select('simplenews_subscriber', 's');
+  $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
+  $select->addField('s', 'mail');
+  $select->addField('s', 'snid');
+  $select->addField('t', 'tid');
+  $select->addExpression($node->nid, 'nid');
+  $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
+  $select->addExpression(REQUEST_TIME, 'timestamp');
+  $select->condition('t.tid', $node->simplenews->tid);
+  $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+  $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
+
+  db_insert('simplenews_mail_spool')
+    ->from($select)
+    ->execute();
+
+  // Update simplenews newsletter status to send pending.
+  simplenews_update_sent_status($node);
+
+  // When cron is not used the newsletter is send immediately to the emails
+  // in the spool. When cron is used newsletters are send to addresses in the
+  // spool during the next (and following) cron run.
+  if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
+    simplenews_mail_spool();
+    simplenews_clear_spool();
+    simplenews_send_status_update();
+    return SIMPLENEWS_STATUS_SEND_READY;
   }
-
-  if (is_object($node)) {
-    // To send the newsletter, the node id and target email addresses
-    // are stored in the spool.
-    // Only subscribed recipients are stored in the spool (status = 1).
-    $select = db_select('simplenews_subscriber', 's');
-    $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
-    $select->addField('s', 'mail');
-    $select->addField('s', 'snid');
-    $select->addField('t', 'tid');
-    $select->addExpression($node->nid, 'nid');
-    $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
-    $select->addExpression(REQUEST_TIME, 'timestamp');
-    $select->condition('t.tid', $node->simplenews->tid);
-    $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-    $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
-
-    $query = db_insert('simplenews_mail_spool')
-      ->from($select)
-      ->execute();
-
-    // When cron is not used the newsletter is send immediately to the emails
-    // in the spool. When cron is used newsletters are send to addresses in the
-    // spool during the next (and following) cron run.
-    if (variable_get('simplenews_use_cron', TRUE) == FALSE) {
-      simplenews_mail_spool();
-      drupal_set_message(t('Newsletter sent.'));
-      simplenews_clear_spool();
-      simplenews_send_status_update();
-    }
-    else {
-      drupal_set_message(t('Newsletter pending.'));
-    }
-
+  else {
+    return SIMPLENEWS_STATUS_SEND_PENDING;
   }
 }
 

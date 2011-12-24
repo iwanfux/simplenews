@@ -284,8 +284,13 @@ function simplenews_issue_send($nids) {
       continue;
     }
 
-    simplenews_update_sent_status($node);
-    simplenews_add_node_to_spool($node);
+    $status = simplenews_add_node_to_spool($node);
+    if ($status == SIMPLENEWS_STATUS_SEND_READY) {
+      drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
+    }
+    else {
+      drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->title)));
+    }
   }
 }
 

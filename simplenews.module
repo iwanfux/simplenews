@@ -484,7 +484,6 @@ function simplenews_node_update($node) {
   // Check if the newsletter is set to send on publish and needs to be send.
   if ($node->simplenews->status == SIMPLENEWS_STATUS_SEND_PUBLISH && $node->status == NODE_PUBLISHED) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    simplenews_update_sent_status($node);
     simplenews_add_node_to_spool($node);
   }
   else {
@@ -1371,8 +1370,9 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
     $subscription->source = $source;
     simplenews_subscription_save($subscription);
     $subscriber->tids[$tid] = $tid;
+
+    module_invoke_all('simplenews_subscribe_user', $subscriber, $subscription);
   }
-  module_invoke_all('simplenews_subscribe_user', $subscriber);
   return TRUE;
 }
 
@@ -1430,8 +1430,9 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
     $subscription->source = $source;
     simplenews_subscription_save($subscription);
     $subscriber->tids[$tid] = $tid;
+
+    module_invoke_all('simplenews_unsubscribe_user', $subscriber, $subscription);
   }
-  module_invoke_all('simplenews_unsubscribe_user', $subscriber);
   return TRUE;
 }
 
@@ -2982,8 +2983,13 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
   // Send newsletter to all subscribers or send test newsletter
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
-    simplenews_update_sent_status($node);
-    simplenews_add_node_to_spool($node);
+    $status = simplenews_add_node_to_spool($node);
+    if ($status == SIMPLENEWS_STATUS_SEND_READY) {
+      drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
+    }
+    else {
+      drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->title)));
+    }
   }
   elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
     simplenews_send_test($node, $form_state['test_addresses']);

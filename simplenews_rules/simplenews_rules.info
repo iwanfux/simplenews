@@ -1,0 +1,6 @@
+name = Simplenews rules
+description = Provides integration with Rules module for Simplenews.
+dependencies[] = simplenews
+dependencies[] = rules
+package = Mail
+core = 7.x

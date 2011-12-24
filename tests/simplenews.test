@@ -1215,7 +1215,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('admin/content/simplenews', $edit, t('Update'));
 
-    $this->assertText(t('Newsletter sent'));
+    $this->assertText(t('Newsletter @title sent', array('@title' => $first->title)));
     $this->assertText(t('Newsletter @title is unpublished and will be sent on publish', array('@title' => $unpublished->title)));
 
     // Verify states.
