@@ -2718,7 +2718,7 @@ function theme_simplenews_field($variables) {
       $output .= '</div>';
 
       // Render the top-level DIV.
-      $output .= '<div class="clearfix">' . $output . '</div>';
+      $output = '<div class="clearfix">' . $output . '</div>';
       break;
   }
   return $output;
@@ -2774,8 +2774,6 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
 
-  // @todo Replace 'format' by 'view_mode ?
-  $variables['format'] = $variables['category']->format;
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
 

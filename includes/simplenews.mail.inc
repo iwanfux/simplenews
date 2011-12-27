@@ -727,3 +727,35 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
     $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
   }
 }
+
+/**
+ * A mail sending implementation that captures sent messages to a variable.
+ *
+ * This class is for running tests or for development and does not convert HTML
+ * to plaintext.
+ */
+class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
+
+  /**
+   * Implements MailSystemInterface::format().
+   */
+  public function format(array $message) {
+    // Join the body array into one string.
+    $message['body'] = implode("\n\n", $message['body']);
+    // Wrap the mail body for sending.
+    $message['body'] = drupal_wrap_mail($message['body']);
+    return $message;
+  }
+
+  /**
+   * Implements MailSystemInterface::mail().
+   */
+  public function mail(array $message) {
+    $captured_emails = variable_get('drupal_test_email_collector', array());
+    $captured_emails[] = $message;
+    // @todo: This is rather slow when sending 100 and more mails during tests.
+    // Investigate in other methods like APC shared memory.
+    variable_set('drupal_test_email_collector', $captured_emails);
+    return TRUE;
+  }
+}

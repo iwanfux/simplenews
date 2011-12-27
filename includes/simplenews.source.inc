@@ -681,7 +681,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       return $cache;
     }
 
-    $body = $this->buildBody();
+    $body = $this->buildBody($format);
 
     // Build message body, replace tokens.
     $body = token_replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
@@ -721,6 +721,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       'context' => $this->getTokenContext(),
       'key' => $this->getKey(),
       'language' => $this->getLanguage(),
+      'format' => $format,
       )
     );
     $this->cache->set('build', 'footer:' . $format, $footer);

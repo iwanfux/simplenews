@@ -1796,7 +1796,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
 
     $edit = array(
       'title' => $this->randomName(),
-      'body[und][0][value]' => "Mail token: [simplenews-subscriber:mail]",
+      'body[und][0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
     );
     $this->drupalPost('node/add/simplenews', $edit, ('Save'));
     $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
@@ -1816,13 +1816,70 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
       // Make sure that the same mail was used in the body token as it has been
       // sent to. Also verify that the mail is plaintext.
-      $this->assertTrue(strpos($mail['body'], $mail['to']) !== FALSE);
+      $this->assertTrue(strpos($mail['body'], '*' . $mail['to'] . '*') !== FALSE);
       $this->assertFalse(strpos($mail['body'], '<strong>'));
+      // Make sure the body is only attached once.
+      $this->assertEqual(1, preg_match_all('/Mail token/', $mail['body'], $matches));
     }
 
     // Report time. @todo: Find a way to actually do some assertions here.
     $this->pass(t('Mails have been sent in @sec seconds with build caching enabled.', array('@sec' => round($after - $before, 3))));
   }
+
+  /**
+   * Send a newsletter with the HTML format.
+   */
+  function testSendHTML() {
+    $this->subscribeUsers(5);
+
+    // Use custom testing mail system to support HTML mails.
+    variable_set('mail_system', array('default-system' => 'SimplenewsHTMLTestingMailSystem'));
+
+    // Set the format to HTML.
+    $this->drupalGet('admin/config/services/simplenews');
+    $this->clickLink(t('edit newsletter category'));
+    $edit = array(
+      'format' => 'html',
+      // @todo: This shouldn't be necessary.
+      'from_address' => $this->randomEmail(),
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    $edit = array(
+      'title' => $this->randomName(),
+      'body[und][0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
+    );
+    $this->drupalPost('node/add/simplenews', $edit, ('Save'));
+    $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+    $node = node_load($matches[1]);
+
+    // Add node to spool.
+    simplenews_add_node_to_spool($node);
+    // Send mails.
+    simplenews_mail_spool();
+
+    // Make sure that 5 mails have been sent.
+    $this->assertEqual(5, count($this->drupalGetMails()));
+
+    // Test that tokens are correctly replaced.
+    foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
+      // Verify title.
+      $this->assertTrue(strpos($mail['body'], '<h2>' . $node->title . '</h2>') !== FALSE);
+
+      // Make sure that the same mail was used in the body token as it has been
+      // sent to.
+      $this->assertTrue(strpos($mail['body'], '<strong>' . $mail['to'] . '</strong>') !== FALSE);
+
+      // Make sure the body is only attached once.
+      $this->assertEqual(1, preg_match_all('/Mail token/', $mail['body'], $matches));
+
+      // Check the plaintext version.
+      $this->assertTrue(strpos($mail['params']['plaintext'], $mail['to']) !== FALSE);
+      $this->assertFalse(strpos($mail['params']['plaintext'], '<strong>'));
+      // Make sure the body is only attached once.
+      $this->assertEqual(1, preg_match_all('/Mail token/', $mail['params']['plaintext'], $matches));
+    }
+}
 
   /**
    * Test with disabled caching.
@@ -1857,8 +1914,10 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
       // Make sure that the same mail was used in the body token as it has been
       // sent to. Also verify that the mail is plaintext.
-      $this->assertTrue(strpos($mail['body'], $mail['to']) !== FALSE);
+      $this->assertTrue(strpos($mail['body'], '*' . $mail['to'] . '*') !== FALSE);
       $this->assertFalse(strpos($mail['body'], '<strong>'));
+      // Make sure the body is only attached once.
+      $this->assertEqual(1, preg_match_all('/Mail token/', $mail['body'], $matches));
     }
 
     // Report time. @todo: Find a way to actually do some assertions here.
