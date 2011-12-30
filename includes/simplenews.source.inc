@@ -732,16 +732,15 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getFooter().
    */
   public function getFooter() {
-    if ($cache = $this->cache->get('final', 'footer')) {
-      return $cache;
-    }
-
     if ($this->category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
-      $final_footer = token_replace($this->buildFooter(), $this->getTokenContext(), array('sanitize' => FALSE));
-    }
+      if ($cache = $this->cache->get('final', 'footer')) {
+        return $cache;
+      }
 
-    $this->cache->set('build', 'footer', $final_footer);
-    return $final_footer;
+      $final_footer = token_replace($this->buildFooter(), $this->getTokenContext(), array('sanitize' => FALSE));
+      $this->cache->set('build', 'footer', $final_footer);
+      return $final_footer;
+    }
   }
 
   /**
