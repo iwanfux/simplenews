@@ -722,8 +722,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       'key' => $this->getKey(),
       'language' => $this->getLanguage(),
       'format' => $format,
-      )
-    );
+    ));
     $this->cache->set('build', 'footer:' . $format, $footer);
     return $footer;
   }
@@ -732,30 +731,31 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getFooter().
    */
   public function getFooter() {
-    if ($this->category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
-      if ($cache = $this->cache->get('final', 'footer')) {
-        return $cache;
-      }
-
-      $final_footer = token_replace($this->buildFooter(), $this->getTokenContext(), array('sanitize' => FALSE));
-      $this->cache->set('build', 'footer', $final_footer);
-      return $final_footer;
-    }
+    $this->getFooterWithFormat($this->getFormat());
   }
 
   /**
    * Implements SimplenewsSourceInterface::getPlainFooter().
    */
   public function getPlainFooter() {
-    if ($cache = $this->cache->get('final', 'footer:plain')) {
+    return $this->getFooterWithFormat('plain');
+  }
+
+  /**
+   * Get the footer in the specified format.
+   *
+   * @param $format
+   *   Either html or plain.
+   *
+   * @return
+   *   The footer for the requested format.
+   */
+  protected function getFooterWithFormat($format) {
+    if ($cache = $this->cache->get('final', 'footer:' . $format)) {
       return $cache;
     }
-
-    if ($this->category->opt_inout != SIMPLENEWS_OPT_INOUT_HIDDEN) {
-      $final_footer = token_replace($this->buildFooter('plain'), $this->getTokenContext(), array('sanitize' => FALSE));
-    }
-
-    $this->cache->set('build', 'footer:plain', $final_footer);
+    $final_footer = token_replace($this->buildFooter($format), $this->getTokenContext(), array('sanitize' => FALSE));
+    $this->cache->set('build', 'footer:' . $format, $final_footer);
     return $final_footer;
   }
 

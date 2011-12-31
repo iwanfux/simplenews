@@ -2782,6 +2782,9 @@ function theme_simplenews_newsletter_footer($variables) {
   if ($variables['key'] == 'test') {
     $output .= '- - - ' . $variables['test_message'] . ' - - -';
   }
+
+  // Do not display the unsubscribe link by default for hidden categories.
+  $variables['opt_out_hidden'] = $variables['category']->opt_inout == 'hidden';
   return $output;
 }
 

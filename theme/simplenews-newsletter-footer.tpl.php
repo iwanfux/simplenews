@@ -3,9 +3,9 @@
 /**
  * @file
  * Default theme implementation to format the simplenews newsletter footer.
- * 
+ *
  * Copy this file in your theme directory to create a custom themed footer.
- * Rename it to simplenews-newsletter-footer--<tid>.tpl.php to override it for a 
+ * Rename it to simplenews-newsletter-footer--<tid>.tpl.php to override it for a
  * newsletter using the newsletter term's id.
  *
  * @todo Update the available variables.
@@ -26,11 +26,13 @@
  * @see theme_simplenews_newsletter_footer()
  */
 ?>
-<?php if ($format == 'html'): ?>
-  <p class="newsletter-footer"><a href="[simplenews-subscriber:unsubscribe-url]"><?php print $unsubscribe_text ?></a></p>
-<?php else: ?>
--- <?php print $unsubscribe_text ?>: [simplenews-subscriber:unsubscribe-url]
-<?php endif ?>
+<?php if (!$opt_out_hidden): ?>
+  <?php if ($format == 'html'): ?>
+    <p class="newsletter-footer"><a href="[simplenews-subscriber:unsubscribe-url]"><?php print $unsubscribe_text ?></a></p>
+  <?php else: ?>
+  -- <?php print $unsubscribe_text ?>: [simplenews-subscriber:unsubscribe-url]
+  <?php endif ?>
+<?php endif; ?>
 
 <?php if ($key == 'test'): ?>
 - - - <?php print $test_message ?> - - -
