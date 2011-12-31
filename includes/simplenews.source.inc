@@ -519,7 +519,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       return $this->getFromAddress();
     }
     else {
-      return '"' . mime_header_encode($name) . '" <' . $this->getFromAddress() . '>';
+      return '"' . $name . '" <' . $this->getFromAddress() . '>';
     }
 
     return $formatted_address;

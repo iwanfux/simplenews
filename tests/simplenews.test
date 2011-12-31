@@ -1838,12 +1838,15 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     // Set the format to HTML.
     $this->drupalGet('admin/config/services/simplenews');
     $this->clickLink(t('edit newsletter category'));
-    $edit = array(
+    $edit_category = array(
       'format' => 'html',
-      // @todo: This shouldn't be necessary.
+      // Use umlaut to provoke mime encoding.
+      'from_name' => 'Drupäl',
+      // @todo: This shouldn't be necessary, default value is missing. Probably
+      // should not be required.
       'from_address' => $this->randomEmail(),
     );
-    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->drupalPost(NULL, $edit_category, t('Save'));
 
     $edit = array(
       'title' => $this->randomName(),
@@ -1878,6 +1881,10 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       $this->assertFalse(strpos($mail['params']['plaintext'], '<strong>'));
       // Make sure the body is only attached once.
       $this->assertEqual(1, preg_match_all('/Mail token/', $mail['params']['plaintext'], $matches));
+
+      // The mail system is responsible for mime encoding, make sure the from
+      // address is not yet encoded.
+      $this->assertEqual('"' . $edit_category['from_name'] . '" <' . $edit_category['from_address'] . '>', $mail['from']);
     }
   }
 
