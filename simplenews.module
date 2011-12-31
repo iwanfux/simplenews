@@ -2767,6 +2767,9 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
     'simplenews_newsletter_footer__' . $variables['build']['#view_mode'],
     'simplenews_newsletter_footer__' . $variables['category']->tid . '__' . $variables['build']['#view_mode'],
   );
+
+  // Do not display the unsubscribe link by default for hidden categories.
+  $variables['opt_out_hidden'] = $variables['category']->opt_inout == 'hidden';
 }
 
 /**
