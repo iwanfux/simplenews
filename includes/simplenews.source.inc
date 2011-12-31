@@ -129,7 +129,7 @@ interface SimplenewsSourceNodeInterface extends SimplenewsSourceInterface {
 /**
  * Interface for a simplenews source cache implementation.
  *
- * This is only compatible with the SimplenewsSpoolSourceInterface interface.
+ * This is only compatible with the SimplenewsSourceNodeInterface interface.
  */
 interface SimplenewsSourceCacheInterface {
 

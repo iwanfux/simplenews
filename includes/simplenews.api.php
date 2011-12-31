@@ -93,3 +93,24 @@ function hook_simplenews_subscribe_user($subscriber, $subscription) {
 function hook_simplenews_unsubscribe_user($subscriber, $subscription) {
 
 }
+
+/**
+ * Expose SimplenewsSource cache implementations.
+ *
+ * @return
+ *   An array keyed by the name of the class that provides the implementation,
+ *   the array value consists of another array with the keys label and
+ *   description.
+ */
+function hook_simplenews_source_cache_info() {
+  return array(
+    'SimplenewsSourceCacheNone' => array(
+      'label' => t('No caching'),
+      'description' => t('This allows to theme each newsletter separately.'),
+    ),
+    'SimplenewsSourceCacheBuild' => array(
+      'label' => t('Cached content source'),
+      'description' => t('This caches the rendered content to be sent for multiple recipients. It is not possible to use subscriber specific theming but tokens can be used for personalization.'),
+    ),
+  );
+}

@@ -1825,38 +1825,22 @@ function simplenews_recent_newsletters($tid, $count = 5) {
 }
 
 /**
- * Implementation of hook_mail().
+ * Implements hook_mail().
  *
- * Send simplenews mails using drupal mail API
- * @see drupal_mail()
+ * Send simplenews mails using drupal mail API.
  *
- * @param string $key
- *   Must be one of:
- *   - node
- *   - test
- *   - subscribe
- *   - unsubscribe
- * @param array $message
+ * @param $key
+ *   Must be one of: node, test, subscribe, unsubscribe.
+ * @param $message
  *   The message array, containing at least the following keys:
  *   - from
  *   - headers: An array containing at least a 'From' key.
  *   - language: The preferred message language.
  * @param array $params
  *   The parameter array, containing the following keys:
- *   - context: An array containing the following keys:
- *     - node: The node object of the message to be sent.
- *     - snid: Used when $key is 'subscribe' or 'unsubscribe'.
- *     - from_name: (optional) The mail sender or site name.
- *     - account: The recipient account details.
- *   - from: An array containing the following keys:
- *     - address: The sender email address, e.g., 'noreply@example.com'.
- *     - formatted: The formatted email address, e.g.,
- *       '"site name" <noreply@example.com>'.
- *   - newsletter: The newsletter object, containing the following properties:
- *     - tid
- *     - name
- *   - tokens: (optional) An array of tokens for variable replacement. Defaults
- *     to user_mail_tokens().
+ *   - simplenews_source: An implementation of SimplenewsSourceInterface which
+ *     provides the necessary information to build the newsletter mail.
+ *  @see drupal_mail()
  */
 function simplenews_mail($key, &$message, $params) {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
