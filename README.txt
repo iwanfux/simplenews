@@ -205,16 +205,15 @@ INSTALLATION
     to start the simplenews cron hook more often than others, so that newsletter
     are sent faster without decreasing site performance due to long-running cron
     hooks.
-    http://drupal.org/project/elysia_cron
 
     If your unsubscribe URL looks like:
       http://newsletter/confirm/remove/8acd182182615t632
     instead of:
-      http://www.mysite.org/newsletter/confirm/remove/8acd182182615t632
+      http://www.example.com/newsletter/confirm/remove/8acd182182615t632
     You should change the base URL in the settings.php file from
       #  $base_url = 'http://www.example.com';  // NO trailing slash!
     to
-      $base_url = 'http://www.mysite.org';  // NO trailing slash!
+      $base_url = 'http://www.example.com';  // NO trailing slash!
 
 DOCUMENTATION
 -------------
