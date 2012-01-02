@@ -15,12 +15,7 @@
  * @see simplenews_admin_newsletter_submit()
  */
 function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
-/*
   // @todo Fix the delete operation
-  if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
-    return simplenews_issue_multiple_delete_confirm($form, $form_state);
-  }
-*/
 
   $form['filter'] = simplenews_issue_filter_form();
   $form['#submit'][] = 'simplenews_issue_filter_form_submit';
@@ -707,63 +702,6 @@ function simplenews_admin_category_delete_submit($form, &$form_state) {
 }
 
 /**
- * Menu callback: Delete multiple subscriptions.
- *
- * @see simplenews_subscription_multiple_delete_confirm_submit()
- *
- * @todo: rework based on node_multiple_delete_confirm().
- * @todo Bug? confirm_form() does not wait for confirmation.
- */
-function simplenews_subscription_multiple_delete_confirm($form, &$form_state) {
-  $snids = $form_state['input']['subscribers'];
-  $form['snids'] = array(
-    '#prefix' => '<ul>',
-    '#suffix' => '</ul>',
-    '#tree' => TRUE,
-  );
-  // array_filter returns only elements with TRUE values
-  foreach (simplenews_subscribers_load_multiple($snids) as $data) {
-    $form['snids'][$data->snid] = array(
-      '#type' => 'hidden',
-      '#value' => $data->snid,
-      '#prefix' => '<li>',
-      '#suffix' => check_plain($data->mail) . "</li>\n",
-    );
-  }
-
-  $form['operation'] = array(
-    '#type' => 'hidden',
-    '#value' => 'delete',
-  );
-  $form['#submit'][] = 'simplenews_subscription_multiple_delete_confirm_submit';
-
-    // Return to the parent page.
-  $form_state['redirect'] = 'admin/people/simplenews';
-
-  $confirm_question = format_plural(count($snids),
-                                  'Are you sure you want to delete this subscription?',
-                                  'Are you sure you want to delete these subscriptions?');
-  return confirm_form($form,
-                      $confirm_question,
-                      'admin/people/simplenews',
-                      t('This action cannot be undone.'),
-                      t('Delete'), t('Cancel'));
-}
-
-/**
- * @todo
- */
-function simplenews_subscription_multiple_delete_confirm_submit($form, &$form_state) {
-  if ($form_state['values']['confirm']) {
-    // @todo delete subscriber + delete all subscription of these subscribers
-    //simplenews_subscription_delete(array_keys($form_state['values']['snids']));
-    //simplenews_subscriber_delete(array_keys($form_state['values']['snids']));
-    drupal_set_message(t('The subscriptions have been deleted.'));
-  }
-  return '';
-}
-
-/**
  * Menu callback: Mass subscribe to newsletters.
  *
  * @see simplenews_subscription_list_add_submit()
@@ -1092,9 +1030,8 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
  * Menu callback: subscription administration.
  */
 function simplenews_admin_subscription() {
-  if (isset($form_state['input']['operation']) && $form_state['input']['operation'] == 'delete') {
-    return simplenews_subscription_multiple_delete_confirm($form, $form_state);
-  }
+  // @todo Fix the delete operation
+
   $form['filter'] = simplenews_subscription_filter_form();
   $form['#submit'][] = 'simplenews_subscription_filter_form_submit';
   $form['filter']['#theme'] = 'simplenews_filter_form';
