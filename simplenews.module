@@ -2333,19 +2333,6 @@ function simplenews_help($path, $arg) {
       $help .= '<li>' . t('Install <a href="!mime_mail_url">Mime Mail</a> or <a href="!html_mail_url">HTML Mail</a> to send HTML emails or emails with attachments (both plain text and HTML).', array('!mime_mail_url' => 'http://drupal.org/project/mimemail', '!html_mail_url' => 'http://drupal.org/project/htmlmail')) . "</li>\n";
       $help .= '</ul>';
       return $help;
-    case 'admin/config/services/simplenews/subscription':
-      if (variable_get('language_count', 1) > 1) {
-        if (module_exists('i18nstrings')) {
-          global $language;
-          $language_default = variable_get('language_default', $language);
-          $help = '<p>' . t('This is a Multilingual website. Enter text for confirmation subject and body in the default site language (@language).', array('@language' => $language_default->name)) . "</p>\n";
-        }
-        else {
-          $help = '<p>' . t('This is a Multilingual website. <a href="@url">Enable the String translation module</a> to enable translation of the confirmation subject and body.', array('@url' => url('admin/modules'))) . "</p>\n";
-        }
-        return $help;
-      }
-      break;
     case 'admin/config/services/simplenews':
       $help = '<p>' . t('Newsletter allow you to send periodic e-mails to subscribers. See <a href="!manage_subscribers">Newsletter subscriptions</a> for a listing of the subscribers', array('!manage_subscribers' => url('admin/people/simplenews')));
       return $help;
@@ -2434,67 +2421,64 @@ function simplenews_locale($op = 'groups', $group = NULL) {
 }
 
 /**
- * Refresh translatable strings.
- *
- * @see simplenews_subscription_confirmation_text()
+ * Implements hook_variable_info().
  */
-function simplenews_locale_refresh() {
-  $keys = array(
-    'subscribe_unsubscribed',
-    'subscribe_subscribed',
-    'unsubscribe_subscribed',
-    'unsubscribe_unsubscribed',
-    'subscribe_subject',
-    );
-  foreach ($keys as $key) {
-    i18nstrings_update('simplenews:' . $key, simplenews_subscription_confirmation_text($key, NULL, FALSE));
-  }
-  return TRUE;
+function simplenews_variable_info($options) {
+  $variable['simplenews_confirm_subscribe_subject'] = array(
+    'title' => t('Simplenews confirmation subject'),
+    'localize' => TRUE,
+  );
+  $variable['simplenews_confirm_subscribe_unsubscribed'] = array(
+    'title' => t('Simplenews subscription confirmation body'),
+    'localize' => TRUE,
+  );
+  $variable['simplenews_confirm_subscribe_subscribed'] = array(
+    'title' => t('Simplenews subscribed confirmation body (already subscribed)'),
+    'localize' => TRUE,
+  );
+  $variable['simplenews_confirm_unsubscribe_subscribed'] = array(
+    'title' => t('Simplenews unsubscription confirmation body'),
+    'localize' => TRUE,
+  );
+  $variable['simplenews_confirm_unsubscribe_unsubscribed'] = array(
+    'title' => t('Simplenews unsubscription confirmation body (not subscribed)'),
+    'localize' => TRUE,
+  );
+  return $variable;
 }
 
 /**
  * Generate default and custom subscription confirmation email text.
  *
  * @param string $key
- *   Text identification key
- * @param object $langcode
- *   Language code
- * @param boolean $translate
- *   FALSE: force return value to be untranslated text.
- * @return
- *   Invitation text. Optionally translated.
+ *   Text identification key.
  *
- * @see simplenews_locale()
+ * @return
+ *   Invitation text.
+ *
  */
-function simplenews_subscription_confirmation_text($key, $langcode = NULL, $translate = TRUE) {
-  $langcode = isset($language) ? $language->language : NULL;
-
+function simplenews_subscription_confirmation_text($key) {
   $text = variable_get('simplenews_confirm_' . $key, FALSE);
   // If administrator did not change the text, the variable is empty.
   // We get the default here.
   if (!$text) {
     switch ($key) {
       case 'subscribe_unsubscribed':
-        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-category:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:subscribe-url]", array(), array('langcode' => $langcode));
+        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-category:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:subscribe-url]");
         break;
       case 'subscribe_subscribed':
-        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-category:name]  newsletter on [site:name] website at [site:url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site:url]", array(), array('langcode' => $langcode));
+        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-category:name]  newsletter on [site:name] website at [site:url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site:url]");
         break;
       case 'unsubscribe_subscribed':
-        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-category:name] mailing list on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:unsubscribe-url]", array(), array('langcode' => $langcode));
+        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-category:name] mailing list on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:unsubscribe-url]");
         break;
       case 'unsubscribe_unsubscribed':
-        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-category:name] mailing list on [site:name] website at [site:url]. However, this email is not subscribed to this mailing list. If you intended to subscribe please visit our site at [site:url]", array(), array('langcode' => $langcode));
+        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-category:name] mailing list on [site:name] website at [site:url]. However, this email is not subscribed to this mailing list. If you intended to subscribe please visit our site at [site:url]");
         break;
       case 'subscribe_subject':
-        $text = t("Confirmation for [simplenews-category:name] from [site:name]", array(), array('langcode' => $langcode));
+        $text = t("Confirmation for [simplenews-category:name] from [site:name]");
         break;
     }
-  }
-
-  // If this is a multilingual website we use i18nstrings module to translate the content.
-  if (variable_get('language_count', 1) > 1 && function_exists('i18nstrings') && $translate) {
-    $text = i18nstrings('simplenews:' . $key, $text, $langcode);
   }
   return $text;
 }

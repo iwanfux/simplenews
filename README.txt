@@ -104,9 +104,15 @@ INSTALLATION
     change their preferred language. Users with an account on the site will be
     subscribed with the preferred language as set in their account settings.
 
+    The confirmation mails can be translated by enableding the Simplenews
+    variables at:
+      Home > Administration > Configuration > Regional and language > Multilingual settings > Variables
+    Afterwards, the mail subject and body can be entered for every enabled
+    language.
+
 9.  NEWSLETTER THEMING
 
-    You can customize the theming of newsletters. Copy any of the *.tpl.php 
+    You can customize the theming of newsletters. Copy any of the *.tpl.php
     files from the simplenews module directory to your theme directory. Both
     general and by-newsletter theming can be performed.
     Theme newsletter body:
