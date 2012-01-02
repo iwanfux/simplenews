@@ -662,19 +662,6 @@ function simplenews_update_7000() {
     'default' => 0,
   ));
 
-
-  // Add the {simplenews_mail_spool}.snid field if it doesn't exist yet (added
-  // in 6.x-2.x).
-  if (!db_field_exists('simplenews_mail_spool', 'snid')) {
-    db_add_field('simplenews_mail_spool', 'snid', array(
-      'description' => 'Foreign key for subscriber table ({simplenews_subscriptions}.snid)',
-      'type' => 'int',
-      'not null' => TRUE,
-      'default' => 0,
-    ));
-  }
-
-
   // Delete deprecated variables.
   foreach ($tids as $tid) {
     variable_del('simplenews_from_name_' . $tid);
@@ -695,6 +682,17 @@ function simplenews_update_7000() {
  * Create key snid_tid on simplenews_mail_spool table.
  */
 function simplenews_update_7001() {
+  // Add the {simplenews_mail_spool}.snid field if it doesn't exist yet (added
+  // in 6.x-2.x).
+  if (!db_field_exists('simplenews_mail_spool', 'snid')) {
+    db_add_field('simplenews_mail_spool', 'snid', array(
+      'description' => 'Foreign key for subscriber table ({simplenews_subscriptions}.snid)',
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
+
   if (!db_index_exists('simplenews_mail_spool', 'snid_tid')) {
     db_add_index('simplenews_mail_spool', 'snid_tid', array('snid', 'tid'));
   }
