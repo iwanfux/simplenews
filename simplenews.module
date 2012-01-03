@@ -228,30 +228,19 @@ function simplenews_menu() {
   );
   $items['admin/config/services/simplenews/settings'] = array(
     'title' => 'Settings',
-    'description' => 'Simplenews vocabulary setting.',
+    'description' => 'Simplenews settings.',
     'page callback' => 'drupal_get_form',
     'weight' => 20,
-    'page arguments' => array('simplenews_admin_settings'),
-    'access arguments' => array('administer simplenews settings'),
-    'file' => 'includes/simplenews.admin.inc',
-    'file path' => drupal_get_path('module', 'simplenews'),
-    'type' => MENU_LOCAL_TASK,
-  );
-  $items['admin/config/services/simplenews/settings/general'] = array(
-    'title' => 'General',
-    'weight' => -20,
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
-  $items['admin/config/services/simplenews/settings/newsletter'] = array(
-    'title' => 'Newsletter',
-    'description' => 'Newsletter default settings and sender data.',
-    'page callback' => 'drupal_get_form',
-    'weight' => -15,
     'page arguments' => array('simplenews_admin_settings_newsletter'),
     'access arguments' => array('administer simplenews settings'),
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
     'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/services/simplenews/settings/newsletter'] = array(
+    'title' => 'Newsletter',
+    'weight' => -15,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/config/services/simplenews/settings/subscription'] = array(
     'title' => 'Subscription',
@@ -334,7 +323,8 @@ function simplenews_node_type_update($info) {
     simplenews_add_term_field($info);
   }
   else {
-    simplenews_remove_term_field($info);
+    // Don't remove the field. This leads to data loss.
+    // simplenews_remove_term_field($info);
   }
 }
 
@@ -595,11 +585,12 @@ function simplenews_get_content_types() {
  *   A node type object.
  */
 function simplenews_add_term_field($type) {
-  $field = field_info_field('field_simplenews_term');
-  $instance = field_info_instance('node', 'field_simplenews_term', $type->type);
+  $field_name = variable_get('simplenews_category_field', 'field_simplenews_term');
+  $field = field_info_field($field_name);
+  $instance = field_info_instance('node', $field_name, $type->type);
   if (empty($field)) {
     $field = array(
-      'field_name' => 'field_simplenews_term',
+      'field_name' => $field_name,
       'type' => 'taxonomy_term_reference',
       'cardinality' => 1,
       //'entity_types' => array(),
@@ -618,7 +609,7 @@ function simplenews_add_term_field($type) {
   if (empty($instance)) {
     $instance = array(
       'label' => t('Newsletter category'),
-      'field_name' => 'field_simplenews_term',
+      'field_name' => $field_name,
       'bundle' => $type->type,
       'entity_type' => 'node',
       'required' => TRUE,
@@ -660,7 +651,8 @@ function simplenews_add_term_field($type) {
  *   A node type object.
  */
 function simplenews_remove_term_field($type) {
-  $instance = field_info_instance('node', 'field_simplenews_term', $type->type);
+  $field_name = variable_get('simplenews_category_field', 'field_simplenews_term');
+  $instance = field_info_instance('node', $field_name, $type->type);
   if ($instance) {
     field_delete_instance($instance);
   }

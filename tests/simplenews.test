@@ -971,11 +971,13 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->drupalGet('node/add/' . $type);
     $this->assertText(t('Newsletter category'));
 
+    // Create an issue.
     $edit = array(
       'title' => $this->randomName(),
     );
     $this->drupalPost(NULL, $edit, ('Save'));
 
+    // Send newsletter.
     $this->clickLink(t('Newsletter'));
     $this->assertText(t('Send newsletter'));
     $this->drupalPost(NULL, array(), t('Submit'));
@@ -992,10 +994,11 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('admin/structure/types/manage/' . $type, $edit, t('Save content type'));
 
-    // Verify that the newsletter settings are not shown.
+    // Verify that the newsletter settings are still shown.
+    // Note: Previously the field got autoremoved. We leave it remaining due to potential data loss.
     $this->drupalGet('node/add/' . $type);
     $this->assertNoText(t('Replacement patterns'));
-    $this->assertNoText(t('Newsletter category'));
+    $this->assertText(t('Newsletter category'));
 
     // @todo: Test node update/delete.
 

@@ -1217,53 +1217,6 @@ function simplenews_subscription_delete_multiple($snids = array()) {
   }
 }
 
-
-/**
- * Menu callback: Simplenews admin settings - General.
- *
- * @todo Delete this for if there is not more use for it.
- */
-function simplenews_admin_settings($form, &$form_state) {
-  $vid = variable_get('simplenews_vid', '');
-  $form = array();
-
-  $vocabulary_options = array('' => t('- select -'));
-  if ($vocabularies = taxonomy_get_vocabularies()) {
-    foreach ($vocabularies as $key => $object) {
-      $vocabulary_options[$key] = $object->name;
-    }
-  }
-  $form['simplenews_vid'] = array(
-    '#type' => 'select',
-    '#title' => t('Newsletter vocabulary'),
-    '#options' =>  $vocabulary_options,
-    '#required' => TRUE,
-    '#description' => t('This vocabulary identifies newsletter categories. Note that changing this vocabulary will require existing newsletters to be re-tagged and activated newsletter blocks to be re-activated.'),
-    '#default_value' => variable_get('simplenews_vid', ''),
-  );
-
-  $field_options = array();
-  $field_info = field_info_fields();
-  foreach (field_info_instances('node') as $bundle => $instances) {
-    if (simplenews_check_node_types(array($bundle))) {
-      foreach ($instances as $field_name => $instance) {
-        if ($field_info[$field_name]['module'] == 'taxonomy') {
-          $field_options[$field_name] = $field_name;
-        }
-      }
-    }
-  }
-  $form['simplenews_category_field'] = array(
-    '#type' => 'select',
-    '#title' => t('Newsletter category field'),
-    '#options' =>  $field_options,
-    '#required' => TRUE,
-    '#default_value' => variable_get('simplenews_category_field', 'field_simplenews_term'),
-  );
-
-  return system_settings_form($form);
-}
-
 /**
  * Menu callback: Simplenews admin settings - Newsletter.
  */
