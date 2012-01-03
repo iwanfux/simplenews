@@ -170,7 +170,7 @@ function simplenews_block_form_validate($form, &$form_state) {
  */
 function simplenews_block_form_submit($form, &$form_state) {
   $tid = $form['#tid'];
-  $account = _simplenews_user_load($form_state['values']['mail']);
+  $account = simplenews_load_user_by_mail($form_state['values']['mail']);
 
   $confirm = simplenews_require_double_opt_in($tid, $account);
 
@@ -291,15 +291,7 @@ function simplenews_subscriptions_page_form_validate($form, &$form_state) {
  * FAPI PAGE subscription form_submit.
  */
 function simplenews_subscriptions_page_form_submit($form, &$form_state) {
-  // Try to load user.
-  $account = user_load_by_mail($form_state['values']['mail']);
-  // If this fails, this is an anon user, fall back to the faked account object.
-  // @todo: Maybe update simplenews_get_subscription to only require the mail
-  // as the argument?
-  if (!$account) {
-    $account = (object)array('mail' => $form_state['values']['mail']);
-  }
-  $subscription = simplenews_get_subscription($account);
+  $account = simplenews_get_subscription(simplenews_load_user_by_mail($form_state['values']['mail']));
 
   switch ($form_state['values']['op']) {
     case t('Update'):
@@ -308,10 +300,10 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       arsort($form_state['values']['newsletters'], SORT_NUMERIC);
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
-          simplenews_subscribe_user($form_state['values']['mail'], $tid, FALSE, 'website');
+          simplenews_subscribe_user($account->mail, $tid, FALSE, 'website');
         }
         else {
-          simplenews_unsubscribe_user($form_state['values']['mail'], $tid, FALSE, 'website');
+          simplenews_unsubscribe_user($account->mail, $tid, FALSE, 'website');
         }
       }
       drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
@@ -322,7 +314,7 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($tid, $account);
           $confirm_any |= $confirm;
-          simplenews_subscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
+          simplenews_subscribe_user($account->mail, $tid, $confirm, 'website');
         }
       }
       if ($confirm_any) {
@@ -338,7 +330,7 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($tid, $account);
           $confirm_any |= $confirm;
-          simplenews_unsubscribe_user($form_state['values']['mail'], $tid, $confirm, 'website');
+          simplenews_unsubscribe_user($account->mail, $tid, $confirm, 'website');
         }
       }
       if ($confirm_any) {
@@ -684,8 +676,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
  * FAPI ADMIN subscription form_validate.
  */
 function simplenews_subscriptions_admin_form_validate($form, &$form_state) {
-  $account = (object) array('mail' => $form_state['values']['mail']);
-  $subscription = simplenews_get_subscription($account);
+  $subscription = simplenews_get_subscription(simplenews_load_user_by_mail($form_state['values']['mail']));
 
   $valid_email = valid_email_address($form_state['values']['mail']);
   if (!$valid_email) {
@@ -706,8 +697,7 @@ function simplenews_subscriptions_admin_form_validate($form, &$form_state) {
  * FAPI ADMIN subscription form_submit.
  */
 function simplenews_subscriptions_admin_form_submit($form, &$form_state) {
-  $account = (object) array('mail' => $form_state['values']['mail']);
-  $subscription = simplenews_get_subscription($account);
+  $subscription = simplenews_get_subscription(simplenews_load_user_by_mail($form_state['values']['mail']));
 
   // update subscriptions
   arsort($form_state['values']['newsletters'], SORT_NUMERIC);

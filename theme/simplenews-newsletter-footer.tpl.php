@@ -10,13 +10,12 @@
  *
  * @todo Update the available variables.
  * Available variables:
- * - $build: Array as expected by render()
+ * - $build: Array as expected by render().
  * - $language: language object
  * - $key: email key [node|test]
  * - $format: newsletter format [plain|html]
  * - $unsubscribe_text: unsubscribe text
  * - $test_message: test message warning message
- * - $simplenews_theme: path to the configured simplenews theme
  *
  * Available tokens:
  * - [simplenews-subscriber:unsubscribe-url]: unsubscribe url to be used as link
@@ -24,7 +23,6 @@
  * and 'simplenews-list'
  *
  * @see template_preprocess_simplenews_newsletter_footer()
- * @see theme_simplenews_newsletter_footer()
  */
 ?>
 <?php if (!$opt_out_hidden): ?>
