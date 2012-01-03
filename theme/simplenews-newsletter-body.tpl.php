@@ -14,7 +14,8 @@
  * Available variables:
  * - $build: Array as expected by render().
  * - $title: Node title
- * - $simplenews_theme: Contains the path to the configured simplenews theme.
+ * - $language: Language object
+ * - $view_mode: Active view mode.
  *
  * @see template_preprocess_simplenews_newsletter_body()
  * @see theme_simplenews_newsletter_body()

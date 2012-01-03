@@ -2524,7 +2524,6 @@ function simplenews_theme() {
         'language' => NULL,
       ),
       'path' => $path . '/theme',
-      'mail theme' => TRUE,
     ),
     'simplenews_newsletter_footer' => array(
       'variables' => array(
@@ -2535,7 +2534,6 @@ function simplenews_theme() {
         'language' => NULL,
       ),
       'path' => $path . '/theme',
-      'mail theme' => TRUE,
     ),
     'simplenews_filter_form' => array(
       'render element' => 'form',
@@ -2690,9 +2688,8 @@ function theme_simplenews_field($variables) {
  * Process variables to format the simplenews newsletter body.
  *
  * $variables contains:
- * - $node: newsletter node object
- * - $language: language object
- * - $simplenews_theme: path to the configured simplenews theme
+ * - $node
+ * - $language
  *
  * @see simplenews-newsletter-body.tpl.php
  * @see theme_simplenews_newsletter_body().
@@ -2701,9 +2698,6 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
   // We don't want to include links and comments in the email.
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
-
-  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
-  $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
   $variables['title'] = check_plain($variables['build']['#node']->title);
 
@@ -2731,7 +2725,7 @@ function theme_simplenews_newsletter_body($variables) {
  * - $node: newsletter node object
  * - $language: language object
  * - $key: email key [node|test]
- * - $simplenews_theme: path to the configured simplenews theme
+
  *
  * @see simplenews-newsletter-footer.tpl.php
  */
@@ -2739,9 +2733,6 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   // We don't want to include links and comments in the email.
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
-
-  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
-  $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
