@@ -218,6 +218,11 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Subscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
+    $subscriber = (object)array('mail' => $mail);
+    $subscriber = simplenews_get_subscription($subscriber);
+    $subscription = db_query('SELECT * FROM {simplenews_subscription} WHERE snid = :snid AND tid = :tid', array(':snid' => $subscriber->snid, ':tid' => $tid))->fetchObject();
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscription->status, t('Subscription is unconfirmed'));
+
     $mails = $this->drupalGetMails();
     $body = $mails[0]['body'];
 
@@ -233,7 +238,6 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalPost(NULL, array(), t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
-    ;
 
     // 2. Subscribe anonymous via subscription page
     // Subscribe + submit
@@ -473,11 +477,16 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Assert confirmation message
 
     $edit = array(
-      "newsletters[$tid]" => 0,
+      "newsletters[$tid]" => FALSE,
     );
     $url = 'user/' . $subscriber_user->uid . '/edit/simplenews';
     $this->drupalPost($url, $edit, t('Save'));
     $this->assertRaw(t('The changes have been saved.', array('%mail' => $subscriber_user->mail)), t('Authenticated user unsubscribed on the account page.'));
+
+    $subscriber = simplenews_get_subscription($subscriber_user);
+    $subscription = db_query('SELECT * FROM {simplenews_subscription} WHERE snid = :snid AND tid = :tid', array(':snid' => $subscriber->snid, ':tid' => $tid))->fetchObject();
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $subscription->status, t('Subscription is unsubscribed'));
+
 
     // 5. Subscribe authenticated via account page
     // Subscribe + submit

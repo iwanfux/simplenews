@@ -40,6 +40,7 @@ define('SIMPLENEWS_COMMAND_SEND_PUBLISH', 3);
  * NEWSLETTER SUBSCRIPTION STATUS
  */
 define('SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED', 1);
+define('SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED', 2);
 define('SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED', 0);
 
 /**
@@ -1336,6 +1337,14 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
   }
 
   if ($confirm) {
+    $subscription = new stdClass();
+    $subscription->snid = $subscriber->snid;
+    $subscription->tid = $tid;
+    $subscription->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED;
+    $subscription->timestamp = REQUEST_TIME;
+    $subscription->source = $source;
+    simplenews_subscription_save($subscription);
+
     // Send confirmation email to user to complete subscription or to tell
     // them that he or she is already subscribed.
     // Confirmation mail is in the user preferred language which is by default the language_default().
