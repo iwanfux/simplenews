@@ -6,7 +6,7 @@
  */
 
 /**
- * Implement hook_schema().
+ * Implements hook_schema().
  */
 function simplenews_schema() {
   $schema['simplenews_category'] = array(
@@ -331,7 +331,7 @@ function simplenews_schema() {
 }
 
 /**
- * Implement hook_install().
+ * Implements hook_install().
  */
 function simplenews_install() {
   _simplenews_init_simplenews_vocabulary();
@@ -342,7 +342,7 @@ function simplenews_install() {
 }
 
 /**
- * Implement hook_uninstall().
+ * Implements hook_uninstall().
  */
 function simplenews_uninstall() {
   db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
@@ -502,9 +502,6 @@ function _simplenews_convert_tokens_in_variable($variables) {
  * Delete deprecated simplenews variables.
  */
 function simplenews_update_7000() {
-  // @todo Test schema update !!
-  // See: http://api.drupal.org/api/function/db_change_field/7
-  // @todo Test data update !!
 
   // Convert tokens in variables to D7 format.
   $variables = array('simplenews_confirm_subscribe_subject', 'simplenews_confirm_subscribe_unsubscribed', 'simplenews_confirm_subscribe_subscribed', 'simplenews_confirm_unsubscribe_subscribed', 'simplenews_confirm_unsubscribe_unsubscribed');

@@ -5,8 +5,6 @@
  * Simplenews test functions.
  *
  * @ingroup simplenews
- * @todo Redo all database functions: http://drupal.org/node/224333#dbtng
- * @todo Where possible build re-usable functions wrapped around database calls.
  */
 
 class SimplenewsTestCase extends DrupalWebTestCase {
@@ -138,11 +136,29 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     $this->drupalPost('admin/structure/block/manage/simplenews/' . $tid . '/configure', $edit, t('Save block'));
     $this->assertText('The block configuration has been saved.', 'The newsletter block configuration has been saved.');
   }
+
+  function setUpSubscribers($count = 100) {
+    // Subscribe users.
+    $this->subscribers = array();
+    for ($i = 0; $i < $count; $i++) {
+      $mail = $this->randomEmail();
+      $this->subscribers[$mail] = $mail;
+    }
+
+    $this->drupalGet('admin/people/simplenews');
+    $this->clickLink(t('Mass subscribe'));
+    $edit = array(
+      'emails' => implode(',', $this->subscribers),
+      // @todo: Don't hardcode the default tid.
+      'newsletters[1]' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+  }
 }
 
 class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
   /**
-   * Implementation of getInfo().
+   * Implement getInfo().
    */
   function getInfo() {
     return array(
@@ -557,7 +573,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
   /**
-   * Implementation of getInfo().
+   * Implement getInfo().
    */
   function getInfo() {
     return array(
@@ -799,7 +815,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
         'emails' => implode($delimiters[$i++], $subscribers[$key]),
       );
       foreach ($group as $tid) {
-        $edit[$tid] = TRUE;
+        $edit['newsletters[' . $tid . ']'] = TRUE;
       }
       $this->drupalPost(NULL, $edit, t('Subscribe'));
     }
@@ -861,7 +877,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     unset($subscribers[$first][$first_mail]);
     $edit = array(
       'emails' => $first_mail . ', ' . $all_mail,
-      $first => TRUE,
+      'newsletters[' . $first . ']' => TRUE,
     );
     $this->clickLink(t('Mass unsubscribe'));
     $this->drupalPost(NULL, $edit, t('Unsubscribe'));
@@ -883,7 +899,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
     // Check exporting.
     $this->clickLink(t('Export'));
-    $this->drupalPost(NULL, array('lists[' . $first . ']' => TRUE), t('Export'));
+    $this->drupalPost(NULL, array('newsletters[' . $first . ']' => TRUE), t('Export'));
     $export_field = $this->xpath($this->constructFieldXpath('name', 'emails'));
     $exported_mails = (string)$export_field[0];
     foreach ($subscribers[$first] as $mail) {
@@ -902,7 +918,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $edit = array(
       'subscribed[subscribed]' => FALSE,
       'subscribed[unsubscribed]' => TRUE,
-      'lists[' . $first . ']' => TRUE,
+      'newsletters[' . $first . ']' => TRUE,
     );
     $this->drupalPost(NULL, $edit, t('Export'));
 
@@ -1259,22 +1275,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->drupalLogin($this->user);
 
     // Subscribe a few users.
-    $this->subscribers = array();
-    for ($i = 0; $i < 5; $i++) {
-      $mail = $this->randomEmail();
-      $this->subscribers[$mail] = $mail;
-    }
-
-    $delimiters = array(',', ' ', "\n");
-
-    $this->drupalGet('admin/people/simplenews');
-    $this->clickLink(t('Mass subscribe'));
-    $edit = array(
-      'emails' => implode(',', $this->subscribers),
-      // @todo: Don't hardcode the default tid.
-      '1' => TRUE,
-    );
-    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->setUpSubscribers(5);
   }
 
   /**
@@ -1716,24 +1717,6 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     $this->drupalLogin($this->user);
   }
 
-  function subscribeUsers($count = 100) {
-    // Subscribe users.
-    $this->subscribers = array();
-    for ($i = 0; $i < $count; $i++) {
-      $mail = $this->randomEmail();
-      $this->subscribers[$mail] = $mail;
-    }
-
-    $this->drupalGet('admin/people/simplenews');
-    $this->clickLink(t('Mass subscribe'));
-    $edit = array(
-      'emails' => implode(',', $this->subscribers),
-      // @todo: Don't hardcode the default tid.
-      '1' => TRUE,
-    );
-    $this->drupalPost(NULL, $edit, t('Subscribe'));
-  }
-
   /**
    * Tests that sending a minimal implementation of the source interface works.
    */
@@ -1790,7 +1773,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
    */
   function testSendCaching() {
 
-    $this->subscribeUsers(100);
+    $this->setUpSubscribers(100);
     // Enable build caching.
     $edit = array(
       'simplenews_source_cache' => 'SimplenewsSourceCacheBuild',
@@ -1833,7 +1816,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
    * Send a newsletter with the HTML format.
    */
   function testSendHTML() {
-    $this->subscribeUsers(5);
+    $this->setUpSubscribers(5);
 
     // Use custom testing mail system to support HTML mails.
     variable_set('mail_system', array('default-system' => 'SimplenewsHTMLTestingMailSystem'));
@@ -1895,7 +1878,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
    * Send a newsletter with the category set to hidden.
    */
   function testSendHidden() {
-    $this->subscribeUsers(5);
+    $this->setUpSubscribers(5);
 
     // Set the format to HTML.
     $this->drupalGet('admin/config/services/simplenews');
@@ -1934,7 +1917,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
    * Test with disabled caching.
    */
   function testSendNoCaching() {
-    $this->subscribeUsers(100);
+    $this->setUpSubscribers(100);
     // Disable caching.
     $edit = array(
       'simplenews_source_cache' => 'SimplenewsSourceCacheNone',

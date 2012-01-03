@@ -23,7 +23,6 @@
  * and 'simplenews-list'
  *
  * @see template_preprocess_simplenews_newsletter_footer()
- * @see theme_simplenews_newsletter_footer()
  */
 ?>
 <?php if (!$opt_out_hidden): ?>

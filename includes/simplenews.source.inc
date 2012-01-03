@@ -280,7 +280,7 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
       $subscriber = $spool_data->data;
     }
     else {
-      $subscriber = simplenews_get_subscription(_simplenews_user_load($spool_data->mail));
+      $subscriber = simplenews_get_subscription(simplenews_load_user_by_mail($spool_data->mail));
     }
 
     $source_class = $this->getSourceImplementation($spool_data);
