@@ -78,9 +78,17 @@ function simplenews_send_test($node, $test_addresses) {
   foreach ($test_addresses as $mail) {
     $mail = trim($mail);
     if (!empty($mail)) {
-      $account = simplenews_load_user_by_mail($mail);
-      $subscriber = simplenews_get_subscription($account);
-      if ($account->uid) {
+      $subscriber = simplenews_subscriber_load_by_mail($mail);
+      if (!$subscriber) {
+        // The source expects a subscriber object with mail and language set.
+        // @todo: Find a cleaner way to do this.
+        $subscriber = new stdClass();
+        $subscriber->uid = 0;
+        $subscriber->mail = $mail;
+        $subscriber->language = $GLOBALS['language']->language;
+      }
+
+      if (!empty($account->uid)) {
         $recipients['user'][] = $account->name . ' <' . $mail . '>';
       }
       else {
@@ -339,7 +347,7 @@ function simplenews_get_spool($status, $limit = SIMPLENEWS_UNLIMITED) {
         $message->data = unserialize($message->data);
       }
       else {
-        $message->data = simplenews_get_subscription(simplenews_load_user_by_mail($message->mail));
+        $message->data = simplenews_subscriber_load_by_mail($message->mail);
       }
       $messages[$message->msid] = $message;
     }

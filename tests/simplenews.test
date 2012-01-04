@@ -137,7 +137,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     $this->assertText('The block configuration has been saved.', 'The newsletter block configuration has been saved.');
   }
 
-  function setUpSubscribers($count = 100) {
+  function setUpSubscribers($count = 100, $tid = 1) {
     // Subscribe users.
     $this->subscribers = array();
     for ($i = 0; $i < $count; $i++) {
@@ -150,7 +150,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     $edit = array(
       'emails' => implode(',', $this->subscribers),
       // @todo: Don't hardcode the default tid.
-      'newsletters[1]' => TRUE,
+      'newsletters[' . $tid . ']' => TRUE,
     );
     $this->drupalPost(NULL, $edit, t('Subscribe'));
   }
@@ -218,8 +218,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Subscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
-    $subscriber = (object)array('mail' => $mail);
-    $subscriber = simplenews_get_subscription($subscriber);
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
     $subscription = db_query('SELECT * FROM {simplenews_subscription} WHERE snid = :snid AND tid = :tid', array(':snid' => $subscriber->snid, ':tid' => $tid))->fetchObject();
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscription->status, t('Subscription is unconfirmed'));
 
@@ -402,8 +401,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Subscribe'));
     $this->assertText(t('You have been subscribed.'), t('Anonymous subscriber added to newsletter'));
 
-    $account = (object)array('mail' => $mail);
-    $subscriber = simplenews_get_subscription($account);
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
   }
 
   /**
@@ -483,10 +481,9 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost($url, $edit, t('Save'));
     $this->assertRaw(t('The changes have been saved.', array('%mail' => $subscriber_user->mail)), t('Authenticated user unsubscribed on the account page.'));
 
-    $subscriber = simplenews_get_subscription($subscriber_user);
+    $subscriber = simplenews_subscriber_load_by_mail($subscriber_user->mail);
     $subscription = db_query('SELECT * FROM {simplenews_subscription} WHERE snid = :snid AND tid = :tid', array(':snid' => $subscriber->snid, ':tid' => $tid))->fetchObject();
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $subscription->status, t('Subscription is unsubscribed'));
-
 
     // 5. Subscribe authenticated via account page
     // Subscribe + submit
@@ -971,9 +968,51 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       $this->assertNoText($mail);
     }
 
-    // @todo Test Admin subscriber edit category
+    // Reset list and click on the first subscriber.
+    $this->drupalPost(NULL, array(), t('Reset'));
+    $this->clickLink(t('edit'));
+
+    // Get the subscriber id from the path.
+    $this->assertTrue(preg_match('|admin/people/simplenews/users/edit/(\d+)$|', $this->getUrl(), $matches), 'Subscriber found');
+    $subscriber = simplenews_subscriber_load($matches[1]);
+
+    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
+    $this->assertFieldChecked('edit-activated--2');
+
+    // Disable account.
+    $edit = array(
+      'activated' => FALSE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+    drupal_static_reset('simplenews_subscriber_load_multiple');
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is not active')));
+
+    // Re-enable account.
+    $this->drupalGet('admin/people/simplenews/users/edit/' . $subscriber->snid);
+    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
+    $this->assertNoFieldChecked('edit-activated--2');
+    $edit = array(
+      'activated' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+    drupal_static_reset('simplenews_subscriber_load_multiple');
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $this->assertTrue(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is active again.')));
+
+    // Remove the category.
+    $this->drupalGet('admin/people/simplenews/users/edit/' . $subscriber->snid);
+    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
+    $edit = array(
+      'newsletters[' . reset($subscriber->tids) . ']' => FALSE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+    drupal_static_reset('simplenews_subscriber_load_multiple');
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, reset($subscriber->tids), t('Subscriber not subscribed anymore.')));
+
+
     // @todo Test Admin subscriber edit preferred language $subscription->language
-    // @todo Test Admin subscriber edit Active / Inactive
   }
 
   /**
