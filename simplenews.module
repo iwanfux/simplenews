@@ -1624,7 +1624,7 @@ function simplenews_subscriber_save(&$subscriber) {
       ->condition('snid', $subscriber->snid)
       ->fields(array(
         'snid' => $subscriber->snid,
-        'activated' => $subscriber->activated,
+        'activated' => (int)$subscriber->activated,
         'mail' => $subscriber->mail,
         'uid' => $subscriber->uid,
         'language' => $subscriber->language,
