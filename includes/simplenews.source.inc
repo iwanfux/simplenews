@@ -7,6 +7,8 @@
 
 /**
  * The source used to build a newsletter mail.
+ *
+ * @ingroup source
  */
 interface SimplenewsSourceInterface {
 
@@ -112,6 +114,8 @@ interface SimplenewsSourceInterface {
  * This is the interface that needs to be implemented to be compatible with
  * the default simplenews spool implementation and therefore exposed in
  * hook_simplenews_source_cache_info().
+ *
+ * @ingroup source
  */
 interface SimplenewsSourceNodeInterface extends SimplenewsSourceInterface {
 
@@ -130,6 +134,8 @@ interface SimplenewsSourceNodeInterface extends SimplenewsSourceInterface {
  * Interface for a simplenews source cache implementation.
  *
  * This is only compatible with the SimplenewsSourceNodeInterface interface.
+ *
+ * @ingroup source
  */
 interface SimplenewsSourceCacheInterface {
 
@@ -188,6 +194,8 @@ interface SimplenewsSourceCacheInterface {
  * mail rows after a source was sent.
  *
  * @todo: Move spool functions into this interface.
+ *
+ * @ingroup spool
  */
 interface SimplenewsSpoolInterface {
 
@@ -226,7 +234,9 @@ interface SimplenewsSpoolInterface {
 }
 
 /**
- * Abstract base class for simplenews sources.
+ * Simplenews Spool implementation.
+ *
+ * @ingroup spool
  */
 class SimplenewsSpool implements SimplenewsSpoolInterface {
 
@@ -311,6 +321,8 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
 
 /**
  * Simplenews source implementation based on nodes for a single subscriber.
+ *
+ * @ingroup source
  */
 class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
@@ -798,6 +810,8 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
  *
  * Subclasses need to implement the abstract function isCacheable() to decide
  * what should be cached.
+ *
+ * @ingroup source
  */
 abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInterface {
 
@@ -870,6 +884,8 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
 
 /**
  * Cache implementation that does not cache anything at all.
+ *
+ * @ingroup source
  */
 class SimplenewsSourceCacheNone extends SimplenewsSourceCacheStatic {
 
@@ -884,6 +900,8 @@ class SimplenewsSourceCacheNone extends SimplenewsSourceCacheStatic {
 
 /**
  * Source cache implementation that caches build and data element.
+ *
+ * @ingroup source
  */
 class SimplenewsSourceCacheBuild extends SimplenewsSourceCacheStatic {
 
@@ -905,6 +923,8 @@ class SimplenewsSourceCacheBuild extends SimplenewsSourceCacheStatic {
 
 /**
  * Example source implementation used for tests.
+ *
+ * @ingroup source
  */
 class SimplenewsSourceTest implements SimplenewsSourceInterface {
 

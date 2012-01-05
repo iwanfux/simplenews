@@ -635,7 +635,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
   );
 
   if ((variable_get('language_count', 1) > 1)) {
-    // TODO we could allow to switch back to "default", but user_load
+    // @todo we could allow to switch back to "default", but user_load
     //$language_options[''] = t('Site default language');
     $languages = language_list('enabled');
     foreach ($languages[1] as $langcode => $item) {
