@@ -2532,12 +2532,7 @@ function theme_simplenews_field($variables) {
 /**
  * Process variables to format the simplenews newsletter body.
  *
- * $variables contains:
- * - $node
- * - $language
- *
  * @see simplenews-newsletter-body.tpl.php
- * @see theme_simplenews_newsletter_body().
  *
  * @ingroup theming
  */
@@ -2547,6 +2542,8 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
   unset($variables['build']['comments']);
 
   $variables['title'] = check_plain($variables['build']['#node']->title);
+  $variables['language'] = $variables['build']["#language"];
+  $variables['view_mode'] = $variables['build']['#view_mode'];
 
   // Add specific suggestions that can override the default implementation.
   $variables['theme_hook_suggestions'] = array(
@@ -2559,12 +2556,6 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
 /**
  * Process variables to format the simplenews newsletter footer.
  *
- * $variables contains:
- * - $node: newsletter node object
- * - $language: language object
- * - $key: email key [node|test]
-
- *
  * @see simplenews-newsletter-footer.tpl.php
  *
  * @ingroup theming
@@ -2576,6 +2567,8 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));
+
+  $variables['view_mode'] = $variables['build']['#view_mode'];
 
   // Add specific suggestions that can override the default implementation.
   $variables['theme_hook_suggestions'] = array(
