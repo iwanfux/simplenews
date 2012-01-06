@@ -9,8 +9,10 @@
 
 class SimplenewsTestCase extends DrupalWebTestCase {
 
-  public function setUp() {
-    parent::setUp('taxonomy', 'simplenews');
+  public function setUp($modules = array()) {
+
+    $modules = array_merge(array('taxonomy', 'simplenews'), $modules);
+    parent::setUp($modules);
 
     //$this->simplenews_admin_user = $this->drupalCreateUser(array('administer newsletters', 'administer simplenews settings', 'administer simplenews subscriptions'));
     //$this->sender_user = $this->drupalCreateUser(array('create simplenews content', 'edit own simplenews content', 'send newsletter'));
@@ -1091,7 +1093,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
 
   function setUp() {
     parent::setUp(array('locale', 'i18n', 'variable', 'i18n_string', 'i18n_translation', 'i18n_taxonomy'));
-    $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters'));
+    $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters', 'administer site configuration'));
     $this->drupalLogin($this->admin_user);
     $this->setUpLanguages();
   }
@@ -1151,7 +1153,12 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     drupal_static_reset('i18n_taxonomy_vocabulary_mode');
 
     // Refresh strings.
-    module_invoke_all('i18n_string_refresh', 'taxonomy');
+    // @todo: simplenews_category_save() should probably take care of this.
+    // Currently done separately in simplenews_admin_category_form_submit()
+    // for the admin UI.
+    $tid = $this->getRandomNewsletter();
+    $term = taxonomy_term_load($tid);
+    taxonomy_term_save($term);
 
     $tid = array_shift(simplenews_categories_load_multiple())->tid;
     // Translate term to spanish.
@@ -1163,12 +1170,10 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     // Visit newsletter selection page in english.
     $this->drupalGet('user/' . $this->admin_user->uid . '/edit/simplenews');
     $this->assertText(t('Drupal newsletter'));
-    $this->assertText(t('Drupal newsletter categories.'));
 
     // And now in spanish.
     $this->drupalGet('es/user/' . $this->admin_user->uid . '/edit/simplenews');
     $this->assertText($es_name, t('Category name is translated.'));
-    $this->assertText($es_description, t('Category description is translated'));
   }
 
   /**

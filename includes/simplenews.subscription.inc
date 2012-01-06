@@ -48,8 +48,7 @@
  * @see simplenews_subscriptions_account_form_validate()
  * @see simplenews_subscriptions_account_form_submit()
  */
-function simplenews_subscriptions_account_form(&$form, &$form_state, $account) {
-  $subscriber = simplenews_subscriber_load_by_mail($account->mail);
+function simplenews_subscriptions_account_form(&$form, &$form_state, $subscriber) {
 
   $options = array();
   $default_value = array();
@@ -57,8 +56,12 @@ function simplenews_subscriptions_account_form(&$form, &$form_state, $account) {
   // Get newsletters for subscription form checkboxes.
   // Newsletters with opt-in/out method 'hidden' will not be listed.
   foreach (simplenews_get_mailing_lists() as $newsletter) {
-    $options[$newsletter->tid] = check_plain($newsletter->name);
+    $options[$newsletter->tid] = check_plain(_simplenews_newsletter_name($newsletter));
     $default_value[$newsletter->tid] = FALSE;
+  }
+
+  if ($subscriber) {
+    $default_value = array_merge($default_value, $subscriber->tids);
   }
 
   $form['subscriptions'] = array(
@@ -68,7 +71,7 @@ function simplenews_subscriptions_account_form(&$form, &$form_state, $account) {
   $form['subscriptions']['newsletters'] = array(
     '#type' => 'checkboxes',
     '#options' => $options,
-    '#default_value' => array_merge($default_value, $subscriber->tids),
+    '#default_value' => $default_value,
   );
 
   $form['subscriptions']['#title'] =  t('Current newsletter subscriptions');
