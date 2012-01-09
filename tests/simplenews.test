@@ -1859,6 +1859,8 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       $this->assertFalse(strpos($mail['body'], '<strong>'));
       // Make sure the body is only attached once.
       $this->assertEqual(1, preg_match_all('/Mail token/', $mail['body'], $matches));
+
+      $this->assertTrue(strpos($mail['body'], t('Unsubscribe from this newsletter')));
     }
 
     // Report time. @todo: Find a way to actually do some assertions here.
@@ -1924,6 +1926,10 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       // The mail system is responsible for mime encoding, make sure the from
       // address is not yet encoded.
       $this->assertEqual('"' . $edit_category['from_name'] . '" <' . $edit_category['from_address'] . '>', $mail['from']);
+
+      // @todo: Improve this check, there are currently two spaces, not sure
+      // where they are coming from.
+      $this->assertTrue(strpos($mail['body'], 'class="newsletter-footer"'));
     }
   }
 

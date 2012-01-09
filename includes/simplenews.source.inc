@@ -743,7 +743,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getFooter().
    */
   public function getFooter() {
-    $this->getFooterWithFormat($this->getFormat());
+    return $this->getFooterWithFormat($this->getFormat());
   }
 
   /**
@@ -837,6 +837,8 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
    */
   public function __construct(SimplenewsSourceNodeInterface $source) {
     $this->source = $source;
+
+    self::$cache = &drupal_static(__CLASS__, array());
   }
 
   /**
