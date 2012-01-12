@@ -133,7 +133,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
 
     // Simplify confirmation form submission by hiding the subscribe block on
     // that page. Same for the newsletter/subscriptions page.
-    $edit['pages'] = "newsletter/confirm/add/*\nnewsletter/subscriptions";
+    $edit['pages'] = "newsletter/confirm/*\nnewsletter/subscriptions";
 
     $this->drupalPost('admin/structure/block/manage/simplenews/' . $tid . '/configure', $edit, t('Save block'));
     $this->assertText('The block configuration has been saved.', 'The newsletter block configuration has been saved.');
@@ -335,8 +335,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $mails = $this->drupalGetMails();
     $body = $mails[3]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    preg_match($pattern, $body, $match);
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -346,6 +345,36 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
+
+    // Test unsubscribe on newsletter/subscriptions page.
+    $edit = array(
+      'mail' => $mail,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
+    $this->assertText(t('You must select at least one newsletter.'));
+
+    // Now fill out the form and try again.
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Unsubscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
+    $mails = $this->drupalGetMails();
+    $body = $mails[4]['body'];
+    $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
+
+    $pattern = '@newsletter/confirm/remove/[0-9,a-f]+t[0-9]+@';
+    $found = preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Unsubscribe'));
+    $this->assertRaw(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber remved from newsletter'));
+
   }
 
 

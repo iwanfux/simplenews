@@ -1383,7 +1383,7 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     $params['from'] = _simplenews_set_from();
     $params['context']['category'] = $category;
-    $params['context']['account'] = $subscriber;
+    $params['context']['simplenews_subscriber'] = $subscriber;
     drupal_mail('simplenews', 'unsubscribe', $mail, $subscriber->language, $params, $params['from']['address']);
   }
   elseif (isset($subscriber->tids[$tid])) {
