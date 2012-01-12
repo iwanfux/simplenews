@@ -2045,6 +2045,13 @@ function simplenews_token_info() {
 function simplenews_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
+  if (isset($options['language'])) {
+    $url_options['language'] = $options['language'];
+    $language_code = $options['language']->language;
+  }
+  else {
+    $language_code = NULL;
+  }
 
   switch ($type) {
     case 'simplenews-subscriber':
@@ -2093,7 +2100,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
         switch ($name) {
           case 'name':
             if (isset($category->name)) {
-              $newsletter_name = _simplenews_newsletter_name($category);
+              $newsletter_name = _simplenews_newsletter_name($category, $language_code);
               $replacements[$original] = $sanitize ? check_plain($newsletter_name) : $newsletter_name;
             }
             else {
