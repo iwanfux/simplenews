@@ -2,7 +2,7 @@ name = Simplenews
 description = Send newsletters to subscribed email addresses.
 package = Mail
 core = 7.x
-configure = admin/config/simplenews
+configure = admin/config/services/simplenews
 dependencies[] = taxonomy
 
 test_dependencies[] = i18n_taxonomy

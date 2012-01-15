@@ -265,7 +265,7 @@ function simplenews_issue_send($nids) {
     }
 
     if ($node->status == NODE_NOT_PUBLISHED) {
-      simplenews_update_sent_status($node, SIMPLENEWS_COMMAND_SEND_PUBLISH);
+      simplenews_newsletter_update_sent_status($node, SIMPLENEWS_COMMAND_SEND_PUBLISH);
       drupal_set_message(t('Newsletter %title is unpublished and will be sent on publish', array('%title' => $node->title)));
       continue;
     }
@@ -350,6 +350,8 @@ function simplenews_admin_categories_submit($form, &$form_state) {
 
 /**
  * Form builder function, display a list of simplenews categories.
+ *
+ * @ingroup theming
  */
 function theme_simplenews_admin_categories($variables) {
   $form = $variables['form'];
@@ -1604,6 +1606,8 @@ function simplenews_count_subscriptions($tid) {
  *
  * @return string
  *   HTML string containing an image tag.
+ *
+ * @ingroup theming
  */
 function theme_simplenews_status($variables) {
   $source = $variables['source'];
@@ -1662,7 +1666,7 @@ function theme_simplenews_status($variables) {
 /**
  * Theme simplenews issues and subscriptions filter form.
  *
- * @ingroup themeable
+ * @ingroup theming
  */
 function theme_simplenews_filter_form($variables) {
   $form = $variables['form'];
@@ -1677,7 +1681,7 @@ function theme_simplenews_filter_form($variables) {
 /**
  * Theme simplenews subscriptions administration filter form.
  *
- * @ingroup themeable
+ * @ingroup theming
  */
 function theme_simplenews_subscription_filter_form($variables) {
   $form = $variables['form'];

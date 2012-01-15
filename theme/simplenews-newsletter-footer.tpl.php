@@ -10,8 +10,9 @@
  *
  * @todo Update the available variables.
  * Available variables:
- * - $build: Array as expected by render().
- * - $language: language object
+ * - $build: Array as expected by render()
+ * - $build['#node']: The $node object
+ * - $language: language code
  * - $key: email key [node|test]
  * - $format: newsletter format [plain|html]
  * - $unsubscribe_text: unsubscribe text
@@ -19,8 +20,9 @@
  *
  * Available tokens:
  * - [simplenews-subscriber:unsubscribe-url]: unsubscribe url to be used as link
- * Other available tokens: simplenews_token_info() 'simplenews-subscriber'
- * and 'simplenews-list'
+ *
+ * Other available tokens can be found on the node edit form when token.module
+ * is installed.
  *
  * @see template_preprocess_simplenews_newsletter_footer()
  */
