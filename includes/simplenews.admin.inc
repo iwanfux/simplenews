@@ -718,7 +718,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#tree' => TRUE,
    );
 
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+  foreach (simplenews_categories_load_multiple() as $list) {
     $form['newsletters'][$list->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain(_simplenews_newsletter_name($list)),
@@ -951,11 +951,11 @@ function simplenews_subscription_list_remove($form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $form['newsletters'][$list->tid] = array(
+  foreach (simplenews_categories_load_multiple() as $category) {
+    $form['newsletters'][$category->tid] = array(
       '#type' => 'checkbox',
-      '#title' => check_plain(_simplenews_newsletter_name($list)),
-      '#description'  => _simplenews_newsletter_description($list),
+      '#title' => check_plain(_simplenews_newsletter_name($category)),
+      '#description'  => _simplenews_newsletter_description($category),
     );
   }
 
@@ -991,7 +991,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $removed = implode(", ", $removed);
     drupal_set_message(t('The following addresses were unsubscribed: %removed.', array('%removed' => $removed)));
 
-    $lists = simplenews_get_mailing_lists(TRUE);
+    $lists = simplenews_categories_load_multiple();
     $list_names = array();
     foreach ($checked_lists as $tid) {
       $list_names[] = _simplenews_newsletter_name($lists[$tid]);
@@ -1466,7 +1466,7 @@ function simplenews_subscription_filters() {
       'all'   => t('All newsletters'),
     ),
   );
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+  foreach (simplenews_categories_load_multiple() as $list) {
     $filters['list']['options']['tid-' . $list->tid] = _simplenews_newsletter_name($list);
   }
 

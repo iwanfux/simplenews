@@ -837,7 +837,7 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
   // Determine the lists to which a user can choose to subscribe.
   // Determine to which other list a user is automatically subscribed.
 
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+  foreach (simplenews_categories_load_multiple() as $list) {
     $subscribe_new_account = $list->new_account;
     $opt_inout_method = $list->opt_inout;
     if (($subscribe_new_account == 'on' || $subscribe_new_account == 'off') && ($opt_inout_method == 'single' || $opt_inout_method == 'double')) {
@@ -1037,7 +1037,7 @@ function simplenews_user_view($account, $build_mode) {
     );
     // Collect newsletter to which the current user is subscribed.
     // 'hidden' newsletters are not listed.
-    $newsletters = simplenews_get_mailing_lists();
+    $newsletters = simplenews_category_get_visible();
     $subscription = simplenews_subscriber_load_by_mail($account->mail);
 
     foreach ($newsletters as $newsletter) {
@@ -1880,23 +1880,19 @@ function simplenews_category_delete($category) {
 }
 
 /**
- * Fetch all newsletter mailing lists.
+ * Loads all visible newsletter categories.
  *
- * @param $show_all
- *   FALSE = Don't show mailing lists which are marked 'hidden'.
- *   TRUE  = Show all mailing lists.
+ * Does not include categories with the opt-out/opt-in setting set to hidden.
  *
  * @ingroup newsletter
  */
-function simplenews_get_mailing_lists($show_all = FALSE) {
-  $lists = &drupal_static(__FUNCTION__, array());
-  $all = $show_all ? 'all' : 'not_all';
+function simplenews_category_get_visible() {
+  $categories = &drupal_static(__FUNCTION__, NULL);
 
-  if (!isset($lists[$all])) {
-    $categories = simplenews_categories_load_multiple(array(), array('show_all' => $show_all));
-    $lists[$all] = $categories;
+  if (!isset($categories)) {
+    $categories = simplenews_categories_load_multiple(array(), array('show_all' => FALSE));
   }
-  return $lists[$all];
+  return $categories;
 }
 
 /**
