@@ -1540,8 +1540,8 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('admin/content/simplenews', $edit, t('Update'));
 
-    $this->assertText(t('Newsletter @title sent', array('@title' => $first->title)));
-    $this->assertText(t('Newsletter @title is unpublished and will be sent on publish', array('@title' => $unpublished->title)));
+    $this->assertText(t('Sent the following newsletters: @title.', array('@title' => $first->title)));
+    $this->assertText(t('Newsletter @title is unpublished and will be sent on publish.', array('@title' => $unpublished->title)));
 
     // Verify states.
     $newsletter = simplenews_newsletter_load($first->nid);
@@ -1740,6 +1740,9 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
       'status' => TRUE,
     );
     $this->drupalPost(NULL, $update, t('Save'));
+
+    // Send on publish does not send immediately.
+    simplenews_mail_spool();
 
     // Verify state.
     $newsletter = simplenews_newsletter_load($node->nid);
