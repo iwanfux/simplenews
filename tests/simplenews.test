@@ -1742,7 +1742,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $update, t('Save'));
 
     // Send on publish does not send immediately.
-    simplenews_mail_spool();
+    simplenews_mail_attempt_immediate_send(array(), FALSE);
 
     // Verify state.
     $newsletter = simplenews_newsletter_load($node->nid);
