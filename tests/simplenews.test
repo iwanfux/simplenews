@@ -1648,7 +1648,12 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $edit = array(
       'title' => $this->randomName(),
     );
-    $this->drupalPost(NULL, $edit, ('Save'));
+    // Try preview first.
+    $this->drupalPost(NULL, $edit, t('Preview'));
+
+    // Then save.
+    $this->drupalPost(NULL, array(), t('Save'));
+
     $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
     $node = node_load($matches[1]);
 
