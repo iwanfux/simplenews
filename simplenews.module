@@ -2369,6 +2369,7 @@ function simplenews_theme() {
         'language' => NULL,
       ),
       'path' => $path . '/theme',
+      'mail theme' => TRUE,
       'template' => 'simplenews-newsletter-body',
       'pattern' => 'simplenews-newsletter-body__',
     ),
@@ -2381,6 +2382,7 @@ function simplenews_theme() {
         'language' => NULL,
       ),
       'path' => $path . '/theme',
+      'mail theme' => TRUE,
       'template' => 'simplenews-newsletter-footer',
       'pattern' => 'simplenews-newsletter-footer__',
     ),
@@ -2550,6 +2552,9 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
 
+  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
+  $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
+
   $variables['title'] = check_plain($variables['build']['#node']->title);
   $variables['language'] = $variables['build']["#language"];
   $variables['view_mode'] = $variables['build']['#view_mode'];
@@ -2573,6 +2578,9 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   // We don't want to include links and comments in the email.
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
+
+  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
+  $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
   $variables['test_message'] = t('This is a test version of the newsletter.', array(), array('langcode' => $variables['language']));

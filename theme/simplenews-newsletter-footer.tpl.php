@@ -17,6 +17,7 @@
  * - $format: newsletter format [plain|html]
  * - $unsubscribe_text: unsubscribe text
  * - $test_message: test message warning message
+ * - $simplenews_theme: path to the configured simplenews theme
  *
  * Available tokens:
  * - [simplenews-subscriber:unsubscribe-url]: unsubscribe url to be used as link
