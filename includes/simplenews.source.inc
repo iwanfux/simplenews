@@ -128,6 +128,11 @@ interface SimplenewsSourceNodeInterface extends SimplenewsSourceInterface {
    * Returns the actually used node of this source.
    */
   function getNode();
+
+  /**
+   * Returns the subscriber object.
+   */
+  function getSubscriber();
 }
 
 /**
@@ -676,7 +681,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     if ($cache = $this->cache->get('build', 'body:' . $format)) {
       return $cache;
     }
-    $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'category' => $this->getCategory(), 'language' => $this->getLanguage()));
+    $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'category' => $this->getCategory(), 'language' => $this->getLanguage(), 'simplenews_subscriber' => $this->getSubscriber()));
     $this->cache->set('build', 'body:' . $format, $body);
     return $body;
   }
