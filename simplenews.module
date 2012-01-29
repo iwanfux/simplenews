@@ -882,13 +882,12 @@ function simplenews_form_user_register_form_alter(&$form, &$form_state) {
  */
 function simplenews_user_insert(&$edit, $account, $category) {
   // Use the email address to check if new account is already subscribed.
-  $subscription = simplenews_subscriber_load_by_mail($edit['mail']);
+  $subscriber = simplenews_subscriber_load_by_mail($edit['mail']);
   // If the user is subscribed, we update the subscriber with uid and language.
-  if ($subscription) {
+  if ($subscriber) {
     $subscriber->uid = $edit['uid'];
     $subscriber->language = $edit['language'];
     $subscriber->activated = 1;
-    $subscriber->snid = $subscription->snid;
     simplenews_subscriber_save($subscriber);
   }
 

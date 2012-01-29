@@ -240,6 +240,31 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, array(), t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
 
+    // Test that it is possible to register with a mail address that is already
+    // a subscriber.
+    variable_set('user_register', 1);
+    variable_set('user_email_verification', FALSE);
+
+    $edit = array(
+      'name' => $this->randomName(),
+      'mail' => $mail,
+      'pass[pass1]' => $pass = $this->randomName(),
+      'pass[pass2]' => $pass,
+    );
+    $this->drupalPost('user/register', $edit, t('Create new account'));
+
+    // Verify confirmation messages.
+    $this->assertText(t('Registration successful. You are now logged in.'));
+
+    // Verify that the subscriber has been updated and references to the correct
+    // user.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $account = user_load_by_mail($mail);
+    $this->assertEqual($subscriber->uid, $account->uid);
+    $this->assertEqual($account->name, $edit['name']);
+
+    $this->drupalLogout();
+
     // 2. Subscribe anonymous via subscription page
     // Subscribe + submit
     // Assert confirmation message
@@ -258,7 +283,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[1]['body'];
+    $body = $mails[2]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
     $found= preg_match($pattern, $body, $match);
@@ -303,7 +328,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[2]['body'];
+    $body = $mails[3]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
     $found= preg_match($pattern, $body, $match);
@@ -333,7 +358,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[3]['body'];
+    $body = $mails[4]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
@@ -360,7 +385,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Unsubscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
-    $body = $mails[4]['body'];
+    $body = $mails[5]['body'];
     $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
 
     $pattern = '@newsletter/confirm/remove/[0-9,a-f]+t[0-9]+@';
@@ -1167,7 +1192,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     }
   }
 
-  function dtestCategoryTranslation() {
+  function testCategoryTranslation() {
     $this->drupalLogin($this->admin_user);
     // Make Input Format "Filtered Text" translatable
     $edit = array(
