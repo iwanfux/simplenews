@@ -205,6 +205,9 @@ function simplenews_send_source(SimplenewsSourceInterface $source) {
  * @param $conditions
  *   (Optional) Array of spool conditions which are applied to the query.
  *
+ * @return
+ *   Returns the amount of sent mails.
+ *
  * @ingroup spool
  */
 function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions = array()) {
@@ -243,7 +246,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
       // Check every n emails if we exceed the limit.
       // When PHP maximum execution time is almost elapsed we interrupt
       // sending. The remainder will be sent during the next cron run.
-      if (++$check_counter >= SIMPLENEWS_SEND_CHECK_INTERVAL) {
+      if (++$check_counter >= SIMPLENEWS_SEND_CHECK_INTERVAL && ini_get('max_execution_time') > 0) {
         $check_counter = 0;
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
@@ -280,6 +283,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     variable_set('simplenews_last_sent', $count_success);
 
     simplenews_revert_user();
+    return $count_success;
   }
 }
 
@@ -468,7 +472,7 @@ function simplenews_count_spool(array $conditions = array()) {
 
   $query->addExpression('COUNT(*)', 'count');
 
-  return $query
+  return (int)$query
     ->execute()
     ->fetchField();
 }
