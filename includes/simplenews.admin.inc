@@ -175,7 +175,7 @@ function simplenews_admin_issues() {
   foreach ($query->execute() as $issue) {
     $categories = simplenews_category_list();
     $subscriber_count = simplenews_count_subscriptions($issue->tid);
-    $pending_count = simplenews_count_spool($issue->nid);
+    $pending_count = simplenews_count_spool(array('nid' => $issue->nid));
     $send_status = $issue->sent_status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => $issue->sent_status));
 
     $options[$issue->nid] = array(
@@ -257,8 +257,8 @@ function simplenews_admin_issues_submit($form, &$form_state) {
  * Callback to send newsletters.
  */
 function simplenews_issue_send($nids) {
+  $sent_nodes = array();
   foreach (node_load_multiple($nids) as $node) {
-
     $newsletter = simplenews_newsletter_load($node->nid);
     if ($newsletter->status != SIMPLENEWS_STATUS_SEND_NOT) {
       continue;
@@ -266,16 +266,23 @@ function simplenews_issue_send($nids) {
 
     if ($node->status == NODE_NOT_PUBLISHED) {
       simplenews_newsletter_update_sent_status($node, SIMPLENEWS_COMMAND_SEND_PUBLISH);
-      drupal_set_message(t('Newsletter %title is unpublished and will be sent on publish', array('%title' => $node->title)));
+      drupal_set_message(t('Newsletter %title is unpublished and will be sent on publish.', array('%title' => $node->title)));
       continue;
     }
 
-    $status = simplenews_add_node_to_spool($node);
-    if ($status == SIMPLENEWS_STATUS_SEND_READY) {
-      drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
+    simplenews_add_node_to_spool($node);
+    $sent_nodes[$node->nid] = $node->title;
+  }
+
+  // If there were any newsletters sent, display a message.
+  if (!empty($sent_nodes)) {
+    $conditions = array('nid' => array_keys($sent_nodes));
+    // Attempt to send immediatly, if configured to do so.
+    if (simplenews_mail_attempt_immediate_send($conditions)) {
+      drupal_set_message(t('Sent the following newsletters: %titles.', array('%titles' => implode(', ', $sent_nodes))));
     }
     else {
-      drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->title)));
+      drupal_set_message(t('The following newsletter are now pending: %titles.', array('%titles' => implode(', ', $sent_nodes))));
     }
   }
 }
@@ -718,7 +725,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#tree' => TRUE,
    );
 
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+  foreach (simplenews_categories_load_multiple() as $list) {
     $form['newsletters'][$list->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain(_simplenews_newsletter_name($list)),
@@ -951,11 +958,11 @@ function simplenews_subscription_list_remove($form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
-    $form['newsletters'][$list->tid] = array(
+  foreach (simplenews_categories_load_multiple() as $category) {
+    $form['newsletters'][$category->tid] = array(
       '#type' => 'checkbox',
-      '#title' => check_plain(_simplenews_newsletter_name($list)),
-      '#description'  => _simplenews_newsletter_description($list),
+      '#title' => check_plain(_simplenews_newsletter_name($category)),
+      '#description'  => _simplenews_newsletter_description($category),
     );
   }
 
@@ -991,7 +998,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $removed = implode(", ", $removed);
     drupal_set_message(t('The following addresses were unsubscribed: %removed.', array('%removed' => $removed)));
 
-    $lists = simplenews_get_mailing_lists(TRUE);
+    $lists = simplenews_categories_load_multiple();
     $list_names = array();
     foreach ($checked_lists as $tid) {
       $list_names[] = _simplenews_newsletter_name($lists[$tid]);
@@ -1466,7 +1473,7 @@ function simplenews_subscription_filters() {
       'all'   => t('All newsletters'),
     ),
   );
-  foreach (simplenews_get_mailing_lists(TRUE) as $list) {
+  foreach (simplenews_categories_load_multiple() as $list) {
     $filters['list']['options']['tid-' . $list->tid] = _simplenews_newsletter_name($list);
   }
 
@@ -1868,8 +1875,9 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
   // Send newsletter to all subscribers or send test newsletter
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
-    $status = simplenews_add_node_to_spool($node);
-    if ($status == SIMPLENEWS_STATUS_SEND_READY) {
+    simplenews_add_node_to_spool($node);
+    // Attempt to send immediatly, if configured to do so.
+    if (simplenews_mail_attempt_immediate_send(array('nid' => $node->nid))) {
       drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
     }
     else {
