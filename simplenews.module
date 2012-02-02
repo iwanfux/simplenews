@@ -2156,13 +2156,13 @@ function simplenews_help($path, $arg) {
         $help .= '<li>' . l(t('Configure permissions'), 'admin/people/permissions', array('fragment' => 'module-simplenews')) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
-        $help .= '<li>' . l(t('Configure Simplenews'), 'admin/config/simplenews') . "</li>\n";
+        $help .= '<li>' . l(t('Configure Simplenews'), 'admin/config/services/simplenews/settings') . "</li>\n";
       }
       if (user_access('administer blocks')) {
         $help .= '<li>' . t('Enable a newsletter <a href="@admin_blocks">subscription block</a>.', array('@admin_blocks' => url('admin/structure/block'))) . "</li>\n";
       }
       if (user_access('administer simplenews settings')) {
-        $help .= '<li>' . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/config/services/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/content/simplenews/users'))) . "</li>\n";
+        $help .= '<li>' . t('Manage your <a href="@newsletters">newsletters</a>, <a href="@sent">sent newsletters</a> and <a href="@subscriptions">subscriptions</a>.', array('@newsletters' => url('admin/config/services/simplenews'), '@sent' => url('admin/content/simplenews'), '@subscriptions' => url('admin/people/simplenews'))) . "</li>\n";
       }
       $help .= '</ul>';
 
@@ -2172,10 +2172,10 @@ function simplenews_help($path, $arg) {
       $help  = '<ul>';
       $help .= '<li>' . t('Add this newsletter issue to a newsletter by selecting a newsletter from the select list. To send this newsletter issue, first save the node, then use the "Newsletter" tab.') . "</li>\n";
       if (user_access('administer simplenews settings')) {
-        $help .= '<li>' . t('Set default send options at <a href="@configuration">Administer > Site configuration > Simplenews > Newsletter</a>.', array('@configuration' => url('admin/config/simplenews/newsletter'))) . "</li>\n";
+        $help .= '<li>' . t('Set default send options at <a href="@configuration">Administration > Configuration > Web services > Newsletters</a>.', array('@configuration' => url('admin/config/services/simplenews'))) . "</li>\n";
       }
       if (user_access('administer newsletters')) {
-        $help .= '<li>' . t('Set newsletter specific options at <a href="@configuration">Administer > Content management > Newsletters > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews'))) . "</li>\n";
+        $help .= '<li>' . t('Set newsletter specific options at <a href="@configuration">Administration > Content > Newsletters</a>.', array('@configuration' => url('admin/content/simplenews'))) . "</li>\n";
       }
       $help .= '</ul>';
       return $help;
