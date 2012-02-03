@@ -400,6 +400,51 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost($confirm_url, NULL, t('Unsubscribe'));
     $this->assertRaw(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber remved from newsletter'));
 
+    // Visit the newsletter/subscriptions page with the hash.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+
+    $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $tid);
+    $this->drupalGet('newsletter/subscriptions/' . $hash);
+    $this->assertText(t('Subscriptions for @mail', array('@mail' => $mail)));
+
+    $edit = array(
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Update'));
+
+    // Make sure the user is not yet subscribed.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+
+    $this->assertTrue(empty($subscriber->tids));
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscriber->newsletter_subscription[$tid]->status);
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[6]['body'];
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
+    $found = preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Subscribe'));
+    $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
+
+    // Make sure the subscription is confirmed now.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+
+    $this->assertTrue(isset($subscriber->tids[$tid]));
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $subscriber->newsletter_subscription[$tid]->status);
+
+    // Attemt to fetch the page using an invalid hash format.
+    $this->drupalGet('newsletter/subscriptions/' . strrev($hash));
+    $this->assertResponse(404);
+
+    // Attemt to fetch the page using a wrong hash but correct format.
+    $this->drupalGet('newsletter/subscriptions/' . simplenews_generate_hash($subscriber->mail . 'a', $subscriber->snid, $tid));
+    $this->assertResponse(404);
   }
 
 

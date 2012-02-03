@@ -204,10 +204,22 @@ function simplenews_block_form_submit($form, &$form_state) {
  * @see simplenews_subscriptions_page_form_validate()
  * @see simplenews_subscriptions_page_form_submit()
  */
-function simplenews_subscriptions_page_form($form, &$form_state) {
+function simplenews_subscriptions_page_form($form, &$form_state, $code = NULL) {
   global $user;
 
-  $subscriber = !empty($user->mail) ? simplenews_subscriber_load_by_mail($user->mail) : FALSE;
+  $subscriber = $mail = FALSE;
+  if (!empty($user->mail)) {
+    $subscriber = simplenews_subscriber_load_by_mail($user->mail);
+    $mail = $user->mail;
+  }
+  // If a hash is provided, try to load the corresponding subscriber.
+  else if ($code) {
+    if (!$subscriber = simplenews_subscriber_load_by_hash($code)) {
+      drupal_not_found();
+      return;
+    }
+    $mail = $subscriber->mail;
+  }
 
   $form = array();
   $options = array();
@@ -234,12 +246,14 @@ function simplenews_subscriptions_page_form($form, &$form_state) {
     '#default_value' => $default_value
   );
 
-  // If current user is logged in, just display email.
-  // Anonymous users see an email box and will receive confirmations
-  if (user_is_logged_in()) {
-    $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $user->mail));
+  // If we have a mail address, which is either from a logged in user or a
+  // subscriber identified through the hash code, display the mail address
+  // instead of a textfield. Anonymous uses will still have to confirm any
+  // changes.
+  if ($mail) {
+    $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
     $form['subscriptions']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
-    $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $user->mail);
+    $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $mail);
     $form['update'] = array(
       '#type' => 'submit',
       '#value' => t('Update'),
@@ -288,8 +302,8 @@ function simplenews_subscriptions_page_form_validate($form, &$form_state) {
   }
 
   $checked_newsletters = array_filter($form_state['values']['newsletters']);
-  // Anonymous users must select at least one newsletter.
-  if (!count($checked_newsletters) && !$GLOBALS['user']->uid) {
+  // Unless we're in update mode, at least one checkbox must be checked.
+  if (!count($checked_newsletters) && $form_state['values']['op'] != t('Update')) {
     form_set_error('newsletters', t('You must select at least one newsletter.'));
   }
 }
@@ -306,15 +320,23 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
       // when unsubscribed from the
       arsort($form_state['values']['newsletters'], SORT_NUMERIC);
+      $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
+        $confirm = simplenews_require_double_opt_in($tid, $account);
+        $confirm_any |= $confirm;
         if ($checked) {
-          simplenews_subscribe_user($account->mail, $tid, FALSE, 'website');
+          simplenews_subscribe_user($mail, $tid, $confirm, 'website');
         }
         else {
-          simplenews_unsubscribe_user($mail, $tid, FALSE, 'website');
+          simplenews_unsubscribe_user($mail, $tid, $confirm, 'website');
         }
       }
-      drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
+      if ($confirm_any) {
+        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+      }
+      else {
+        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
+      }
       break;
     case t('Subscribe'):
       $confirm_any = FALSE;
@@ -463,17 +485,9 @@ function simplenews_confirm_subscription() {
   $arguments = func_get_args();
   $op = array_shift($arguments);
   $code = array_shift($arguments);
-
-  $md5 = drupal_substr($code, 0, 10);
-  list($snid, $tid) = explode('t', drupal_substr($code, 10));
-
-  $subscriber = simplenews_subscriber_load($snid);
-  if (!$subscriber) {
-    drupal_not_found();
-    return;
-  }
-
-  if ($md5 == drupal_substr(md5($subscriber->mail . simplenews_private_key()), 0, 10)) {
+  if ($subscriber = simplenews_subscriber_load_by_hash($code)) {
+    // Extract the category id.
+    list($snid, $tid) = explode('t', drupal_substr($code, 10));
     $category = simplenews_category_load($tid);
     // The confirmation page called with two arguments will display a confirmation question.
     // When called with three of more arguments the user will be directed to the
