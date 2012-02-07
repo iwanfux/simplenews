@@ -714,3 +714,18 @@ function simplenews_update_7003() {
   drupal_set_message(t('The [simplenews-newsletter] tokens have been removed in favor of [node] tokens. Existing newsletters might need to be updated accordingly.'), 'warning');
 }
 
+/**
+ * Add the status field to {simplenews_subscription}.
+ */
+function simplenews_update_7004() {
+  if (!db_field_exists('simplenews_subscription', 'status')) {
+    db_add_field('simplenews_subscription', 'status', array(
+      'description' => 'A flag indicating whether the user is subscribed (1) or unsubscribed (0).',
+      'type' => 'int',
+      'size' => 'small',
+      'not null' => TRUE,
+      'default' => 1
+      )
+    );
+  }
+}

@@ -1445,6 +1445,8 @@ class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
     $this->assertText('Drupal 6 newsletter');
     $this->assertText('Test');
 
+    $this->drupalGet('admin/people/simplenews');
+    $this->assertText('another@example.org');
   }
 }
 
@@ -1497,6 +1499,8 @@ class SimpleNewsUpgradePath62TestCase extends UpgradePathTestCase {
     $this->assertText('Drupal 6 newsletter');
     $this->assertText('Test');
 
+    $this->drupalGet('admin/people/simplenews');
+    $this->assertText('another@example.org');
   }
 }
 
