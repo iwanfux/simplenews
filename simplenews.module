@@ -1343,6 +1343,7 @@ function simplenews_subscribe_user($mail, $tid, $confirm = TRUE, $source = 'unkn
     $subscription->timestamp = REQUEST_TIME;
     $subscription->source = $source;
     simplenews_subscription_save($subscription);
+    $subscriber->newsletter_subscription[$tid] = $subscription;
     $subscriber->tids[$tid] = $tid;
 
     module_invoke_all('simplenews_subscribe_user', $subscriber, $subscription);
@@ -1393,17 +1394,13 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
   }
   elseif (isset($subscriber->tids[$tid])) {
     // Unsubscribe the user from the mailing list.
-    // @todo rewrite if subscription object is loaded in $subscriber->tids[$tid]
-    $subscription = new stdClass();
-    $subscription->snid = $subscriber->snid;
-    $subscription->tid = $tid;
-    $subscription->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
-    $subscription->timestamp = REQUEST_TIME;
-    $subscription->source = $source;
-    simplenews_subscription_save($subscription);
-    $subscriber->tids[$tid] = $tid;
+    $subscriber->newsletter_subscription[$tid]->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+    $subscriber->newsletter_subscription[$tid]->timestamp = REQUEST_TIME;
+    $subscriber->newsletter_subscription[$tid]->source = $source;
+    simplenews_subscription_save($subscriber->newsletter_subscription[$tid]);
+    unset($subscriber->tids[$tid]);
 
-    module_invoke_all('simplenews_unsubscribe_user', $subscriber, $subscription);
+    module_invoke_all('simplenews_unsubscribe_user', $subscriber, $subscriber->newsletter_subscription[$tid]);
   }
   return TRUE;
 }
