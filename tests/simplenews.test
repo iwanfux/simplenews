@@ -342,6 +342,17 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
 
+    // Try to subscribe again, this should not re-set the status to unconfirmed.
+    $edit = array(
+      'mail' => $mail,
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Subscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $subscriber->newsletter_subscription[$tid]->status);
+
     // Now the same with the newsletter/subscriptions page.
     $mail = $this->randomEmail(8, 'testmail');
     $edit = array(
@@ -358,7 +369,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[4]['body'];
+    $body = $mails[5]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
@@ -385,7 +396,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Unsubscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
-    $body = $mails[5]['body'];
+    $body = $mails[6]['body'];
     $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
 
     $pattern = '@newsletter/confirm/remove/[0-9,a-f]+t[0-9]+@';
@@ -419,7 +430,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscriber->newsletter_subscription[$tid]->status);
 
     $mails = $this->drupalGetMails();
-    $body = $mails[6]['body'];
+    $body = $mails[7]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
