@@ -478,7 +478,7 @@ function simplenews_count_spool(array $conditions = array()) {
 }
 
 /**
- * Remove records from mail spool table.
+ * Remove old records from mail spool table.
  *
  * All records with status 'send' and time stamp before the expiration date
  * are removed from the spool.
@@ -497,16 +497,19 @@ function simplenews_clear_spool() {
 }
 
 /**
- * Remove records from mail spool table for node.
+ * Remove records from mail spool table according to the conditions.
  *
  * @return Count deleted
  *
  * @ingroup spool
  */
-function simplenews_clear_spool_node($node) {
-  return db_delete('simplenews_mail_spool')
-    ->condition('nid', $node->nid)
-    ->execute();
+function simplenews_delete_spool(array $conditions) {
+  $query = db_delete('simplenews_mail_spool');
+
+  foreach ($conditions as $condition => $value) {
+    $query->condition($condition, $value);
+  }
+  return $query->execute();
 }
 
 

@@ -516,7 +516,7 @@ function simplenews_node_delete($node) {
   simplenews_newsletter_delete($node);
   // Check if pending emails of this newsletter issue exist and delete these too.
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  $count = simplenews_clear_spool_node($node);
+  $count = simplenews_delete_spool(array('nid' => $node->nid));
   if ($count) {
     drupal_set_message(t('Newsletter %title was deleted but had @count pending emails. They can no longer be sent.', array(
       '%title' => $node->title,
@@ -1399,6 +1399,10 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
     $subscriber->newsletter_subscription[$tid]->source = $source;
     simplenews_subscription_save($subscriber->newsletter_subscription[$tid]);
     unset($subscriber->tids[$tid]);
+
+    // Clear eventually existing mail spool rows for this subscriber.
+    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+    simplenews_delete_spool(array('snid' => $subscriber->snid, 'tid' => $tid));
 
     module_invoke_all('simplenews_unsubscribe_user', $subscriber, $subscriber->newsletter_subscription[$tid]);
   }

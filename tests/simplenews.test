@@ -2062,12 +2062,16 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     // Add node to spool.
     simplenews_add_node_to_spool($node);
 
+    // Unsubscribe one of the recipients to make sure that he doesn't receive
+    // the mail.
+    simplenews_unsubscribe_user(array_shift($this->subscribers), $this->getRandomNewsletter(), FALSE, 'test');
+
     $before = microtime(TRUE);
     simplenews_mail_spool();
     $after = microtime(TRUE);
 
-    // Make sure that 100 mails have been sent.
-    $this->assertEqual(100, count($this->drupalGetMails()));
+    // Make sure that 99 mails have been sent.
+    $this->assertEqual(99, count($this->drupalGetMails()));
 
     // Test that tokens are correctly replaced.
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
