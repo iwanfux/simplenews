@@ -1391,6 +1391,19 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
       // Verify that the link is in the correct language.
       $this->assertTrue(strpos($mail['body'], $node_url) !== FALSE);
     }
+
+    // Make sure the language of a node can be changed.
+    $english = array(
+      'title' => $this->randomName(),
+      'language' => 'en',
+      'body[und][0][value]' => 'Link to node: [node:url]',
+    );
+    $this->drupalPost('node/add/simplenews', $english, ('Save'));
+    $this->clickLink(t('Edit'));
+    $edit = array(
+      'language' => 'es',
+    );
+    $this->drupalPost(NULL, $edit, t('Save'));
   }
 
   /**
