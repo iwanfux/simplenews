@@ -365,9 +365,14 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
   $status_or = db_or();
   $statuses = is_array($conditions['status']) ? $conditions['status'] : array($conditions['status']);
   foreach ($statuses as $status) {
-    $status_or->condition('status', $status);
     if ($status == SIMPLENEWS_SPOOL_IN_PROGRESS) {
-      $status_or->condition('s.timestamp', simplenews_get_expiration_time(), '<');
+      $status_or->condition(db_and()
+        ->condition('status', $status)
+        ->condition('s.timestamp', simplenews_get_expiration_time(), '<')
+      );
+    }
+    else {
+      $status_or->condition('status', $status);
     }
   }
   unset($conditions['status']);
