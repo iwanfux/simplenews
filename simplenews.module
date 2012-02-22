@@ -1111,7 +1111,7 @@ function simplenews_block_configure($delta = '') {
       '#type' => 'textfield',
       '#title' => t('Block message'),
       '#size' => 60,
-      '#maxlength' => 128,
+      '#maxlength' => 255,
       // @todo: clean localization / i18n needed
       '#default_value' => variable_get('simplenews_block_m_multiple', t('Select the newsletter(s) to which you want to subscribe or unsubscribe.')),
     );
@@ -1121,7 +1121,7 @@ function simplenews_block_configure($delta = '') {
       '#type' => 'textfield',
       '#title' => t('Block message'),
       '#size' => 60,
-      '#maxlength' => 128,
+      '#maxlength' => 255,
       '#default_value' => variable_get('simplenews_block_m_' . $delta, t('Stay informed on our latest news!')),
     );
     $form['simplenews_block_' . $delta]['simplenews_block_f_' . $delta] = array(
