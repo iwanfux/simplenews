@@ -1010,10 +1010,31 @@ function simplenews_user_categories() {
     'name' => 'simplenews',
     'title' => t('Newsletters'),
     'weight' => 10,
-    'access callback' => 'user_access',
-    'access arguments' => array('subscribe to newsletters'),
+    'access callback' => 'simplenews_subscription_edit_access',
   );
   return $output;
+}
+
+/**
+ * Access callback for user newsletter editing.
+ */
+function simplenews_subscription_edit_access($account) {
+  global $user;
+  // Disallow anonymous.
+  if (!$account || $account->uid==0) {
+    return FALSE;
+  }
+  // Allow edit own subscription.
+  if ($user->uid == $account->uid) {
+    if (user_access('subscribe to newsletters', $account)) {
+      return TRUE;
+    }
+  }
+  // Allow administrator to edit account's subscription.
+  if (user_access('administer users')) {
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**

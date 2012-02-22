@@ -842,6 +842,13 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $subscriber_user2 = $this->drupalCreateUser(array('subscribe to newsletters'));
     $this->drupalLogin($subscriber_user2);
 
+    // Check that the user has only access to his own subscriptions page.
+    $this->drupalGet('user/' . $subscriber_user->uid . '/edit/simplenews');
+    $this->assertResponse(403);
+
+    $this->drupalGet('user/' . $subscriber_user2->uid . '/edit/simplenews');
+    $this->assertResponse(200);
+
     $this->assertNoField('mail');
     $this->drupalPost(NULL, array(), t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->mail)));
