@@ -14,6 +14,7 @@ files[] = includes/views/handlers/simplenews_handler_field_newsletter_priority.i
 files[] = includes/views/handlers/simplenews_handler_field_category_hyperlinks.inc
 files[] = includes/views/handlers/simplenews_handler_field_category_new_account.inc
 files[] = includes/views/handlers/simplenews_handler_field_category_opt_inout.inc
+files[] = includes/views/handlers/simplenews_handler_field_newsletter_send.inc
 files[] = includes/views/handlers/simplenews_handler_filter_newsletter_status.inc
 files[] = includes/views/handlers/simplenews_handler_filter_newsletter_priority.inc
 files[] = includes/views/handlers/simplenews_handler_filter_category_hyperlinks.inc
