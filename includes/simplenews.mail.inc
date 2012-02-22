@@ -778,6 +778,47 @@ function simplenews_build_subscribe_mail(&$message, $params) {
 }
 
 /**
+ * Build subject and body of the subscribe confirmation email.
+ *
+ * @param array $message
+ *   Message array as used by hook_mail().
+ * @param array $params
+ *   Parameter array as used by hook_mail().
+ */
+function simplenews_build_combined_mail(&$message, $params) {
+  $context = $params['context'];
+  $changes = $context['changes'];
+  $langcode = $message['language'];
+
+  // Use formatted from address "name" <mail_address>
+  $message['headers']['From'] = $params['from']['formatted'];
+
+  $message['subject'] = simplenews_subscription_confirmation_text('combined_subject', $langcode);
+  $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
+
+  $changes_list = '';
+  $actual_changes = 0;
+  foreach (simplenews_confirmation_get_changes_list($context['simplenews_subscriber'], $changes, $langcode) as $tid => $change) {
+    $changes_list .= ' - ' . $change . "\n";
+
+    // Count the actual changes.
+    $subscribed = simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $tid);
+    if ($changes[$tid] == 'subscribe' && !$subscribed || $changes[$tid] == 'unsubscribe' && $subscribed) {
+      $actual_changes++;
+    }
+  }
+
+  // If there are actual changes, use the combined_body key otherwise use the
+  // one without a confirmation link.
+  $body_key = $actual_changes ? 'combined_body' : 'combined_body_unchanged';
+
+  $body = simplenews_subscription_confirmation_text($body_key, $langcode);
+  // The changes list is not an actual token.
+  $body = str_replace('[changes-list]', $changes_list, $body);
+  $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
+}
+
+/**
  * Build subject and body of the unsubscribe confirmation email.
  *
  * @param array $message

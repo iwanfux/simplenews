@@ -174,6 +174,11 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'changes' => array(
+        'description' => 'Contains the requested subscription changes',
+        'type' => 'text',
+        'serialize' => TRUE,
+      ),
     ),
     'primary key' => array('snid'),
     'indexes' => array(
@@ -728,4 +733,18 @@ function simplenews_update_7004() {
       )
     );
   }
+}
+
+/**
+ * Add support for combined confirmation mails.
+ */
+function simplenews_update_7005() {
+  db_add_field('simplenews_subscriber', 'changes', array(
+    'description' => 'Contains the requested subscription changes',
+    'type' => 'text',
+    'serialize' => TRUE,
+  ));
+  // To keep existing installations consistent, disable combined confirmation
+  // mails.
+  variable_set('simplenews_use_combined', 'never');
 }

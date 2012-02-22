@@ -315,15 +315,16 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
   $mail = $form_state['values']['mail'];
   $account = simplenews_load_user_by_mail($mail);
 
+  // Group confirmation mails as necessary and configured.
+  simplenews_confirmation_combine(TRUE);
+
   switch ($form_state['values']['op']) {
     case t('Update'):
       // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
       // when unsubscribed from the
       arsort($form_state['values']['newsletters'], SORT_NUMERIC);
-      $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         $confirm = simplenews_require_double_opt_in($tid, $account);
-        $confirm_any |= $confirm;
         if ($checked) {
           simplenews_subscribe_user($mail, $tid, $confirm, 'website');
         }
@@ -331,7 +332,7 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
           simplenews_unsubscribe_user($mail, $tid, $confirm, 'website');
         }
       }
-      if ($confirm_any) {
+      if (simplenews_confirmation_send_combined()) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
       else {
@@ -339,15 +340,13 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       }
       break;
     case t('Subscribe'):
-      $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($tid, $account);
-          $confirm_any |= $confirm;
           simplenews_subscribe_user($mail, $tid, $confirm, 'website');
         }
       }
-      if ($confirm_any) {
+      if (simplenews_confirmation_send_combined()) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
       else {
@@ -355,15 +354,13 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       }
       break;
     case t('Unsubscribe'):
-      $confirm_any = FALSE;
       foreach ($form_state['values']['newsletters'] as $tid => $checked) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($tid, $account);
-          $confirm_any |= $confirm;
           simplenews_unsubscribe_user($mail, $tid, $confirm, 'website');
         }
       }
-      if ($confirm_any) {
+      if (simplenews_confirmation_send_combined()) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
       }
       else {
@@ -488,7 +485,9 @@ function simplenews_confirm_subscription() {
   if ($subscriber = simplenews_subscriber_load_by_hash($code)) {
     // Extract the category id.
     list($snid, $tid) = explode('t', drupal_substr($code, 10));
-    $category = simplenews_category_load($tid);
+    if ($tid > 0) {
+      $category = simplenews_category_load($tid);
+    }
     // The confirmation page called with two arguments will display a confirmation question.
     // When called with three of more arguments the user will be directed to the
     // (un)subscribe confirmation page. The additional arguments will be passed on
@@ -499,6 +498,9 @@ function simplenews_confirm_subscription() {
       }
       elseif ($op == 'add') {
         return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $category);
+      }
+      elseif ($op == 'combined' && !empty($subscriber->changes)) {
+        return drupal_get_form('simplenews_confirm_multi_form', $subscriber);
       }
     }
     else {
@@ -511,13 +513,30 @@ function simplenews_confirm_subscription() {
         drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
-      elseif ($op == 'add') {
+      else if ($op == 'add') {
         simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_subscribe_page', '')) {
           $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
         }
         drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
+        drupal_goto(variable_get('site_frontpage', 'node'));
+      }
+      else if ($op == 'combined' && !empty($subscriber->changes)) {
+        foreach ($subscriber->changes as $tid => $action) {
+          if ($action == 'subscribe') {
+            simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
+          }
+          else if ($action == 'subscribe') {
+            simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
+          }
+        }
+
+        // Clear changes.
+        $subscriber->changes = array();
+        simplenews_subscriber_save($subscriber);
+
+        drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriberil)));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
     }
@@ -565,6 +584,55 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
   }
 
   $form_state['redirect'] = $path;
+}
+
+/**
+ * Generate the confirm subscription form.
+ *
+ * @see simplenews_confirm_add_form_submit()
+ */
+function simplenews_confirm_multi_form($form, &$form_state, $subscriber) {
+  $form = array();
+  $form['question'] = array(
+    '#markup' => '<p>' . t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $subscriber->mail)) . "<p>\n",
+  );
+
+  $form['changes'] = array(
+    '#theme' => 'item_list',
+    '#items' => simplenews_confirmation_get_changes_list($subscriber),
+  );
+
+  $form['subscriber'] = array(
+    '#type' => 'value',
+    '#value' => $subscriber,
+  );
+
+  return confirm_form($form,
+    t('Confirm subscription'),
+    '',
+    t('You can always change your subscriptions later.'),
+    t('Confirm'),
+    t('Cancel')
+  );
+}
+
+function simplenews_confirm_multi_form_submit($form, &$form_state) {
+  $subscriber = $form_state['values']['subscriber'];
+  foreach ($subscriber->changes as $tid => $action) {
+    if ($action == 'subscribe') {
+      simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
+    }
+    else if ($action == 'unsubscribe') {
+      simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
+    }
+  }
+
+  // Clear changes.
+  $subscriber->changes = array();
+  simplenews_subscriber_save($subscriber);
+
+  drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
+  $form_state['redirect'] = variable_get('site_frontpage', 'node');
 }
 
 /**

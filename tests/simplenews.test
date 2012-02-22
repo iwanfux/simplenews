@@ -171,6 +171,211 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
   }
 
   /**
+   * Subscribe to multiple newsletters at the same time.
+   */
+  function testSubscribeMultiple() {
+    $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions', 'administer newsletters'));
+    $this->drupalLogin($admin_user);
+    $this->setAnonymousUserSubscription(TRUE);
+
+    $this->drupalGet('admin/config/services/simplenews');
+    for ($i = 0; $i < 5; $i++) {
+      $this->clickLink(t('Add newsletter category'));
+      $edit = array(
+        'name' => $this->randomName(),
+        'description' => $this->randomString(20),
+        'opt_inout' => 'double',
+      );
+      $this->drupalPost(NULL, $edit, t('Save'));
+    }
+
+    drupal_static_reset('simplenews_categories_load_multiple');
+    $categories = simplenews_categories_load_multiple();
+
+    $this->drupalLogout();
+
+    $enable = array_rand($categories, 3);
+
+    $mail = $this->randomEmail(8, 'testmail');
+    $edit = array(
+      'mail' => $mail,
+    );
+    foreach ($enable as $tid) {
+      $edit['newsletters[' . $tid . ']'] = TRUE;
+    }
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[0]['body'];
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      $pos = strpos($body, t('Subscribe to @name', array('@name' => $category->name)));
+      if (in_array($tid, $enable)) {
+        $this->assertTrue($pos);
+      }
+      else {
+        $this->assertFalse($pos);
+      }
+    }
+
+    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
+    $found = preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $mail)), t('Subscription confirmation found.'));
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      if (in_array($tid, $enable)) {
+        $this->assertText(t('Subscribe to @name', array('@name' => $category->name)));
+      }
+      else {
+        $this->assertNoText(t('Subscribe to @name', array('@name' => $category->name)));
+      }
+    }
+
+    $this->drupalPost($confirm_url, NULL, t('Confirm'));
+    $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
+
+    // Verify subscription changes.
+    foreach ($categories as $tid => $category) {
+      $is_subscribed = simplenews_user_is_subscribed($mail, $tid);
+      if (in_array($tid, $enable)) {
+        $this->assertTrue($is_subscribed);
+      }
+      else {
+        $this->assertFalse($is_subscribed);
+      }
+    }
+
+    // Go to the manage page and submit without changes.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $tid);
+    $this->drupalPost('newsletter/subscriptions/' . $hash, array(), t('Update'));
+    $mails = $this->drupalGetMails();
+    $body = $mails[1]['body'];
+
+    $this->assertTrue(strpos($body, 'No confirmation necessary'));
+    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
+    $found = preg_match($pattern, $body, $match);
+    $this->assertFalse($found, t('No confirmation link in unchanged confirm mail.'));
+
+    // Unsubscribe from two of the three enabled newsletters.
+    $disable = array_rand(array_flip($enable), 2);
+
+     $edit = array(
+      'mail' => $mail,
+    );
+    foreach ($disable as $tid) {
+      $edit['newsletters[' . $tid . ']'] = TRUE;
+    }
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'), t('Subscription confirmation e-mail sent.'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[2]['body'];
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      $pos = strpos($body, t('Unsubscribe from @name', array('@name' => $category->name)));
+      if (in_array($tid, $disable)) {
+        $this->assertTrue($pos);
+      }
+      else {
+        $this->assertFalse($pos);
+      }
+    }
+
+    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
+    $found = preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url);
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $mail)), t('Subscription confirmation found.'));
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      if (in_array($tid, $disable)) {
+        $this->assertText(t('Unsubscribe from @name', array('@name' => $category->name)));
+      }
+      else {
+        $this->assertNoText(t('Unsubscribe from @name', array('@name' => $category->name)));
+      }
+    }
+
+    $this->drupalPost($confirm_url, NULL, t('Confirm'));
+    $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
+
+    // Verify subscription changes.
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $still_enabled = array_diff($enable, $disable);
+    foreach ($categories as $tid => $category) {
+      $is_subscribed = simplenews_user_is_subscribed($mail, $tid);
+      if (in_array($tid, $still_enabled)) {
+        $this->assertTrue($is_subscribed);
+      }
+      else {
+        $this->assertFalse($is_subscribed);
+      }
+    }
+
+    // Make sure that a single change results in a non-multi confirmation mail.
+    $tid = reset($disable);
+    $edit = array(
+      'mail' => $mail,
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+    $mails = $this->drupalGetMails();
+    $body = $mails[3]['body'];
+
+    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    // Change behavior to always use combined mails.
+    variable_set('simplenews_use_combined', 'always');
+    $edit = array(
+      'mail' => $mail,
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+    $mails = $this->drupalGetMails();
+    $body = $mails[4]['body'];
+
+    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
+    $found= preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Multi confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    // Change behavior to never, should send two separate mails.
+    variable_set('simplenews_use_combined', 'never');
+    $edit = array(
+      'mail' => $mail,
+    );
+    foreach ($disable as $tid) {
+      $edit['newsletters[' . $tid . ']'] = TRUE;
+    }
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
+    $mails = $this->drupalGetMails();
+    foreach (array(5, 6) as $id) {
+      $body = $mails[$id]['body'];
+
+      $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
+      $found= preg_match($pattern, $body, $match);
+      $confirm_url = $match[0];
+      $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
+    }
+  }
+
+  /**
    * testSubscribeAnonymous
    *
    * Steps performed:
