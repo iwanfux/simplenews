@@ -2357,6 +2357,8 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       // @todo: This shouldn't be necessary, default value is missing. Probably
       // should not be required.
       'from_address' => $this->randomEmail(),
+      // Request a confirmation receipt.
+      'receipt' => TRUE,
     );
     $this->drupalPost(NULL, $edit_category, t('Save'));
 
@@ -2401,6 +2403,10 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       // @todo: Improve this check, there are currently two spaces, not sure
       // where they are coming from.
       $this->assertTrue(strpos($mail['body'], 'class="newsletter-footer"'));
+
+      // Verify receipt headers.
+      $this->assertEqual($mail['headers']['Disposition-Notification-To'], $edit_category['from_address']);
+      $this->assertEqual($mail['headers']['X-Confirm-Reading-To'], $edit_category['from_address']);
     }
   }
 

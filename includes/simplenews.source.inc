@@ -458,8 +458,8 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
     // If receipt is requested, add headers.
     if ($this->category->receipt) {
-      $headers['Disposition-Notification-To'] = $from;
-      $headers['X-Confirm-Reading-To'] = $from;
+      $headers['Disposition-Notification-To'] = $this->getFromAddress();
+      $headers['X-Confirm-Reading-To'] = $this->getFromAddress();
     }
 
     // Add priority if set.
