@@ -40,7 +40,7 @@ function drush_simplenews_spool_count() {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   $count = simplenews_count_spool();
 
-  $no_description = drush_get_option('pipe');
+  $no_description = drush_get_option(array('p', 'pipe'));
   if ($no_description) {
     drush_print_pipe($count);
   }
@@ -74,7 +74,7 @@ function drush_simplenews_spool_send($limit = FALSE) {
   // Report the number of sent mails.
   if ($sent > 0) {
     $remaining = simplenews_count_spool();
-    if (drush_get_option('pipe')) {
+    if (drush_get_option(array('p', 'pipe'))) {
       // For pipe, print the sent first and then the remaining count, separated by a space.
       drush_print_pipe($sent . " " . $remaining);
     }
