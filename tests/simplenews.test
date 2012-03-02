@@ -373,6 +373,34 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       $confirm_url = $match[0];
       $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
     }
+
+    // Make sure that the /ok suffix works, subscribe from everything.
+    variable_del('simplenews_use_combined');
+    $edit = array(
+      'mail' => $mail,
+    );
+    foreach (array_keys($categories) as $tid) {
+      $edit['newsletters[' . $tid . ']'] = TRUE;
+    }
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[7]['body'];
+
+    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
+    $found = preg_match($pattern, $body, $match);
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+
+    $this->drupalGet($confirm_url . '/ok');
+    $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Confirmation message displayed.'));
+
+    // Verify subscription changes.
+    drupal_static_reset('simplenews_user_is_subscribed');
+    foreach (array_keys($categories) as $tid) {
+      $this->assertFalse(simplenews_user_is_subscribed($mail, $tid));
+    }
   }
 
   /**

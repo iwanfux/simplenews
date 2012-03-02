@@ -527,7 +527,7 @@ function simplenews_confirm_subscription() {
           if ($action == 'subscribe') {
             simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
           }
-          else if ($action == 'subscribe') {
+          else if ($action == 'unsubscribe') {
             simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
           }
         }
@@ -536,7 +536,7 @@ function simplenews_confirm_subscription() {
         $subscriber->changes = array();
         simplenews_subscriber_save($subscriber);
 
-        drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriberil)));
+        drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
     }
