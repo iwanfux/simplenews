@@ -9,6 +9,9 @@
 
 class SimplenewsTestCase extends DrupalWebTestCase {
 
+  // Use testing profile to speed up tests.
+  protected $profile = 'testing';
+
   public function setUp($modules = array()) {
 
     $modules = array_merge(array('taxonomy', 'simplenews'), $modules);
@@ -102,15 +105,9 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     // Check to see if the box was created by checking that it's in the database..
     $this->assertNotNull($bid, t('Block found in database'));
 
-    // Enable the block in the left side bar.
-    //@todo: replace this by BlockTestCase::moveBlockToRegion in D7
-    $block['module'] = 'simplenews';
-    $block['delta'] = $tid;
-    $edit['blocks[' . $block['module'] . '_' . $block['delta'] . '][region]'] = 'sidebar_first';
-    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
-
     // Set block parameters
     $edit = array();
+    $edit['regions[bartik]'] = 'sidebar_first';
     if (isset($settings['message'])) {
       $edit['simplenews_block_m_' . $tid] = $settings['message'];
     }
@@ -168,6 +165,13 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       'description' => t('(un)subscription of anonymous and authenticated users. Subscription via block, subscription page and account page'),
       'group' => t('Simplenews'),
     );
+  }
+
+  /**
+   * Overrides SimplenewsTestCase::setUp().
+   */
+  public function setUp() {
+    parent::setUp(array('block'));
   }
 
   /**
@@ -953,6 +957,13 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
   }
 
   /**
+   * Overrides SimplenewsTestCase::setUp().
+   */
+  public function setUp() {
+    parent::setUp(array('block'));
+  }
+
+  /**
    * Test various combinations of newsletter category settings.
    */
   function testCategorySettings() {
@@ -1300,6 +1311,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
     // Make sure the user is subscribed to the first tid.
     simplenews_subscribe_user($user_mail, $first, FALSE);
+    module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $before_count = simplenews_count_subscriptions($first);
 
     // Block the user.
@@ -1454,7 +1466,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
 
   function setUp() {
     parent::setUp(array('locale', 'i18n', 'variable', 'i18n_string', 'i18n_taxonomy', 'translation', 'i18n_translation'));
-    $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'administer blocks', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters', 'administer site configuration', 'translate content', 'administer simplenews subscriptions', 'send newsletter'));
+    $this->admin_user = $this->drupalCreateUser(array('bypass node access', 'administer nodes', 'administer languages', 'administer content types', 'access administration pages', 'administer filters', 'administer taxonomy', 'translate interface', 'subscribe to newsletters', 'administer site configuration', 'translate content', 'administer simplenews subscriptions', 'send newsletter'));
     $this->drupalLogin($this->admin_user);
     $this->setUpLanguages();
   }
@@ -1503,7 +1515,8 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     $this->drupalLogin($this->admin_user);
     // Make Input Format "Filtered Text" translatable
     $edit = array(
-      'i18n_string_allowed_formats[filtered_html]' => 'filtered_html',
+      // The testing profile has no filtered_html mode.
+      //'i18n_string_allowed_formats[filtered_html]' => 'filtered_html',
       'i18n_string_allowed_formats[plain_text]' => 'plain_text',
     );
     $this->drupalPost('admin/config/regional/i18n/strings', $edit, t('Save configuration'));
@@ -2292,7 +2305,41 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
   function setUp() {
     parent::setUp();
 
-    $this->user = $this->drupalCreateUser(array('administer newsletters', 'send newsletter', 'administer nodes', 'administer simplenews subscriptions', 'create simplenews content', 'edit any simplenews content', 'view own unpublished content', 'delete any simplenews content', 'administer simplenews settings'));
+    // Create the filtered_html text format.
+    $filtered_html_format = array(
+      'format' => 'filtered_html',
+      'name' => 'Filtered HTML',
+      'weight' => 0,
+      'filters' => array(
+        // URL filter.
+        'filter_url' => array(
+          'weight' => 0,
+          'status' => 1,
+        ),
+        // HTML filter.
+        'filter_html' => array(
+          'weight' => 1,
+          'status' => 1,
+        ),
+        // Line break filter.
+        'filter_autop' => array(
+          'weight' => 2,
+          'status' => 1,
+        ),
+        // HTML corrector filter.
+        'filter_htmlcorrector' => array(
+          'weight' => 10,
+          'status' => 1,
+        ),
+      ),
+    );
+
+    $filtered_html_format = (object) $filtered_html_format;
+    filter_format_save($filtered_html_format);
+    // Refresh permissions.
+    $this->checkPermissions(array(), TRUE);
+
+    $this->user = $this->drupalCreateUser(array('administer newsletters', 'send newsletter', 'administer nodes', 'administer simplenews subscriptions', 'create simplenews content', 'edit any simplenews content', 'view own unpublished content', 'delete any simplenews content', 'administer simplenews settings', filter_permission_name($filtered_html_format)));
     $this->drupalLogin($this->user);
   }
 
