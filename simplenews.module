@@ -435,14 +435,12 @@ function simplenews_node_presave($node) {
     return;
   }
 
-  // Note that $node is NO full node object, see node_form_validate().
-  // Complete $node!
-  $newsletter = simplenews_newsletter_load($node->nid);
-  //$newsletter = simplenews_newsletter_load($node->nid, $node->vid);
-  if (!$newsletter) {
+  if (!empty($node->nid) && !isset($node->simplenews)) {
+    $node->simplenews = simplenews_newsletter_load($node->nid);
+  }
+  if (empty($node->simplenews)) {
     $newsletter = (object)simplenews_newsletter_defaults($node);
   }
-  $node->simplenews = $newsletter;
 }
 
 /**
@@ -469,7 +467,7 @@ function simplenews_newsletter_defaults($node = NULL) {
   );
 
   if ($node) {
-    $newsletter['nid'] = $node->nid;
+    $newsletter['nid'] = isset($node->nid) ? $node->nid : NULL;
     $terms = simplenews_get_term_values($node);
     $newsletter['tid'] = $terms[0]['tid'];
   }

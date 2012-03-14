@@ -1806,6 +1806,37 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
   }
 
   /**
+   * Creates and sends a node using the API.
+   */
+  function testProgrammaticNewsletter() {
+    // Create a very basic node.
+    $node = new stdClass();
+    $node->type = 'simplenews';
+    $node->title = $this->randomName();
+    $node->uid = 0;
+    $node->status = 1;
+    $node->language = LANGUAGE_NONE;
+    $node->field_simplenews_term[LANGUAGE_NONE][0]['tid'] = $this->getRandomNewsletter();
+    node_save($node);
+
+    // Send the node.
+    simplenews_add_node_to_spool($node);
+
+    // Send mails.
+    simplenews_mail_spool();
+
+    // Verify mails.
+    $mails = $this->drupalGetMails();
+    $this->assertEqual(5, count($mails), t('All mails were sent.'));
+    foreach ($mails as $mail) {
+      $this->assertEqual($mail['subject'], '[Drupal newsletter] ' . $node->title, t('Mail has correct subject'));
+      $this->assertTrue(isset($this->subscribers[$mail['to']]), t('Found valid recipient'));
+      unset($this->subscribers[$mail['to']]);
+    }
+    $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+  }
+
+  /**
    * Send a newsletter using cron.
    */
   function testSendNowNoCron() {
