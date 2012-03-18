@@ -2429,6 +2429,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     $this->assertEqual(99, count($this->drupalGetMails()));
 
     // Test that tokens are correctly replaced.
+    $tid = $this->getRandomNewsletter();
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
       // Make sure that the same mail was used in the body token as it has been
       // sent to. Also verify that the mail is plaintext.
@@ -2438,6 +2439,11 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       $this->assertEqual(1, preg_match_all('/Mail token/', $mail['body'], $matches));
 
       $this->assertTrue(strpos($mail['body'], t('Unsubscribe from this newsletter')));
+      // Make sure the mail has the correct unsubscribe hash.
+      $subscriber = simplenews_subscriber_load_by_mail($mail['to']);
+      $hash = simplenews_generate_hash($mail['to'], $subscriber->snid, $tid);
+      $this->assertTrue(strpos($mail['body'], $hash), 'Correct hash is used in footer');
+      $this->assertTrue(strpos($mail['headers']['List-Unsubscribe'], $hash), 'Correct hash is used in header');
     }
 
     // Report time. @todo: Find a way to actually do some assertions here.
