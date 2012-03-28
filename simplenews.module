@@ -1400,6 +1400,11 @@ function simplenews_unsubscribe_user($mail, $tid, $confirm = TRUE, $source = 'un
   }
 
   if ($confirm) {
+    // Make sure the mail address is set.
+    if (empty($subscriber)) {
+      $subscriber = new stdClass();
+      $subscriber->mail = $mail;
+    }
     simplenews_confirmation_send('unsubscribe', $subscriber, simplenews_category_load($tid));
   }
   elseif (isset($subscriber->tids[$tid])) {
@@ -2973,7 +2978,7 @@ function simplenews_confirmation_combine($collect = NULL) {
 function simplenews_confirmation_add_combined($action = NULL, $subscriber = NULL, $category = NULL) {
   $group = &drupal_static(__FUNCTION__, array());
   if (!empty($action)) {
-    $group[$subscriber->snid][$category->tid] = $action;
+    $group[$subscriber->mail][$category->tid] = $action;
   }
   else {
     return $group;
@@ -2997,13 +3002,21 @@ function simplenews_confirmation_add_combined($action = NULL, $subscriber = NULL
  *       subscriber received a confirmation.
  */
 function simplenews_confirmation_send_combined() {
+  global $language;
+
   // Disable combining for further confirmations.
   simplenews_confirmation_combine(FALSE);
   $group = simplenews_confirmation_add_combined();
-  foreach ($group as $snid => $changes) {
+  foreach ($group as $mail => $changes) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     $params['from'] = _simplenews_set_from();
-    $subscriber = simplenews_subscriber_load($snid);
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    if (!$subscriber) {
+      $subscriber = new stdClass();
+      $subscriber->mail = $mail;
+      $subscriber->language = $language->language;
+      $subscriber->tids = array();
+    }
     $params['context']['simplenews_subscriber'] = $subscriber;
     // Send multiple if there is more than one change for this subscriber
     // single otherwise.
@@ -3020,9 +3033,11 @@ function simplenews_confirmation_send_combined() {
       }
     }
 
-    // Save the changes in the subscriber.
-    $subscriber->changes = $changes;
-    simplenews_subscriber_save($subscriber);
+    // Save the changes in the subscriber if there is a real subscriber object.
+    if (!empty($subscriber->snid)) {
+      $subscriber->changes = $changes;
+      simplenews_subscriber_save($subscriber);
+    }
   }
   return !empty($group);
 }

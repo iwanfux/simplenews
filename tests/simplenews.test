@@ -693,6 +693,21 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Attemt to fetch the page using a wrong hash but correct format.
     $this->drupalGet('newsletter/subscriptions/' . simplenews_generate_hash($subscriber->mail . 'a', $subscriber->snid, $tid));
     $this->assertResponse(404);
+
+    // Attempt to unsubscribe a non-existing subscriber.
+    $mail = $this->randomEmail();
+    $edit = array(
+      'mail' => $mail,
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
+    $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
+    $mails = $this->drupalGetMails();
+    $body = $mails[8]['body'];
+    // Remove line breaks from body in case the string is split.
+    $body = str_replace("\n", ' ', $body);
+    debug($body);
+    $this->assertTrue(strpos($body, 'is not subscribed to this mailing list') !== FALSE);
   }
 
 
