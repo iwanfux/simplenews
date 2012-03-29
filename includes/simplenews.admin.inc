@@ -842,6 +842,7 @@ function simplenews_subscription_list_export($form, &$form_state) {
     '#title' => t('Subscribed'),
     '#options' => array(
       'subscribed' => t('Subscribed to the newsletter'),
+      'unconfirmed' => t('Unconfirmed to the newsletter'),
       'unsubscribed' => t('UnSubscribed from the newsletter'),
     ),
     '#default_value' => $default['subscribed'],
@@ -913,10 +914,13 @@ function _simplenews_subscription_list_export_get_emails($states, $subscribed, $
     $condition_active[] = 0;
   }
   if (isset($subscribed['subscribed'])) {
-    $condition_subscribed[] = 1;
+    $condition_subscribed[] = SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED;
   }
   if (isset($subscribed['unsubscribed'])) {
-    $condition_subscribed[] = 0;
+    $condition_subscribed[] = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+  }
+  if (isset($subscribed['unconfirmed'])) {
+    $condition_subscribed[] = SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED;
   }
 
   // Get emails from the database.

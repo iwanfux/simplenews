@@ -1324,6 +1324,31 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->assertTrue(in_array($all_mail, $exported_mails));
     $this->assertTrue(in_array($first_mail, $exported_mails));
 
+
+    // Make sure there are unconfirmed subscriptions.
+    $unconfirmed = array();
+    $unconfirmed[] = $this->randomEmail();
+    $unconfirmed[] = $this->randomEmail();
+    foreach ($unconfirmed as $mail) {
+      simplenews_subscribe_user($mail, $first, TRUE);
+    }
+
+    // Only export unconfirmed mail addresses.
+    $edit = array(
+      'subscribed[subscribed]' => FALSE,
+      'subscribed[unconfirmed]' => TRUE,
+      'subscribed[unsubscribed]' => FALSE,
+      'newsletters[' . $first . ']' => TRUE,
+    );
+    $this->drupalPost(NULL, $edit, t('Export'));
+
+    $export_field = $this->xpath($this->constructFieldXpath('name', 'emails'));
+    $exported_mails = (string)$export_field[0];
+    $exported_mails = explode(', ', $exported_mails);
+    $this->assertEqual(2, count($exported_mails));
+    $this->assertTrue(in_array($unconfirmed[0], $exported_mails));
+    $this->assertTrue(in_array($unconfirmed[1], $exported_mails));
+
     // Make sure the user is subscribed to the first tid.
     simplenews_subscribe_user($user_mail, $first, FALSE);
     module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
