@@ -749,11 +749,13 @@ function simplenews_taxonomy_term_delete($term) {
   // taxonomy term. So we delete the category. simplenews_category_delete()
   // will also delete the subscriptions to the category.
   if ($term->vid == variable_get('simplenews_vid', 0)) {
-    $category = simplenews_category_load($term->tid);
-    // Add name and description from $term object.
-    $category->name = $term->name;
-    $category->description = $term->description;
-    simplenews_category_delete($category);
+    // Make sure we only try to delete if not already deleted.
+    if (($category = simplenews_category_load($term->tid)) !== false) {
+      // Add name and description from $term object.
+      $category->name = $term->name;
+      $category->description = $term->description;
+      simplenews_category_delete($category);
+    }
   }
 }
 

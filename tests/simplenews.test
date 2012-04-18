@@ -1163,6 +1163,16 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
     $this->drupalGet('admin/structure/block');
     $this->assertNoText($edit_category->name, t('Category block was removed'));
+
+    // Delete a category.
+    $this->drupalGet('admin/config/services/simplenews/categories/' . $edit_category->tid . '/edit');
+    $edit = array();
+    $this->drupalPost(NULL, $edit, t('Delete'));
+    $this->drupalPost(NULL, $edit, t('Delete'));
+
+    // Verify that the category has been deleted.
+    $this->assertFalse(simplenews_category_load($edit_category->tid));
+    $this->assertFalse(db_query('SELECT tid FROM {simplenews_category} WHERE tid = :tid', array(':tid' => $edit_category->tid))->fetchField());
   }
 
   /**
