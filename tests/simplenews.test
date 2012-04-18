@@ -11,6 +11,8 @@ class SimplenewsTestCase extends DrupalWebTestCase {
 
   // Use testing profile to speed up tests.
   protected $profile = 'testing';
+  // Store generated email addresses used to prevent duplications.
+  protected $mailadress_cache;
 
   public function setUp($modules = array()) {
 
@@ -21,6 +23,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     //$this->sender_user = $this->drupalCreateUser(array('create simplenews content', 'edit own simplenews content', 'send newsletter'));
 
     variable_set('site_mail', 'user@example.com');
+    $this->mailadress_cache = array();
   }
 
   /**
@@ -56,12 +59,20 @@ class SimplenewsTestCase extends DrupalWebTestCase {
   /**
    * Generates a random email address.
    *
+   * The generated addresses are stored in a class variable. Each generated
+   * adress is checked against this store to prevent duplicates.
+   *
    * @todo: Make this function redundant by modification of Simplenews.
    * Email addresses are case sensitive, simplenews system should handle with
    * this correctly.
    */
   function randomEmail($number = 4, $prefix = 'simpletest_', $domain = 'example.com') {
-    return strtolower($this->randomName($number, $prefix) . '@' . $domain);
+    $mail = '';
+    do {
+      $mail = strtolower($this->randomName($number, $prefix) . '@' . $domain);
+    } while (in_array($mail, $this->mailadress_cache));
+    $this->mailadress_cache[] = $mail;
+    return $mail;
   }
 
   /**
