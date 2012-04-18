@@ -1898,6 +1898,9 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
 
     // Send mails.
     simplenews_mail_spool();
+    simplenews_clear_spool();
+    // Update sent status for newsletter admin panel.
+    simplenews_send_status_update();
 
     // Verify mails.
     $mails = $this->drupalGetMails();
@@ -1908,6 +1911,34 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
       unset($this->subscribers[$mail['to']]);
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+
+    // Create another node.
+    $node = new stdClass();
+    $node->type = 'simplenews';
+    $node->title = $this->randomName();
+    $node->uid = 0;
+    $node->status = 1;
+    $node->language = LANGUAGE_NONE;
+    $node->field_simplenews_term[LANGUAGE_NONE][0]['tid'] = $this->getRandomNewsletter();
+    node_save($node);
+
+    // Send the node.
+    simplenews_add_node_to_spool($node);
+
+    // Make sure that they have been added.
+    $this->assertEqual(simplenews_count_spool(), 5);
+
+    // Mark them as pending, fake a currently running send process.
+    $this->assertEqual(count(simplenews_get_spool(2)), 2);
+
+    // Those two should be excluded from the count now.
+    $this->assertEqual(simplenews_count_spool(), 3);
+
+    // Get two additional spool entries.
+    $this->assertEqual(count(simplenews_get_spool(2)), 2);
+
+    // Now only one should be returned by the count.
+    $this->assertEqual(simplenews_count_spool(), 1);
   }
 
   /**

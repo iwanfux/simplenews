@@ -472,7 +472,28 @@ function simplenews_count_spool(array $conditions = array()) {
   $query = db_select('simplenews_mail_spool');
   // Add conditions.
   foreach ($conditions as $field => $value) {
-    $query->condition($field, $value);
+    if ($field == 'status') {
+      if (!is_array($value)) {
+        $value = array($value);
+      }
+      $status_or = db_or();
+      foreach ($value as $status) {
+        // Do not count pending entries unless they are expired.
+        if ($status == SIMPLENEWS_SPOOL_IN_PROGRESS) {
+          $status_or->condition(db_and()
+            ->condition('status', $status)
+            ->condition('timestamp', simplenews_get_expiration_time(), '<')
+          );
+        }
+        else {
+          $status_or->condition('status', $status);
+        }
+      }
+      $query->condition($status_or);
+    }
+    else {
+      $query->condition($field, $value);
+    }
   }
 
   $query->addExpression('COUNT(*)', 'count');
