@@ -183,6 +183,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
    */
   public function setUp() {
     parent::setUp(array('block'));
+    // Include simplenews.subscription.inc for simplenews_mask_mail().
+    module_load_include('inc', 'simplenews', 'includes/simplenews.subscription');
   }
 
   /**
@@ -241,7 +243,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
     $this->drupalGet($confirm_url);
-    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $mail)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
 
     // Verify listed changes.
     foreach ($categories as $tid => $category) {
@@ -311,7 +313,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
     $this->drupalGet($confirm_url);
-    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $mail)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
 
     // Verify listed changes.
     foreach ($categories as $tid => $category) {
@@ -482,7 +484,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost(NULL, array(), t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
@@ -539,7 +541,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
@@ -584,7 +586,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
@@ -624,7 +626,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
@@ -653,7 +655,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost($confirm_url, NULL, t('Unsubscribe'));
     $this->assertRaw(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber remved from newsletter'));
@@ -685,7 +687,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
 
     $this->drupalPost($confirm_url, NULL, t('Subscribe'));
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));

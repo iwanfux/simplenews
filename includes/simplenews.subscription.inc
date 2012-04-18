@@ -484,6 +484,17 @@ function simplenews_confirm_subscription() {
   $arguments = func_get_args();
   $op = array_shift($arguments);
   $code = array_shift($arguments);
+
+  // Prevent search engines from indexing this page.
+  $noindex = array(
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'name' => 'robots',
+      'content' => 'noindex',
+    ),
+  );
+  drupal_add_html_head($noindex, 'simplenews-noindex');
+
   if ($subscriber = simplenews_subscriber_load_by_hash($code)) {
     // Extract the category id.
     list($snid, $tid) = explode('t', drupal_substr($code, 10));
@@ -557,7 +568,7 @@ function simplenews_confirm_subscription() {
 function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
@@ -591,7 +602,7 @@ function simplenews_confirm_add_form_submit($form, &$form_state) {
 function simplenews_confirm_multi_form($form, &$form_state, $subscriber) {
   $form = array();
   $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => $subscriber->mail)) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($subscriber->mail))) . "<p>\n",
   );
 
   $form['changes'] = array(
@@ -628,6 +639,22 @@ function simplenews_confirm_multi_form_submit($form, &$form_state) {
 }
 
 /**
+ * Mask a mail address.
+ *
+ * For exampl, name@example.org will be masked as n*****@example.org.
+ *
+ * @param $mail
+ *   A valid mail address to mask.
+ *
+ * @return
+ *   The masked mail address.
+ */
+function simplenews_mask_mail($mail) {
+  preg_match('/^(.).*@(.*)$/', $mail, $matches);
+  return preg_replace('/^(.).*@(.*)$/', '$1*****@$2', $mail);
+}
+
+/**
  * Generate the confirm unsubscription form.
  *
  * @see simplenews_confirm_removal_form_submit()
@@ -635,7 +662,7 @@ function simplenews_confirm_multi_form_submit($form, &$form_state) {
 function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter) {
   $form = array();
   $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => $mail, '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
+    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => _simplenews_newsletter_name($newsletter))) . "<p>\n",
   );
   $form['mail'] = array(
     '#type' => 'value',
