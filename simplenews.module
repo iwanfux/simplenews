@@ -1695,6 +1695,7 @@ function simplenews_subscriber_save(&$subscriber) {
         'uid' => $subscriber->uid,
         'language' => $subscriber->language,
         'changes' => serialize(isset($subscriber->changes) ? $subscriber->changes : array()),
+        'created' => REQUEST_TIME,
       ));
     $last_insert_id = $query->execute();
     if ($last_insert_id !== FALSE) {
