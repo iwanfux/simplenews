@@ -6,7 +6,6 @@
  *
  * @ingroup simplenews
  */
-
 class SimplenewsTestCase extends DrupalWebTestCase {
 
   // Use testing profile to speed up tests.
@@ -69,7 +68,7 @@ class SimplenewsTestCase extends DrupalWebTestCase {
   function randomEmail($number = 4, $prefix = 'simpletest_', $domain = 'example.com') {
     $mail = '';
     do {
-      $mail = strtolower($this->randomName($number, $prefix) . '@' . $domain);
+      $mail = drupal_strtolower($this->randomName($number, $prefix) . '@' . $domain);
     } while (in_array($mail, $this->mailadress_cache));
     $this->mailadress_cache[] = $mail;
     return $mail;
@@ -91,7 +90,6 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     }
     return 0;
   }
-
 
   /**
    * Enable newsletter subscription block.
@@ -164,9 +162,11 @@ class SimplenewsTestCase extends DrupalWebTestCase {
     );
     $this->drupalPost(NULL, $edit, t('Subscribe'));
   }
+
 }
 
 class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
+
   /**
    * Implement getInfo().
    */
@@ -282,7 +282,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Unsubscribe from two of the three enabled newsletters.
     $disable = array_rand(array_flip($enable), 2);
 
-     $edit = array(
+    $edit = array(
       'mail' => $mail,
     );
     foreach ($disable as $tid) {
@@ -350,7 +350,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[3]['body'];
 
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -365,7 +365,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[4]['body'];
 
     $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Multi confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -384,7 +384,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       $body = $mails[$id]['body'];
 
       $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-      $found= preg_match($pattern, $body, $match);
+      $found = preg_match($pattern, $body, $match);
       $confirm_url = $match[0];
       $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
     }
@@ -451,7 +451,6 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalLogout();
 
     //file_put_contents('output.html', $this->drupalGetContent());
-
     // 1. Subscribe anonymous via block
     // Subscribe + submit
     // Assert confirmation message
@@ -477,7 +476,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -534,7 +533,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[2]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -579,7 +578,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[3]['body'];
     $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
     preg_match($pattern, $body, $match);
-    $found= preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
     $confirm_url = $match[0];
     $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
@@ -720,7 +719,6 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     debug($body);
     $this->assertTrue(strpos($body, 'is not subscribed to this mailing list') !== FALSE);
   }
-
 
   /**
    * Test anonymous subscription with single opt in.
@@ -968,7 +966,6 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
  * @todo:
  * Newsletter node create, send draft, send final
  */
-
 class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
   /**
@@ -1068,7 +1065,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       if ($category->new_account == 'on' && $category->opt_inout != 'hidden') {
         $this->assertFieldChecked('edit-newsletters-' . $category->tid);
       }
-      else if ($category->new_account == 'off' && $category->opt_inout != 'hidden') {
+      elseif ($category->new_account == 'off' && $category->opt_inout != 'hidden') {
         $this->assertNoFieldChecked('edit-newsletters-' . $category->tid);
       }
       else {
@@ -1123,7 +1120,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
         if ($category->opt_inout == 'hidden') {
           $this->assertNoField('newsletters[' . $category->tid . ']', t('Hidden newsletter category is not shown.'));
         }
-        else if ($category->new_account == 'on' || $category->name == 'off-double-block' || $category->new_account == 'silent') {
+        elseif ($category->new_account == 'on' || $category->name == 'off-double-block' || $category->new_account == 'silent') {
           // All on, silent and the explicitly selected category should be checked.
           $this->assertFieldChecked('edit-newsletters-' . $category->tid);
         }
@@ -1243,7 +1240,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $mail_addresses = $this->xpath('//tr/td[2]');
     $this->assertEqual(15, count($mail_addresses));
     foreach ($mail_addresses as $mail_address) {
-      $mail_address = (string)$mail_address;
+      $mail_address = (string) $mail_address;
       $this->assertTrue(isset($subscribers_flat[$mail_address]));
       unset($subscribers_flat[$mail_address]);
     }
@@ -1265,7 +1262,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $mail_addresses = $this->xpath('//tr/td[2]');
     $this->assertEqual(10, count($mail_addresses));
     foreach ($mail_addresses as $mail_address) {
-      $mail_address = (string)$mail_address;
+      $mail_address = (string) $mail_address;
       $this->assertTrue(isset($subscribers_flat[$mail_address]));
       unset($subscribers_flat[$mail_address]);
     }
@@ -1274,14 +1271,14 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
     // Filter a single mail address, the one assigned to a user.
     $edit = array(
-      'email' => substr(current($subscribers['all']), 0, 4)
+      'email' => drupal_substr(current($subscribers['all']), 0, 4)
     );
     $this->drupalPost(NULL, $edit, t('Filter'));
 
     $rows = $this->xpath('//tbody/tr');
     $this->assertEqual(1, count($rows));
-    $this->assertEqual(current($subscribers['all']), (string)$rows[0]->td[1]);
-    $this->assertEqual($user->name, (string)$rows[0]->td[2]->a);
+    $this->assertEqual(current($subscribers['all']), (string) $rows[0]->td[1]);
+    $this->assertEqual($user->name, (string) $rows[0]->td[2]->a);
 
     // Reset the filter.
     $this->drupalPost(NULL, array(), t('Reset'));
@@ -1317,7 +1314,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->clickLink(t('Export'));
     $this->drupalPost(NULL, array('newsletters[' . $first . ']' => TRUE), t('Export'));
     $export_field = $this->xpath($this->constructFieldXpath('name', 'emails'));
-    $exported_mails = (string)$export_field[0];
+    $exported_mails = (string) $export_field[0];
     foreach ($subscribers[$first] as $mail) {
       $this->assertTrue(strpos($exported_mails, $mail) !== FALSE, t('Mail address exported correctly.'));
     }
@@ -1339,7 +1336,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Export'));
 
     $export_field = $this->xpath($this->constructFieldXpath('name', 'emails'));
-    $exported_mails = (string)$export_field[0];
+    $exported_mails = (string) $export_field[0];
     $exported_mails = explode(', ', $exported_mails);
     $this->assertEqual(2, count($exported_mails));
     $this->assertTrue(in_array($all_mail, $exported_mails));
@@ -1364,7 +1361,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Export'));
 
     $export_field = $this->xpath($this->constructFieldXpath('name', 'emails'));
-    $exported_mails = (string)$export_field[0];
+    $exported_mails = (string) $export_field[0];
     $exported_mails = explode(', ', $exported_mails);
     $this->assertEqual(2, count($exported_mails));
     $this->assertTrue(in_array($unconfirmed[0], $exported_mails));
@@ -1462,7 +1459,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->clickLink(t('Add content type'));
     $edit = array(
       'name' => $name = $this->randomName(),
-      'type' => $type = strtolower($name),
+      'type' => $type = drupal_strtolower($name),
       'simplenews_content_type' => TRUE,
     );
     $this->drupalPost(NULL, $edit, t('Save content type'));
@@ -1501,11 +1498,11 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->assertText(t('Newsletter category'));
 
     // @todo: Test node update/delete.
-
     // Delete content type.
     // @todo: Add assertions.
     $this->drupalPost('admin/structure/types/manage/' . $type . '/delete', array(), t('Delete'));
   }
+
 }
 
 /**
@@ -1743,16 +1740,18 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     drupal_static_reset('locale_url_outbound_alter');
     drupal_static_reset('language_list');
   }
+
 }
 
 /**
  * Upgrade test from 6.x-1.x
  */
 class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
+
   public static function getInfo() {
     return array(
-      'name'  => 'Simplenews 6.x-1.x upgrade path',
-      'description'  => 'Simplenews 6.x-1.x upgrade path tests.',
+      'name' => 'Simplenews 6.x-1.x upgrade path',
+      'description' => 'Simplenews 6.x-1.x upgrade path tests.',
       'group' => 'Simplenews',
     );
   }
@@ -1797,16 +1796,18 @@ class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
     $this->drupalGet('admin/people/simplenews');
     $this->assertText('another@example.org');
   }
+
 }
 
 /**
  * Upgrade test from 6.x-2.x
  */
 class SimpleNewsUpgradePath62TestCase extends UpgradePathTestCase {
+
   public static function getInfo() {
     return array(
-      'name'  => 'Simplenews 6.x-2.x upgrade path',
-      'description'  => 'Simplenews 6.x-2.x upgrade path tests.',
+      'name' => 'Simplenews 6.x-2.x upgrade path',
+      'description' => 'Simplenews 6.x-2.x upgrade path tests.',
       'group' => 'Simplenews',
     );
   }
@@ -1851,13 +1852,14 @@ class SimpleNewsUpgradePath62TestCase extends UpgradePathTestCase {
     $this->drupalGet('admin/people/simplenews');
     $this->assertText('another@example.org');
   }
-}
 
+}
 
 /**
  * Test cases for creating and sending newsletters.
  */
 class SimplenewsSendTestCase extends SimplenewsTestCase {
+
   /**
    * Implementation of getInfo().
    */
@@ -1986,8 +1988,6 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
   }
 
-
-
   /**
    * Send a newsletter using cron.
    */
@@ -2020,7 +2020,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
 
     $edit = array(
       'issues[' . $first->nid . ']' => $first->nid,
-      'issues[' . $unpublished->nid . ']' => $unpublished->nid  ,
+      'issues[' . $unpublished->nid . ']' => $unpublished->nid,
       'operation' => 'activate',
     );
     $this->drupalPost('admin/content/simplenews', $edit, t('Update'));
@@ -2238,7 +2238,6 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $newsletter = simplenews_newsletter_load($node->nid);
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, $newsletter->status, t('Newsletter sending finished'));
     // @todo test sent subscriber count.
-
     // Verify mails.
     $mails = $this->drupalGetMails();
     $this->assertEqual(5, count($mails), t('All mails were sent.'));
@@ -2288,7 +2287,6 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $newsletter->status, t('Newsletter sending not started.'));
     $this->assertEqual(2, $newsletter->tid, t('Newsletter has tid 2.'));
   }
-
 
   /**
    * Create a newsletter, send mails and then delete.
@@ -2375,14 +2373,15 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $this->assertFalse($newsletter);
     $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
     $this->assertEqual(0, $spooled, t('No mails remaining in spool.'));
-
   }
+
 }
 
 /**
  * Test cases for creating and sending newsletters.
  */
 class SimplenewsSourceTestCase extends SimplenewsTestCase {
+
   /**
    * Implementation of getInfo().
    */
@@ -2695,4 +2694,5 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     // Report time. @todo: Find a way to actually do some assertions here.
     $this->pass(t('Mails have been sent in @sec seconds with caching disabled.', array('@sec' => round($after - $before, 3))));
   }
+
 }

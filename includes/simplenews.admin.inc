@@ -31,8 +31,8 @@ function simplenews_issue_filters() {
   $filters['category'] = array(
     'title' => t('Subscribed to'),
     'options' => array(
-      'all'   => t('All newsletters'),
-      'tid-0'    => t('Unassigned newsletters'),
+      'all' => t('All newsletters'),
+      'tid-0' => t('Unassigned newsletters'),
     ),
   );
   foreach (simplenews_category_list() as $tid => $name) {
@@ -138,10 +138,7 @@ function simplenews_admin_issues() {
 
   if (variable_get('simplenews_last_cron', '')) {
     $form['last_sent'] = array(
-      '#value' => '<p>' . format_plural(variable_get('simplenews_last_sent', 0),
-                                        'Last batch: 1 mail sent at !time.',
-                                        'Last batch: !count mails sent at !time.',
-                                        array('!time' => format_date(variable_get('simplenews_last_cron', ''), 'small'), '!count' => variable_get('simplenews_last_sent', 0))) . "</p>\n",
+      '#markup' => '<p>' . format_plural(variable_get('simplenews_last_sent', 0), 'Last batch: 1 mail sent at !time.', 'Last batch: !count mails sent at !time.', array('!time' => format_date(variable_get('simplenews_last_cron', ''), 'small'), '!count' => variable_get('simplenews_last_sent', 0))) . "</p>\n",
     );
   }
   // Table header. Used as tablesort default
@@ -397,7 +394,7 @@ function theme_simplenews_admin_categories($variables) {
  */
 function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
   if (!is_array($edit)) {
-    $edit = (array)$edit;
+    $edit = (array) $edit;
   }
   $edit += array(
     'tid' => 0,
@@ -631,15 +628,15 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
     return;
   }
 
-  $category = (object)$form_state['values'];
+  $category = (object) $form_state['values'];
 
   // Create or update taxonomy term.
   $term = new stdClass();
-  $term->tid          = $form_state['values']['tid'];
-  $term->vid          = variable_get('simplenews_vid', 0);
-  $term->name         = $form_state['values']['name'];
-  $term->description  = $form_state['values']['description'];
-  $term->weight       = $form_state['values']['weight'];
+  $term->tid = $form_state['values']['tid'];
+  $term->vid = variable_get('simplenews_vid', 0);
+  $term->name = $form_state['values']['name'];
+  $term->description = $form_state['values']['description'];
+  $term->weight = $form_state['values']['weight'];
   taxonomy_term_save($term);
   $category->tid = $term->tid;
 
@@ -675,12 +672,7 @@ function simplenews_admin_category_delete($form, &$form_state, $category) {
     '#markup' => '<p><strong>' . t('Note: All subscriptions associated with this newsletter will be lost.') . '</strong></p>',
   );
 
-  return confirm_form($form,
-    t('Are you sure you want to delete category %name?', array('%name' => _simplenews_newsletter_name($category))),
-    'admin/config/services/simplenews',
-    t('This action cannot be undone.'),
-    t('Delete'),
-    t('Cancel')
+  return confirm_form($form, t('Are you sure you want to delete category %name?', array('%name' => _simplenews_newsletter_name($category))), 'admin/config/services/simplenews', t('This action cannot be undone.'), t('Delete'), t('Cancel')
   );
 }
 
@@ -723,13 +715,13 @@ function simplenews_subscription_list_add($form, &$form_state) {
     '#type' => 'fieldset',
     '#description' => t('Subscribe to'),
     '#tree' => TRUE,
-   );
+  );
 
   foreach (simplenews_categories_load_multiple() as $list) {
     $form['newsletters'][$list->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain(_simplenews_newsletter_name($list)),
-      '#description'  => _simplenews_newsletter_description($list),
+      '#description' => _simplenews_newsletter_description($list),
     );
   }
 
@@ -966,7 +958,7 @@ function simplenews_subscription_list_remove($form, &$form_state) {
     $form['newsletters'][$category->tid] = array(
       '#type' => 'checkbox',
       '#title' => check_plain(_simplenews_newsletter_name($category)),
-      '#description'  => _simplenews_newsletter_description($category),
+      '#description' => _simplenews_newsletter_description($category),
     );
   }
 
@@ -1251,10 +1243,10 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
   $form['simplenews_default_options']['simplenews_send'] = array(
     '#type' => 'radios',
     '#title' => t('Default send action'),
-    '#options' =>  array(
+    '#options' => array(
       SIMPLENEWS_COMMAND_SEND_TEST => t('Send one test newsletter to the test address'),
       SIMPLENEWS_COMMAND_SEND_NOW => t('Send newsletter'),
-     ),
+    ),
     '#default_value' => variable_get('simplenews_send', 0),
   );
   $form['simplenews_test_address'] = array(
@@ -1559,7 +1551,7 @@ function simplenews_subscription_filters() {
   $filters['list'] = array(
     'title' => t('Subscribed to'),
     'options' => array(
-      'all'   => t('All newsletters'),
+      'all' => t('All newsletters'),
     ),
   );
   foreach (simplenews_categories_load_multiple() as $list) {
@@ -1767,7 +1759,7 @@ function theme_simplenews_status($variables) {
 function theme_simplenews_filter_form($variables) {
   $form = $variables['form'];
 
-  $output  = '<div id="simplenews-admin-filter">';
+  $output = '<div id="simplenews-admin-filter">';
   $output .= drupal_render($form['filters']);
   $output .= '</div>';
   $output .= drupal_render_children($form);
@@ -1782,7 +1774,7 @@ function theme_simplenews_filter_form($variables) {
 function theme_simplenews_subscription_filter_form($variables) {
   $form = $variables['form'];
 
-  $output  = '<div id="simplenews-subscription-filter">';
+  $output = '<div id="simplenews-subscription-filter">';
   $output .= drupal_render($form['filters']);
   $output .= '</div>';
   $output .= drupal_render_children($form);
@@ -1803,11 +1795,10 @@ function simplenews_get_priority() {
   );
 }
 
-
 /**
  * Menu callback; Newsletter tab page.
  */
-function simplenews_node_tab_page($node){
+function simplenews_node_tab_page($node) {
   drupal_set_title(t('<em>Newsletter</em> @title', array('@title' => $node->title)), PASS_THROUGH);
   return drupal_get_form('simplenews_node_tab_send_form', $node);
 }
@@ -1815,18 +1806,18 @@ function simplenews_node_tab_page($node){
 /**
  * @todo
  */
-function simplenews_node_tab_send_form($form, &$form_state, $node){
+function simplenews_node_tab_send_form($form, &$form_state, $node) {
   // First check if there already is a loaded simplenews object.
   if (!empty($node->simplenews)) {
     $simplenews_values = $node->simplenews;
   }
   // If not, try to load it based on the node id.
-  else if ($loaded = simplenews_newsletter_load($node->nid)) {
+  elseif ($loaded = simplenews_newsletter_load($node->nid)) {
     $simplenews_values = $loaded;
   }
   // If that fails too, fall back to the defaults.
   else {
-    $simplenews_values = (object)_simplenews_get_node_form_defaults($node);
+    $simplenews_values = (object) _simplenews_get_node_form_defaults($node);
   }
 
   $form = array();
@@ -1934,7 +1925,7 @@ function simplenews_node_tab_send_form_validate($form, &$form_state) {
   $default_address = variable_get('simplenews_test_address', variable_get('site_mail', ini_get('sendmail_from')));
   $mails = array($default_address);
   if (isset($values['simplenews']['send']) && $values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST && variable_get('simplenews_test_address_override', 0)) {
-   // @todo Can we simplify and use only two kind of messages?
+    // @todo Can we simplify and use only two kind of messages?
     if (!empty($values['simplenews']['test_address'])) {
       $mails = explode(',', $values['simplenews']['test_address']);
       foreach ($mails as $mail) {

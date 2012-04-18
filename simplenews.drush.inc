@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * @file
+ *
+ * Drush commands for administer Simplenews.
+ */
 
 /**
  * Implements hook_drush_command().

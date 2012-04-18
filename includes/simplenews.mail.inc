@@ -398,7 +398,7 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
       $query->range(0, $limit);
     }
     foreach ($query->execute() as $message) {
-      if (strlen($message->data)) {
+      if (drupal_strlen($message->data)) {
         $message->data = unserialize($message->data);
       }
       else {
@@ -617,7 +617,7 @@ function _simplenews_set_from() {
   $name = variable_get('simplenews_from_name', $name_default);
 
   // Windows based PHP systems don't accept formatted emails.
-  $formatted_address = substr(PHP_OS, 0, 3) == 'WIN' ? $address : '"' . $name . '" <' . $address . '>';
+  $formatted_address = drupal_substr(PHP_OS, 0, 3) == 'WIN' ? $address : '"' . $name . '" <' . $address . '>';
 
   return array(
     'address' => $address,
@@ -675,9 +675,9 @@ function _simplenews_absolute_mail_urls($match) {
 
     // If the link is formed by Drupal's URL filter, we only return the URL.
     // The URL filter generates a label out of the original URL.
-    if (strpos($label, '...') === strlen($label) - 3) {
+    if (strpos($label, '...') === drupal_strlen($label) - 3) {
       // Remove ellipsis from end of label.
-      $label = substr($label, 0, strlen($label) - 3);
+      $label = drupal_substr($label, 0, drupal_strlen($label) - 3);
     }
     if (strpos($url, $label) !== FALSE) {
       return $url;
