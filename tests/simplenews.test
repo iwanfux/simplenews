@@ -418,6 +418,18 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     foreach (array_keys($categories) as $tid) {
       $this->assertFalse(simplenews_user_is_subscribed($mail, $tid));
     }
+
+    // Call confirmation url after it is allready used.
+    // Using direct url.
+    $this->drupalGet($confirm_url . '/ok');
+    $this->assertNoResponse(404, 'Redirected after calling confirmation url more than once.');
+    $this->assertRaw(t('All changes to your subscriptions where already applied. No changes made.'));
+
+    // Using confirmation page.
+    $this->drupalGet($confirm_url);
+    $this->assertNoResponse(404, 'Redirected after calling confirmation url more than once.');
+    $this->assertRaw(t('All changes to your subscriptions where already applied. No changes made.'));
+
   }
 
   /**

@@ -512,8 +512,15 @@ function simplenews_confirm_subscription() {
       elseif ($op == 'add') {
         return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $category);
       }
-      elseif ($op == 'combined' && !empty($subscriber->changes)) {
-        return drupal_get_form('simplenews_confirm_multi_form', $subscriber);
+      elseif ($op == 'combined') {
+        // Redirect and display message if no changes are available.
+        if (empty($subscriber->changes)) {
+          drupal_set_message(t('All changes to your subscriptions where already applied. No changes made.'));
+          drupal_goto(variable_get('site_frontpage', 'node'));
+        }
+        else {
+          return drupal_get_form('simplenews_confirm_multi_form', $subscriber);
+        }
       }
     }
     else {
@@ -535,22 +542,29 @@ function simplenews_confirm_subscription() {
         drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
-      elseif ($op == 'combined' && !empty($subscriber->changes)) {
-        foreach ($subscriber->changes as $tid => $action) {
-          if ($action == 'subscribe') {
-            simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
-          }
-          elseif ($action == 'unsubscribe') {
-            simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
-          }
+      elseif ($op == 'combined') {
+        // Redirect and display message if no changes are available.
+        if (empty($subscriber->changes)) {
+          drupal_set_message(t('All changes to your subscriptions where already applied. No changes made.'));
+          drupal_goto(variable_get('site_frontpage', 'node'));
         }
+        else {
+          foreach ($subscriber->changes as $tid => $action) {
+            if ($action == 'subscribe') {
+              simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
+            }
+            elseif ($action == 'unsubscribe') {
+              simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
+            }
+          }
 
-        // Clear changes.
-        $subscriber->changes = array();
-        simplenews_subscriber_save($subscriber);
+          // Clear changes.
+          $subscriber->changes = array();
+          simplenews_subscriber_save($subscriber);
 
-        drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
-        drupal_goto(variable_get('site_frontpage', 'node'));
+          drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
+          drupal_goto(variable_get('site_frontpage', 'node'));
+        }
       }
     }
   }
