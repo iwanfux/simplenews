@@ -429,7 +429,6 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalGet($confirm_url);
     $this->assertNoResponse(404, 'Redirected after calling confirmation url more than once.');
     $this->assertRaw(t('All changes to your subscriptions where already applied. No changes made.'));
-
   }
 
   /**
@@ -1012,7 +1011,17 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Allow authenticated users to subscribe.
     $this->setAuthenticatedUserSubscription(TRUE);
 
-    $admin_user = $this->drupalCreateUser(array('administer blocks', 'administer content types', 'administer nodes', 'access administration pages', 'administer permissions', 'administer newsletters', 'administer simplenews subscriptions'));
+    $admin_user = $this->drupalCreateUser(array(
+      'administer blocks',
+      'administer content types',
+      'administer nodes',
+      'access administration pages',
+      'administer permissions',
+      'administer newsletters',
+      'administer simplenews subscriptions',
+      'create simplenews content',
+      'send newsletter',
+      ));
     $this->drupalLogin($admin_user);
 
     $this->drupalGet('admin/config/services/simplenews');
@@ -1154,13 +1163,45 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Get a category which has the block enabled.
     foreach ($categories as $category) {
       // The default category is missing the from mail address. Use another one.
-      if ($category->block == TRUE && $category->tid != 1) {
+      if ($category->block == TRUE && $category->tid != 1 && $category->opt_inout != 'hidden') {
         $edit_category = $category;
         break;
       }
     }
 
     $this->drupalLogin($admin_user);
+
+    $this->setupSubscriptionBlock($edit_category->tid, $settings = array(
+      'issue count' => 2,
+      'previous issues' => 1,
+    ));
+
+    // Create a bunch of newsletters.
+    $generated_names = array();
+    for ($index = 0; $index < 3; $index++) {
+      $name = $this->randomName();
+      $generated_names[] = $name;
+      $this->drupalGet('node/add/simplenews');
+      $edit = array(
+        'title' => $name,
+        'field_simplenews_term[und]' => $edit_category->tid,
+      );
+      $this->drupalPost(NULL, $edit, ('Save'));
+      $this->clickLink(t('Newsletter'));
+      $this->drupalPost(NULL, array('simplenews[send]' => SIMPLENEWS_COMMAND_SEND_NOW), t('Submit'));
+    }
+
+    // Display the two recent issues.
+    $this->drupalGet('');
+    $this->assertText(t('Previous issues'), 'Should display recent issues.');
+
+    $displayed_issues = $this->xpath("//div[@class='issues-list']/div/ul/li/a");
+
+    $this->assertEqual(count($displayed_issues), 2, 'Displys two recent issues.');
+
+    $this->assertFalse(in_array($generated_names[0], $displayed_issues));
+    $this->assertTrue(in_array($generated_names[1], $displayed_issues));
+    $this->assertTrue(in_array($generated_names[2], $displayed_issues));
 
     $this->drupalGet('admin/config/services/simplenews/categories/' . $edit_category->tid . '/edit');
     $this->assertFieldByName('name', $edit_category->name, t('Category name is displayed when editing'));
