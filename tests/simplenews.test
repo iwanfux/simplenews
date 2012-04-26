@@ -1178,6 +1178,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
 
     // Create a bunch of newsletters.
     $generated_names = array();
+    $date = strtotime('monday this week');
     for ($index = 0; $index < 3; $index++) {
       $name = $this->randomName();
       $generated_names[] = $name;
@@ -1185,6 +1186,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       $edit = array(
         'title' => $name,
         'field_simplenews_term[und]' => $edit_category->tid,
+        'date' => date('c',strtotime('+' . $index . ' day', $date)),
       );
       $this->drupalPost(NULL, $edit, ('Save'));
       $this->clickLink(t('Newsletter'));
