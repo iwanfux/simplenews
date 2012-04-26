@@ -1437,6 +1437,47 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $after_count = simplenews_count_subscriptions($first);
     $this->assertEqual($before_count - 1, $after_count, t('Blocked users are not counted in subscription count.'));
 
+    // Test mass subscribe with previously unsubscribed users.
+    for ($i = 0; $i < 3; $i++) {
+      $tested_subscribers[] = $this->randomEmail();
+    }
+    simplenews_subscribe_user($tested_subscribers[0], $first, FALSE);
+    simplenews_subscribe_user($tested_subscribers[1], $first, FALSE);
+    simplenews_unsubscribe_user($tested_subscribers[0], $first, FALSE);
+    simplenews_unsubscribe_user($tested_subscribers[1], $first, FALSE);
+    $unsubscribed = implode(', ', array_slice($tested_subscribers, 0, 2));
+    $edit = array(
+      'emails' => implode(', ', $tested_subscribers),
+      'newsletters[' . $first . ']' => TRUE,
+    );
+
+    $this->drupalPost('admin/people/simplenews/import', $edit, t('Subscribe'));
+    drupal_static_reset('simplenews_subscriber_load_multiple');
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $this->assertFalse(simplenews_user_is_subscribed($tested_subscribers[0], $first, t('Subscriber not resubscribed through mass subscription.')));
+    $this->assertFalse(simplenews_user_is_subscribed($tested_subscribers[1], $first, t('Subscriber not resubscribed through mass subscription.')));
+    $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[2], $first, t('Subscriber subscribed through mass subscription.')));
+    $substitutes = array('@name' => check_plain(_simplenews_newsletter_name(simplenews_category_load($first))), '@mail' => $unsubscribed);
+    $this->assertText(t('The following addresses were skipped because they have previously unsubscribed from @name: @mail.', $substitutes));
+    $this->assertText(t("If you would like to resubscribe them, use the 'Force resubscription' option."));
+
+
+    // Test mass subscribe with previously unsubscribed users and force
+    // resubscription.
+    $tested_subscribers[2] = $this->randomEmail();
+    $edit = array(
+      'emails' => implode(', ', $tested_subscribers),
+      'newsletters[' . $first . ']' => TRUE,
+      'resubscribe' => TRUE,
+    );
+
+    $this->drupalPost('admin/people/simplenews/import', $edit, t('Subscribe'));
+    drupal_static_reset('simplenews_subscriber_load_multiple');
+    drupal_static_reset('simplenews_user_is_subscribed');
+    $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[0], $first, t('Subscriber resubscribed trough mass subscription.')));
+    $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[1], $first, t('Subscriber resubscribed trough mass subscription.')));
+    $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[2], $first, t('Subscriber subscribed trough mass subscription.')));
+
     // Delete newsletter category.
     $this->drupalPost('taxonomy/term/' . $first . '/edit', array(), t('Delete'));
     $this->assertText(t('This taxonomy term is part of simplenews newsletter category @name. Deleting this term will delete the newsletter category and all subscriptions to category @name. This action cannot be undone.', array('@name' => $categories[$first]->name)), t('Confirmation message displayed.'));
@@ -1498,7 +1539,6 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     drupal_static_reset('simplenews_subscriber_load_multiple');
     drupal_static_reset('simplenews_user_is_subscribed');
     $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, reset($subscriber->tids), t('Subscriber not subscribed anymore.')));
-
 
     // @todo Test Admin subscriber edit preferred language $subscription->language
   }

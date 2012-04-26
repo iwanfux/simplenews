@@ -725,6 +725,12 @@ function simplenews_subscription_list_add($form, &$form_state) {
     );
   }
 
+  $form['resubscribe'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Force resubscription'),
+    '#description' => t('If checked, previously unsubscribed e-mail addresses will be resubscribed. Consider that this might be against the will of your users.'),
+  );
+
   // Include language selection when the site is multilingual.
   // Default value is the empty string which will result in receiving emails
   // in the site's default language.
@@ -764,6 +770,7 @@ function simplenews_subscription_list_add($form, &$form_state) {
 function simplenews_subscription_list_add_submit($form, &$form_state) {
   $added = array();
   $invalid = array();
+  $unsubscribed = array();
   $checked_categories = array_keys(array_filter($form_state['values']['newsletters']));
   $langcode = $form_state['values']['language'];
 
@@ -774,10 +781,20 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
       continue;
     }
     if (valid_email_address($email)) {
+      $subscriber = simplenews_subscriber_load_by_mail($email);
       foreach (simplenews_categories_load_multiple($checked_categories) as $category) {
-
-        simplenews_subscribe_user($email, $category->tid, FALSE, 'mass subscribe', $langcode);
-        $added[] = $email;
+        // If there is a valid subscriber, check if there is a subscription for
+        // the current category and if this subscription has the status
+        // unsubscribed.
+        $is_unsubscribed = $subscriber && array_key_exists($category->tid, $subscriber->newsletter_subscription)
+          && $subscriber->newsletter_subscription[$category->tid]->status == SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+        if (!$is_unsubscribed || $form_state['values']['resubscribe'] == TRUE) {
+          simplenews_subscribe_user($email, $category->tid, FALSE, 'mass subscribe', $langcode);
+          $added[] = $email;
+        }
+        else {
+          $unsubscribed[check_plain(_simplenews_newsletter_name($category))][] = $email;
+        }
       }
     }
     else {
@@ -800,6 +817,15 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
   if ($invalid) {
     $invalid = implode(", ", $invalid);
     drupal_set_message(t('The following addresses were invalid: %invalid.', array('%invalid' => $invalid)), 'error');
+  }
+
+  foreach ($unsubscribed as $name => $subscribers) {
+    $subscribers = implode(", ", $subscribers);
+    drupal_set_message(t('The following addresses were skipped because they have previously unsubscribed from %name: %unsubscribed.', array('%name' => $name, '%unsubscribed' => $subscribers)), 'warning');
+  }
+
+  if (!empty($unsubscribed)) {
+    drupal_set_message(t("If you would like to resubscribe them, use the 'Force resubscription' option."), 'warning');
   }
 
   // Return to the parent page.
