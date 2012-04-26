@@ -1186,7 +1186,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       $edit = array(
         'title' => $name,
         'field_simplenews_term[und]' => $edit_category->tid,
-        'date' => date('c',strtotime('+' . $index . ' day', $date)),
+        'date' => date('c', strtotime('+' . $index . ' day', $date)),
       );
       $this->drupalPost(NULL, $edit, ('Save'));
       $this->clickLink(t('Newsletter'));
