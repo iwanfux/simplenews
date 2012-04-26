@@ -529,17 +529,12 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getFromFormatted().
    */
   function getFromFormatted() {
-    $name = $this->getCategory()->from_name;
-
-    // Windows based PHP systems don't accept formatted emails.
+    // Windows based PHP systems don't accept formatted email addresses.
     if (drupal_substr(PHP_OS, 0, 3) == 'WIN') {
       return $this->getFromAddress();
     }
-    else {
-      return '"' . $name . '" <' . $this->getFromAddress() . '>';
-    }
 
-    return $formatted_address;
+    return '"'. addslashes(mime_header_encode($this->getCategory()->from_name)) .'" <'. $this->getFromAddress() .'>';
   }
 
   /**

@@ -2694,9 +2694,11 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
       // Make sure the body is only attached once.
       $this->assertEqual(1, preg_match_all('/Mail token/', $mail['params']['plaintext'], $matches));
 
-      // The mail system is responsible for mime encoding, make sure the from
-      // address is not yet encoded.
-      $this->assertEqual('"' . $edit_category['from_name'] . '" <' . $edit_category['from_address'] . '>', $mail['from']);
+      // Make sure formatted address is properly encoded.
+      $from = '"' . addslashes(mime_header_encode($edit_category['from_name'])) . '" <' . $edit_category['from_address'] . '>';
+      $this->assertEqual($from, $mail['from']);
+      // And make sure it won't get encoded twice.
+      $this->assertEqual($from, mime_header_encode($mail['from']));
 
       // @todo: Improve this check, there are currently two spaces, not sure
       // where they are coming from.
