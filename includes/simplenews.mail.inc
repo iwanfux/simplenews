@@ -37,6 +37,9 @@ function simplenews_add_node_to_spool($node) {
 
   // Update simplenews newsletter status to send pending.
   simplenews_newsletter_update_sent_status($node);
+
+  // Notify other modules that a newsletter was just spooled.
+  module_invoke_all('simplenews_spooled', $node);
 }
 
 /**
