@@ -1840,10 +1840,87 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
 
 }
 
+class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
+
+  public function setUp() {
+    parent::setUp();
+
+    // Use the test mail class instead of the default mail handler class.
+    $this->variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
+  }
+
+  public function prepareUpgradePath() {
+    // Delete everything except taxnomy and simplenews from system to
+    // prevent their update functions to be run.
+    $this->uninstallModulesExcept(array('taxonomy', 'simplenews'));
+
+    // Disable simplenews, the update hooks will be executed anyway.
+    db_update('system')
+      ->fields(array(
+        'status' => 0,
+      ))
+      ->condition('name', 'simplenews')
+      ->execute();
+  }
+
+  public function assertUpgradePath() {
+    // Enable simplenews.
+    $edit = array(
+      'modules[Mail][simplenews][enable]' => 1,
+    );
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+
+
+    $this->drupalGet('admin/config/services/simplenews');
+    $this->assertText('Drupal 6 newsletter');
+    $this->assertText('Test');
+
+    $this->drupalGet('admin/people/simplenews');
+    $this->assertText('another@example.org');
+
+    $this->drupalGet('admin/structure/taxonomy/newsletter');
+
+    // Check simplenews content type.
+    $this->drupalGet('admin/structure/types/manage/simplenews');
+    $this->assertFieldChecked('edit-simplenews-content-type');
+    $this->drupalGet('admin/structure/types/manage/simplenews/fields');
+
+    $this->drupalGet('node/add/simplenews');
+    $this->assertText('Newsletter');
+    $this->assertText('Drupal 6 newsletter');
+
+    // Check category field
+    $this->assertEqual(variable_get('simplenews_category_field'), 'taxonomy_vocabulary_1');
+    $this->assertTrue(field_info_instance('node', 'taxonomy_vocabulary_1', 'simplenews'));
+
+    // Create an issue.
+    $edit = array(
+      'title' => $this->randomName(),
+      'taxonomy_vocabulary_1[und]' => 1,
+    );
+    $this->drupalPost(NULL, $edit, ('Save'));
+
+    // Send newsletter.
+    $this->clickLink(t('Newsletter'));
+    $this->drupalPost(NULL, array(), t('Submit'));
+
+//    TODO: Maybe it would be bether to retreive the nid of the created node instead of hard code it.
+    $this->assertEqual(1, db_query('SELECT tid FROM {simplenews_newsletter} WHERE nid = :nid', array(':nid' => 2))->fetchField(), 'There is an issue associated to the correct newsletter category');
+
+//    @todo Mails are not correctly returned
+//    $mails = $this->drupalGetMails();
+//    debug($mails);
+//    $this->assertEqual('simplenews_test', $mails[0]['id']);
+//    $this->assertEqual('user@example.com', $mails[0]['to']);
+//    $this->assertEqual(t('[Drupal newsletter] @title', array('@title' => $edit['title'])), $mails[0]['subject']);
+  }
+
+}
+
 /**
  * Upgrade test from 6.x-1.x
  */
-class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
+class SimpleNewsUpgradePath61TestCase extends SimpleNewsUpgradePathTestCase {
 
   public static function getInfo() {
     return array(
@@ -1865,33 +1942,11 @@ class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
    * Test a successful upgrade.
    */
   public function testSimplenewsUpgrade() {
-    // Delete everything except taxnomy and simplenews from system to
-    // prevent their update functions to be run.
-    $this->uninstallModulesExcept(array('taxonomy', 'simplenews'));
-
-    // Disable simplenews, the update hooks will be executed anyway.
-    db_update('system')
-      ->fields(array(
-        'status' => 0,
-      ))
-      ->condition('name', 'simplenews')
-      ->execute();
+    $this->prepareUpgradePath();
 
     $this->assertTrue($this->performUpgrade(), t('Upgraded successfully.'));
 
-    // Enable simplenews.
-    $edit = array(
-      'modules[Mail][simplenews][enable]' => 1,
-    );
-    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
-
-
-    $this->drupalGet('admin/config/services/simplenews');
-    $this->assertText('Drupal 6 newsletter');
-    $this->assertText('Test');
-
-    $this->drupalGet('admin/people/simplenews');
-    $this->assertText('another@example.org');
+    $this->assertUpgradePath();
   }
 
 }
@@ -1899,7 +1954,7 @@ class SimpleNewsUpgradePath61TestCase extends UpgradePathTestCase {
 /**
  * Upgrade test from 6.x-2.x
  */
-class SimpleNewsUpgradePath62TestCase extends UpgradePathTestCase {
+class SimpleNewsUpgradePath62TestCase extends SimpleNewsUpgradePathTestCase {
 
   public static function getInfo() {
     return array(
@@ -1915,39 +1970,20 @@ class SimpleNewsUpgradePath62TestCase extends UpgradePathTestCase {
       drupal_get_path('module', 'simplenews') . '/tests/d6_simplenews_62.php',
     );
     parent::setUp();
+
+    // Use the test mail class instead of the default mail handler class.
+    $this->variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
   }
 
   /**
    * Test a successful upgrade.
    */
   public function testSimplenewsUpgrade() {
-    // Delete everything except taxnomy and simplenews from system to
-    // prevent their update functions to be run.
-    $this->uninstallModulesExcept(array('taxonomy', 'simplenews'));
-
-    // Disable simplenews, the update hooks will be executed anyway.
-    db_update('system')
-      ->fields(array(
-        'status' => 0,
-      ))
-      ->condition('name', 'simplenews')
-      ->execute();
+    $this->prepareUpgradePath();
 
     $this->assertTrue($this->performUpgrade(), t('Upgraded successfully.'));
 
-    // Enable simplenews.
-    $edit = array(
-      'modules[Mail][simplenews][enable]' => 1,
-    );
-    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
-
-
-    $this->drupalGet('admin/config/services/simplenews');
-    $this->assertText('Drupal 6 newsletter');
-    $this->assertText('Test');
-
-    $this->drupalGet('admin/people/simplenews');
-    $this->assertText('another@example.org');
+    $this->assertUpgradePath();
   }
 
 }
