@@ -531,7 +531,7 @@ function simplenews_admin_category_form($form, &$form_state, $edit = array()) {
     '#type' => 'textfield',
     '#title' => t('From name'),
     '#size' => 60,
-    '#maxlength' => 64,
+    '#maxlength' => 128,
     '#default_value' => $edit['from_name'],
   );
 
@@ -1303,7 +1303,7 @@ function simplenews_admin_settings_newsletter($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('From name'),
     '#size' => 60,
-    '#maxlength' => 64,
+    '#maxlength' => 128,
     '#default_value' => variable_get('simplenews_from_name', variable_get('site_name', 'Drupal')),
   );
   $form['simplenews_sender_info']['simplenews_from_address'] = array(

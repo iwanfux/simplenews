@@ -43,7 +43,7 @@ function simplenews_schema() {
       ),
       'from_name' => array(
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 128,
         'not null' => TRUE,
         'default' => '',
         'description' => 'Sender name for newsletter emails.',
@@ -555,7 +555,7 @@ function simplenews_update_7000() {
       'from_name' => array(
         'description' => 'Sender name for newsletter emails.',
         'type' => 'varchar',
-        'length' => 64,
+        'length' => 128,
         'not null' => TRUE,
         'default' => '',
       ),
@@ -615,15 +615,35 @@ function simplenews_update_7000() {
   foreach ($tids as $tid) {
     _simplenews_convert_tokens_in_variable('simplenews_email_subject_' . $tid);
 
+    // check string lengths: variables can be an arbitrary length but the new table has limits
+    $from_name = variable_get('simplenews_from_name_' . $tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal')));
+    $email_subject = variable_get('simplenews_email_subject_' . $tid, '[[simplenews-newsletters-name]] [title-raw]');
+    $from_address = variable_get('simplenews_from_address_' . $tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from'))));
+    if (strlen($from_name) > 128) {
+      drupal_set_message(t('The from_name field for simplenews list @tid (@value) was too long and has been truncated to 128 characters.',
+            array('@tid' => $tid, '@value' => $from_name)), 'warning');
+      $from_name = substr($from_name, 0, 128);
+    }
+    if (strlen($email_subject) > 255) {
+      drupal_set_message(t('The email_subject field for simplenews list @tid (@value) was too long and has been truncated to 255 characters.',
+            array('@tid' => $tid, '@value' => $email_subject)), 'warning');
+      $from_name = substr($email_subject, 0, 255);
+    }
+    if (strlen($from_address) > 64) {
+      drupal_set_message(t('The from_address field for simplenews list @tid (@value) was too long and has been truncated to 64 characters.',
+            array('@tid' => $tid, '@value' => $from_address)), 'warning');
+      $from_name = substr($from_address, 0, 64);
+    }
+
     db_insert('simplenews_category')
       ->fields(array(
         'tid' => $tid,
         'format' => 'plain',
         'priority' => '0',
         'receipt' => '0',
-        'from_name' => variable_get('simplenews_from_name_' . $tid, variable_get('simplenews_from_name', variable_get('site_name', 'Drupal'))),
-        'email_subject' => variable_get('simplenews_email_subject_' . $tid, '[[simplenews-newsletters-name]] [title-raw]'),
-        'from_address' => variable_get('simplenews_from_address_' . $tid, variable_get('simplenews_from_address', variable_get('site_mail', ini_get('sendmail_from')))),
+        'from_name' => $from_name,
+        'email_subject' => $email_subject,
+        'from_address' => $from_address,
         'hyperlinks' => variable_get('simplenews_hyperlinks_' . $tid, 1),
         'new_account' => variable_get('simplenews_new_account_' . $tid, 'none'),
         'opt_inout' => variable_get('simplenews_opt_inout_' . $tid, 'double'),
@@ -795,5 +815,19 @@ function simplenews_update_7006() {
     'unsigned' => TRUE,
     'not null' => TRUE,
     'default' => 0,
+  ));
+}
+
+/**
+ * Allow longer from_name field values.
+ */
+function simplenews_update_7007() {
+
+  db_change_field('simplenews_category', 'from_name', 'from_name', array(
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE,
+    'default' => '',
+    'description' => 'Sender name for newsletter emails.',
   ));
 }
