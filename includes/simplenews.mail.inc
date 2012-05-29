@@ -619,8 +619,8 @@ function _simplenews_set_from() {
   $address = variable_get('simplenews_from_address', $address_default);
   $name = variable_get('simplenews_from_name', $name_default);
 
-  // Windows based PHP systems don't accept formatted emails.
-  $formatted_address = drupal_substr(PHP_OS, 0, 3) == 'WIN' ? $address : '"' . $name . '" <' . $address . '>';
+  // Windows based PHP systems don't accept formatted email addresses.
+  $formatted_address = (drupal_substr(PHP_OS, 0, 3) == 'WIN') ? $address : '"'. addslashes(mime_header_encode($name)) .'" <'. $address .'>';
 
   return array(
     'address' => $address,
