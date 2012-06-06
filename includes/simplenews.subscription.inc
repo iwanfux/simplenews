@@ -655,7 +655,7 @@ function simplenews_confirm_multi_form_submit($form, &$form_state) {
 /**
  * Mask a mail address.
  *
- * For exampl, name@example.org will be masked as n*****@example.org.
+ * For example, name@example.org will be masked as n*****@e*****.org.
  *
  * @param $mail
  *   A valid mail address to mask.
@@ -664,8 +664,13 @@ function simplenews_confirm_multi_form_submit($form, &$form_state) {
  *   The masked mail address.
  */
 function simplenews_mask_mail($mail) {
-  preg_match('/^(.).*@(.*)$/', $mail, $matches);
-  return preg_replace('/^(.).*@(.*)$/', '$1*****@$2', $mail);
+  if (preg_match('/^(.).*@(.).*(\..+)$/', $mail)) {
+    return preg_replace('/^(.).*@(.).*(\..+)$/', '$1*****@$2*****$3', $mail);
+  }
+  else {
+    // Missing top-level domain.
+    return preg_replace('/^(.).*@(.).*$/', '$1*****@$2*****', $mail);
+  }
 }
 
 /**
