@@ -831,3 +831,27 @@ function simplenews_update_7007() {
     'description' => 'Sender name for newsletter emails.',
   ));
 }
+
+/**
+ * Add the timestamp and source columns to {simplenews_subscription} if missing.
+ */
+function simplenews_update_7008() {
+  if (!db_field_exists('simplenews_subscription', 'timestamp')) {
+    db_add_field('simplenews_subscription', 'timestamp', array(
+      'description' => 'UNIX timestamp of when the user is (un)subscribed.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
+  if (!db_field_exists('simplenews_subscription', 'source')) {
+    db_add_field('simplenews_subscription', 'source', array(
+      'description' => 'The source via which the user is (un)subscription.',
+      'type' => 'varchar',
+      'length' => 24,
+      'not null' => TRUE,
+      'default' => '',
+    ));
+  }
+}
