@@ -1870,6 +1870,11 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
     );
     $this->drupalPost('admin/modules', $edit, t('Save configuration'));
 
+    // Attempt to subscribe a mail address.
+    $mail = 'new@example.org';
+    $tid = 1;
+    module_load_include('module', 'simplenews');
+    simplenews_subscribe_user($mail, $tid, FALSE);
 
     $this->drupalGet('admin/config/services/simplenews');
     $this->assertText('Drupal 6 newsletter');
@@ -1877,6 +1882,7 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
 
     $this->drupalGet('admin/people/simplenews');
     $this->assertText('another@example.org');
+    $this->assertText($mail);
 
     $this->drupalGet('admin/structure/taxonomy/newsletter');
 
