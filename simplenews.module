@@ -717,7 +717,7 @@ function simplenews_form_node_type_form_alter(&$form, $form_state) {
  */
 function simplenews_form_taxonomy_form_term_alter(&$form, $form_state) {
   if (isset($form_state['confirm_delete']) && $form_state['confirm_delete']) {
-    if ($form['#term']->vid == variable_get('simplenews_vid', 0)) {
+    if ($form['#term']->vocabulary_machine_name == 'newsletter') {
       $category = simplenews_category_load($form['#term']->tid);
       $form['description']['#markup'] = '<p>' . t('This taxonomy term is part of simplenews newsletter category %category_name. Deleting this term will delete the newsletter category and <strong>all subscriptions to category %category_name</strong>. This action cannot be undone.', array('%category_name' => _simplenews_newsletter_name($category))) . '</p>' . $form['description']['#markup'];
     }
@@ -733,7 +733,7 @@ function simplenews_taxonomy_term_delete($term) {
   // A simplenews newsletter category can not exist without the associated
   // taxonomy term. So we delete the category. simplenews_category_delete()
   // will also delete the subscriptions to the category.
-  if ($term->vid == variable_get('simplenews_vid', 0)) {
+  if ($term->vocabulary_machine_name == 'newsletter') {
     // Make sure we only try to delete if not already deleted.
     if (($category = simplenews_category_load($term->tid)) !== FALSE) {
       // Add name and description from $term object.

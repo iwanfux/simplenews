@@ -80,7 +80,8 @@ class SimplenewsTestCase extends DrupalWebTestCase {
    * @return newsletter tid.
    */
   function getRandomNewsletter() {
-    if ($taxonomies = taxonomy_get_tree(variable_get('simplenews_vid', ''))) {
+    $vid = db_query('SELECT vid FROM {taxonomy_vocabulary} WHERE machine_name = :name', array(':name' => 'newsletter'))->fetchField();
+    if ($taxonomies = taxonomy_get_tree($vid)) {
       $tids = array();
       foreach ($taxonomies as $newsletter) {
         $tids[] = $newsletter->tid;
@@ -1676,7 +1677,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('admin/config/regional/i18n/strings', $edit, t('Save configuration'));
 
-    $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', 0));
+    $vocabulary = taxonomy_vocabulary_machine_name_load('newsletter');
     $vocabulary->i18n_mode = I18N_MODE_LOCALIZE;
     taxonomy_vocabulary_save($vocabulary);
     drupal_static_reset('i18n_taxonomy_vocabulary_mode');
@@ -1715,7 +1716,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     simplenews_subscribe_user($spanish_mail, $tid, FALSE, 'spanish', 'es');
 
     // Translate category.
-    $vocabulary = taxonomy_vocabulary_load(variable_get('simplenews_vid', 0));
+    $vocabulary = taxonomy_vocabulary_machine_name_load('newsletter');
     $vocabulary->i18n_mode = I18N_MODE_LOCALIZE;
     taxonomy_vocabulary_save($vocabulary);
     drupal_static_reset('i18n_taxonomy_vocabulary_mode');
@@ -1919,6 +1920,14 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
 //    $this->assertEqual('simplenews_test', $mails[0]['id']);
 //    $this->assertEqual('user@example.com', $mails[0]['to']);
 //    $this->assertEqual(t('[Drupal newsletter] @title', array('@title' => $edit['title'])), $mails[0]['subject']);
+
+    // Make sure that new categories can be created.
+    $edit = array(
+      'name' => $this->randomName(),
+    );
+    $this->drupalPost('admin/config/services/simplenews/add', $edit, t('Save'));
+    $this->assertResponse(200);
+    $this->assertText($edit['name']);
   }
 
 }

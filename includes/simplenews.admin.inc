@@ -633,7 +633,8 @@ function simplenews_admin_category_form_submit($form, &$form_state) {
   // Create or update taxonomy term.
   $term = new stdClass();
   $term->tid = $form_state['values']['tid'];
-  $term->vid = variable_get('simplenews_vid', 0);
+  $term->vocabulary_machine_name = 'newsletter';
+  $term->vid = taxonomy_vocabulary_machine_name_load('newsletter')->vid;
   $term->name = $form_state['values']['name'];
   $term->description = $form_state['values']['description'];
   $term->weight = $form_state['values']['weight'];
