@@ -1560,7 +1560,7 @@ function simplenews_admin_settings_subscription($form, &$form_state) {
     '#description' => t('Drupal path or URL of the destination page where after the subscription is confirmed (e.g. node/123). Leave empty to go to the front page.'),
     '#default_value' => variable_get('simplenews_confirm_subscribe_page', ''),
   );
-  $form['simplenews_subscription']['confirm_pages']['simplenews_confirm_unsubscribe_page'] = array(
+  $form['confirm_pages']['simplenews_confirm_unsubscribe_page'] = array(
     '#type' => 'textfield',
     '#title' => t('Unsubscribe confirmation'),
     '#description' => t('Drupal path or URL of the destination page when the subscription removal is confirmed (e.g. node/123). Leave empty to go to the front page.'),
