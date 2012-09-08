@@ -270,7 +270,6 @@ function simplenews_menu() {
     'access arguments' => array(1),
     'page callback' => 'simplenews_node_tab_page',
     'page arguments' => array(1),
-    'theme callback' => '_node_custom_theme',
     'context' => MENU_LOCAL_TASK,
     'file' => 'includes/simplenews.admin.inc',
     'weight' => 2,
