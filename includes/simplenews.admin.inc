@@ -1378,9 +1378,9 @@ function simplenews_admin_settings_mail($form, &$form_state) {
     '#title' => t('Mail spool expiration'),
     '#options' => array(
       0 => t('Immediate'),
-      1 => t('1 day'),
-      7 => t('1 week'),
-      14 => t('2 weeks'),
+      1 => format_plural(1, '1 day', '@count days'),
+      7 => format_plural(1, '1 week', '@count weeks'),
+      14 => format_plural(2, '1 week', '@count weeks'),
     ),
     '#default_value' => variable_get('simplenews_spool_expire', 0),
     '#description' => t('Newsletter mails are spooled. How long must messages be retained in the spool after successful sending. Keeping the message in the spool allows mail statistics (which is not yet implemented). If cron is not used, immediate expiration is advised.'),
