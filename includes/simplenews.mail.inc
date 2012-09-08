@@ -224,6 +224,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     simplenews_impersonate_user(drupal_anonymous_user());
 
     $count_fail = $count_success = 0;
+    $sent = array();
 
     _simplenews_measure_usec(TRUE);
 
@@ -240,6 +241,12 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
         simplenews_update_spool(array($msid), $row_result);
         if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
           $count_success++;
+          if (!isset($sent[$row->actual_nid])) {
+            $sent[$row->actual_nid] = 1;
+          }
+          else {
+            $sent[$row->actual_nid]++;
+          }
         }
         if ($row_result['error']) {
           $count_fail++;
@@ -267,10 +274,26 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
       simplenews_update_spool(array($msid), $row_result);
       if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
         $count_success++;
+        if (isset($row->actual_nid)) {
+          if (!isset($sent[$row->actual_nid])) {
+            $sent[$row->actual_nid] = 1;
+          }
+          else {
+            $sent[$row->actual_nid]++;
+          }
+        }
       }
       if ($row_result['error']) {
         $count_fail++;
       }
+    }
+
+    // Update subscriber count.
+    foreach ($sent as $nid => $count) {
+      db_update('simplenews_newsletter')
+        ->condition('nid', $nid)
+        ->expression('sent_subscriber_count', 'sent_subscriber_count + :count', array(':count' => $count))
+        ->execute();
     }
 
     // Report sent result and elapsed time. On Windows systems getrusage() is

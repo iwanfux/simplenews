@@ -855,3 +855,39 @@ function simplenews_update_7008() {
     ));
   }
 }
+
+/**
+ * Add the sent_subsriber_countcolumn to {simplenews_newsletter} if missing.
+ */
+function simplenews_update_7009() {
+  if (!db_field_exists('simplenews_newsletter', 'sent_subscriber_count')) {
+    db_add_field('simplenews_newsletter', 'sent_subscriber_count', array(
+      'description' => 'The count of subscribers to the newsletter when it was sent.',
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
+}
+
+/**
+ * Update empty sent subscriber count column to current subscriber count.
+ */
+function simplenews_update_7010() {
+  // Assume that already sent newsletters that have a sent subscriber count of
+  // 0 have been sent to all subscribers. Do a update query per newsletter
+  // category, to avoid having to re-execute the subquery on every row.
+  $tids = db_query('SELECT tid FROM {simplenews_category}')->fetchCol();
+  foreach ($tids as $tid) {
+    $count = db_query('SELECT COUNT(*) FROM {simplenews_subscription} ss WHERE status = 1 AND tid = :tid', array(':tid' => $tid))->fetchField();
+    db_update('simplenews_newsletter')
+      ->fields(array(
+        'sent_subscriber_count' => $count,
+      ))
+      // 2 equals SIMPLENEWS_STATUS_SEND_READY.
+      ->condition('status', 2)
+      ->condition('sent_subscriber_count', 0)
+      ->condition('tid', $tid)
+      ->execute();
+  }
+}

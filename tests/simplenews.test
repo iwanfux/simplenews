@@ -1710,10 +1710,12 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     // Sign up two users, one in english, another in spanish.
     $english_mail = $this->randomEmail();
     $spanish_mail = $this->randomEmail();
+    $spanish_mail2 = $this->randomEmail();
     $tid = $this->getRandomNewsletter();
 
     simplenews_subscribe_user($english_mail, $tid, FALSE, 'english', 'en');
     simplenews_subscribe_user($spanish_mail, $tid, FALSE, 'spanish', 'es');
+    simplenews_subscribe_user($spanish_mail2, $tid, FALSE, 'spanish', 'es');
 
     // Translate category.
     $vocabulary = taxonomy_vocabulary_machine_name_load('newsletter');
@@ -1776,7 +1778,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Submit'));
     simplenews_cron();
 
-    $this->assertEqual(2, count($this->drupalGetMails()));
+    $this->assertEqual(3, count($this->drupalGetMails()));
 
     $category = simplenews_category_load($this->getRandomNewsletter());
 
@@ -1788,7 +1790,7 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
         $this->assertEqual('[' . $category->name . '] ' . $english_node->title, $mail['subject']);
         $node_url = url('node/' . $english_node->nid, array('language' => $languages['en'], 'absolute' => TRUE));
       }
-      elseif ($mail['to'] == $spanish_mail) {
+      elseif ($mail['to'] == $spanish_mail || $mail['to'] == $spanish_mail2) {
         $this->assertEqual('es', $mail['language']);
         $this->assertEqual('[' . $es_name . '] ' . $spanish_node->title, $mail['subject']);
         $node_url = url('node/' . $spanish_node->nid, array('language' => $languages['es'], 'absolute' => TRUE));
@@ -1800,6 +1802,12 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
       // Verify that the link is in the correct language.
       $this->assertTrue(strpos($mail['body'], $node_url) !== FALSE);
     }
+
+    // Verify sent subscriber count for each node.
+    $newsletter = simplenews_newsletter_load($english_node->nid);
+    $this->assertEqual(1, $newsletter->sent_subscriber_count, 'subscriber count is correct for english');
+    $newsletter = simplenews_newsletter_load($spanish_node->nid);
+    $this->assertEqual(2, $newsletter->sent_subscriber_count, 'subscriber count is correct for spanish');
 
     // Make sure the language of a node can be changed.
     $english = array(
@@ -2134,6 +2142,9 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
       unset($this->subscribers[$mail['to']]);
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertEqual(5, $newsletter->sent_subscriber_count, 'subscriber count is correct');
   }
 
   /**
@@ -2241,8 +2252,8 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
 
     // Verify state.
     $newsletter = simplenews_newsletter_load($node->nid);
-
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_PENDING, $newsletter->status, t('Newsletter sending pending.'));
+    $this->assertEqual(3, $newsletter->sent_subscriber_count, 'subscriber count is correct');
 
     $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
     $this->assertEqual(2, $spooled, t('2 mails remaining in spool.'));
@@ -2267,6 +2278,8 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
       unset($this->subscribers[$mail['to']]);
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
+    $newsletter = simplenews_newsletter_load($node->nid);
+    $this->assertEqual(5, $newsletter->sent_subscriber_count, 'subscriber count is correct');
   }
 
   /**
