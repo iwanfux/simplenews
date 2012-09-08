@@ -2845,6 +2845,40 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
     $this->pass(t('Mails have been sent in @sec seconds with caching disabled.', array('@sec' => round($after - $before, 3))));
   }
 
+  /**
+   * Test with disabled caching.
+   */
+  function testSendMissingNode() {
+    $this->setUpSubscribers(1);
+
+    $edit = array(
+      'title' => $this->randomName(),
+      'body[und][0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
+    );
+    $this->drupalPost('node/add/simplenews', $edit, ('Save'));
+    $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
+    $node = node_load($matches[1]);
+
+    // Add node to spool.
+    simplenews_add_node_to_spool($node);
+
+    // Delete the node manually in the database.
+     db_delete('node')
+        ->condition('nid', $node->nid)
+        ->execute();
+      db_delete('node_revision')
+        ->condition('nid', $node->nid)
+        ->execute();
+    entity_get_controller('node')->resetCache();
+
+    simplenews_mail_spool();
+
+    // Make sure that no mails have been sent.
+    $this->assertEqual(0, count($this->drupalGetMails()));
+
+    $spool_row = db_query('SELECT * FROM {simplenews_mail_spool}')->fetchObject();
+    $this->assertEqual(SIMPLENEWS_SPOOL_DONE, $spool_row->status);
+  }
 }
 
 /**

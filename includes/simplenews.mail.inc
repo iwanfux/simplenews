@@ -258,18 +258,18 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
           break;
         }
       }
+    }
 
-      // It is possible that all or at the end some results failed to get
-      // prepared, report them separately.
-      foreach ($spool->getProcessed() as $msid => $row) {
-        $row_result = isset($row->result) ? $row->result : $result;
-        simplenews_update_spool(array($msid), $row_result);
-        if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
-          $count_success++;
-        }
-        if ($row_result['error']) {
-          $count_fail++;
-        }
+    // It is possible that all or at the end some results failed to get
+    // prepared, report them separately.
+    foreach ($spool->getProcessed() as $msid => $row) {
+      $row_result = $row->result;
+      simplenews_update_spool(array($msid), $row_result);
+      if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
+        $count_success++;
+      }
+      if ($row_result['error']) {
+        $count_fail++;
       }
     }
 

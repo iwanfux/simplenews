@@ -288,7 +288,7 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
         'status' => SIMPLENEWS_SPOOL_DONE,
         'error' => TRUE
       );
-      return $this->prepareMail();
+      return $this->nextSource();
     }
 
     if ($spool_data->data) {
