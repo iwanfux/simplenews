@@ -298,6 +298,16 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
       $subscriber = simplenews_subscriber_load_by_mail($spool_data->mail);
     }
 
+    if (!$subscriber) {
+      // If loading the subscriber failed, set the processed status done and
+      // proceed with the next mail.
+      $this->processed[$spool_data->msid]->result = array(
+        'status' => SIMPLENEWS_SPOOL_DONE,
+        'error' => TRUE
+      );
+      return $this->nextSource();
+    }
+
     $source_class = $this->getSourceImplementation($spool_data);
     $source = new $source_class($node, $subscriber);
 
