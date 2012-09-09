@@ -246,10 +246,33 @@ function simplenews_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
-  $items['newsletter/confirm'] = array(
+  // Explicitly define add and remove menu routers even if they are are equal
+  // to avoid conflicts with the different combined arguments.
+  $items['newsletter/confirm/add/%/%/%/%'] = array(
     'title' => 'Confirm newsletter subscriptions',
     'type' => MENU_CALLBACK,
     'page callback' => 'simplenews_confirm_subscription',
+    'page arguments' => array(2, 3, 4, 5, 6),
+    'access arguments' => array('subscribe to newsletters'),
+    'file' => 'includes/simplenews.subscription.inc',
+  );
+  $items['newsletter/confirm/remove/%/%/%/%'] = $items['newsletter/confirm/add/%/%/%/%'];
+
+  $items['newsletter/confirm/combined/%/%/%'] = array(
+    'title' => 'Confirm newsletter subscriptions',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'simplenews_confirm_combined',
+    'page arguments' => array(3, 4, 5),
+    'access arguments' => array('subscribe to newsletters'),
+    'file' => 'includes/simplenews.subscription.inc',
+  );
+
+  // Backwards compatibility for old links.
+  $items['newsletter/confirm'] = array(
+    'title' => 'Confirm newsletter subscriptions',
+    'type' => MENU_CALLBACK,
+    'page callback' => 'simplenews_old_confirm_subscription',
+    'page arguments' => array(),
     'access arguments' => array('subscribe to newsletters'),
     'file' => 'includes/simplenews.subscription.inc',
   );
@@ -2136,9 +2159,17 @@ function _simplenews_newsletter_description($newsletter, $langcode = NULL) {
 }
 
 /**
- * Generate the hash key used for subscribe/unsubscribe link.
+ * Generates the hash key used for subscribe/unsubscribe link.
  */
-function simplenews_generate_hash($mail, $snid, $tid) {
+function simplenews_generate_hash($mail, $action = '', $timestamp = REQUEST_TIME) {
+  $data = $mail . drupal_get_private_key() . $action . $timestamp;
+  return drupal_hash_base64($data);
+}
+
+/**
+ * Generate a hash key in the old format.
+ */
+function simplenews_generate_old_hash($mail, $snid, $tid) {
   return drupal_substr(md5($mail . simplenews_private_key()), 0, 10) . $snid . 't' . $tid;
 }
 
@@ -2837,8 +2868,8 @@ function simplenews_confirmation_send_combined() {
     // Send multiple if there is more than one change for this subscriber
     // single otherwise.
     $use_combined = variable_get('simplenews_use_combined', 'multiple');
+    $subscriber->changes = $changes;
     if ((count($changes) > 1 && $use_combined != 'never') || $use_combined == 'always') {
-      $params['context']['changes'] = $changes;
       $key = 'subscribe_combined';
       drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
     }
@@ -2851,7 +2882,6 @@ function simplenews_confirmation_send_combined() {
 
     // Save the changes in the subscriber if there is a real subscriber object.
     if (!empty($subscriber->snid)) {
-      $subscriber->changes = $changes;
       simplenews_subscriber_save($subscriber);
     }
   }

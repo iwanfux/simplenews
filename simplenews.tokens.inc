@@ -96,32 +96,37 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       $category = isset($data['category']) ? $data['category'] : NULL;
       $language = isset($subscriber->language->language) ? $subscriber->language : user_preferred_language($subscriber);
 
-      // Build hash for the URL of the (un)subscribe confirmation page.
-      $hash = '';
-      if (isset($subscriber->snid) && isset($category->tid)) {
-        $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $category->tid);
-      }
-      elseif (isset($subscriber->snid)) {
-        $combined_hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, 0);
-      }
+      $url_arguments = array('absolute' => TRUE, 'language' => $language);
 
       foreach ($tokens as $name => $original) {
         switch ($name) {
-          // Simple key values on the node.
           case 'subscribe-url':
-            $replacements[$original] = url('newsletter/confirm/add/' . $hash, array('absolute' => TRUE, 'language' => $language));
+            $hash = simplenews_generate_hash($subscriber->mail, 'add');
+            $url = 'newsletter/confirm/add/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'unsubscribe-url':
-            $replacements[$original] = url('newsletter/confirm/remove/' . $hash, array('absolute' => TRUE, 'language' => $language));
+            if (!isset($subscriber->snid)) {
+              // Temporary test subscriber.
+              $replacements[$original] = t('No unsubscribe link for test subscribers.');
+              continue;
+            }
+            $hash = simplenews_generate_hash($subscriber->mail, 'remove');
+            $url = 'newsletter/confirm/remove/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'combined-url':
-            $replacements[$original] = url('newsletter/confirm/combined/' . $combined_hash, array('absolute' => TRUE, 'language' => $language));
+            $hash = simplenews_generate_hash($subscriber->mail, 'combined' . serialize($subscriber->changes));
+            $url = 'newsletter/confirm/combined/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash;
+            $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'manage-url':
-            $replacements[$original] = url('newsletter/subscriptions/' . $hash, array('absolute' => TRUE, 'language' => $language));
+            $hash = simplenews_generate_hash($subscriber->mail, 'manage');
+            $url = 'newsletter/subscriptions/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'mail':
@@ -168,4 +173,3 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
 
   return $replacements;
 }
-

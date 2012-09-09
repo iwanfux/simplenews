@@ -834,7 +834,7 @@ function simplenews_build_subscribe_mail(&$message, $params) {
  */
 function simplenews_build_combined_mail(&$message, $params) {
   $context = $params['context'];
-  $changes = $context['changes'];
+  $subscriber = $context['simplenews_subscriber'];
   $langcode = $message['language'];
 
   // Use formatted from address "name" <mail_address>
@@ -845,12 +845,12 @@ function simplenews_build_combined_mail(&$message, $params) {
 
   $changes_list = '';
   $actual_changes = 0;
-  foreach (simplenews_confirmation_get_changes_list($context['simplenews_subscriber'], $changes, $langcode) as $tid => $change) {
+  foreach (simplenews_confirmation_get_changes_list($subscriber, $subscriber->changes, $langcode) as $tid => $change) {
     $changes_list .= ' - ' . $change . "\n";
 
     // Count the actual changes.
-    $subscribed = simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $tid);
-    if ($changes[$tid] == 'subscribe' && !$subscribed || $changes[$tid] == 'unsubscribe' && $subscribed) {
+    $subscribed = simplenews_user_is_subscribed($subscriber->mail, $tid);
+    if ($subscriber->changes[$tid] == 'subscribe' && !$subscribed || $subscriber->changes[$tid] == 'unsubscribe' && $subscribed) {
       $actual_changes++;
     }
   }

@@ -205,7 +205,7 @@ function simplenews_block_form_submit($form, &$form_state) {
  * @see simplenews_subscriptions_page_form_validate()
  * @see simplenews_subscriptions_page_form_submit()
  */
-function simplenews_subscriptions_page_form($form, &$form_state, $code = NULL) {
+function simplenews_subscriptions_page_form($form, &$form_state, $snid = NULL, $timestamp = NULL, $hash = NULL) {
   global $user;
 
   $subscriber = $mail = FALSE;
@@ -214,12 +214,15 @@ function simplenews_subscriptions_page_form($form, &$form_state, $code = NULL) {
     $mail = $user->mail;
   }
   // If a hash is provided, try to load the corresponding subscriber.
-  elseif ($code) {
-    if (!$subscriber = simplenews_subscriber_load_by_hash($code)) {
-      drupal_not_found();
-      return;
+  elseif ($snid && $timestamp && $hash) {
+    $subscriber = simplenews_subscriber_load($snid);
+    if ($subscriber && $hash == simplenews_generate_hash($subscriber->mail, 'manage', $timestamp)) {
+      $mail = $subscriber->mail;
     }
-    $mail = $subscriber->mail;
+    else {
+      drupal_not_found();
+      return array();
+    }
   }
 
   $form = array();
@@ -478,12 +481,19 @@ function simplenews_subscriptions_multi_block_form($form, &$form_state) {
  * @see simplenews_confirm_add_form()
  * @see simplenews_confirm_removal_form()
  *
- * @todo Add parameter description here.
+ * @param $action
+ *   Either add or remove.
+ * @param $snid
+ *   The subscriber id.
+ * @param $tid
+ *   The newsletter id.
+ * @param $timestamp
+ *   The timestamp of the request.
+ * @param $hash
+ *   The confirmation hash.
  */
-function simplenews_confirm_subscription() {
-  $arguments = func_get_args();
-  $op = array_shift($arguments);
-  $code = array_shift($arguments);
+function simplenews_confirm_subscription($action, $snid, $tid, $timestamp, $hash) {
+  $arguments = array_slice(func_get_args(), 5);
 
   // Prevent search engines from indexing this page.
   $noindex = array(
@@ -495,36 +505,33 @@ function simplenews_confirm_subscription() {
   );
   drupal_add_html_head($noindex, 'simplenews-noindex');
 
-  if ($subscriber = simplenews_subscriber_load_by_hash($code)) {
-    // Extract the category id.
-    list($snid, $tid) = explode('t', drupal_substr($code, 10));
-    if ($tid > 0) {
-      $category = simplenews_category_load($tid);
+  $subscriber = simplenews_subscriber_load($snid);
+  if ($subscriber && $hash == simplenews_generate_hash($subscriber->mail, $action, $timestamp)) {
+    $category = simplenews_category_load($tid);
+
+    // If the hash is valid but timestamp is too old, display form to request
+    // a new hash.
+    if ($timestamp < REQUEST_TIME - variable_get('simplenews_hash_expiration', 86400)) {
+      $context = array(
+        'simplenews_subscriber' => $subscriber,
+        'category' => $category,
+      );
+      $token = $action == 'add' ? 'subscribe' : 'unsubscribe';
+      return drupal_get_form('simplenews_request_hash', $token, $context);
     }
-    // The confirmation page called with two arguments will display a confirmation question.
-    // When called with three of more arguments the user will be directed to the
-    // (un)subscribe confirmation page. The additional arguments will be passed on
-    // to the confirmation page.
+    // When called with additional arguments the user will be directed to the
+    // (un)subscribe confirmation page. The additional arguments will be passed
+    // on to the confirmation page.
     if (empty($arguments)) {
-      if ($op == 'remove') {
+      if ($action == 'remove') {
         return drupal_get_form('simplenews_confirm_removal_form', $subscriber->mail, $category);
       }
-      elseif ($op == 'add') {
+      elseif ($action == 'add') {
         return drupal_get_form('simplenews_confirm_add_form', $subscriber->mail, $category);
-      }
-      elseif ($op == 'combined') {
-        // Redirect and display message if no changes are available.
-        if (empty($subscriber->changes)) {
-          drupal_set_message(t('All changes to your subscriptions where already applied. No changes made.'));
-          drupal_goto(variable_get('site_frontpage', 'node'));
-        }
-        else {
-          return drupal_get_form('simplenews_confirm_multi_form', $subscriber);
-        }
       }
     }
     else {
-      if ($op == 'remove') {
+      if ($action == 'remove') {
         simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
           $path = $path . '/' . implode('/', $arguments);
@@ -533,7 +540,7 @@ function simplenews_confirm_subscription() {
         drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
-      elseif ($op == 'add') {
+      elseif ($action == 'add') {
         simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_subscribe_page', '')) {
           $path = $path . '/' . implode('/', $arguments);
@@ -542,36 +549,83 @@ function simplenews_confirm_subscription() {
         drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $subscriber->mail, '%newsletter' => _simplenews_newsletter_name($category))));
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
-      elseif ($op == 'combined') {
-        // Redirect and display message if no changes are available.
-        if (empty($subscriber->changes)) {
-          drupal_set_message(t('All changes to your subscriptions where already applied. No changes made.'));
-          drupal_goto(variable_get('site_frontpage', 'node'));
-        }
-        else {
-          foreach ($subscriber->changes as $tid => $action) {
-            if ($action == 'subscribe') {
-              simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
-            }
-            elseif ($action == 'unsubscribe') {
-              simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
-            }
-          }
-
-          // Clear changes.
-          $subscriber->changes = array();
-          simplenews_subscriber_save($subscriber);
-
-          drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
-          drupal_goto(variable_get('site_frontpage', 'node'));
-        }
-      }
     }
   }
+  return MENU_NOT_FOUND;
+}
 
-  // If md5 didn't match, do a not found.
-  drupal_not_found();
-  return;
+/**
+ * Menu callback: confirm a combined confirmation request.
+ *
+ * This function is called by clicking the confirm link in the confirmation
+ * email. It handles both subscription addition and subscription removal.
+ *
+ * @see simplenews_confirm_add_form()
+ * @see simplenews_confirm_removal_form()
+ *
+ * @param $snid
+ *   The subscriber id.
+ * @param $timestamp
+ *   The timestamp of the request.
+ * @param $hash
+ *   The confirmation hash.
+ */
+function simplenews_confirm_combined($snid, $timestamp, $hash) {
+  $arguments = array_slice(func_get_args(), 3);
+
+  // Prevent search engines from indexing this page.
+  $noindex = array(
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'name' => 'robots',
+      'content' => 'noindex',
+    ),
+  );
+  drupal_add_html_head($noindex, 'simplenews-noindex');
+
+  $subscriber = simplenews_subscriber_load($snid);
+
+  // Redirect and display message if no changes are available.
+  if ($subscriber && empty($subscriber->changes)) {
+    drupal_set_message(t('All changes to your subscriptions where already applied. No changes made.'));
+    drupal_goto(variable_get('site_frontpage', 'node'));
+  }
+
+  if ($subscriber && $hash == simplenews_generate_hash($subscriber->mail, 'combined' . serialize($subscriber->changes), $timestamp)) {
+    // If the hash is valid but timestamp is too old, display form to request
+    // a new hash.
+    if ($timestamp < REQUEST_TIME - variable_get('simplenews_hash_expiration', 86400)) {
+      $context = array(
+        'simplenews_subscriber' => $subscriber,
+      );
+      return drupal_get_form('simplenews_request_hash', 'subscribe_combined', $context);
+    }
+    // When called with additional arguments the user will be directed to the
+    // (un)subscribe confirmation page. The additional arguments will be passed
+    // on to the confirmation page.
+    if (empty($arguments)) {
+      return drupal_get_form('simplenews_confirm_multi_form', $subscriber);
+    }
+    else {
+      // Redirect and display message if no changes are available.
+      foreach ($subscriber->changes as $tid => $action) {
+        if ($action == 'subscribe') {
+          simplenews_subscribe_user($subscriber->mail, $tid, FALSE, 'website');
+        }
+        elseif ($action == 'unsubscribe') {
+          simplenews_unsubscribe_user($subscriber->mail, $tid, FALSE, 'website');
+        }
+      }
+
+      // Clear changes.
+      $subscriber->changes = array();
+      simplenews_subscriber_save($subscriber);
+
+      drupal_set_message(t('Subscription changes confirmed for %user.', array('%user' => $subscriber->mail)));
+      drupal_goto(variable_get('site_frontpage', 'node'));
+    }
+  }
+  return MENU_NOT_FOUND;
 }
 
 /**
@@ -705,6 +759,69 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
   }
 
   $form_state['redirect'] = $path;
+}
+
+/**
+ * Request new hash form.
+ *
+ * @param $key
+ *   The mail key to be sent.
+ * @param $context
+ *   Necessary context to send the mail. Must at least include the simplenews
+ *   subscriber.
+ */
+function simplenews_request_hash($form, &$form_state, $key, $context) {
+  $form_state['key'] = $key;
+  $form_state['context'] = $context;
+
+  return confirm_form($form, t('This link has expired.'), '', '', t('Request new confirmation mail'));
+}
+
+/**
+ * Request new hash form submit callback.
+ */
+function simplenews_request_hash_submit($form, &$form_state) {
+  module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+  $params['from'] = _simplenews_set_from();
+  $params['context'] = $form_state['context'];
+  $subscriber = $params['context']['simplenews_subscriber'];
+  drupal_mail('simplenews', $form_state['key'], $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
+  drupal_set_message(t('The confirmation mail has been sent.'));
+  $form_state['redirect'] = '';
+}
+
+/**
+ * Backwards compatibility for old conformation links.
+ */
+function simplenews_old_confirm_subscription($action, $hash) {
+  $subscriber = simplenews_subscriber_load_by_hash($hash);
+  if ($subscriber) {
+
+    // Extract the category id.
+    list(, $tid) = explode('t', drupal_substr($hash, 10));
+
+    switch ($action) {
+      case 'add':
+      case 'remove':
+        $context = array(
+          'simplenews_subscriber' => $subscriber,
+          'category' => simplenews_category_load($tid),
+        );
+        $token = $action == 'add' ? 'subscribe' : 'unsubscribe';
+        return drupal_get_form('simplenews_request_hash', $token, $context);
+        break;
+
+      case 'combined':
+        if (!empty($subscriber->changes)) {
+          $context = array(
+            'simplenews_subscriber' => $subscriber,
+          );
+          return drupal_get_form('simplenews_request_hash', 'subscribe_combined', $context);
+        }
+        break;
+    }
+  }
+  return MENU_NOT_FOUND;
 }
 
 /**

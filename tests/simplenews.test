@@ -238,10 +238,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       }
     }
 
-    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
@@ -272,15 +269,12 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     // Go to the manage page and submit without changes.
     $subscriber = simplenews_subscriber_load_by_mail($mail);
-    $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $tid);
-    $this->drupalPost('newsletter/subscriptions/' . $hash, array(), t('Update'));
+    $hash = simplenews_generate_hash($subscriber->mail, 'manage');
+    $this->drupalPost('newsletter/subscriptions/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash, array(), t('Update'));
     $mails = $this->drupalGetMails();
     $body = $mails[1]['body'];
-
-    $this->assertTrue(strpos($body, 'No confirmation necessary'));
-    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found = preg_match($pattern, $body, $match);
-    $this->assertFalse($found, t('No confirmation link in unchanged confirm mail.'));
+    $confirm_url = $this->extractConfirmationLink($body);
+    $this->assertFalse($confirm_url, t('No confirmation link in unchanged confirm mail.'));
 
     // Unsubscribe from two of the three enabled newsletters.
     $disable = array_rand(array_flip($enable), 2);
@@ -308,10 +302,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
       }
     }
 
-    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
@@ -351,11 +342,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
     $body = $mails[3]['body'];
-
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     // Change behavior to always use combined mails.
     variable_set('simplenews_use_combined', 'always');
@@ -366,11 +353,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
     $body = $mails[4]['body'];
-
-    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Multi confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     // Change behavior to never, should send two separate mails.
     variable_set('simplenews_use_combined', 'never');
@@ -385,11 +368,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $mails = $this->drupalGetMails();
     foreach (array(5, 6) as $id) {
       $body = $mails[$id]['body'];
-
-      $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-      $found = preg_match($pattern, $body, $match);
-      $confirm_url = $match[0];
-      $this->assertTrue($found, t('Single add confirmation URL found: @url', array('@url' => $confirm_url)));
+      $this->extractConfirmationLink($body);
     }
 
     // Make sure that the /ok suffix works, subscribe from everything.
@@ -406,11 +385,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $mails = $this->drupalGetMails();
     $body = $mails[7]['body'];
 
-    $pattern = '@newsletter/confirm/combined/[0-9,a-f]+t0@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
-
+    $confirm_url = $this->extractConfirmationLink($body);
+    $this->drupalGet($confirm_url);
     $this->drupalGet($confirm_url . '/ok');
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Confirmation message displayed.'));
 
@@ -430,6 +406,108 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalGet($confirm_url);
     $this->assertNoResponse(404, 'Redirected after calling confirmation url more than once.');
     $this->assertRaw(t('All changes to your subscriptions where already applied. No changes made.'));
+
+    // Test expired confirmation links.
+    $enable = array_rand($categories, 3);
+
+    $mail = $this->randomEmail(8, 'testmail');
+    $edit = array(
+      'mail' => $mail,
+    );
+    foreach ($enable as $tid) {
+      $edit['newsletters[' . $tid . ']'] = TRUE;
+    }
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $expired_timestamp = REQUEST_TIME - 86401;
+    $changes = $subscriber->changes;
+    $hash = simplenews_generate_hash($subscriber->mail, 'combined' . serialize($subscriber->changes), $expired_timestamp);
+    $url = 'newsletter/confirm/combined/' . $subscriber->snid . '/' . $expired_timestamp . '/' . $hash;
+    $this->drupalGet($url);
+    $this->assertText(t('This link has expired.'));
+    $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[9]['body'];
+    $confirm_url = $this->extractConfirmationLink($body);
+
+    $this->drupalGet($confirm_url);
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      $pos = strpos($body, t('Subscribe to @name', array('@name' => $category->name)));
+      if (in_array($tid, $enable)) {
+        $this->assertTrue($pos);
+      }
+      else {
+        $this->assertFalse($pos);
+      }
+    }
+
+    $confirm_url = $this->extractConfirmationLink($body);
+
+    $this->drupalGet($confirm_url);
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      if (in_array($tid, $enable)) {
+        $this->assertText(t('Subscribe to @name', array('@name' => $category->name)));
+      }
+      else {
+        $this->assertNoText(t('Subscribe to @name', array('@name' => $category->name)));
+      }
+    }
+
+    $this->drupalPost($confirm_url, NULL, t('Confirm'));
+    $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
+
+    // Make sure that old links still work.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    foreach ($changes as &$action) {
+      $action = 'unsubscribe';
+    }
+    $subscriber->changes = $changes;
+    simplenews_subscriber_save($subscriber);
+    $url = 'newsletter/confirm/combined/' . simplenews_generate_old_hash($mail, $subscriber->snid, $tid);
+
+    $this->drupalGet($url);
+    $this->assertText(t('This link has expired.'));
+    $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[10]['body'];
+    $confirm_url = $this->extractConfirmationLink($body);
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+
+    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
+
+    // Verify listed changes.
+    foreach ($categories as $tid => $category) {
+      if (in_array($tid, $enable)) {
+        $this->assertText(t('Unsubscribe from @name', array('@name' => $category->name)));
+      }
+      else {
+        $this->assertNoText(t('Unsubscribe from @name', array('@name' => $category->name)));
+      }
+    }
+  }
+
+  /**
+   * Extract a confirmation link from a mail body.
+   */
+  function extractConfirmationLink($body) {
+    $pattern = '@newsletter/confirm/.+@';
+    preg_match($pattern, $body, $match);
+    $found = preg_match($pattern, $body, $match);
+    if (!$found) {
+      return FALSE;
+    }
+    $confirm_url = $match[0];
+    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    return $confirm_url;
   }
 
   /**
@@ -486,13 +564,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscription->status, t('Subscription is unconfirmed'));
 
     $mails = $this->drupalGetMails();
+    $confirm_url = $this->extractConfirmationLink($mails[0]['body']);
     $body = $mails[0]['body'];
-
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    preg_match($pattern, $body, $match);
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -545,11 +618,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[2]['body'];
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    preg_match($pattern, $body, $match);
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -590,11 +659,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[3]['body'];
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    preg_match($pattern, $body, $match);
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -631,10 +696,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[5]['body'];
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -660,10 +722,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[6]['body'];
     $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
 
-    $pattern = '@newsletter/confirm/remove/[0-9,a-f]+t[0-9]+@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -675,8 +734,8 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     // Visit the newsletter/subscriptions page with the hash.
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
-    $hash = simplenews_generate_hash($subscriber->mail, $subscriber->snid, $tid);
-    $this->drupalGet('newsletter/subscriptions/' . $hash);
+    $hash = simplenews_generate_hash($subscriber->mail, 'manage');
+    $this->drupalGet('newsletter/subscriptions/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash);
     $this->assertText(t('Subscriptions for @mail', array('@mail' => $mail)));
 
     $edit = array(
@@ -692,10 +751,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[7]['body'];
-    $pattern = '@newsletter/confirm/add/[0-9,a-f]+t[0-9]+@';
-    $found = preg_match($pattern, $body, $match);
-    $confirm_url = $match[0];
-    $this->assertTrue($found, t('Confirmation URL found: @url', array('@url' => $confirm_url)));
+    $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
     $newsletter = taxonomy_term_load($tid);
@@ -710,12 +766,10 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertTrue(isset($subscriber->tids[$tid]));
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $subscriber->newsletter_subscription[$tid]->status);
 
-    // Attemt to fetch the page using an invalid hash format.
-    $this->drupalGet('newsletter/subscriptions/' . strrev($hash));
-    $this->assertResponse(404);
 
     // Attemt to fetch the page using a wrong hash but correct format.
-    $this->drupalGet('newsletter/subscriptions/' . simplenews_generate_hash($subscriber->mail . 'a', $subscriber->snid, $tid));
+    $hash = simplenews_generate_hash($subscriber->mail . 'a', 'manage');
+    $this->drupalGet('newsletter/subscriptions/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash);
     $this->assertResponse(404);
 
     // Attempt to unsubscribe a non-existing subscriber.
@@ -730,8 +784,64 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $body = $mails[8]['body'];
     // Remove line breaks from body in case the string is split.
     $body = str_replace("\n", ' ', $body);
-    debug($body);
     $this->assertTrue(strpos($body, 'is not subscribed to this mailing list') !== FALSE);
+
+    // Test expired confirmation links.
+    $edit = array(
+      'mail' => $mail,
+      'newsletters[' . $tid . ']' => TRUE,
+    );
+    $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
+
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $expired_timestamp = REQUEST_TIME - 86401;
+    $hash = simplenews_generate_hash($subscriber->mail, 'add', $expired_timestamp);
+    $url = 'newsletter/confirm/add/' . $subscriber->snid . '/' . $tid . '/' . $expired_timestamp . '/' . $hash;
+    $this->drupalGet($url);
+    $this->assertText(t('This link has expired.'));
+    $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[10]['body'];
+    $confirm_url = $this->extractConfirmationLink($body);
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Subscribe'));
+    $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
+
+    // Make sure the subscription is confirmed now.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+
+    $this->assertTrue(isset($subscriber->tids[$tid]));
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $subscriber->newsletter_subscription[$tid]->status);
+
+    // Make sure that old links still work.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $url = 'newsletter/confirm/remove/' . simplenews_generate_old_hash($mail, $subscriber->snid, $tid);
+
+    $this->drupalGet($url);
+    $this->assertText(t('This link has expired.'));
+    $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
+
+    $mails = $this->drupalGetMails();
+    $body = $mails[11]['body'];
+    $confirm_url = $this->extractConfirmationLink($body);
+
+    $this->drupalGet($confirm_url);
+    $newsletter = taxonomy_term_load($tid);
+    $this->assertRaw(t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
+
+    $this->drupalPost($confirm_url, NULL, t('Unsubscribe'));
+    $this->assertRaw(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber removed from newsletter'));
+
+    // Make sure the subscription is confirmed now.
+    $subscriber = simplenews_subscriber_load_by_mail($mail);
+
+    $this->assertFalse(isset($subscriber->tids[$tid]));
+    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $subscriber->newsletter_subscription[$tid]->status);
   }
 
   /**
@@ -2692,8 +2802,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
 
       $this->assertTrue(strpos($mail['body'], t('Unsubscribe from this newsletter')));
       // Make sure the mail has the correct unsubscribe hash.
-      $subscriber = simplenews_subscriber_load_by_mail($mail['to']);
-      $hash = simplenews_generate_hash($mail['to'], $subscriber->snid, $tid);
+      $hash = simplenews_generate_hash($mail['to'], 'remove');
       $this->assertTrue(strpos($mail['body'], $hash), 'Correct hash is used in footer');
       $this->assertTrue(strpos($mail['headers']['List-Unsubscribe'], $hash), 'Correct hash is used in header');
     }
