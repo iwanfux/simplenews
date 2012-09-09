@@ -544,7 +544,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       return $this->getFromAddress();
     }
 
-    return '"'. addslashes(mime_header_encode($this->getCategory()->from_name)) .'" <'. $this->getFromAddress() .'>';
+    return '"' . addslashes(mime_header_encode($this->getCategory()->from_name)) . '" <' . $this->getFromAddress() . '>';
   }
 
   /**
