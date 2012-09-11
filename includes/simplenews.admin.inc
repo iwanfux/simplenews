@@ -1730,8 +1730,8 @@ function theme_simplenews_status($variables) {
   switch ($source) {
     case 'published':
       $images = array(
-        0 => 'sn-saved.png',
-        1 => 'sn-sent.png',
+        0 => 'images/sn-saved.png',
+        1 => 'images/sn-sent.png',
       );
       $title = array(
         0 => t('Not published'),
@@ -1740,8 +1740,8 @@ function theme_simplenews_status($variables) {
       break;
     case 'activated':
       $images = array(
-        0 => 'sn-saved.png',
-        1 => 'sn-sent.png',
+        0 => 'images/sn-saved.png',
+        1 => 'images/sn-sent.png',
       );
       $title = array(
         0 => t('Inactive: no newsletters will be sent'),
@@ -1750,8 +1750,8 @@ function theme_simplenews_status($variables) {
       break;
     case 'sent':
       $images = array(
-        SIMPLENEWS_STATUS_SEND_PENDING => 'sn-cron.png',
-        SIMPLENEWS_STATUS_SEND_READY => 'sn-sent.png',
+        SIMPLENEWS_STATUS_SEND_PENDING => 'images/sn-cron.png',
+        SIMPLENEWS_STATUS_SEND_READY => 'images/sn-sent.png',
       );
       $title = array(
         SIMPLENEWS_STATUS_SEND_NOT => t('Not yet sent'),
