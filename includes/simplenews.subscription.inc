@@ -877,7 +877,7 @@ function simplenews_subscriptions_admin_form($form, &$form_state, $snid) {
     }
     $form['language'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Preferred language',
+      '#title' => t('Preferred language'),
       '#description' => t('The e-mails will be localized in language chosen. Real users have their preference in account settings.'),
       '#disabled' => FALSE,
     );
