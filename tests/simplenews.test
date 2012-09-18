@@ -1991,6 +1991,7 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
       'modules[Mail][simplenews][enable]' => 1,
     );
     $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+    $this->drupalPost(NULL, array(), t('Continue'));
 
     // Attempt to subscribe a mail address.
     $mail = 'new@example.org';
