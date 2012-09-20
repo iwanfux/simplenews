@@ -149,13 +149,6 @@ function simplenews_schema() {
         'default' => '',
         'description' => 'Subscriber preferred language.',
       ),
-      'timestamp' => array(
-        'description' => 'UNIX timestamp of when the user is (un)subscribed.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'changes' => array(
         'description' => 'Contains the requested subscription changes',
         'type' => 'text',
@@ -1085,4 +1078,13 @@ function simplenews_update_7014() {
   $type = node_type_get_type('simplenews');
   $type->name = t('Newsletter issue');
   node_type_save($type);
+}
+
+/**
+ * Remove the timestamp column on the {simplenews_subscriber}.
+ */
+function simplenews_update_7015() {
+  if (db_field_exists('simplenews_subscriber', 'timestamp')) {
+    db_drop_field('simplenews_subscriber', 'timestamp');
+  }
 }
