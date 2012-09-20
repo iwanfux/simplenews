@@ -27,7 +27,7 @@ function simplenews_rules_confirmation_list() {
 function simplenews_rules_simplenews_unsubscribe_user($subscriber, $subscription) {
   $args = array(
     'mail' => $subscriber->mail,
-    'tid' => $subscription->tid,
+    'newsletter' => simplenews_newsletter_load($subscription->newsletter_id),
   );
   rules_invoke_event_by_args('simplenews_rules_event_unsubscribe', $args);
 }
@@ -38,7 +38,7 @@ function simplenews_rules_simplenews_unsubscribe_user($subscriber, $subscription
 function simplenews_rules_simplenews_subscribe_user($subscriber, $subscription) {
   $args = array(
     'mail' => $subscriber->mail,
-    'tid' => $subscription->tid,
+    'newsletter' => simplenews_newsletter_load($subscription->newsletter_id),
   );
   rules_invoke_event_by_args('simplenews_rules_event_subscribe', $args);
 }

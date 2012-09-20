@@ -279,7 +279,6 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
 
     // Store this spool row as processed.
     $this->processed[$spool_data->msid] = $spool_data;
-
     $node = node_load($spool_data->nid);
     if (!$node) {
       // If node the load failed, set the processed status done and proceed with
@@ -352,9 +351,9 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   protected $build;
 
   /**
-   * The newsletter category.
+   * The newsletter.
    */
-  protected $category;
+  protected $newsletter;
 
   /**
    * The subscriber and therefore recipient of this mail.
@@ -365,11 +364,6 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * The mail key used for drupal_mail().
    */
   protected $key = 'test';
-
-  /**
-   * The simplenews newsletter.
-   */
-  protected $newsletter;
 
   /**
    * Cache implementation used for this source.
@@ -384,8 +378,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   public function __construct($node, $subscriber) {
     $this->setSubscriber($subscriber);
     $this->setNode($node);
-    $this->newsletter = simplenews_newsletter_load($node->nid);
-    $this->category = simplenews_category_load($this->newsletter->tid);
+    $this->newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($node));
     $this->initCache();
   }
 
@@ -441,10 +434,10 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   }
 
   /**
-   * Returns the corresponding category.
+   * Returns the corresponding newsletter.
    */
-  public function getCategory() {
-    return $this->category;
+  public function getNewsletter() {
+    return $this->newsletter;
   }
 
   /**
@@ -467,13 +460,13 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   public function getHeaders(array $headers) {
 
     // If receipt is requested, add headers.
-    if ($this->category->receipt) {
+    if ($this->newsletter->receipt) {
       $headers['Disposition-Notification-To'] = $this->getFromAddress();
       $headers['X-Confirm-Reading-To'] = $this->getFromAddress();
     }
 
     // Add priority if set.
-    switch ($this->category->priority) {
+    switch ($this->newsletter->priority) {
       case SIMPLENEWS_PRIORITY_HIGHEST:
         $headers['Priority'] = 'High';
         $headers['X-Priority'] = '1';
@@ -515,7 +508,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    */
   function getTokenContext() {
     return array(
-      'category' => $this->getCategory(),
+      'newsletter' => $this->getNewsletter(),
       'simplenews_subscriber' => $this->getSubscriber(),
       'node' => $this->getNode(),
     );
@@ -544,14 +537,14 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
       return $this->getFromAddress();
     }
 
-    return '"' . addslashes(mime_header_encode($this->getCategory()->from_name)) . '" <' . $this->getFromAddress() . '>';
+    return '"' . addslashes(mime_header_encode($this->getNewsletter()->from_name)) . '" <' . $this->getFromAddress() . '>';
   }
 
   /**
    * Implements SimplenewsSourceInterface::getFromAddress().
    */
   function getFromAddress() {
-    return $this->getCategory()->from_address;
+    return $this->getNewsletter()->from_address;
   }
 
   /**
@@ -565,7 +558,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
    * Implements SimplenewsSourceInterface::getFormat().
    */
   function getFormat() {
-    return $this->getCategory()->format;
+    return $this->getNewsletter()->format;
   }
 
   /**
@@ -591,7 +584,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     $language_list = language_list();
     // Use the requested language if enabled.
     $language = isset($language_list[$langcode]) ? $language_list[$langcode] : NULL;
-    $subject = token_replace($this->getCategory()->email_subject, $this->getTokenContext(), array('sanitize' => FALSE, 'language' => $language));
+    $subject = token_replace($this->getNewsletter()->email_subject, $this->getTokenContext(), array('sanitize' => FALSE, 'language' => $language));
 
     // Line breaks are removed from the email subject to prevent injection of
     // malicious data into the email header.
@@ -686,7 +679,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     if ($cache = $this->cache->get('build', 'body:' . $format)) {
       return $cache;
     }
-    $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'category' => $this->getCategory(), 'language' => $this->getLanguage(), 'simplenews_subscriber' => $this->getSubscriber()));
+    $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'newsletter' => $this->getNewsletter(), 'language' => $this->getLanguage(), 'simplenews_subscriber' => $this->getSubscriber()));
     $this->cache->set('build', 'body:' . $format, $body);
     return $body;
   }
@@ -705,7 +698,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     return $this->getBodyWithFormat('plain');
   }
 
-   /**
+  /**
    * Get the body with the requested format.
    *
    * @param $format
@@ -728,7 +721,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     $body = token_replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
     if ($format == 'plain') {
       // Convert HTML to text if requested to do so.
-      $body = simplenews_html_to_text($body, $this->getCategory()->hyperlinks);
+      $body = simplenews_html_to_text($body, $this->getNewsletter()->hyperlinks);
     }
     $this->cache->set('final', 'body:' . $format, $body);
     $this->resetContext();
@@ -754,7 +747,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     // Build and buffer message footer
     $footer = theme('simplenews_newsletter_footer', array(
       'build' => $this->build($format),
-      'category' => $this->getCategory(),
+      'newsletter' => $this->getNewsletter(),
       'context' => $this->getTokenContext(),
       'key' => $this->getKey(),
       'language' => $this->getLanguage(),
@@ -945,7 +938,7 @@ class SimplenewsSourceCacheBuild extends SimplenewsSourceCacheStatic {
       return FALSE;
     }
 
-     // Only cache data and build information.
+    // Only cache data and build information.
     return in_array($group, array('data', 'build'));
   }
 

@@ -86,9 +86,9 @@ function simplenews_views_data() {
     ),
   );
 
-  $data['simplenews_mail_spool']['tid'] = array(
-    'title' => t('Term ID'),
-    'help' => t('The {term_data}.tid this newsletter issue belongs to.'),
+  $data['simplenews_mail_spool']['newsletter_id'] = array(
+    'title' => t('Newsletter ID'),
+    'help' => t('The newsletter_id this newsletter issue belongs to.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -105,9 +105,9 @@ function simplenews_views_data() {
     ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
-      'base' => 'taxonomy_term_data',
-      'base field' => 'tid',
-      'label' => t('Issue'),
+      'base' => 'simplenews_newsletter',
+      'base field' => 'newsletter_id',
+      'label' => t('Newsletter'),
     ),
   );
 
@@ -209,96 +209,6 @@ function simplenews_views_data() {
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',
-    ),
-  );
-
-  /* ------------ Definitions for Simplenews issue ---------------------- */
-
-  $data['simplenews_newsletter']['table'] = array(
-    // Define the base group of this table. Fields that don't
-    // have a group defined will go into this field by default.
-    'group' => t('Simplenews issue'),
-  );
-
-  // Joins
-  $data['simplenews_newsletter']['table']['join'] = array(
-    'node' => array(
-      'left_field' => 'nid',
-      'field' => 'nid',
-    ),
-    'taxonomy_term_data' => array(
-      'left_field' => 'tid',
-      'field' => 'tid',
-    ),
-  );
-
-  $data['simplenews_newsletter']['tid'] = array(
-    'title' => t('Term ID'),
-    'help' => t('The {term_data}.tid (= newsletter series) this issue belongs to.'),
-    'field' => array(
-      'handler' => 'views_handler_field_numeric',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'taxonomy_term_data',
-      'base field' => 'tid',
-      'label' => t('Newsletter'),
-    ),
-  );
-
-  $data['simplenews_newsletter']['status'] = array(
-    'title' => t('Sent status'), // The item it appears as on the UI,
-    'help' => t('Newsletter sent status: 0: Not sent, 1: Pending (being sent or waiting for cron to run), 2: Sent.'), // The help that appears on the UI,
-    'field' => array(
-      'handler' => 'simplenews_handler_field_newsletter_status',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'simplenews_handler_filter_newsletter_status',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_newsletter']['sent_subscriber_count'] = array(
-    'title' => t('Subscriber count'),
-    'help' => t('The count of subscribers of the newsletter at the time it was sent.'),
-    'field' => array(
-      'handler' => 'views_handler_field_numeric',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_newsletter']['send'] = array(
-    'field' => array(
-      'title' => t('Send newsletter'),
-      'help' => t('Provides a link to send the simplenews newsletter if not sent yet.'),
-      'handler' => 'simplenews_handler_field_newsletter_send',
     ),
   );
 
@@ -459,9 +369,9 @@ function simplenews_views_data() {
   );
 
   $data['simplenews_subscription']['table']['join'] = array(
-    'taxonomy_term_data' => array(
-      'left_field' => 'tid',
-      'field' => 'tid',
+    'simplenews_newsletter' => array(
+      'left_field' => 'newsletter_id',
+      'field' => 'newsletter_id',
     ),
     'simplenews_subscriber' => array(
       'left_field' => 'snid',
@@ -495,9 +405,9 @@ function simplenews_views_data() {
     ),
   );
 
-  $data['simplenews_subscription']['tid'] = array(
-    'title' => t('Term ID'),
-    'help' => t('The newsletter series ({term_data}.tid) the subscriber is subscribed to.'),
+  $data['simplenews_subscription']['newsletter_id'] = array(
+    'title' => t('Newsletter ID'),
+    'help' => t('The newsletter ({simplenews_newsletter}.newsletter_id) the subscriber is subscribed to.'),
     'field' => array(
       'handler' => 'views_handler_field_numeric',
       'click sortable' => TRUE,
@@ -514,9 +424,9 @@ function simplenews_views_data() {
     ),
     'relationship' => array(
       'handler' => 'views_handler_relationship',
-      'base' => 'taxonomy_term_data',
-      'base field' => 'tid',
-      'label' => t('Term (Newsletter series)'),
+      'base' => 'simplenews_newsletter',
+      'base field' => 'newsletter_id',
+      'label' => t('Newsletter'),
     ),
   );
 
@@ -571,232 +481,6 @@ function simplenews_views_data() {
     ),
     'argument' => array(
       'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  /* ------------ Definitions for Simplenews category ---------------------- */
-
-  // Define the base group of this table. Fields that don't
-  // have a group defined will go into this field by default.
-  $data['simplenews_category']['table'] = array(
-    'group' => t('Simplenews category'),
-  );
-
-  // Joins
-  $data['simplenews_category']['table']['join'] = array(
-    // Category links directly to taxonomy via tid.
-    'taxonomy_term_data' => array(
-      'left_field' => 'tid',
-      'field' => 'tid',
-    ),
-  );
-
-  // Fields
-  $data['simplenews_category']['tid'] = array(
-    'title' => t('Term ID'),
-    'help' => t('The newsletter series ({term_data}.tid) the subscriber is subscribed to.'),
-    'field' => array(
-      'handler' => 'views_handler_field_numeric',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-    'relationship' => array(
-      'handler' => 'views_handler_relationship',
-      'base' => 'taxonomy_term_data',
-      'base field' => 'tid',
-      'label' => t('Term (Newsletter series)'),
-    ),
-  );
-
-  $data['simplenews_category']['format'] = array(
-    'title' => t('Format'),
-    'help' => t('Format of the newsletter (plain or html).'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_string',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['priority'] = array(
-    'title' => t('Priority'),
-    'help' => t('Email priority according to RFC 2156 and RFC 5231 (0 = none; 1 = highest; 2 = high; 3 = normal; 4 = low; 5 = lowest).'),
-    'field' => array(
-      'handler' => 'simplenews_handler_field_newsletter_priority',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'simplenews_handler_filter_newsletter_priority',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_newsletter']['receipt'] = array(
-    'title' => t('Receipt'),
-    'help' => t('Boolean indicating request for email receipt confirmation according to RFC 2822.'),
-    'field' => array(
-      'handler' => 'views_handler_field_boolean',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_boolean_operator',
-      'allow empty' => TRUE,
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['from_name'] = array(
-    'title' => t('From name'),
-    'help' => t('Sender name for newsletter emails.'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_string',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['email_subject'] = array(
-    'title' => t('Email Subject'),
-    'help' => t('Subject of newsletter email. May contain tokens.'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_string',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['from_address'] = array(
-    'title' => t('From address'),
-    'help' => t('Sender address for newsletter emails'),
-    'field' => array(
-      'handler' => 'views_handler_field',
-      'click_sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_string'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_srting',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['hyperlinks'] = array(
-    'title' => t('Hyperlinks displaymode'),
-    'help' => t('Flag indicating type of hyperlink conversion (1 = hyperlinks are in-line; 0 = hyperlinks are placed at email bottom).'),
-    'field' => array(
-      'handler' => 'simplenews_handler_field_category_hyperlinks',
-      'click_sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'simplenews_handler_filter_category_hyperlinks'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric'
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['new_account'] = array(
-    'title' => t('New account'),
-    'help' => t('How to treat subscription at account creation (none = None; on = Default on; off = Default off; silent = Invisible subscription).'),
-    'field' => array(
-      'handler' => 'simplenews_handler_field_category_new_account',
-      'click_sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'simplenews_handler_filter_category_new_account'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['opt_inout'] = array(
-    'title' => t('Confirmation displaymode'),
-    'help' => t('How to treat subscription confirmation (hidden = Newsletter is hidden from the user; single = Single opt-in; double = Double opt-in).'),
-    'field' => array(
-      'handler' => 'simplenews_handler_field_category_opt_inout',
-      'click_sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'simplenews_handler_filter_category_opt_inout'
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_string',
-    ),
-    'sort' => array(
-      'handler' => 'views_handler_sort',
-    ),
-  );
-
-  $data['simplenews_category']['block'] = array(
-    'title' => t('Block'),
-    'help' => t('Indicates wether a subscription block is available for this category'),
-    'field' => array(
-      'handler' => 'views_handler_field_numeric',
-      'click_sortable' => TRUE,
-    ),
-    'filter' => array(
-      'handler' => 'views_handler_filter_numeric',
-    ),
-    'argument' => array(
-      'handler' => 'views_handler_argument_numeric',
     ),
     'sort' => array(
       'handler' => 'views_handler_sort',

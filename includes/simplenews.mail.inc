@@ -23,11 +23,11 @@ function simplenews_add_node_to_spool($node) {
   $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
   $select->addField('s', 'mail');
   $select->addField('s', 'snid');
-  $select->addField('t', 'tid');
+  $select->addField('t', 'newsletter_id');
   $select->addExpression($node->nid, 'nid');
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
-  $select->condition('t.tid', $node->simplenews->tid);
+  $select->condition('t.newsletter_id', simplenews_issue_newsletter_id($node));
   $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
   $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
 
@@ -36,7 +36,7 @@ function simplenews_add_node_to_spool($node) {
     ->execute();
 
   // Update simplenews newsletter status to send pending.
-  simplenews_newsletter_update_sent_status($node);
+  simplenews_issue_update_sent_status($node);
 
   // Notify other modules that a newsletter was just spooled.
   module_invoke_all('simplenews_spooled', $node);
@@ -163,7 +163,7 @@ function simplenews_send_source(SimplenewsSourceInterface $source) {
 
   // Send mail.
   $message = drupal_mail('simplenews', $source->getKey(), $source->getRecipient(), $source->getLanguage(), $params, $source->getFromFormatted());
-
+  
   // Log sent result in watchdog.
   if (variable_get('simplenews_debug', FALSE)) {
     if ($message['result']) {
@@ -289,11 +289,14 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     }
 
     // Update subscriber count.
-    foreach ($sent as $nid => $count) {
-      db_update('simplenews_newsletter')
-        ->condition('nid', $nid)
-        ->expression('sent_subscriber_count', 'sent_subscriber_count + :count', array(':count' => $count))
-        ->execute();
+    if (lock_acquire('simplenews_update_sent_count')) {
+      foreach ($sent as $nid => $count) {
+        entity_get_controller('node')->resetCache(array($nid));
+        $node = node_load($nid);
+        simplenews_issue_sent_count($node, simplenews_issue_sent_count($node) + $count);
+        node_save($node);
+      }
+      lock_release('simplenews_update_sent_count');
     }
 
     // Report sent result and elapsed time. On Windows systems getrusage() is
@@ -435,8 +438,7 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
     if (count($messages) > 0) {
       // Set the state and the timestamp of the messages
       simplenews_update_spool(
-        array_keys($messages),
-        array('status' => SIMPLENEWS_SPOOL_IN_PROGRESS)
+        array_keys($messages), array('status' => SIMPLENEWS_SPOOL_IN_PROGRESS)
       );
     }
 
@@ -471,7 +473,7 @@ function simplenews_update_spool($msids, $data) {
     ->condition('msid', $msids)
     ->fields(array(
       'status' => $data['status'],
-      'error' => isset($result['error']) ? (int)$data['error'] : 0,
+      'error' => isset($result['error']) ? (int) $data['error'] : 0,
       'timestamp' => REQUEST_TIME,
     ))
     ->execute();
@@ -507,8 +509,8 @@ function simplenews_count_spool(array $conditions = array()) {
         // Do not count pending entries unless they are expired.
         if ($status == SIMPLENEWS_SPOOL_IN_PROGRESS) {
           $status_or->condition(db_and()
-            ->condition('status', $status)
-            ->condition('timestamp', simplenews_get_expiration_time(), '<')
+              ->condition('status', $status)
+              ->condition('timestamp', simplenews_get_expiration_time(), '<')
           );
         }
         else {
@@ -564,7 +566,6 @@ function simplenews_delete_spool(array $conditions) {
   return $query->execute();
 }
 
-
 /**
  * Update newsletter sent status.
  *
@@ -591,27 +592,28 @@ function simplenews_send_status_update() {
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  $query = db_select('simplenews_newsletter', 's');
-  $query->innerJoin('node', 'n', 's.nid = n.nid');
-  $query->fields('s', array('nid', 'tid'))
-    ->fields('n', array('tnid'))
-    ->condition('s.status', SIMPLENEWS_STATUS_SEND_PENDING);
-  foreach ($query->execute() as $newsletter) {
-    $counts[$newsletter->tnid][$newsletter->nid] = simplenews_count_spool(array('nid' => $newsletter->nid));
+  $query = new EntityFieldQuery;
+  $nodes = $query
+    ->entityCondition('entity_type', 'node')
+    ->fieldCondition(variable_get('simplenews_issue_status_field', 'simplenews_issue_status'), 'value', SIMPLENEWS_STATUS_SEND_PENDING)
+    ->execute();
+  if ($nodes) {
+    foreach (reset($nodes) as $node) {
+      $counts[simplenews_issue_newsletter_id($node)][$node->nid] = simplenews_count_spool(array('nid' => $node->nid));
+    }
   }
-
   // Determine which nodes are send per translation group and per individual node.
-  foreach ($counts as $tnid => $node_count) {
+  foreach ($counts as $newsletter_id => $node_count) {
     // The sum of emails per tnid is the combined status result for the group of translated nodes.
     // Untranslated nodes have tnid == 0 which will be ignored later.
-    $sum[$tnid] = array_sum($node_count);
+    $sum[$newsletter_id] = array_sum($node_count);
     foreach ($node_count as $nid => $count) {
       // Translated nodes (tnid != 0)
-      if ($tnid != '0' && $sum[$tnid] == '0') {
+      if ($newsletter_id != '0' && $sum[$newsletter_id] == '0') {
         $send[] = $nid;
       }
       // Untranslated nodes (tnid == 0)
-      elseif ($tnid == '0' && $count == '0') {
+      elseif ($newsletter_id == '0' && $count == '0') {
         $send[] = $nid;
       }
     }
@@ -620,10 +622,9 @@ function simplenews_send_status_update() {
   // Update overall newsletter status
   if (!empty($send)) {
     foreach ($send as $nid) {
-      db_update('simplenews_newsletter')
-        ->condition('nid', $nid)
-        ->fields(array('status' => SIMPLENEWS_STATUS_SEND_READY))
-        ->execute();
+      $node = node_load($nid);
+      simplenews_issue_status($node, SIMPLENEWS_STATUS_SEND_READY);
+      node_save($node);
     }
   }
 }
@@ -768,7 +769,6 @@ function _simplenews_measure_usec($start = FALSE) {
   return $now - $start_time;
 }
 
-
 /**
  * Build subject and body of the test and normal newsletter email.
  *
@@ -814,14 +814,13 @@ function simplenews_build_subscribe_mail(&$message, $params) {
 
   $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
   $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
-
-  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['category']->tid)) {
+  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['newsletter']->newsletter_id)) {
     $body = simplenews_subscription_confirmation_text('subscribe_subscribed', $langcode);
   }
   else {
     $body = simplenews_subscription_confirmation_text('subscribe_unsubscribed', $langcode);
   }
-    $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
+  $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
 }
 
 /**
@@ -845,12 +844,12 @@ function simplenews_build_combined_mail(&$message, $params) {
 
   $changes_list = '';
   $actual_changes = 0;
-  foreach (simplenews_confirmation_get_changes_list($subscriber, $subscriber->changes, $langcode) as $tid => $change) {
+  foreach (simplenews_confirmation_get_changes_list($context['simplenews_subscriber'], $subscriber->changes, $langcode) as $newsletter_id => $change) {
     $changes_list .= ' - ' . $change . "\n";
 
     // Count the actual changes.
-    $subscribed = simplenews_user_is_subscribed($subscriber->mail, $tid);
-    if ($subscriber->changes[$tid] == 'subscribe' && !$subscribed || $subscriber->changes[$tid] == 'unsubscribe' && $subscribed) {
+    $subscribed = simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $newsletter_id);
+    if ($subscriber->changes[$newsletter_id] == 'subscribe' && !$subscribed || $subscriber->changes[$newsletter_id] == 'unsubscribe' && $subscribed) {
       $actual_changes++;
     }
   }
@@ -883,7 +882,7 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
   $message['subject'] = simplenews_subscription_confirmation_text('subscribe_subject', $langcode);
   $message['subject'] = token_replace($message['subject'], $context, array('sanitize' => FALSE));
 
-  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['category']->tid)) {
+  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['newsletter']->newsletter_id)) {
     $body = simplenews_subscription_confirmation_text('unsubscribe_subscribed', $langcode);
     $message['body'][] = token_replace($body, $context, array('sanitize' => FALSE));
   }

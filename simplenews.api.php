@@ -32,7 +32,7 @@
  */
 
 /**
- * @defgroup newsletter Newsletter (category)
+ * @defgroup newsletter (category)
  *
  * @todo
  */
@@ -99,16 +99,6 @@ function hook_simplenews_subscription_operations() {
     ),
   );
   return $operations;
-}
-
-/**
- * Act after a newsletter has been spooled.
- *
- * @param $node
- *   The node that has just been spooled.
- */
-function hook_simplenews_spooled($node) {
-
 }
 
 /**

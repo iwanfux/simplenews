@@ -5,8 +5,8 @@
  * Default theme implementation to format the simplenews newsletter footer.
  *
  * Copy this file in your theme directory to create a custom themed footer.
- * Rename it to simplenews-newsletter-footer--[tid].tpl.php to override it for a
- * newsletter using the newsletter term's id.
+ * Rename it to simplenews-newsletter-footer--[newsletter-id].tpl.php to override it for a
+ * newsletter using the newsletter id.
  *
  * @todo Update the available variables.
  * Available variables:

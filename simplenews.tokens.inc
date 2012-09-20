@@ -14,10 +14,10 @@ function simplenews_token_info() {
     'description' => t('Tokens related to the newsletter recipient'),
     'needs-data' => 'simplenews_subscriber',
   );
-  $types['simplenews-category'] = array(
-    'name' => t('Simplenews newsletter category'),
-    'description' => t('Tokens related to the newsletter category'),
-    'needs-data' => 'category',
+  $types['simplenews-newsletter'] = array(
+    'name' => t('Simplenews newsletter'),
+    'description' => t('Tokens related to the newsletter'),
+    'needs-data' => 'newsletter',
   );
 
   // Tokens for simplenews subscriber.
@@ -48,26 +48,21 @@ function simplenews_token_info() {
     'type' => 'user',
   );
 
-  // Tokens for simplenews newsletter category.
-  $category['name'] = array(
-    'name' => t('Newsletter category'),
-    'description' => t('The name of the newsletter category.'),
+  // Tokens for simplenews newsletter.
+  $newsletter['name'] = array(
+    'name' => t('Newsletter'),
+    'description' => t('The name of the newsletter.'),
   );
-  $category['url'] = array(
-    'name' => t('Newsletter category URL'),
-    'description' => t('The URL of the page listing the issues of this newsletter category.'),
-  );
-  $category['term'] = array(
-    'name' => t('Corresponding term'),
-    'description' => t('The taxonomy term of this newsletter category'),
-    'type' => 'term',
+  $newsletter['url'] = array(
+    'name' => t('Newsletter URL'),
+    'description' => t('The URL of the page listing the issues of this newsletter.'),
   );
 
   return array(
     'types' => $types,
     'tokens' => array(
       'simplenews-subscriber' => $subscriber,
-      'simplenews-category' => $category,
+      'simplenews-newsletter' => $newsletter,
     ),
   );
 }
@@ -93,7 +88,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
         return;
       }
       $subscriber = $data['simplenews_subscriber'];
-      $category = isset($data['category']) ? $data['category'] : NULL;
+      $newsletter = isset($data['newsletter']) ? $data['newsletter'] : NULL;
       $language = isset($subscriber->language->language) ? $subscriber->language : user_preferred_language($subscriber);
 
       $url_arguments = array('absolute' => TRUE, 'language' => $language);
@@ -102,7 +97,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
         switch ($name) {
           case 'subscribe-url':
             $hash = simplenews_generate_hash($subscriber->mail, 'add');
-            $url = 'newsletter/confirm/add/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $url = 'newsletter/confirm/add/' . $subscriber->snid . '/' . $newsletter->newsletter_id. '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
@@ -113,7 +108,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
               continue;
             }
             $hash = simplenews_generate_hash($subscriber->mail, 'remove');
-            $url = 'newsletter/confirm/remove/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $url = 'newsletter/confirm/remove/' . $subscriber->snid . '/' . $newsletter->newsletter_id . '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
@@ -125,7 +120,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
 
           case 'manage-url':
             $hash = simplenews_generate_hash($subscriber->mail, 'manage');
-            $url = 'newsletter/subscriptions/' . $subscriber->snid . '/' . $category->tid . '/' . REQUEST_TIME . '/' . $hash;
+            $url = 'newsletter/subscriptions/' . $subscriber->snid . '/' . $newsletter->newsletter_id . '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
@@ -141,17 +136,16 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
 
       break;
 
-    case 'simplenews-category':
-      if (!isset($data['category'])) {
+    case 'simplenews-newsletter':
+      if (!isset($data['newsletter'])) {
         return;
       }
-      $category = $data['category'];
+      $newsletter = $data['newsletter'];
       foreach ($tokens as $name => $original) {
         switch ($name) {
           case 'name':
-            if (isset($category->name)) {
-              $newsletter_name = _simplenews_newsletter_name($category, $language_code);
-              $replacements[$original] = $sanitize ? check_plain($newsletter_name) : $newsletter_name;
+            if (isset($newsletter->name)) {
+              $replacements[$original] = $sanitize ? check_plain($newsletter->name) : $newsletter->name;
             }
             else {
               $replacements[$original] = t('Unassigned newsletter');
@@ -159,14 +153,10 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
             break;
 
           case 'url':
-            $uri = entity_uri('taxonomy_term', $category);
+            $uri = entity_uri('simplenews_newsletter', $newsletter);
             $replacements[$original] = url($uri['path'], $uri['options']);
             break;
         }
-      }
-
-      if ($term_tokens = token_find_with_prefix($tokens, 'term')) {
-        $replacements += token_generate('taxonomy_term', $term_tokens, array('taxonomy_term' => $category), $options);
       }
       break;
   }

@@ -8,7 +8,7 @@
  * Copy this file in your theme directory to create a custom themed block.
  *
  * Available variables:
- * - $subscribed: the current user is subscribed to the $tid newsletter
+ * - $subscribed: the current user is subscribed to the newsletter
  * - $user: the current user is authenticated
  * - $message: announcement message (Default: 'Stay informed on our latest news!')
  * - $form: newsletter subscription form
