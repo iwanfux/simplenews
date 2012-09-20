@@ -820,7 +820,7 @@ function simplenews_update_7010() {
 /**
  * Replace {simplenews_newsletter}.
  */
-function simplenews_update_7011() {
+function simplenews_update_7200() {
   // Rename {simplenews_newsletter}.
   db_rename_table('simplenews_newsletter', 'simplenews_newsletter_old');
 
@@ -988,7 +988,7 @@ function simplenews_update_7011() {
 /**
  * Convert existing simplenews_newsletter table to fields.
  */
-function simplenews_update_7012() {
+function simplenews_update_7201() {
   // Prepare a default query that can be reused for all three fields.
   $default_query = db_select('simplenews_newsletter_old', 's');
   $default_query->innerJoin('node', 'n', 'n.nid = s.nid');
@@ -1046,7 +1046,7 @@ function simplenews_update_7012() {
 /**
  * Rename columns, drop old database tables.
  */
-function simplenews_update_7013() {
+function simplenews_update_7202() {
   db_change_field('simplenews_subscription', 'tid', 'newsletter_id', array(
     'description' => 'The newsletter ({simplenews_newsletter}.newsletter_id) the subscriber is subscribed to.',
     'type' => 'int',
@@ -1074,7 +1074,7 @@ function simplenews_update_7013() {
 /**
  * Update simplenews node type name.
  */
-function simplenews_update_7014() {
+function simplenews_update_7203() {
   $type = node_type_get_type('simplenews');
   $type->name = t('Newsletter issue');
   node_type_save($type);
@@ -1083,7 +1083,7 @@ function simplenews_update_7014() {
 /**
  * Remove the timestamp column on the {simplenews_subscriber}.
  */
-function simplenews_update_7015() {
+function simplenews_update_7204() {
   if (db_field_exists('simplenews_subscriber', 'timestamp')) {
     db_drop_field('simplenews_subscriber', 'timestamp');
   }
