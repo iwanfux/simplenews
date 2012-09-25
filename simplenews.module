@@ -1121,13 +1121,14 @@ function simplenews_user_view($account, $build_mode) {
 function simplenews_block_info() {
   $blocks = array();
 
+  // Special block for multi
+  $blocks[0] = array(
+    'info' => t('Newsletter: Multi Subscription'),
+  );
+
   // Only list a block if the newsletter is not 'hidden' and marked to provide a block.
   $newsletters = simplenews_newsletter_get_visible(array('block' => '1'));
   if ($newsletters) {
-    // Special block for multi
-    $blocks[0] = array(
-      'info' => t('Newsletter: Multi Subscription'),
-    );
     foreach ($newsletters as $newsletter) {
       // @todo 1. without form -> by role; 2. with form -> user caching with
       // refresh on subscribe/unsubscribe (option as setting) or no caching.
