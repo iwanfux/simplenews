@@ -836,7 +836,7 @@ function simplenews_subscription_list_export($form, &$form_state) {
     '#options' => array(
       'subscribed' => t('Subscribed to the newsletter'),
       'unconfirmed' => t('Unconfirmed to the newsletter'),
-      'unsubscribed' => t('UnSubscribed from the newsletter'),
+      'unsubscribed' => t('Unsubscribed from the newsletter'),
     ),
     '#default_value' => $default['subscribed'],
     '#description' => t('Subscriptions matching the selected subscription states will be exported.'),
