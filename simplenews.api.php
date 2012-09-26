@@ -106,7 +106,7 @@ function hook_simplenews_subscription_operations() {
  *
  * @ingroup newsletter
  */
-function hook_simplenews_category_update($category) {
+function hook_simplenews_newsletter_update(SimplenewsNewsletter $newsletter) {
 
 }
 
@@ -115,7 +115,16 @@ function hook_simplenews_category_update($category) {
  *
  * @ingroup newsletter
  */
-function hook_simplenews_category_delete($category) {
+function hook_simplenews_newsletter_delete(SimplenewsNewsletter $newsletter) {
+
+}
+
+/**
+ * Act after a newsletter category has been inserted.
+ *
+ * @ingroup newsletter
+ */
+function hook_simplenews_newsletter_insert(SimplenewsNewsletter $newsletter) {
 
 }
 
