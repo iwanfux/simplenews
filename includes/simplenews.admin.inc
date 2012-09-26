@@ -764,7 +764,7 @@ function simplenews_subscription_list_add_submit($form, &$form_state) {
         $is_unsubscribed = $subscriber && array_key_exists($newsletter->newsletter_id, $subscriber->newsletter_subscription)
           && $subscriber->newsletter_subscription[$newsletter->newsletter_id]->status == SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
         if (!$is_unsubscribed || $form_state['values']['resubscribe'] == TRUE) {
-          simplenews_subscribe_user($email, $newsletter->newsletter_id, FALSE, 'mass subscribe', $langcode);
+          simplenews_subscribe($email, $newsletter->newsletter_id, FALSE, 'mass subscribe', $langcode);
           $added[] = $email;
         }
         else {
@@ -983,7 +983,7 @@ function simplenews_subscription_list_remove_submit($form, &$form_state) {
     $email = trim($email);
     if (valid_email_address($email)) {
       foreach ($checked_lists as $newsletter_id) {
-        simplenews_unsubscribe_user($email, $newsletter_id, FALSE, 'mass unsubscribe');
+        simplenews_unsubscribe($email, $newsletter_id, FALSE, 'mass unsubscribe');
         $removed[] = $email;
       }
     }
@@ -1182,26 +1182,9 @@ function simplenews_subscription_list_form_submit($form, &$form_state) {
  *   Status of the subscription (0, 1).
  */
 function simplenews_subscription_activate($snids, $status) {
-  foreach ($snids as $snid) {
-    $subscriber = simplenews_subscriber_load($snid);
+  foreach (simplenews_subscriber_load_multiple($snids) as $subscriber) {
     $subscriber->activated = $status;
     simplenews_subscriber_save($subscriber);
-  }
-}
-
-/**
- * Callback function to delete subscriptions.
- *
- * @param $snids
- *   Array of snid's to be deleted.
- */
-function simplenews_subscription_delete_multiple($snids = array()) {
-  foreach ($snids as $snid) {
-    // Delete Subscription
-    simplenews_subscription_delete(array('snid' => $snid));
-    // Delete subscriber
-    $subscriber = simplenews_subscriber_load($snid);
-    simplenews_subscriber_delete($subscriber);
   }
 }
 

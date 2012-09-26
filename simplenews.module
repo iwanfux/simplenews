@@ -796,6 +796,7 @@ function simplenews_entity_info() {
         'label' => 'name',
       ),
       'label callback' => 'entity_class_label',
+      'uri callback' => 'entity_class_uri',
       'view modes' => array(
         'full' => array(
           'label' => t('Default'),
@@ -803,6 +804,28 @@ function simplenews_entity_info() {
         ),
       ),
       'access callback' => 'simplenews_newsletter_access',
+    ),
+    'simplenews_subscriber' => array(
+      'label' => t('Simplenews subscriber'),
+      'entity class' => 'SimplenewsSubscriber',
+      'controller class' => 'SimplenewsSubscriberController',
+      'metadata controller class' => 'SimplenewsSubscriberMetadataController',
+      'views controller class' => 'EntityDefaultViewsController',
+      'base table' => 'simplenews_subscriber',
+      'fieldable' => TRUE,
+      'entity keys' => array(
+        'id' => 'snid',
+        'label' => 'mail',
+      ),
+      'label callback' => 'entity_class_label',
+      'uri callback' => 'entity_class_uri',
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Default'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      'access callback' => 'simplenews_subscriber_access',
     ),
   );
 }
@@ -815,6 +838,13 @@ function simplenews_newsletter_access($op, SimplenewsNewsletter $newsletter, $ac
     return TRUE;
   }
   return user_access('administer newsletters');
+}
+
+/**
+ * Entity access callback for simplenews newsletter entity.
+ */
+function simplenews_subscriber_access($op, SimplenewsSubscriber $subscriber, $account = NULL) {
+  return user_access('administer simplenews subscriptions');
 }
 
 /**
@@ -920,7 +950,7 @@ function simplenews_user_insert(&$edit, $account, $newsletter) {
     if (!empty($newsletter_ids)) {
       $newsletters = simplenews_newsletter_load_multiple($newsletter_ids);
       foreach ($newsletters as $newsletter) {
-        simplenews_subscribe_user($account->mail, $newsletter->newsletter_id, FALSE, 'website', $edit['language']);
+        simplenews_subscribe($account->mail, $newsletter->newsletter_id, FALSE, 'website', $edit['language']);
         drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
       }
     }
@@ -929,7 +959,7 @@ function simplenews_user_insert(&$edit, $account, $newsletter) {
   // Process hidden (automatic) subscriptions.
   if (isset($edit['simplenews_hidden'])) {
     foreach (explode(',', $edit['simplenews_hidden']) as $newsletter_id) {
-      simplenews_subscribe_user($account->mail, $newsletter_id, FALSE, 'automatically', $edit['language']);
+      simplenews_subscribe($account->mail, $newsletter_id, FALSE, 'automatically', $edit['language']);
     }
     unset($edit['simplenews_hidden']);
   }
@@ -1014,7 +1044,7 @@ function simplenews_user_delete($account) {
   // Delete subscription when account is removed.
   $subscriber = simplenews_subscriber_load_by_mail($account->mail);
   if ($subscriber) {
-    simplenews_subscriber_delete($subscriber);
+    simplenews_subscriber_delete($subscriber->snid);
   }
 }
 
@@ -1330,7 +1360,7 @@ function simplenews_load_user_by_mail($mail) {
  *
  * @ingroup subscription
  */
-function simplenews_subscribe_user($mail, $newsletter_id, $confirm = TRUE, $source = 'unknown', $preferred_language = NULL) {
+function simplenews_subscribe($mail, $newsletter_id, $confirm = TRUE, $source = 'unknown', $preferred_language = NULL) {
   global $language;
 
   // Get current subscriptions if any.
@@ -1364,7 +1394,7 @@ function simplenews_subscribe_user($mail, $newsletter_id, $confirm = TRUE, $sour
       $preferred_language = '';
     }
 
-    $subscriber = new stdClass();
+    $subscriber = entity_create('simplenews_subscriber', array());
     $subscriber->mail = $mail;
     $subscriber->uid = $account->uid;
     $subscriber->language = $preferred_language;
@@ -1400,7 +1430,7 @@ function simplenews_subscribe_user($mail, $newsletter_id, $confirm = TRUE, $sour
     $subscriber->newsletter_subscription[$newsletter_id] = $subscription;
     $subscriber->newsletter_ids[$newsletter_id] = $newsletter_id;
 
-    module_invoke_all('simplenews_subscribe_user', $subscriber, $subscription);
+    module_invoke_all('simplenews_subscribe', $subscriber, $subscription);
   }
   return TRUE;
 }
@@ -1427,7 +1457,7 @@ function simplenews_subscribe_user($mail, $newsletter_id, $confirm = TRUE, $sour
  *
  * @ingroup subscription
  */
-function simplenews_unsubscribe_user($mail, $newsletter_id, $confirm = TRUE, $source = 'unknown') {
+function simplenews_unsubscribe($mail, $newsletter_id, $confirm = TRUE, $source = 'unknown') {
   $subscriber = simplenews_subscriber_load_by_mail($mail);
 
   // The unlikely case that a user is unsubscribed from a non existing mailing list is logged
@@ -1439,7 +1469,7 @@ function simplenews_unsubscribe_user($mail, $newsletter_id, $confirm = TRUE, $so
   if ($confirm) {
     // Make sure the mail address is set.
     if (empty($subscriber)) {
-      $subscriber = new stdClass();
+      $subscriber = entity_create('simplenews_subscriber', array());
       $subscriber->mail = $mail;
     }
     simplenews_confirmation_send('unsubscribe', $subscriber, simplenews_newsletter_load($newsletter_id));
@@ -1456,7 +1486,7 @@ function simplenews_unsubscribe_user($mail, $newsletter_id, $confirm = TRUE, $so
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     simplenews_delete_spool(array('snid' => $subscriber->snid, 'newsletter_id' => $newsletter_id));
 
-    module_invoke_all('simplenews_unsubscribe_user', $subscriber, $subscriber->newsletter_subscription[$newsletter_id]);
+    module_invoke_all('simplenews_unsubscribe', $subscriber, $subscriber->newsletter_subscription[$newsletter_id]);
   }
   return TRUE;
 }
@@ -1576,13 +1606,14 @@ function simplenews_subscription_delete($conditions = array()) {
  *
  * @param $snid
  *   Simplenews subscriber ID.
- * @return
- *   Newsletter subscriber object, FALSE if subscriber does not exist.
+ *
+ * @return SimplenewsSubscriber
+ *   Newsletter subscriber entity, FALSE if subscriber does not exist.
  *
  * @ingroup subscriber
  */
-function simplenews_subscriber_load($snid, $reset = FALSE) {
-  $subscribers = simplenews_subscriber_load_multiple(array($snid), $reset);
+function simplenews_subscriber_load($snid) {
+  $subscribers = simplenews_subscriber_load_multiple(array($snid));
   return $subscribers ? reset($subscribers) : FALSE;
 }
 
@@ -1591,13 +1622,14 @@ function simplenews_subscriber_load($snid, $reset = FALSE) {
  *
  * @param $mail
  *   Subscriber e-mail address.
- * @return
+ *
+ * @return SimplenewsSubscriber
  *   Newsletter subscriber object, FALSE if subscriber does not exist.
  *
  * @ingroup subscriber
  */
 function simplenews_subscriber_load_by_mail($mail) {
-  $subscribers = simplenews_subscriber_load_multiple(array(), array('mail' => $mail));
+  $subscribers = simplenews_subscriber_load_multiple(FALSE, array('mail' => $mail));
   return $subscribers ? reset($subscribers) : FALSE;
 }
 
@@ -1606,8 +1638,9 @@ function simplenews_subscriber_load_by_mail($mail) {
  *
  * @param $uid
  *   Subscriber user id.
- * @return
- *   Newsletter subscriber object, FALSE if subscriber does not exist.
+ *
+ * @return SimplenewsSubscriber
+ *   Newsletter subscriber entity, FALSE if subscriber does not exist.
  *
  * @ingroup subscriber
  */
@@ -1622,8 +1655,8 @@ function simplenews_subscriber_load_by_uid($uid) {
  * @param $hash
  *   A hash generated by simplenews_generate_hash().
  *
- * @return
- *   Simplenews subscriber object, FALSE if the hash is invalid or the
+ * @return SimplenewsSubscriber
+ *   Simplenews subscriber entity, FALSE if the hash is invalid or the
  *   corresponding subscriber does not exist.
  */
 function simplenews_subscriber_load_by_hash($hash) {
@@ -1655,107 +1688,50 @@ function simplenews_subscriber_load_by_hash($hash) {
  *   (Optional) Array of subscriber ID's.
  * @param $conditions
  *   (Optional) Array of query conditions.
- * @param $reset
- *   Reset the static cache.
  *
  * @return
  *   Array of subscriber objects that match the given ID's/conditions.
  *
  * @ingroup subscriber
  */
-function simplenews_subscriber_load_multiple($snids = array(), $conditions = array(), $reset = FALSE) {
-  $subscribers = &drupal_static(__FUNCTION__, array());
-
-  // Only cache if we load all records from the database.
-  // @todo Caching could be improved.
-  if (!$subscribers || $snids || $conditions || $reset) {
-    $subscribers = array();
-    $query = db_select('simplenews_subscriber', 'ss')
-      ->fields('ss');
-    if ($snids) {
-      $query->condition('snid', $snids);
-    }
-    if ($conditions) {
-      foreach ($conditions as $key => $condition) {
-        $query->condition($key, $condition);
-      }
-    }
-
-    $subscribers = $query->execute()->fetchAllAssoc('snid');
-    if (!empty($subscribers)) {
-      // Initialize default values and unserialize.
-      foreach ($subscribers as $subscriber) {
-        $subscriber->changes = unserialize($subscriber->changes);
-        $subscriber->newsletter_ids = array();
-      }
-
-      $query = db_select('simplenews_subscription', 'ss')
-        ->fields('ss')
-        ->condition('snid', array_keys($subscribers));
-
-      foreach ($query->execute() as $subscription) {
-        if ($subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
-          $subscribers[$subscription->snid]->newsletter_ids[$subscription->newsletter_id] = $subscription->newsletter_id;
-        }
-        $subscribers[$subscription->snid]->newsletter_subscription[$subscription->newsletter_id] = $subscription;
-      }
-    }
-  }
-  return $subscribers;
+function simplenews_subscriber_load_multiple($snids = array(), $conditions = array()) {
+  return entity_load('simplenews_subscriber', $snids, $conditions);
 }
 
 /**
  * Store subscriber object in the database.
  *
+ * @param SimplenewsSubscriber $subscriber
+ *   The subscriber entity that should be saved.
+ *
  * @ingroup subscriber
  */
-function simplenews_subscriber_save(&$subscriber) {
-  if (!empty($subscriber->snid)) {
-    db_update('simplenews_subscriber')
-      ->condition('snid', $subscriber->snid)
-      ->fields(array(
-        'snid' => $subscriber->snid,
-        'activated' => (int) $subscriber->activated,
-        'mail' => $subscriber->mail,
-        'uid' => $subscriber->uid,
-        'language' => $subscriber->language,
-        'changes' => serialize(isset($subscriber->changes) ? $subscriber->changes : array()),
-      ))
-      ->execute();
-    module_invoke_all('simplenews_subscriber_update', $subscriber);
-  }
-  elseif (empty($subscriber->snid)) {
-    $query = db_insert('simplenews_subscriber')
-      ->fields(array(
-      'activated' => $subscriber->activated,
-      'mail' => $subscriber->mail,
-      'uid' => $subscriber->uid,
-      'language' => $subscriber->language,
-      'changes' => serialize(isset($subscriber->changes) ? $subscriber->changes : array()),
-      'created' => REQUEST_TIME,
-      ));
-    $last_insert_id = $query->execute();
-    if ($last_insert_id !== FALSE) {
-      $subscriber->snid = $last_insert_id;
-      module_invoke_all('simplenews_subscriber_insert', $subscriber);
-    }
-  }
+function simplenews_subscriber_save($subscriber) {
+  entity_save('simplenews_subscriber', $subscriber);
 }
 
 /**
  * Delete subscriber and corresponding subscriptions from the database.
  *
  * @param $snid
- *   Simplenews subscriber object.
+ *   Simplenews subscriber id.
  *
  * @ingroup subscriber
  */
-function simplenews_subscriber_delete(stdClass $subscriber) {
-  simplenews_subscription_delete(array('snid' => $subscriber->snid));
-  db_delete('simplenews_subscriber')
-    ->condition('snid', $subscriber->snid)
-    ->execute();
-  module_invoke_all('simplenews_subscriber_delete', $subscriber);
+function simplenews_subscriber_delete($snid) {
+  entity_delete('simplenews_subscriber', $snid);
+}
+
+/**
+ * Delete subscribers and corresponding subscriptions from the database.
+ *
+ * @param $snids
+ *   Simplenews subscriber ids
+ *
+ * @ingroup subscriber
+ */
+function simplenews_subscriber_delete_multiple(array $snids) {
+  entity_delete_multiple('simplenews_subscriber', $snids);
 }
 
 /**

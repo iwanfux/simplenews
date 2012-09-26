@@ -22,9 +22,9 @@ function simplenews_rules_confirmation_list() {
 }
 
 /**
- * Implements hook_simplenews_unsubscribe_user().
+ * Implements hook_simplenews_unsubscribe().
  */
-function simplenews_rules_simplenews_unsubscribe_user($subscriber, $subscription) {
+function simplenews_rules_simplenews_unsubscribe($subscriber, $subscription) {
   $args = array(
     'mail' => $subscriber->mail,
     'newsletter' => simplenews_newsletter_load($subscription->newsletter_id),
@@ -33,9 +33,9 @@ function simplenews_rules_simplenews_unsubscribe_user($subscriber, $subscription
 }
 
 /**
- * Implements hook_simplenews_unsubscribe_user().
+ * Implements hook_simplenews_unsubscribe().
  */
-function simplenews_rules_simplenews_subscribe_user($subscriber, $subscription) {
+function simplenews_rules_simplenews_subscribe($subscriber, $subscription) {
   $args = array(
     'mail' => $subscriber->mail,
     'newsletter' => simplenews_newsletter_load($subscription->newsletter_id),

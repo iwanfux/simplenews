@@ -115,7 +115,7 @@ function simplenews_schema() {
   );
 
   $schema['simplenews_subscriber'] = array(
-    'description' => 'Subscribers to {simplenews_category}. Many-to-many relation via {simplenews_subscription}',
+    'description' => 'Newsletter subscribers. Many-to-many relation via {simplenews_subscription}',
     'fields' => array(
       'snid' => array(
         'description' => 'Primary key: Unique subscriber ID.',

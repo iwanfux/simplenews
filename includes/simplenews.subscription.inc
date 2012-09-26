@@ -94,10 +94,10 @@ function simplenews_subscriptions_account_form_submit($form, &$form_state) {
   arsort($form_state['values']['newsletters'], SORT_NUMERIC);
   foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
     if ($checked) {
-      simplenews_subscribe_user($account->mail, $newsletter_id, FALSE, 'website');
+      simplenews_subscribe($account->mail, $newsletter_id, FALSE, 'website');
     }
     else {
-      simplenews_unsubscribe_user($account->mail, $newsletter_id, FALSE, 'website');
+      simplenews_unsubscribe($account->mail, $newsletter_id, FALSE, 'website');
     }
   }
   if ($user->uid == $account->uid) {
@@ -181,7 +181,7 @@ function simplenews_block_form_submit($form, &$form_state) {
 
   switch ($form_state['values']['action']) {
     case 'subscribe':
-      simplenews_subscribe_user($form_state['values']['mail'], $newsletter_id, $confirm, 'website');
+      simplenews_subscribe($form_state['values']['mail'], $newsletter_id, $confirm, 'website');
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
       }
@@ -190,7 +190,7 @@ function simplenews_block_form_submit($form, &$form_state) {
       }
       break;
     case 'unsubscribe':
-      simplenews_unsubscribe_user($form_state['values']['mail'], $newsletter_id, $confirm, 'website');
+      simplenews_unsubscribe($form_state['values']['mail'], $newsletter_id, $confirm, 'website');
       if ($confirm) {
         drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
       }
@@ -332,10 +332,10 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
         $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
         if ($checked) {
-          simplenews_subscribe_user($mail, $newsletter_id, $confirm, 'website');
+          simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
         }
         else {
-          simplenews_unsubscribe_user($mail, $newsletter_id, $confirm, 'website');
+          simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
         }
       }
       if (simplenews_confirmation_send_combined()) {
@@ -349,7 +349,7 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-          simplenews_subscribe_user($mail, $newsletter_id, $confirm, 'website');
+          simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
         }
       }
       if (simplenews_confirmation_send_combined()) {
@@ -363,7 +363,7 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
         if ($checked) {
           $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-          simplenews_unsubscribe_user($mail, $newsletter_id, $confirm, 'website');
+          simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
         }
       }
       if (simplenews_confirmation_send_combined()) {
@@ -534,7 +534,7 @@ function simplenews_confirm_subscription($action, $snid, $newsletter_id, $timest
     }
     else {
       if ($action == 'remove') {
-        simplenews_unsubscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+        simplenews_unsubscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
           $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
@@ -543,7 +543,7 @@ function simplenews_confirm_subscription($action, $snid, $newsletter_id, $timest
         drupal_goto(variable_get('site_frontpage', 'node'));
       }
       elseif ($action == 'add') {
-        simplenews_subscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+        simplenews_subscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
         if ($path = variable_get('simplenews_confirm_subscribe_page', '')) {
           $path = $path . '/' . implode('/', $arguments);
           drupal_goto($path);
@@ -612,10 +612,10 @@ function simplenews_confirm_combined($snid, $timestamp, $hash) {
       // Redirect and display message if no changes are available.
       foreach ($subscriber->changes as $newsletter_id => $action) {
         if ($action == 'subscribe') {
-          simplenews_subscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+          simplenews_subscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
         }
         elseif ($action == 'unsubscribe') {
-          simplenews_unsubscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+          simplenews_unsubscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
         }
       }
 
@@ -654,7 +654,7 @@ function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
 }
 
 function simplenews_confirm_add_form_submit($form, &$form_state) {
-  simplenews_subscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
+  simplenews_subscribe($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
 
   if (!$path = variable_get('simplenews_confirm_subscribe_page', '')) {
     $path = variable_get('site_frontpage', 'node');
@@ -693,10 +693,10 @@ function simplenews_confirm_multi_form_submit($form, &$form_state) {
   $subscriber = $form_state['values']['subscriber'];
   foreach ($subscriber->changes as $newsletter_id => $action) {
     if ($action == 'subscribe') {
-      simplenews_subscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+      simplenews_subscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
     }
     elseif ($action == 'unsubscribe') {
-      simplenews_unsubscribe_user($subscriber->mail, $newsletter_id, FALSE, 'website');
+      simplenews_unsubscribe($subscriber->mail, $newsletter_id, FALSE, 'website');
     }
   }
 
@@ -753,7 +753,7 @@ function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter
 }
 
 function simplenews_confirm_removal_form_submit($form, &$form_state) {
-  simplenews_unsubscribe_user($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
+  simplenews_unsubscribe($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
 
   if (!$path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
     $path = variable_get('site_frontpage', 'node');
@@ -946,10 +946,10 @@ function simplenews_subscriptions_admin_form_submit($form, &$form_state) {
   arsort($form_state['values']['newsletters'], SORT_NUMERIC);
   foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
     if ($checked) {
-      simplenews_subscribe_user($form_state['values']['mail'], $newsletter_id, FALSE, 'website');
+      simplenews_subscribe($form_state['values']['mail'], $newsletter_id, FALSE, 'website');
     }
     else {
-      simplenews_unsubscribe_user($form_state['values']['mail'], $newsletter_id, FALSE, 'website');
+      simplenews_unsubscribe($form_state['values']['mail'], $newsletter_id, FALSE, 'website');
     }
   }
 

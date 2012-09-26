@@ -322,6 +322,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
 
     // Verify subscription changes.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $still_enabled = array_diff($enable, $disable);
     foreach ($newsletters as $newsletter_id => $newsletter) {
@@ -392,6 +393,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Confirmation message displayed.'));
 
     // Verify subscription changes.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     foreach (array_keys($newsletters) as $newsletter_id) {
       $this->assertFalse(simplenews_user_is_subscribed($mail, $newsletter_id));
@@ -591,6 +593,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
 
     // Verify that the subscriber has been updated and references to the correct
     // user.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     $account = user_load_by_mail($mail);
     $this->assertEqual($subscriber->uid, $account->uid);
@@ -743,6 +746,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, $edit, t('Update'));
 
     // Make sure the user is not yet subscribed.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
     $this->assertTrue(empty($subscriber->newsletter_ids));
@@ -760,6 +764,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
 
     // Make sure the subscription is confirmed now.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
     $this->assertTrue(isset($subscriber->newsletter_ids[$newsletter_id]));
@@ -812,6 +817,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
 
     // Make sure the subscription is confirmed now.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
     $this->assertTrue(isset($subscriber->newsletter_ids[$newsletter_id]));
@@ -837,6 +843,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertRaw(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber removed from newsletter'));
 
     // Make sure the subscription is confirmed now.
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
     $this->assertFalse(isset($subscriber->newsletter_ids[$newsletter_id]));
@@ -905,6 +912,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
 
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $subscriber->newsletter_subscription[$newsletter_id]->status);
   }
@@ -1513,7 +1521,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $unconfirmed[] = $this->randomEmail();
     $unconfirmed[] = $this->randomEmail();
     foreach ($unconfirmed as $mail) {
-      simplenews_subscribe_user($mail, $first, TRUE);
+      simplenews_subscribe($mail, $first, TRUE);
     }
 
     // Only export unconfirmed mail addresses.
@@ -1533,7 +1541,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     $this->assertTrue(in_array($unconfirmed[1], $exported_mails));
 
     // Make sure the user is subscribed to the first newsletter_id.
-    simplenews_subscribe_user($user_mail, $first, FALSE);
+    simplenews_subscribe($user_mail, $first, FALSE);
     module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $before_count = simplenews_count_subscriptions($first);
 
@@ -1551,10 +1559,10 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     for ($i = 0; $i < 3; $i++) {
       $tested_subscribers[] = $this->randomEmail();
     }
-    simplenews_subscribe_user($tested_subscribers[0], $first, FALSE);
-    simplenews_subscribe_user($tested_subscribers[1], $first, FALSE);
-    simplenews_unsubscribe_user($tested_subscribers[0], $first, FALSE);
-    simplenews_unsubscribe_user($tested_subscribers[1], $first, FALSE);
+    simplenews_subscribe($tested_subscribers[0], $first, FALSE);
+    simplenews_subscribe($tested_subscribers[1], $first, FALSE);
+    simplenews_unsubscribe($tested_subscribers[0], $first, FALSE);
+    simplenews_unsubscribe($tested_subscribers[1], $first, FALSE);
     $unsubscribed = implode(', ', array_slice($tested_subscribers, 0, 2));
     $edit = array(
       'emails' => implode(', ', $tested_subscribers),
@@ -1562,7 +1570,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     );
 
     $this->drupalPost('admin/people/simplenews/import', $edit, t('Subscribe'));
-    drupal_static_reset('simplenews_subscriber_load_multiple');
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $this->assertFalse(simplenews_user_is_subscribed($tested_subscribers[0], $first, t('Subscriber not resubscribed through mass subscription.')));
     $this->assertFalse(simplenews_user_is_subscribed($tested_subscribers[1], $first, t('Subscriber not resubscribed through mass subscription.')));
@@ -1582,8 +1590,8 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     );
 
     $this->drupalPost('admin/people/simplenews/import', $edit, t('Subscribe'));
-    drupal_static_reset('simplenews_subscriber_load_multiple');
     drupal_static_reset('simplenews_user_is_subscribed');
+    entity_get_controller('simplenews_subscriber')->resetCache();
     $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[0], $first, t('Subscriber resubscribed trough mass subscription.')));
     $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[1], $first, t('Subscriber resubscribed trough mass subscription.')));
     $this->assertTrue(simplenews_user_is_subscribed($tested_subscribers[2], $first, t('Subscriber subscribed trough mass subscription.')));
@@ -1623,7 +1631,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       'activated' => FALSE,
     );
     $this->drupalPost(NULL, $edit, t('Update'));
-    drupal_static_reset('simplenews_subscriber_load_multiple');
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is not active')));
 
@@ -1635,7 +1643,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       'activated' => TRUE,
     );
     $this->drupalPost(NULL, $edit, t('Update'));
-    drupal_static_reset('simplenews_subscriber_load_multiple');
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $this->assertTrue(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is active again.')));
 
@@ -1646,7 +1654,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
       'newsletters[' . reset($subscriber->newsletter_ids) . ']' => FALSE,
     );
     $this->drupalPost(NULL, $edit, t('Update'));
-    drupal_static_reset('simplenews_subscriber_load_multiple');
+    entity_get_controller('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, reset($subscriber->newsletter_ids), t('Subscriber not subscribed anymore.')));
 
@@ -1780,9 +1788,9 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     $spanish_mail2 = $this->randomEmail();
     $newsletter_id = $this->getRandomNewsletter();
 
-    simplenews_subscribe_user($english_mail, $newsletter_id, FALSE, 'english', 'en');
-    simplenews_subscribe_user($spanish_mail, $newsletter_id, FALSE, 'spanish', 'es');
-    simplenews_subscribe_user($spanish_mail2, $newsletter_id, FALSE, 'spanish', 'es');
+    simplenews_subscribe($english_mail, $newsletter_id, FALSE, 'english', 'en');
+    simplenews_subscribe($spanish_mail, $newsletter_id, FALSE, 'spanish', 'es');
+    simplenews_subscribe($spanish_mail2, $newsletter_id, FALSE, 'spanish', 'es');
     // Enable translation for newsletters.
     $edit = array(
       'language_content_type' => TRANSLATION_ENABLED,
@@ -1825,6 +1833,8 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost(NULL, $edit, t('Submit'));
     simplenews_cron();
+
+    debug(db_query('SELECT * FROM {simplenews_subscriber}')->fetchAll());
 
     $this->assertEqual(3, count($this->drupalGetMails()));
 
@@ -2001,7 +2011,9 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
 
     // Rebuild caches, load necessary files.
     module_load_include('inc', 'entity', 'includes/entity.controller');
+    module_load_include('inc', 'entity', 'includes/entity');
     module_load_include('inc', 'simplenews', 'includes/simplenews.controller');
+    module_load_include('inc', 'simplenews', 'includes/simplenews.entity');
     module_load_include('inc', 'entityreference', 'plugins/behavior/abstract');
 
     drupal_static_reset();
@@ -2025,7 +2037,7 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
     $mail = 'new@example.org';
     $newsletter_id = 1;
     module_load_include('module', 'simplenews');
-    simplenews_subscribe_user($mail, $newsletter_id, FALSE);
+    simplenews_subscribe($mail, $newsletter_id, FALSE);
 
     $this->drupalGet('admin/config/services/simplenews');
     $this->assertText('Drupal 6 newsletter');
@@ -2821,7 +2833,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
 
     // Unsubscribe one of the recipients to make sure that he doesn't receive
     // the mail.
-    simplenews_unsubscribe_user(array_shift($this->subscribers), $this->getRandomNewsletter(), FALSE, 'test');
+    simplenews_unsubscribe(array_shift($this->subscribers), $this->getRandomNewsletter(), FALSE, 'test');
 
     $before = microtime(TRUE);
     simplenews_mail_spool();
@@ -3061,7 +3073,7 @@ class SimplenewsSourceTestCase extends SimplenewsTestCase {
 
     // Delete the subscriber.
     $subscriber = simplenews_subscriber_load_by_mail(reset($this->subscribers));
-    simplenews_subscriber_delete($subscriber);
+    simplenews_subscriber_delete($subscriber->snid);
 
     simplenews_mail_spool();
 

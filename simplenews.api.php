@@ -133,7 +133,7 @@ function hook_simplenews_newsletter_insert(SimplenewsNewsletter $newsletter) {
  *
  * @ingroup subscriber
  */
-function hook_simplenews_subscriber_update($subscriber) {
+function hook_simplenews_subscriber_update(SimplenewsSubscriber $subscriber) {
 
 }
 
@@ -142,7 +142,7 @@ function hook_simplenews_subscriber_update($subscriber) {
  *
  * @ingroup subscriber
  */
-function hook_simplenews_subscriber_insert($subscriber) {
+function hook_simplenews_subscriber_insert(SimplenewsSubscriber $subscriber) {
 
 }
 
@@ -151,12 +151,12 @@ function hook_simplenews_subscriber_insert($subscriber) {
  *
  * @ingroup subscriber
  */
-function hook_simplenews_subscriber_delete($subscriber) {
+function hook_simplenews_subscriber_delete(SimplenewsSubscriber $subscriber) {
 
 }
 
 /**
- * Invoked if a user is subscribed to a newsletter.
+ * Invoked if a subscriber is subscribed to a newsletter.
  *
  * @param $subscriber
  *   The subscriber object including all subscriptions of this user.
@@ -166,12 +166,12 @@ function hook_simplenews_subscriber_delete($subscriber) {
  *
  * @ingroup subscriber
  */
-function hook_simplenews_subscribe_user($subscriber, $subscription) {
+function hook_simplenews_subscribe_user(SimplenewsSubscriber $subscriber, $subscription) {
 
 }
 
 /**
- * Invoked if a user is unsubscribed from a newsletter.
+ * Invoked if a subscriber is unsubscribed from a newsletter.
  *
  * @param $subscriber
  *   The subscriber object including all subscriptions of this user.
@@ -181,7 +181,7 @@ function hook_simplenews_subscribe_user($subscriber, $subscription) {
  *
  * @ingroup subscriber
  */
-function hook_simplenews_unsubscribe_user($subscriber, $subscription) {
+function hook_simplenews_unsubscribe(SimplenewsSubscriber $subscriber, $subscription) {
 
 }
 

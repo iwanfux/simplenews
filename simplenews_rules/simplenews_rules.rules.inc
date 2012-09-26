@@ -204,7 +204,7 @@ function simplenews_rules_action_subscribe($args, $settings) {
   $confirmation = simplenews_rules_map_confirmation($args);
 
   // Pass the call forward.
-  simplenews_subscribe_user($args['mail'], $args['tid'], $confirmation, $args['source'], $args['language']);
+  simplenews_subscribe($args['mail'], $args['tid'], $confirmation, $args['source'], $args['language']);
 }
 
 /**
@@ -218,7 +218,7 @@ function simplenews_rules_action_unsubscribe($args, $settings) {
   $confirmation = simplenews_rules_map_confirmation($args);
 
   // Pass the call forward.
-  simplenews_unsubscribe_user($args['mail'], $args['tid'], $confirmation, $args['source'], $args['language']);
+  simplenews_unsubscribe($args['mail'], $args['tid'], $confirmation, $args['source'], $args['language']);
 }
 
 /**
@@ -236,7 +236,7 @@ function simplenews_rules_action_subscription_delete($args, $settings) {
 function simplenews_rules_action_subscriber_delete($args, $settings) {
   $subscriber = simplenews_subscriber_load_by_mail($args['mail']);
   if ($subscriber) {
-    simplenews_subscriber_delete($subscriber);
+    simplenews_subscriber_delete($subscriber->snid);
   }
 }
 

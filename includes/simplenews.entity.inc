@@ -6,7 +6,7 @@
  */
 
 /**
- * Class for simplenews_newsleter entity.
+ * Class for simplenews_newsletter entity.
  *
  * @incroup newsletter
  */
@@ -117,7 +117,7 @@ class SimplenewsNewsletter extends Entity {
    */
   protected function setUp() {
     // Hack to get arount the not loaded entity system.
-    // TODO: fix this and remove hack.
+    // @todo: fix this and remove hack.
     if (function_exists('entity_get_info')) {
       parent::setUp();
     }
@@ -129,7 +129,7 @@ class SimplenewsNewsletter extends Entity {
    * Prevent failure if the entity system ist not fully loaded.
    */
   public function __sleep() {
-    // TODO: fix this and remove hack.
+    // @todo: fix this and remove hack.
     $vars = get_object_vars($this);
     unset($vars['entityInfo'], $vars['idKey'], $vars['nameKey'], $vars['statusKey']);
     return array_combine(array_keys($vars), (array_keys($vars)));
@@ -149,4 +149,44 @@ class SimplenewsNewsletter extends Entity {
     return $this->name;
   }
 
+}
+
+/**
+ * Class for simplenews_subscriber entity.
+ *
+ * @incroup newsletter
+ */
+class SimplenewsSubscriber extends Entity {
+
+  /**
+   * Overrides Entity::setUp().
+   *
+   * Prevent failure if the entity system ist not fully loaded.
+   */
+  protected function setUp() {
+    // Hack to get arount the not loaded entity system.
+    // @todo: fix this and remove hack.
+    if (function_exists('entity_get_info')) {
+      parent::setUp();
+    }
+  }
+
+  /**
+   * Overrides Entity::__sleep().
+   *
+   * Prevent failure if the entity system ist not fully loaded.
+   */
+  public function __sleep() {
+    // @todo: fix this and remove hack.
+    $vars = get_object_vars($this);
+    unset($vars['entityInfo'], $vars['idKey'], $vars['nameKey'], $vars['statusKey']);
+    return array_combine(array_keys($vars), (array_keys($vars)));
+  }
+
+  /**
+   * Overrides Entity::defaultLabel().
+   */
+  protected function defaultLabel() {
+    return $this->mail;
+  }
 }

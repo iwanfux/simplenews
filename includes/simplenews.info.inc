@@ -34,3 +34,27 @@ class SimplenewsNewsletterMetadataController extends EntityDefaultMetadataContro
     return $info;
   }
 }
+
+/**
+ * Metadata controller for the simplenews_subscriber entity.
+ *
+ * @ingroup subscriber
+ */
+class SimplenewsSubscriberMetadataController extends EntityDefaultMetadataController {
+
+  /**
+   * Overrides EntityDefaultMetadataController::entityPropertyInfo().
+   */
+  function entityPropertyInfo() {
+    $info = parent::entityPropertyInfo();
+    $properties = &$info[$this->type]['properties'];
+    $properties['activated']['type'] = 'boolean';
+    $properties['mail']['label'] = t('E-mail');
+    $properties['uid']['type'] = 'user';
+    $properties['uid']['label'] = t('User');
+    $properties['language']['type'] = 'language';
+    $properties['created']['type'] = 'date';
+
+    return $info;
+  }
+}
