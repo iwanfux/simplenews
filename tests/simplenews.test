@@ -272,10 +272,9 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     $hash = simplenews_generate_hash($subscriber->mail, 'manage');
     $this->drupalPost('newsletter/subscriptions/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash, array(), t('Update'));
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $mail)));
     $mails = $this->drupalGetMails();
-    $body = $mails[1]['body'];
-    $confirm_url = $this->extractConfirmationLink($body);
-    $this->assertFalse($confirm_url, t('No confirmation link in unchanged confirm mail.'));
+    $this->assertEqual(1, count($mails), t('No confirmation mails have been sent.'));
 
     // Unsubscribe from two of the three enabled newsletters.
     $disable = array_rand(array_flip($enable), 2);
@@ -290,7 +289,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[2]['body'];
+    $body = $mails[1]['body'];
 
     // Verify listed changes.
     foreach ($newsletters as $newsletter_id => $newsletter) {
@@ -343,7 +342,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = $mails[3]['body'];
+    $body = $mails[2]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     // Change behavior to always use combined mails.
@@ -354,7 +353,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = $mails[4]['body'];
+    $body = $mails[3]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     // Change behavior to never, should send two separate mails.
@@ -368,7 +367,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost('newsletter/subscriptions', $edit, t('Subscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
     $mails = $this->drupalGetMails();
-    foreach (array(5, 6) as $id) {
+    foreach (array(4, 5) as $id) {
       $body = $mails[$id]['body'];
       $this->extractConfirmationLink($body);
     }
@@ -385,7 +384,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[7]['body'];
+    $body = $mails[6]['body'];
 
     $confirm_url = $this->extractConfirmationLink($body);
     $this->drupalGet($confirm_url);
@@ -432,7 +431,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[9]['body'];
+    $body = $mails[8]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -479,7 +478,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[10]['body'];
+    $body = $mails[9]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -745,25 +744,9 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     );
     $this->drupalPost(NULL, $edit, t('Update'));
 
-    // Make sure the user is not yet subscribed.
-    entity_get_controller('simplenews_subscriber')->resetCache();
-    $subscriber = simplenews_subscriber_load_by_mail($mail);
+    $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $mail)));
 
-    $this->assertTrue(empty($subscriber->newsletter_ids));
-    $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscriber->newsletter_subscription[$newsletter_id]->status);
-
-    $mails = $this->drupalGetMails();
-    $body = $mails[7]['body'];
-    $confirm_url = $this->extractConfirmationLink($body);
-
-    $this->drupalGet($confirm_url);
-    $newsletter = simplenews_newsletter_load($newsletter_id);
-    $this->assertRaw(t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)), t('Subscription confirmation found.'));
-
-    $this->drupalPost($confirm_url, NULL, t('Subscribe'));
-    $this->assertRaw(t('%user was added to the %newsletter mailing list.', array('%user' => $mail, '%newsletter' => $newsletter->name)), t('Anonymous subscriber added to newsletter'));
-
-    // Make sure the subscription is confirmed now.
+    // Make sure the subscription is confirmed.
     entity_get_controller('simplenews_subscriber')->resetCache();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
 
@@ -785,7 +768,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost('newsletter/subscriptions', $edit, t('Unsubscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
-    $body = $mails[8]['body'];
+    $body = $mails[7]['body'];
     // Remove line breaks from body in case the string is split.
     $body = str_replace("\n", ' ', $body);
     $this->assertTrue(strpos($body, 'is not subscribed to this mailing list') !== FALSE);
@@ -806,7 +789,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[10]['body'];
+    $body = $mails[9]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -832,7 +815,7 @@ class SimplenewsSubscribeTestCase extends SimplenewsTestCase {
     $this->drupalPost(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[11]['body'];
+    $body = $mails[10]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);

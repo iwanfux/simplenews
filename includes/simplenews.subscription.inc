@@ -330,20 +330,14 @@ function simplenews_subscriptions_page_form_submit($form, &$form_state) {
       // when unsubscribed from the
       arsort($form_state['values']['newsletters'], SORT_NUMERIC);
       foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
-        $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
         if ($checked) {
-          simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
+          simplenews_subscribe($mail, $newsletter_id, FALSE, 'website');
         }
         else {
-          simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
+          simplenews_unsubscribe($mail, $newsletter_id, FALSE, 'website');
         }
       }
-      if (simplenews_confirmation_send_combined()) {
-        drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
-      }
-      else {
-        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
-      }
+      drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
       break;
     case t('Subscribe'):
       foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
