@@ -493,6 +493,21 @@ function simplenews_admin_newsletter_form($form, &$form_state, SimplenewsNewslet
       '#markup' => t('Newsletter emails will be sent in %format format.', array('%format' => $newsletter->format)),
     );
   }
+  // Type of hyperlinks.
+  $form['email']['hyperlinks'] = array(
+    '#type' => 'radios',
+    '#title' => t('Hyperlink conversion'),
+    '#description' => t('Determine how the conversion to text is performed.'),
+    '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
+    '#default_value' => $newsletter->hyperlinks,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="format"]' => array(
+          'value' => 'plain',
+        ),
+      ),
+    ),
+  );
 
   $form['email']['priority'] = array(
     '#type' => 'select',
@@ -557,20 +572,6 @@ function simplenews_admin_newsletter_form($form, &$form_state, SimplenewsNewslet
     '#maxlength' => 128,
     '#required' => TRUE,
     '#default_value' => $newsletter->from_address,
-  );
-
-  // Type of hyperlinks
-  $form['simplenews_hyperlinks'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('HTML to text conversion'),
-    '#collapsible' => FALSE,
-    '#description' => t('When your newsletter is sent as plain text, these options will determine how the conversion to text is performed.'),
-  );
-  $form['simplenews_hyperlinks']['hyperlinks'] = array(
-    '#type' => 'radios',
-    '#title' => t('Hyperlink conversion'),
-    '#options' => array(t('Append hyperlinks as a numbered reference list'), t('Display hyperlinks inline with the text')),
-    '#default_value' => $newsletter->hyperlinks,
   );
 
   $form['actions'] = array('#type' => 'actions');
