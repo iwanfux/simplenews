@@ -54,6 +54,12 @@ class SimplenewsSubscriberMetadataController extends EntityDefaultMetadataContro
     $properties['uid']['label'] = t('User');
     $properties['language']['type'] = 'language';
     $properties['created']['type'] = 'date';
+    $properties['simplenews_subscriptions'] = array(
+      'label' => t('Simplenews Subscriptions'),
+      'description' => t('The simplenews newsletters the party is subscribed to.'),
+      'type' => 'list<simplenews_newsletter>',
+      'getter callback' => 'simplenews_property_simplenews_subscriptions_getter_callback',
+    );
 
     return $info;
   }

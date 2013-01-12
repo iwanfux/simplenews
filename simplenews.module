@@ -2923,3 +2923,12 @@ function simplenews_field_access($op, $field, $entity_type, $entity, $account) {
     return FALSE;
   }
 }
+
+/**
+ * Getter callback for simplenews_subscriptions property.
+ *
+ * The simplenews_subscriptions property is defined in simplenews.info.inc
+ */
+function simplenews_property_simplenews_subscriptions_getter_callback($item) {
+  return $item->newsletter_ids;
+}
