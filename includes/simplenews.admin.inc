@@ -326,7 +326,7 @@ function simplenews_build_issue_filter_query(EntityFieldQuery $query) {
  */
 function simplenews_admin_categories() {
   $form['#tree'] = TRUE;
-  if ($newsletters = simplenews_newsletter_get_visible()) {
+  if ($newsletters = entity_load('simplenews_newsletter')) {
     foreach ($newsletters as $newsletter) {
       $form[$newsletter->newsletter_id]['#newsletter'] = $newsletter;
       $form[$newsletter->newsletter_id]['name'] = array('#markup' => check_plain($newsletter->name));
