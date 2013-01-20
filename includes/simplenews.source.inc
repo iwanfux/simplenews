@@ -109,25 +109,24 @@ interface SimplenewsSourceInterface {
 }
 
 /**
- * Source interface based on a node.
- *
- * This is the interface that needs to be implemented to be compatible with
- * the default simplenews spool implementation and therefore exposed in
- * hook_simplenews_source_cache_info().
- *
- * @ingroup source
+ * Source interface based on an entity.
  */
-interface SimplenewsSourceNodeInterface extends SimplenewsSourceInterface {
+interface SimplenewsSourceEntityInterface extends SimplenewsSourceInterface {
 
   /**
-   * Create a source based on a node and subscriber.
+   * Create a source based on an entity.
    */
-  function __construct($node, $subscriber);
+  function __construct($entity, $subscriber, $entity_type);
 
   /**
-   * Returns the actually used node of this source.
+   * Returns the actually used entity of this source.
    */
-  function getNode();
+  function getEntity();
+
+  /**
+   * Returns the entity type of the given entity.
+   */
+  function getEntityType();
 
   /**
    * Returns the subscriber object.
@@ -148,7 +147,7 @@ interface SimplenewsSourceCacheInterface {
    * Create a new instance, allows to initialize based on the used
    * source.
    */
-  function __construct(SimplenewsSourceNodeInterface $source);
+  function __construct(SimplenewsSourceEntityInterface $source);
 
   /**
    * Return a cached element, if existing.
@@ -334,16 +333,19 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
 }
 
 /**
- * Simplenews source implementation based on nodes for a single subscriber.
- *
- * @ingroup source
+ * Default source class for entities.
  */
-class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
+class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
 
   /**
-   * The node object.
+   * The entity object.
    */
-  protected $node;
+  protected $entity;
+
+  /**
+   * The entity type.
+   */
+  protected $entity_type;
 
   /**
    * The cached build render array.
@@ -373,56 +375,21 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   protected $cache;
 
   /**
-   * Implements SimplenewsSourceInterface::_construct();
+   * Implements SimplenewsSourceEntityInterface::_construct();
    */
-  public function __construct($node, $subscriber) {
+  public function __construct($entity, $subscriber, $entity_type) {
     $this->setSubscriber($subscriber);
-    $this->setNode($node);
-    $this->newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($node));
+    $this->setEntity($entity, $entity_type);
     $this->initCache();
+    $this->newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($entity));
   }
 
   /**
-   * Set the node of this source.
-   *
-   * If the node is part of a translation set, switch to the node for the
-   * requested language, if existent.
+   * Set the entity of this source.
    */
-  public function setNode($node) {
-    $langcode = $this->getLanguage();
-    $nid = $node->nid;
-    if (module_exists('translation')) {
-      // If the node has translations and a translation is required
-      // the equivalent of the node in the required language is used
-      // or the base node (nid == tnid) is used.
-      if ($tnid = $node->tnid) {
-        if ($langcode != $node->language) {
-          $translations = translation_node_get_translations($tnid);
-          // A translation is available in the preferred language.
-          if ($translation = $translations[$langcode]) {
-            $nid = $translation->nid;
-            $langcode = $translation->language;
-          }
-          else {
-            // No translation found which matches the preferred language.
-            foreach ($translations as $translation) {
-              if ($translation->nid == $tnid) {
-                $nid = $tnid;
-                $langcode = $translation->language;
-                break;
-              }
-            }
-          }
-        }
-      }
-    }
-    // If a translation of the node is used, load this node.
-    if ($nid != $node->nid) {
-      $this->node = node_load($nid);
-    }
-    else {
-      $this->node = $node;
-    }
+  public function setEntity($entity, $entity_type) {
+    $this->entity_type = $entity_type;
+    $this->entity = $entity;
   }
 
   /**
@@ -510,7 +477,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     return array(
       'newsletter' => $this->getNewsletter(),
       'simplenews_subscriber' => $this->getSubscriber(),
-      'node' => $this->getNode(),
+      $this->getEntityType() => $this->getEntity(),
     );
   }
 
@@ -569,10 +536,17 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   }
 
   /**
-   * Implements SimplenewsSourceSpoolInterface::getNode().
+   * Implements SimplenewsSourceEntityInterface::getEntity().
    */
-  function getNode() {
-    return $this->node;
+  function getEntity() {
+    return $this->entity;
+  }
+
+  /**
+   * Implements SimplenewsSourceEntityInterface::getEntityType().
+   */
+  function getEntityType() {
+    return $this->entity_type;
   }
 
   /**
@@ -637,7 +611,7 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
   }
 
   /**
-   * Build the node object.
+   * Build the entity object.
    *
    * The resulting build array is cached as it is used in multiple places.
    * @param $format
@@ -653,10 +627,12 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
     // Build message body
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
-    $build = node_view($this->node, 'email_' . $format);
+    $build = entity_view($this->getEntityType(), array($this->getEntity()), 'email_' . $format);
+    $build = reset($build[$this->getEntityType()]);
     unset($build['#theme']);
 
-    foreach (field_info_instances('node', $this->node->type) as $field_name => $field) {
+    list(, , $bundle) = entity_extract_ids($this->getEntityType(), $this->getEntity());
+    foreach (field_info_instances($this->getEntityType(), $bundle) as $field_name => $field) {
       if (isset($build[$field_name])) {
         $build[$field_name]['#theme'] = 'simplenews_field';
       }
@@ -803,7 +779,8 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
     $attachments = array();
     $build = $this->build();
     $fids = array();
-    foreach (field_info_instances('node', $this->node->type) as $field_name => $field_instance) {
+    list(, , $bundle) = entity_extract_ids($this->getEntityType(), $this->getEntity());
+    foreach (field_info_instances($this->getEntityType(), $bundle) as $field_name => $field_instance) {
       // @todo: Find a better way to support more field types.
       // Only add fields of type file which are enabled for the current view
       // mode as attachments.
@@ -823,6 +800,78 @@ class SimplenewsSourceNode implements SimplenewsSourceNodeInterface {
 
     $this->cache->set('data', 'attachments', $attachments);
     return $attachments;
+  }
+}
+
+/**
+ * Simplenews source implementation based on nodes for a single subscriber.
+ *
+ * @ingroup source
+ */
+class SimplenewsSourceNode extends SimplenewsSourceEntity {
+
+  /**
+   * Overrides SimplenewsSourceEntity::__construct();
+   */
+  public function __construct($node, $subscriber, $entity_type = 'node') {
+    parent::__construct($node, $subscriber, $entity_type);
+  }
+
+  /**
+   * Overrides SimplenewsSourceEntity::setEntity().
+   *
+   * Handles node translation.
+   */
+  public function setEntity($node, $entity_type = 'node') {
+    $this->entity_type = $entity_type;
+    $langcode = $this->getLanguage();
+    $nid = $node->nid;
+    if (module_exists('translation')) {
+      // If the node has translations and a translation is required
+      // the equivalent of the node in the required language is used
+      // or the base node (nid == tnid) is used.
+      if ($tnid = $node->tnid) {
+        if ($langcode != $node->language) {
+          $translations = translation_node_get_translations($tnid);
+          // A translation is available in the preferred language.
+          if ($translation = $translations[$langcode]) {
+            $nid = $translation->nid;
+            $langcode = $translation->language;
+          }
+          else {
+            // No translation found which matches the preferred language.
+            foreach ($translations as $translation) {
+              if ($translation->nid == $tnid) {
+                $nid = $tnid;
+                $langcode = $translation->language;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    // If a translation of the node is used, load this node.
+    if ($nid != $node->nid) {
+      $this->entity = node_load($nid);
+    }
+    else {
+      $this->entity = $node;
+    }
+  }
+
+  /**
+   * Set the node.
+   */
+  function setNode($node) {
+    $this->setEntity($node, 'node');
+  }
+
+  /**
+   * Implements SimplenewsSourceSpoolInterface::getNode().
+   */
+  function getNode() {
+    return $this->entity;
   }
 }
 
@@ -854,9 +903,9 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
   protected static $cache = array();
 
   /**
-   * Implements SimplenewsSourceNodeInterface::__construct().
+   * Implements SimplenewsSourceCacheInterface::__construct().
    */
-  public function __construct(SimplenewsSourceNodeInterface $source) {
+  public function __construct(SimplenewsSourceEntityInterface $source) {
     $this->source = $source;
 
     self::$cache = &drupal_static(__CLASS__, array());
@@ -867,7 +916,8 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
    */
   protected function getCid() {
     if (empty($this->cid)) {
-      $this->cid = $this->source->getNode()->nid . ':' . $this->source->getLanguage();
+      $entity_id = entity_id($this->source->getEntityType(), $this->source->getEntity());
+      $this->cid = $this->source->getEntityType() . ':' . $entity_id . ':' . $this->source->getLanguage();
     }
     return $this->cid;
   }
