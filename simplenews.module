@@ -2400,10 +2400,13 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
 
+  $entity_type = $variables['build']['#entity_type'];
+  $entity = !empty($variables['build']['#' . $entity_type]) ? $variables['build']['#' . $entity_type] : $variables['build']['#entity'];
+
   $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
   $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
-  $variables['title'] = check_plain($variables['build']['#node']->title);
+  $variables['title'] = entity_label($entity_type, $entity);
   $variables['language'] = $variables['build']["#language"];
   $variables['view_mode'] = $variables['build']['#view_mode'];
 
