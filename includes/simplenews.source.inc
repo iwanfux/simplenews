@@ -278,9 +278,9 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
 
     // Store this spool row as processed.
     $this->processed[$spool_data->msid] = $spool_data;
-    $node = node_load($spool_data->nid);
-    if (!$node) {
-      // If node the load failed, set the processed status done and proceed with
+    $entity = entity_load_single($spool_data->entity_type, $spool_data->entity_id);
+    if (!$entity) {
+      // If the entity load failed, set the processed status done and proceed with
       // the next mail.
       $this->processed[$spool_data->msid]->result = array(
         'status' => SIMPLENEWS_SPOOL_DONE,
@@ -307,11 +307,13 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
     }
 
     $source_class = $this->getSourceImplementation($spool_data);
-    $source = new $source_class($node, $subscriber);
+    $source = new $source_class($entity, $subscriber, $spool_data->entity_type);
 
-    // Set which node is actually used. In case of a translation set, this might
-    // not be the same node.
-    $this->processed[$spool_data->msid]->actual_nid = $source->getNode()->nid;
+    // Set which entity is actually used. In case of a translation set, this might
+    // not be the same entity.
+    $this->processed[$spool_data->msid]->actual_entity_type = $source->getEntityType();
+    $this->processed[$spool_data->msid]->actual_entity_id
+      = entity_id($source->getEntityType(), $source->getEntity());
     return $source;
   }
 
@@ -328,7 +330,19 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
    * Return the Simplenews source implementation for the given mail spool row.
    */
   protected function getSourceImplementation($spool_data) {
-    return variable_get('simplenews_source', 'SimplenewsSourceNode');
+    $default = ($spool_data->entity_type == 'node') ? 'SimplenewsSourceNode' : NULL;
+
+    // First check if there is a class set for this entity type (default
+    // 'simplenews_source_node' to SimplenewsSourceNode.
+    $class = variable_get('simplenews_source_' . $spool_data->entity_type, $default);
+
+    // If no class was found, fall back to the generic 'simplenews_source'
+    // variable.
+    if (empty($class)) {
+      $class = variable_get('simplenews_source', 'SimplenewsSourceEntity');
+    }
+
+    return $class;
   }
 }
 

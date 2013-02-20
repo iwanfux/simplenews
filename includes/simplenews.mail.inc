@@ -24,7 +24,8 @@ function simplenews_add_node_to_spool($node) {
   $select->addField('s', 'mail');
   $select->addField('s', 'snid');
   $select->addField('t', 'newsletter_id');
-  $select->addExpression($node->nid, 'nid');
+  $select->addExpression('\'node\'', 'entity_type');
+  $select->addExpression($node->nid, 'entity_id');
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
   $select->condition('t.newsletter_id', simplenews_issue_newsletter_id($node));
@@ -163,7 +164,7 @@ function simplenews_send_source(SimplenewsSourceInterface $source) {
 
   // Send mail.
   $message = drupal_mail('simplenews', $source->getKey(), $source->getRecipient(), $source->getLanguage(), $params, $source->getFromFormatted());
-  
+
   // Log sent result in watchdog.
   if (variable_get('simplenews_debug', FALSE)) {
     if ($message['result']) {
@@ -241,11 +242,11 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
         simplenews_update_spool(array($msid), $row_result);
         if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
           $count_success++;
-          if (!isset($sent[$row->actual_nid])) {
-            $sent[$row->actual_nid] = 1;
+          if (!isset($sent[$row->actual_entity_type][$row->actual_entity_id])) {
+            $sent[$row->actual_entity_type][$row->actual_entity_id] = 1;
           }
           else {
-            $sent[$row->actual_nid]++;
+            $sent[$row->actual_entity_type][$row->actual_entity_id]++;
           }
         }
         if ($row_result['error']) {
@@ -274,12 +275,12 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
       simplenews_update_spool(array($msid), $row_result);
       if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
         $count_success++;
-        if (isset($row->actual_nid)) {
-          if (!isset($sent[$row->actual_nid])) {
-            $sent[$row->actual_nid] = 1;
+        if (isset($row->actual_entity_type) && isset($row->actual_entity_id)) {
+          if (!isset($sent[$row->actual_entity_type][$row->actual_entity_id])) {
+            $sent[$row->actual_entity_type][$row->actual_entity_id] = 1;
           }
           else {
-            $sent[$row->actual_nid]++;
+            $sent[$row->actual_entity_type][$row->actual_entity_id]++;
           }
         }
       }
@@ -290,11 +291,13 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
 
     // Update subscriber count.
     if (lock_acquire('simplenews_update_sent_count')) {
-      foreach ($sent as $nid => $count) {
-        entity_get_controller('node')->resetCache(array($nid));
-        $node = node_load($nid);
-        simplenews_issue_sent_count($node, simplenews_issue_sent_count($node) + $count);
-        node_save($node);
+      foreach ($sent as $entity_type => $ids) {
+        foreach ($ids as $entity_id => $count) {
+          entity_get_controller($entity_type)->resetCache(array($entity_id));
+          $entity = entity_load_single($entity_type, $entity_id);
+          simplenews_issue_sent_count($entity_type, $entity, simplenews_issue_sent_count($entity_type, $entity) + $count);
+          entity_save($entity_type, $entity);
+        }
       }
       lock_release('simplenews_update_sent_count');
     }
@@ -382,6 +385,13 @@ function simplenews_get_expiration_time() {
  */
 function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array()) {
   $messages = array();
+
+  // Continue to support 'nid' as a condition.
+  if (!empty($conditions['nid'])) {
+    $conditions['entity_type'] = 'node';
+    $conditions['entity_id'] = $conditions['nid'];
+    unset($conditions['nid']);
+  }
 
   // Add default status condition if not set.
   if (!isset($conditions['status'])) {
@@ -492,6 +502,13 @@ function simplenews_update_spool($msids, $data) {
  */
 function simplenews_count_spool(array $conditions = array()) {
 
+  // Continue to support 'nid' as a condition.
+  if (!empty($conditions['nid'])) {
+    $conditions['entity_type'] = 'node';
+    $conditions['entity_id'] = $conditions['nid'];
+    unset($conditions['nid']);
+  }
+
   // Add default status condition if not set.
   if (!isset($conditions['status'])) {
     $conditions['status'] = array(SIMPLENEWS_SPOOL_PENDING, SIMPLENEWS_SPOOL_IN_PROGRESS);
@@ -558,6 +575,13 @@ function simplenews_clear_spool() {
  * @ingroup spool
  */
 function simplenews_delete_spool(array $conditions) {
+  // Continue to support 'nid'.
+  if (!empty($conditions['nid'])) {
+    $conditions['entity_type'] = 'node';
+    $conditions['entity_id'] = $conditions['nid'];
+    unset($conditions['nid']);
+  }
+
   $query = db_delete('simplenews_mail_spool');
 
   foreach ($conditions as $condition => $value) {
@@ -599,7 +623,7 @@ function simplenews_send_status_update() {
     ->execute();
   if ($nodes) {
     foreach (reset($nodes) as $node) {
-      $counts[simplenews_issue_newsletter_id($node)][$node->nid] = simplenews_count_spool(array('nid' => $node->nid));
+      $counts[simplenews_issue_newsletter_id($node)][$node->nid] = simplenews_count_spool(array('entity_id' => $node->nid, 'entity_type' => 'node'));
     }
   }
   // Determine which nodes are send per translation group and per individual node.

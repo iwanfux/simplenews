@@ -184,7 +184,7 @@ function simplenews_admin_issues() {
   $categories = simplenews_newsletter_list();
   foreach (node_load_multiple($nids) as $node) {
     $subscriber_count = simplenews_count_subscriptions(simplenews_issue_newsletter_id($node));
-    $pending_count = simplenews_count_spool(array('nid' => $node->nid));
+    $pending_count = simplenews_count_spool(array('entity_id' => $node->nid, 'entity_type' => 'node'));
     $send_status = simplenews_issue_status($node) == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : theme('simplenews_status', array('source' => 'sent', 'status' => simplenews_issue_status($node)));
 
     $options[$node->nid] = array(
@@ -284,7 +284,7 @@ function simplenews_issue_send($nids) {
 
   // If there were any newsletters sent, display a message.
   if (!empty($sent_nodes)) {
-    $conditions = array('nid' => array_keys($sent_nodes));
+    $conditions = array('entity_id' => array_keys($sent_nodes), 'entity_type' => 'node');
     // Attempt to send immediatly, if configured to do so.
     if (simplenews_mail_attempt_immediate_send($conditions)) {
       drupal_set_message(t('Sent the following newsletters: %titles.', array('%titles' => implode(', ', $sent_nodes))));
@@ -1922,7 +1922,7 @@ function simplenews_node_tab_send_form_submit($form, &$form_state) {
   if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
     simplenews_add_node_to_spool($node);
     // Attempt to send immediatly, if configured to do so.
-    if (simplenews_mail_attempt_immediate_send(array('nid' => $node->nid))) {
+    if (simplenews_mail_attempt_immediate_send(array('entity_id' => $node->nid, 'entity_type' => 'node'))) {
       drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
     }
     else {

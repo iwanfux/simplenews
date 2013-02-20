@@ -1848,10 +1848,10 @@ class SimpleNewsI18nTestCase extends SimplenewsTestCase {
     // Verify sent subscriber count for each node.
     entity_get_controller('node')->resetCache(array($english_node->nid));
     $english_node = node_load($english_node->nid);
-    $this->assertEqual(1, simplenews_issue_sent_count($english_node), 'subscriber count is correct for english');
+    $this->assertEqual(1, simplenews_issue_sent_count('node', $english_node), 'subscriber count is correct for english');
     entity_get_controller('node')->resetCache(array($spanish_node->nid));
     $spanish_node = node_load($spanish_node->nid);
-    $this->assertEqual(2, simplenews_issue_sent_count($spanish_node), 'subscriber count is correct for spanish');
+    $this->assertEqual(2, simplenews_issue_sent_count('node', $spanish_node), 'subscriber count is correct for spanish');
 
     // Make sure the language of a node can be changed.
     $english = array(
@@ -2283,7 +2283,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
 
-    $this->assertEqual(5, simplenews_issue_sent_count($node), 'subscriber count is correct');
+    $this->assertEqual(5, simplenews_issue_sent_count('node', $node), 'subscriber count is correct');
   }
 
   /**
@@ -2380,7 +2380,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $mails = $this->drupalGetMails();
     $this->assertEqual(0, count($mails), t('No mails were sent yet.'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(5, $spooled, t('5 mails have been added to the mail spool'));
 
     // Run cron for the first time.
@@ -2390,9 +2390,9 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     entity_get_controller('node')->resetCache();
     $node = node_load($node->nid);
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_PENDING, simplenews_issue_status($node), t('Newsletter sending pending.'));
-    $this->assertEqual(3, simplenews_issue_sent_count($node), 'subscriber count is correct');
+    $this->assertEqual(3, simplenews_issue_sent_count('node', $node), 'subscriber count is correct');
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(2, $spooled, t('2 mails remaining in spool.'));
 
     // Run cron for the second time.
@@ -2402,7 +2402,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     entity_get_controller('node')->resetCache();
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, simplenews_issue_status(node_load($node->nid)), t('Newsletter sending finished.'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(0, $spooled, t('No mails remaining in spool.'));
 
     // Verify mails.
@@ -2414,7 +2414,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
       unset($this->subscribers[$mail['to']]);
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
-    $this->assertEqual(5, simplenews_issue_sent_count(node_load($node->nid)));
+    $this->assertEqual(5, simplenews_issue_sent_count('node', node_load($node->nid)));
   }
 
   /**
@@ -2458,7 +2458,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     $mails = $this->drupalGetMails();
     $this->assertEqual(0, count($mails), t('No mails were sent yet.'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(5, $spooled, t('5 mails have been added to the mail spool'));
 
     // Check warning message on node edit form.
@@ -2472,7 +2472,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     entity_get_controller('node')->resetCache();
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, simplenews_issue_status(node_load($node->nid)), t('Newsletter sending finished.'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(0, $spooled, t('No mails remaining in spool.'));
 
     // Verify mails.
@@ -2627,7 +2627,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     entity_get_controller('node')->resetCache();
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_PENDING, simplenews_issue_status(node_load($node->nid)), t('Newsletter sending pending.'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(5, $spooled, t('5 mails remaining in spool.'));
 
     // Verify that deleting isn't possible right now.
@@ -2642,7 +2642,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     entity_get_controller('node')->resetCache();
     $this->assertEqual(SIMPLENEWS_STATUS_SEND_READY, simplenews_issue_status(node_load($node->nid)), t('Newsletter sending finished'));
 
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(5, $spooled, t('Mails are kept in simplenews_mail_spool after being sent.'));
 
     // Verify mails.
@@ -2677,7 +2677,7 @@ class SimplenewsSendTestCase extends SimplenewsTestCase {
     // Verify.
     entity_get_controller('node')->resetCache();
     $this->assertFalse(node_load($node->nid));
-    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    $spooled = db_query('SELECT COUNT(*) FROM {simplenews_mail_spool} WHERE entity_id = :nid AND entity_type = :type', array(':nid' => $node->nid, ':type' => 'node'))->fetchField();
     $this->assertEqual(0, $spooled, t('No mails remaining in spool.'));
   }
 

@@ -242,8 +242,15 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'nid' => array(
-        'description' => 'The {node}.nid of this newsletter.',
+      'entity_type' => array(
+        'description' => 'The entity type of this newsletter issue.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The entity id of this newsletter issue.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -297,10 +304,6 @@ function simplenews_schema() {
       'snid_newsletter_id' => array('snid', 'newsletter_id'),
     ),
     'foreign keys' => array(
-      'nid' => array(
-        'table' => 'node',
-        'columns' => array('nid' => 'nid'),
-      ),
       'newsletter_id' => array(
         'table' => 'simplenews_newsletter',
         'columns' => array('newsletter_id'),
@@ -314,6 +317,7 @@ function simplenews_schema() {
       ),
     ),
   );
+
   return $schema;
 }
 
@@ -1087,4 +1091,30 @@ function simplenews_update_7204() {
   if (db_field_exists('simplenews_subscriber', 'timestamp')) {
     db_drop_field('simplenews_subscriber', 'timestamp');
   }
+}
+
+/**
+ * Replace nid with entity_type and entity_id columns in
+ * {simplenews_mail_spool}.
+ * Set the entity_type column on existing rows to node.
+ */
+function simplenews_update_7205() {
+  db_change_field('simplenews_mail_spool', 'nid', 'entity_id', array(
+    'description' => 'The entity id of this newsletter issue.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_add_field('simplenews_mail_spool', 'entity_type', array(
+    'description' => 'The entity type of this newsletter issue.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  ));
+
+  // Set every entity type to 'node' at this point.
+  db_update('simplenews_mail_spool')
+    ->fields(array('entity_type' => 'node'))
+    ->execute();
 }

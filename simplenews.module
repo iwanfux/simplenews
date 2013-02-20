@@ -409,7 +409,7 @@ function simplenews_node_delete($node) {
   }
   // Check if pending emails of this newsletter issue exist and delete these too.
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  $count = simplenews_delete_spool(array('nid' => $node->nid));
+  $count = simplenews_delete_spool(array('entity_id' => $node->nid, 'entity_type' => 'node'));
   if ($count) {
     drupal_set_message(t('Newsletter %title was deleted but had @count pending emails. They can no longer be sent.', array(
         '%title' => $node->title,
@@ -2518,7 +2518,9 @@ function simplenews_issue_status($node, $value = NULL) {
 /**
  * Gets or sets the sent count of a newsletter issue.
  *
- * @param $node
+ * @param $entity_type
+ *   Then entity_type of $entity.
+ * @param $entity
  *   The issue to get or set the status.
  * @param $value
  *   (Optional) The sent count to be set or NULL to retrieve the current value.
@@ -2527,10 +2529,10 @@ function simplenews_issue_status($node, $value = NULL) {
  *
  * @ingroup issue
  */
-function simplenews_issue_sent_count($node, $value = NULL) {
+function simplenews_issue_sent_count($entity_type, $entity, $value = NULL) {
   $field = variable_get('simplenews_sent_count_field', 'simplenews_sent_count');
   if ($value) {
-    return $node->$field = array(
+    return $entity->$field = array(
       LANGUAGE_NONE => array(
         array(
           'value' => $value
@@ -2538,7 +2540,7 @@ function simplenews_issue_sent_count($node, $value = NULL) {
       ),
     );
   }
-  elseif ($status = field_get_items('node', $node, $field)) {
+  elseif ($status = field_get_items($entity_type, $entity, $field)) {
     return $status[0]['value'];
   }
   return 0;
