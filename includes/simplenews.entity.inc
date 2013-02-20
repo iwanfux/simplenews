@@ -159,6 +159,11 @@ class SimplenewsNewsletter extends Entity {
 class SimplenewsSubscriber extends Entity {
 
   /**
+   * An array of newsletter ids this subscriber is subscribed to.
+   */
+  public $newsletter_ids = array();
+
+  /**
    * Overrides Entity::setUp().
    *
    * Prevent failure if the entity system ist not fully loaded.
