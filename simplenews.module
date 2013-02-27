@@ -478,6 +478,8 @@ function simplenews_get_content_types() {
  */
 function simplenews_issue_fields_add($type) {
   simplenews_issue_newsletter_field_add($type);
+  simplenews_issue_handler_field_add($type);
+  simplenews_issue_handler_settings_field_add($type);
   simplenews_issue_status_field_add($type);
   simplenews_issue_sent_count_field_add($type);
 }
@@ -563,6 +565,123 @@ function simplenews_issue_newsletter_field_add($type) {
     );
     field_create_instance($instance);
   }
+}
+
+/**
+ * Add a field for the recipient handler choice.
+ *
+ * @param $type A node type object
+ *
+ * @ingroup issue
+ */
+function simplenews_issue_handler_field_add($type) {
+  $field_name = variable_get('simplenews_handler_field', 'simplenews_handler');
+  $field = field_info_field($field_name);
+  $instance = field_info_instance('node', $field_name, $type->type);
+
+  if (empty($field)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'list_text',
+      'cardinality' => 1,
+      'entity_types' => array('node'),
+      'translatable' => FALSE,
+      'settings' => array(
+        'allowed_values_function' => 'simplenews_handler_field_allowed_values',
+      ),
+    );
+    $field = field_create_field($field);
+  }
+
+  if (empty($instance)) {
+    // We set the default value to simplenews_subscription
+    $instance = array(
+      'label' => t('Recipient Handler'),
+      'field_name' => $field_name,
+      'bundle' => $type->type,
+      'entity_type' => 'node',
+      'required' => TRUE,
+      'default_value' => array(
+        array(
+          'value' => 'simplenews_subscription',
+        ),
+      ),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'hidden',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+}
+
+/**
+ * Add a field for the recipient handler settings.
+ *
+ * @param $type A node type object
+ *
+ * @ingroup issue
+ */
+function simplenews_issue_handler_settings_field_add($type) {
+  $field_name = variable_get('simplenews_handler_settings_field', 'simplenews_handler_settings');
+  $field = field_info_field($field_name);
+  $instance = field_info_instance('node', $field_name, $type->type);
+
+  if (empty($field)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text_long',
+      'cardinality' => 1,
+      'entity_types' => array('node'),
+      'translatable' => FALSE,
+      'settings' => array(),
+      'default_formatter' => 'hidden',
+    );
+    $field = field_create_field($field);
+  }
+
+  if (empty($instance)) {
+    // We set the default value to simplenews_subscription
+    $instance = array(
+      'label' => t('Recipient Handle Settings'),
+      'field_name' => $field_name,
+      'bundle' => $type->type,
+      'entity_type' => 'node',
+      'widget' => array(
+        'type' => 'text_textarea',
+      ),
+      'display' => array(
+        'default' => array(
+          'label' => 'hidden',
+          'type' => 'hidden',
+        ),
+      ),
+    );
+    field_create_instance($instance);
+  }
+}
+
+/**
+ * Returns the array of allowed values for the simplenews_newsletter_handler
+ * field.
+ *
+ * @see list_allowed_values
+ */
+function simplenews_handler_field_allowed_values($field = array(), $instance = NULL, $entity_type = NULL, $entity = NULL) {
+  ctools_include('plugins');
+  $handlers = ctools_get_plugins('simplenews', 'recipient_handlers');
+
+  $allowed_values = array();
+  foreach ($handlers as $handler => $settings) {
+    $allowed_values[$handler] = filter_xss($settings['title']);
+  }
+
+  return $allowed_values;
 }
 
 /**
@@ -1821,6 +1940,55 @@ function simplenews_views_api() {
 }
 
 /**
+ * Implements hook_ctools_plugin_type() to inform CTools about the recipients
+ * plugin.
+ */
+function simplenews_ctools_plugin_type() {
+  $plugins['recipient_handlers'] = array(
+    'defaults' => array(
+      'class' => 'SimplenewsRecipientsHandlerBase',
+      'settings' => array(),
+    ),
+  );
+
+  return $plugins;
+}
+
+/**
+ * Build a recipient handler class from a given plugin id and settings array.
+ *
+ * @param $handler
+ *   The id of the simplenews_recipient_handler plugin to use.
+ * @param $settings
+ *   An array of settings to pass to the handler class.
+ *
+ * @return SimplenewsRecipientHandlerInterface
+ *   A constructed SimplenewsRecipientHandler class.
+ *
+ * @throws Exception if the handler class does not exist.
+ */
+function simplenews_get_recipient_handler($newsletter, $handler, $settings = array()) {
+  ctools_include('plugins');
+  $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $handler);
+  $class = $handler['class'];
+
+  if (!class_exists($class)) {
+    throw new Exception(t('Recipient Handler Class @class does not exist.', array('@class' => $class)));
+  }
+
+  return new $class($newsletter, $handler, $settings);
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function simplenews_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'simplenews' && $plugin_type == 'recipient_handlers') {
+    return 'plugins/recipient_handlers';
+  }
+}
+
+/**
  * Get a simplenews newsletter entity object.
  *
  * @param $newsletter_id
@@ -2576,6 +2744,64 @@ function simplenews_issue_newsletter_id($node, $value = NULL) {
 }
 
 /**
+ * Gets or sets the handler for an issue.
+ *
+ * @param $node
+ *   The issue to get or set the status.
+ * @param $handler
+ *   (Optional) The recipient handler to be set or NULL to retrieve the current value.
+ * @return
+ *   The recipient handler name or FALSE if not set.
+ *
+ * @ingroup issue
+ */
+function simplenews_issue_handler($node, $handler = NULL) {
+  $field = variable_get('simplenews_handler_field', 'simplenews_handler');
+  if ($handler) {
+    return $node->$field = array(
+      LANGUAGE_NONE => array(
+        array(
+          'value' => $handler
+        ),
+      ),
+    );
+  }
+  elseif ($handler = field_get_items('node', $node, $field)) {
+    return $handler[0]['value'];
+  }
+  return FALSE;
+}
+
+/**
+ * Gets or sets the handler settings for an issue.
+ *
+ * @param $node
+ *   The issue to get or set the status.
+ * @param $settings
+ *   (Optional) The recipient handler settings to be set or NULL to retrieve the current settings.
+ * @return
+ *   The recipient handler settings or an empty array if not set.
+ *
+ * @ingroup issue
+ */
+function simplenews_issue_handler_settings($node, $settings = NULL) {
+  $field = variable_get('simplenews_handler_settings_field', 'simplenews_handler_settings');
+  if ($settings) {
+    return $node->$field = array(
+      LANGUAGE_NONE => array(
+        array(
+          'value' => serialize($settings),
+        ),
+      ),
+    );
+  }
+  elseif ($settings = field_get_items('node', $node, $field)) {
+    return unserialize($settings[0]['value']);
+  }
+  return FALSE;
+}
+
+/**
  * Implements hook_field_extra_fields().
  */
 function simplenews_field_extra_fields() {
@@ -2924,7 +3150,7 @@ function simplenews_confirmation_get_changes_list($subscriber, &$changes = NULL,
 function simplenews_field_access($op, $field, $entity_type, $entity, $account) {
   // Deny access to the issue status and sent count fields, these are used for
   // data storage only.
-  if (in_array($field['field_name'], array('simplenews_issue_status', 'simplenews_sent_count'))) {
+  if (in_array($field['field_name'], array('simplenews_issue_status', 'simplenews_sent_count', 'simplenews_handler_settings', 'simplenews_handler'))) {
     return FALSE;
   }
 }

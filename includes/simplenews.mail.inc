@@ -16,21 +16,20 @@
  * @ingroup issue
  */
 function simplenews_add_node_to_spool($node) {
+  $newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($node));
+  $handler = simplenews_issue_handler($node);
+  $handler_settings = simplenews_issue_handler_settings($node);
+
+  $recipient_handler = simplenews_get_recipient_handler($newsletter, $handler, $handler_settings);
+
   // To send the newsletter, the node id and target email addresses
   // are stored in the spool.
   // Only subscribed recipients are stored in the spool (status = 1).
-  $select = db_select('simplenews_subscriber', 's');
-  $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
-  $select->addField('s', 'mail');
-  $select->addField('s', 'snid');
-  $select->addField('t', 'newsletter_id');
+  $select = $recipient_handler->buildRecipientQuery();
   $select->addExpression('\'node\'', 'entity_type');
   $select->addExpression($node->nid, 'entity_id');
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
-  $select->condition('t.newsletter_id', simplenews_issue_newsletter_id($node));
-  $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-  $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
 
   db_insert('simplenews_mail_spool')
     ->from($select)

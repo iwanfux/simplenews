@@ -14,3 +14,4 @@ files[] = includes/simplenews.entity.inc
 files[] = includes/simplenews.controller.inc
 files[] = includes/simplenews.source.inc
 files[] = includes/simplenews.info.inc
+files[] = includes/simplenews.recipient_handlers.inc

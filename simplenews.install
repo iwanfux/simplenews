@@ -1118,3 +1118,16 @@ function simplenews_update_7205() {
     ->fields(array('entity_type' => 'node'))
     ->execute();
 }
+
+/**
+ * Add recipient handler and handler settings field to issue content types.
+ */
+function simplenews_update_7206() {
+  $node_types = array();
+  foreach (node_type_get_types() as $type) {
+    if (variable_get('simplenews_content_type_' . $type->type, FALSE)) {
+      simplenews_issue_handler_field_add($type);
+      simplenews_issue_handler_settings_field_add($type);
+    }
+  }
+}
