@@ -643,7 +643,13 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
     $build = entity_view($this->getEntityType(), array($this->getEntity()), 'email_' . $format);
     $build = reset($build[$this->getEntityType()]);
-    unset($build['#theme']);
+
+    // We need to prevent the standard theming hooks, but we do want to allow
+    // modules such as panelizer that override it, so only clear the standard
+    // entity hook and entity type hooks.
+    if ($build['#theme'] == 'entity' || $build['#theme'] == $this->getEntityType()) {
+      unset($build['#theme']);
+    }
 
     list(, , $bundle) = entity_extract_ids($this->getEntityType(), $this->getEntity());
     foreach (field_info_instances($this->getEntityType(), $bundle) as $field_name => $field) {
