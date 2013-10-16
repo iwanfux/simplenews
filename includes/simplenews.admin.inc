@@ -1087,7 +1087,7 @@ function simplenews_subscription_list_form() {
 
   foreach ($result as $subscriber) {
     $options[$subscriber->snid] = array(
-      'mail' => $subscriber->mail,
+      'mail' => check_plain($subscriber->mail),
       'username' => isset($subscriber->uid) ? l($subscriber->name, 'user/' . $subscriber->uid) : check_plain($subscriber->name),
       'status' => theme('simplenews_status', array('source' => 'activated', 'status' => $subscriber->activated)),
       'language' => check_plain($subscriber->language),
