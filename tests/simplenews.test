@@ -1646,7 +1646,7 @@ class SimpleNewsAdministrationTestCase extends SimplenewsTestCase {
     // Register a subscriber with an insecure e-mail address through the API
     // and make sure the address is correctly encoded.
     $xss_mail = "<script>alert('XSS');</script>";
-    simplenews_subscribe_user($xss_mail, $this->getRandomNewsletter(), FALSE);
+    simplenews_subscribe($xss_mail, $this->getRandomNewsletter(), FALSE);
     $this->drupalGet('admin/people/simplenews');
     $this->assertNoRaw($xss_mail);
     $this->assertRaw(check_plain($xss_mail));
