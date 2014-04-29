@@ -1,0 +1,10 @@
+name: Simplenews
+description: 'Send newsletters to subscribed email addresses.'
+type: module
+package: Mail
+core: 8.x
+version: VERSION
+dependencies:
+- number
+- list
+configure: simplenews.admin
