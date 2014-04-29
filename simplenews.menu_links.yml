@@ -1,0 +1,5 @@
+simplenews.settings:
+  title: Settings
+  description: 'Simplenews settings.'
+  parent: system.admin_config_services
+  route_name: simplenews.settings_newsletter

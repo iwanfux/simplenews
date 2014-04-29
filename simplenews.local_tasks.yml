@@ -1,0 +1,17 @@
+simplenews.settings_newsletter:
+  title: Newsletter
+  description: 'Simplenews newsletter settings.'
+  base_route: simplenews.settings_newsletter
+  route_name: simplenews.settings_newsletter
+  
+simplenews.settings_subscription:
+  title: Subscription
+  description: 'Subscription settings, opt-in/out confirmation email text.'
+  base_route: simplenews.settings_newsletter
+  route_name: simplenews.settings_subscription
+
+simplenews.settings_mail:
+  title: 'Send mail'
+  description: 'Send mail, cron and debug options.'
+  base_route: simplenews.settings_newsletter
+  route_name: simplenews.settings_mail

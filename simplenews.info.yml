@@ -5,6 +5,7 @@ package: Mail
 core: 8.x
 version: VERSION
 dependencies:
-- number
-- list
+#- number
+#- list
+#- entity_reference
 configure: simplenews.admin

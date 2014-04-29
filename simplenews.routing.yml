@@ -1,0 +1,28 @@
+simplenews.settings_newsletter:
+  path: 'admin/config/services/simplenews/settings/newsletter'
+  defaults:
+    _form: '\Drupal\simplenews\Form\NewsletterSettingsForm'
+    _title: 'Newsletter'
+  requirements:
+    _permission: 'administer simplenews settings'
+
+simplenews.settings_subscription:
+  path: 'admin/config/services/simplenews/settings/subscription'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SimplenewsSettingsSubscriptionForm'
+    _title: 'Subscription'
+  requirements:
+    _permission: 'administer simplenews settings'
+#    'page arguments' => array('simplenews_admin_settings_subscription'),
+#    'file' => 'includes/simplenews.admin.inc',
+  
+simplenews.settings_mail:
+  path: 'admin/config/services/simplenews/settings/mail'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SimplenewsSettingsMailForm'
+    _title: 'Send mail'
+  requirements:
+    _permission: 'administer simplenews settings'
+#    'page arguments' => array('simplenews_admin_settings_mail'),
+#    'file' => 'includes/simplenews.admin.inc',
+

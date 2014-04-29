@@ -207,7 +207,7 @@ function simplenews_menu() {
     'file' => 'includes/simplenews.admin.inc',
     'weight' => 10,
   );
-  $items['admin/config/services/simplenews/settings'] = array(
+/*  $items['admin/config/services/simplenews/settings'] = array(
     'title' => 'Settings',
     'description' => 'Simplenews settings.',
     'page callback' => 'drupal_get_form',
@@ -244,7 +244,7 @@ function simplenews_menu() {
     'file' => 'includes/simplenews.admin.inc',
     'file path' => drupal_get_path('module', 'simplenews'),
     'type' => MENU_LOCAL_TASK,
-  );
+  );*/
 
   // Explicitly define add and remove menu routers even if they are are equal
   // to avoid conflicts with the different combined arguments.
@@ -2059,12 +2059,12 @@ function simplenews_newsletter_get_visible($conditions = array()) {
  * @ingroup newsletter
  */
 function simplenews_newsletter_get_all() {
-  $query = new EntityFieldQuery;
+/*  $query = new EntityFieldQuery;
   $result = $query
     ->entityCondition('entity_type', 'simplenews_newsletter')
     ->propertyOrderBy('weight')
     ->execute();
-  return isset($result['simplenews_newsletter']) ? simplenews_newsletter_load_multiple(array_keys($result['simplenews_newsletter'])) : NULL;
+  return isset($result['simplenews_newsletter']) ? simplenews_newsletter_load_multiple(array_keys($result['simplenews_newsletter'])) : NULL;*/
 }
 
 /**

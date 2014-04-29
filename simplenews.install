@@ -325,9 +325,29 @@ function simplenews_schema() {
  * Implements hook_install().
  */
 function simplenews_install() {
+  // Set the default values for test_address, from_address and from_name.
+  $site_mail = \Drupal::config('system.site')->get('mail');
+  $site_name = \Drupal::config('system.site')->get('name');
+
+  $config = \Drupal::config('simplenews.settings');
+
+  if (isset($config)) {
+    if (empty($site_mail)) {
+      $site_mail = ini_get('sendmail_from');
+    }
+    $config->set('test_address', $site_mail)->save();
+    $config->set('from_address', $site_mail)->save();
+
+    if (empty($site_name)) {
+      $site_name = 'Drupal';
+    }
+    $config->set('from_name', $site_name)->save();
+  }
+
+  // Init the default newsletter.
   _simplenews_init_default_newsletter();
 
-  // add nodetype with newsletter vocabulary
+  // Add nodetype with newsletter vocabulary.
   _simplenews_install_nodetype();
 }
 
@@ -335,7 +355,7 @@ function simplenews_install() {
  * Implements hook_uninstall().
  */
 function simplenews_uninstall() {
-  db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
+  //db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
 }
 
 /**
