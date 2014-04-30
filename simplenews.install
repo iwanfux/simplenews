@@ -9,7 +9,7 @@
  * Implements hook_schema().
  */
 function simplenews_schema() {
-  $schema['simplenews_newsletter'] = array(
+/*  $schema['simplenews_newsletter'] = array(
     'description' => 'Simplenews newsletter categories.',
     'fields' => array(
       'newsletter_id' => array(
@@ -113,7 +113,7 @@ function simplenews_schema() {
     ),
     'primary key' => array('newsletter_id'),
   );
-
+*/
   $schema['simplenews_subscriber'] = array(
     'description' => 'Newsletter subscribers. Many-to-many relation via {simplenews_subscription}',
     'fields' => array(
@@ -335,13 +335,13 @@ function simplenews_install() {
     if (empty($site_mail)) {
       $site_mail = ini_get('sendmail_from');
     }
-    $config->set('test_address', $site_mail)->save();
-    $config->set('from_address', $site_mail)->save();
+    $config->set('newsletter.test_address', $site_mail)->save();
+    $config->set('newsletter.from_address', $site_mail)->save();
 
     if (empty($site_name)) {
       $site_name = 'Drupal';
     }
-    $config->set('from_name', $site_name)->save();
+    $config->set('newsletter.from_name', $site_name)->save();
   }
 
   // Init the default newsletter.
@@ -391,7 +391,7 @@ function _simplenews_init_default_newsletter() {
   }
   if (!$newsletter) {
     $newsletter = entity_create('simplenews_newsletter', array(
-      'name' => t('@site_name newsletter', array('@site_name' => variable_get('site_name', 'Drupal'))),
+      'name' => t('@site_name newsletter', array('@site_name' => \Drupal::config('system.site')->get('name'))),
     ));
     $newsletter->save();
   }

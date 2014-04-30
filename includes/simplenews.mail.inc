@@ -357,7 +357,8 @@ function simplenews_save_spool($spool) {
  *   this will be re-allocated and re-sent.
  */
 function simplenews_get_expiration_time() {
-  $timeout = variable_get('simplenews_spool_progress_expiration', 3600);
+  $config = \Drupal::config('simplenews.settings');
+  $timeout = $config->get('spool_progress_expiration');
   $expiration_time = REQUEST_TIME - $timeout;
   return $expiration_time;
 }
@@ -921,11 +922,11 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
  * This class is for running tests or for development and does not convert HTML
  * to plaintext.
  */
-class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
+/*class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
 
   /**
    * Implements MailSystemInterface::format().
-   */
+   *
   public function format(array $message) {
     // Join the body array into one string.
     $message['body'] = implode("\n\n", $message['body']);
@@ -936,7 +937,7 @@ class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
 
   /**
    * Implements MailSystemInterface::mail().
-   */
+   *
   public function mail(array $message) {
     $captured_emails = variable_get('drupal_test_email_collector', array());
     $captured_emails[] = $message;
@@ -945,4 +946,4 @@ class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
     variable_set('drupal_test_email_collector', $captured_emails);
     return TRUE;
   }
-}
+}*/

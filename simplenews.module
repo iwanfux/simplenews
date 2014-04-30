@@ -992,7 +992,8 @@ function simplenews_entity_info_alter(&$info) {
  */
 function simplenews_cron() {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  simplenews_mail_spool(variable_get('simplenews_throttle', 20));
+  $config = \Drupal::config('simplenews.settings');
+  simplenews_mail_spool($config->get('mail.throttle'));
   simplenews_clear_spool();
   // Update sent status for newsletter admin panel.
   simplenews_send_status_update();
@@ -2292,63 +2293,6 @@ function simplenews_variable_info($options) {
     'localize' => TRUE,
   );
   return $variable;
-}
-
-/**
- * Generate default and custom subscription confirmation email text.
- *
- * @param string $key
- *   Text identification key.
- *
- * @return
- *   Invitation text.
- *
- */
-function simplenews_subscription_confirmation_text($key) {
-  $text = variable_get('simplenews_confirm_' . $key, FALSE);
-  // If administrator did not change the text, the variable is empty.
-  // We get the default here.
-  if (!$text) {
-    switch ($key) {
-      case 'subscribe_unsubscribed':
-        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:subscribe-url]");
-        break;
-      case 'subscribe_subscribed':
-        $text = t("We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name]  newsletter on [site:name] website at [site:url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site:url]");
-        break;
-      case 'unsubscribe_subscribed':
-        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-newsletter:name] mailing list on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:unsubscribe-url]");
-        break;
-      case 'unsubscribe_unsubscribed':
-        $text = t("We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-newsletter:name] mailing list on [site:name] website at [site:url]. However, this email is not subscribed to this mailing list. If you intended to subscribe please visit our site at [site:url]");
-        break;
-      case 'subscribe_subject':
-        $text = t("Confirmation for [simplenews-newsletter:name] from [site:name]");
-        break;
-      case 'combined_subject':
-        $text = t('Confirmation for [site:name]');
-        break;
-      case 'combined_body':
-        $text = t("We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\n\n[changes-list]\n\nTo confirm please use the link below.\n\n[simplenews-subscriber:combined-url]");
-        break;
-      case 'combined_body_unchanged':
-        $text = t("We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\n\n[changes-list]\n\nNo confirmation necessary because all requested changes equal the current state.");
-        break;
-      case 'combined_line_subscribe_unsubscribed';
-        $text = t('Subscribe to [simplenews-newsletter:name]');
-        break;
-      case 'combined_line_subscribe_subscribed';
-        $text = t('Already subscribed to [simplenews-newsletter:name]');
-        break;
-      case 'combined_line_unsubscribe_subscribed';
-        $text = t('Unsubscribe from [simplenews-newsletter:name]');
-        break;
-      case 'combined_line_unsubscribe_unsubscribed';
-        $text = t('Already unsubscribed from [simplenews-newsletter:name]');
-        break;
-    }
-  }
-  return $text;
 }
 
 /**
