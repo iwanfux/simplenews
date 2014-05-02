@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Seimplenews entity controllers definitions.
+ * Simplenews entity controllers definitions.
  */
 
 /**
@@ -61,68 +61,3 @@ class SimplenewsNewsletterController extends EntityAPIController {
   }
 
 }
-
-/**
- * Controller for simplenews_subscriber entity.
- *
- * @ingroup subscriber
- */
-class SimplenewsSubscriberController extends EntityAPIController {
-
-  /**
-   * Overrides EntityAPIController::create().
-   */
-  public function create(array $values = array()) {
-    $values += array(
-      'changes' => array(),
-      'created' => REQUEST_TIME,
-    );
-    return parent::create($values);
-  }
-
-  /**
-   * Overrides EntityAPIController::save().
-   */
-  public function save($entity, DatabaseTransaction $transaction = NULL) {
-    $entity->timestamp = REQUEST_TIME;
-    parent::save($entity, $transaction);
-  }
-
-  /**
-   * Overrides EntityAPIController::delete().
-   *
-   * Make sure that all subscriptions of the subscriber are deleted.
-   */
-  public function delete($ids, DatabaseTransaction $transaction = NULL) {
-    parent::delete($ids, $transaction);
-
-    // Delete subscriptions.
-    foreach ($ids as $id) {
-      simplenews_subscription_delete(array('snid' => $id));
-    }
-  }
-
-    /**
-   * Overrides EntityAPIController::attachLoad().
-   */
-  public function attachLoad(&$queried_entities, $revision_id = FALSE) {
-    parent::attachLoad($queried_entities, $revision_id);
-
-    // Initialize default values and unserialize.
-    foreach ($queried_entities as $subscriber) {
-      $subscriber->newsletter_ids = array();
-    }
-
-    $query = db_select('simplenews_subscription', 'ss')
-      ->fields('ss')
-      ->condition('snid', array_keys($queried_entities));
-
-    foreach ($query->execute() as $subscription) {
-      if ($subscription->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
-        $queried_entities[$subscription->snid]->newsletter_ids[$subscription->newsletter_id] = $subscription->newsletter_id;
-      }
-      $queried_entities[$subscription->snid]->newsletter_subscription[$subscription->newsletter_id] = $subscription;
-    }
-  }
-}
-

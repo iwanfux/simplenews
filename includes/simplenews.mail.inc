@@ -384,7 +384,7 @@ function simplenews_get_expiration_time() {
  * @ingroup spool
  */
 function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array()) {
-  $messages = array();
+  $messages = array(); return $messages; // temp solution
 
   // Continue to support 'nid' as a condition.
   if (!empty($conditions['nid'])) {
@@ -560,11 +560,11 @@ function simplenews_count_spool(array $conditions = array()) {
  * @ingroup spool
  */
 function simplenews_clear_spool() {
-  $expiration_time = REQUEST_TIME - variable_get('simplenews_spool_expire', 0) * 86400;
+  /*$expiration_time = REQUEST_TIME - variable_get('simplenews_spool_expire', 0) * 86400;
   return db_delete('simplenews_mail_spool')
     ->condition('status', SIMPLENEWS_SPOOL_DONE)
     ->condition('timestamp', $expiration_time, '<=')
-    ->execute();
+    ->execute();*/
 }
 
 /**
@@ -616,7 +616,7 @@ function simplenews_send_status_update() {
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  $query = new EntityFieldQuery;
+  /*$query = new EntityFieldQuery;
   $nodes = $query
     ->entityCondition('entity_type', 'node')
     ->fieldCondition(variable_get('simplenews_issue_status_field', 'simplenews_issue_status'), 'value', SIMPLENEWS_STATUS_SEND_PENDING)
@@ -650,7 +650,7 @@ function simplenews_send_status_update() {
       simplenews_issue_status($node, SIMPLENEWS_STATUS_SEND_READY);
       node_save($node);
     }
-  }
+  }*/
 }
 
 /**

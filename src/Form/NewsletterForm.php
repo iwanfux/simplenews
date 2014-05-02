@@ -5,7 +5,7 @@
  * Definition of Drupal\simplenews\NewsletterForm.
  */
 
-namespace Drupal\simplenews;
+namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -76,13 +76,6 @@ class NewsletterForm extends EntityForm {
       '#options' => $options,
       '#default_value' => $newsletter->opt_inout,
       '#description' => t('Hidden: This newsletter does not appear on subscription forms. No unsubscription footer in newsletter.<br /> Single: Users are (un)subscribed immediately, no confirmation email is sent.<br />Double: When (un)subscribing at a subscription form, anonymous users receive an (un)subscription confirmation email. Authenticated users are (un)subscribed immediately.'),
-    );
-    // Provide subscription block for this newsletter.
-    $form['subscription']['block'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Subscription block'),
-      '#default_value' => $newsletter->block,
-      '#description' => t('A subscription block will be provided for this newsletter. Anonymous and authenticated users can subscribe and unsubscribe using this block.'),
     );
 
     $form['email'] = array(

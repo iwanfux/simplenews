@@ -1,5 +1,5 @@
 simplenews.settings:
-  title: Settings
-  description: 'Simplenews settings.'
+  title: Simplenews
+  description: 'Configure your sites newsletters.'
   parent: system.admin_config_services
-  route_name: simplenews.settings_newsletter
+  route_name: simplenews.newsletter_list

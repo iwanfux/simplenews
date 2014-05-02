@@ -117,7 +117,7 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/config/services/simplenews'] = array(
+/*  $items['admin/config/services/simplenews'] = array(
     'title' => 'Newsletters',
     'description' => 'Configure your sites newsletters.',
     'page callback' => 'drupal_get_form',
@@ -154,7 +154,7 @@ function simplenews_menu() {
     'access arguments' => array('administer newsletters'),
     'file' => 'includes/simplenews.admin.inc',
     'weight' => -9,
-  );
+  );*/
 
   $items['admin/content/simplenews/subscriptions/delete'] = array(
     'title' => 'Delete',

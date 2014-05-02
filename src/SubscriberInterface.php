@@ -15,107 +15,83 @@ use Drupal\Core\Entity\ContentEntityInterface;
 interface SubscriberInterface extends ContentEntityInterface {
 
   /**
-   * Returns the category this contact message belongs to.
+   * Returns if the subscriber is avtice or not.
    *
-   * @return \Drupal\contact\CategoryInterface
-   *   The contact category entity.
+   * @return int
+   *   The subscribers status.
    */
-  public function getCategory();
+  public function getStatus();
 
   /**
-   * Returns the name of the sender.
+   * Sets the status of the subscriber.
+   *
+   * @param int $status
+   *   The subscribers status.
+   */
+  public function setStatus($status);
+
+  /**
+   * Returns the subscribers email address.
    *
    * @return string
-   *   The name of the message sender.
+   *   The subscribers email address.
    */
-  public function getSenderName();
+  public function getMail();
 
   /**
-   * Sets the name of the message sender.
+   * Sets the subscribers email address.
    *
-   * @param string $sender_name
-   *   The name of the message sender.
+   * @param string $mail
+   *   The subscribers email address.
    */
-  public function setSenderName($sender_name);
+  public function setMail($mail);
 
   /**
-   * Returns the e-mail address of the sender.
+   * Returns corresponding user ID.
    *
-   * @return string
-   *   The e-mail address of the message sender.
+   * @return int
+   *   The corresponding user ID.
    */
-  public function getSenderMail();
+  public function getUserId();
 
   /**
-   * Sets the e-mail address of the sender.
+   * Sets the corresponding user ID.
    *
-   * @param string $sender_mail
-   *   The e-mail address of the message sender.
+   * @param string $uid
+   *   The corresponding user ID.
    */
-  public function setSenderMail($sender_mail);
-
+  public function setUserId($uid);
+  
   /**
-   * Returns the message subject.
-   *
-   * @return string
-   *   The message subject.
-   */
-  public function getSubject();
-
-  /**
-   * Sets the subject for the e-mail.
-   *
-   * @param string $subject
-   *   The message subject.
-   */
-  public function setSubject($subject);
-
-  /**
-   * Returns the message body.
+   * Returns the lang code.
    *
    * @return string
-   *   The message body.
+   *   The subscribers lang code.
    */
-  public function getMessage();
+  public function getLangcode();
 
   /**
-   * Sets the e-mail message to send.
+   * Sets the lang code.
    *
-   * @param string $message
-   *   The message body.
+   * @param string $langcode
+   *   The subscribers lang code.
    */
-  public function setMessage($message);
+  public function setLangcode($langcode);
+  
+  /**
+   * Returns the changes.
+   *
+   * @return string
+   *   The subscriber changes.
+   */
+  public function getChanges();
 
   /**
-   * Returns TRUE if a copy should be sent to the sender.
+   * Sets the changes.
    *
-   * @return bool
-   *   TRUE if a copy should be sent, FALSE if not.
+   * @param string $changes
+   *   The subscriber changes.
    */
-  public function copySender();
-
-  /**
-   * Sets if the sender should receive a copy of this e-mail or not.
-   *
-   * @param bool $inform
-   *   TRUE if a copy should be sent, FALSE if not.
-   */
-  public function setCopySender($inform);
-
-  /**
-   * Returns TRUE if this is the personal contact form.
-   *
-   * @return bool
-   *   TRUE if the message bundle is personal.
-   */
-  public function isPersonal();
-
-  /**
-   * Returns the user this message is being sent to.
-   *
-   * @return \Drupal\user\UserInterface
-   *   The user entity of the recipent, NULL if this is not a personal message.
-   */
-  public function getPersonalRecipient();
+  public function setChanges($changes);
 
 }

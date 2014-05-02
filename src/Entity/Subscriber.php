@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\contact\Entity\Message.
+ * Contains Drupal\simplenews\Entity\Subscriber.
  */
 
 namespace Drupal\simplenews\Entity;
@@ -19,86 +19,26 @@ use Drupal\Core\Field\FieldDefinition;
  *   id = "simplenews_subscriber",
  *   label = @Translation("Simplenews subscriber"),
  *   controllers = {
- *     "storage" = "Drupal\Core\Entity\ContentEntityNullStorage",
- *     "view_builder" = "Drupal\simplenews\SubscriberViewBuilder",
  *     "form" = {
- *       "default" = "Drupal\simplenews\SubscriberForm"
+ *       "default" = "Drupal\simplenews\Form\SubscriberForm",
+ *       "delete" = "Drupal\simplenews\Form\SubscriberDeleteForm",
  *     }
  *   },
+ *   base_table = "simplenews_subscriber",
  *   entity_keys = {
- *     "bundle" = "subscriber"
+ *     "id" = "id",
+ *     "label" = "mail"
  *   },
- *   bundle_entity_type = "simplenews_subscriber",
  *   fieldable = TRUE,
+ *   admin_permission = "administer simplenews subscriptions",
  *   links = {
- *     "admin-form" = "simplenews.subscriber_edit"
+ *     "admin-form" = "simplenews.subscriber_add",
+ *     "edit-form" = "simplenews.subscriber_edit",
+ *     "delete-form" = "simplenews.subscriber_delete",
  *   }
  * )
  */
 class Subscriber extends ContentEntityBase implements SubscriberInterface {
-
-  /**
-   * {@inheritdoc}
-   */
-  public function id() {
-    return NULL;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function isPersonal() {
-    return $this->bundle() == 'personal';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCategory() {
-    return $this->get('category')->entity;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSenderName() {
-    return $this->get('name')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setSenderName($sender_name) {
-    $this->set('name', $sender_name);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSenderMail() {
-    return $this->get('mail')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setSenderMail($sender_mail) {
-    $this->set('mail', $sender_mail);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getSubject() {
-    return $this->get('subject')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setSubject($subject) {
-    $this->set('subject', $subject);
-  }
 
   /**
    * {@inheritdoc}
@@ -117,62 +57,134 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public function copySender() {
-    return (bool)$this->get('copy')->value;
+  public function getStatus() {
+    return $this->get('status')->value;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function setCopySender($inform) {
-    $this->set('copy', (bool) $inform);
+  public function setStatus($status) {
+    $this->set('status', $status);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getPersonalRecipient() {
-    if ($this->isPersonal()) {
-      return $this->get('recipient')->entity;
-    }
+  public function getMail() {
+    return $this->get('mail')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setMail($mail) {
+    $this->set('mail', $mail);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUserId() {
+    return $this->get('uid')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUserId($uid) {
+    $this->set('uid', $uid);
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getLangcode() {
+    return $this->get('langcode')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setLangcode($langcode) {
+    $this->set('langcode', $langcode);
+  }
+  
+  /**
+   * {@inheritdoc}
+   */
+  public function getChanges() {
+    return $this->get('changes')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setChanges($changes) {
+    $this->set('changes', $changes);
   }
 
   /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['category'] = FieldDefinition::create('entity_reference')
-      ->setLabel(t('Category ID'))
-      ->setDescription(t('The ID of the associated category.'))
-      ->setSettings(array('target_type' => 'contact_category'))
-      ->setRequired(TRUE);
+    $fields['id'] = FieldDefinition::create('integer')
+      ->setLabel(t('Subscriber ID'))
+      ->setDescription(t('Primary key: Unique subscriber ID.'))
+      ->setReadOnly(TRUE)
+      ->setSetting('unsigned', TRUE);
 
-    $fields['name'] = FieldDefinition::create('string')
-      ->setLabel(t("The sender's name"))
-      ->setDescription(t('The name of the person that is sending the contact message.'));
+    $fields['uuid'] = FieldDefinition::create('uuid')
+      ->setLabel(t('UUID'))
+      ->setDescription(t('The subscriber UUID.'))
+      ->setReadOnly(TRUE);
+
+    $fields['status'] = FieldDefinition::create('boolean')
+      ->setLabel(t('Status'))
+      ->setDescription(t('Boolean indicating the status of the subscriber.'))
+      ->setSetting('default_value', FALSE);
 
     $fields['mail'] = FieldDefinition::create('email')
-      ->setLabel(t("The sender's email"))
-      ->setDescription(t('The email of the person that is sending the contact message.'));
+      ->setLabel(t('Email'))
+      ->setDescription(t('The subscribers email address.'))
+      ->setSetting('default_value', '')
+      ->setRequired(TRUE)
+      ->setDisplayOptions('form', array( 
+        'type' => 'email',
+        'settings' => array(),
+        'weight' => 5,
+      )) 
+      ->setDisplayConfigurable('form', TRUE);
 
-    $fields['subject'] = FieldDefinition::create('string')
-      ->setLabel(t('The message subject'))
-      ->setDescription(t('The subject of the contact message.'));
+    $fields['uid'] = FieldDefinition::create('entity_reference')
+      ->setLabel(t('User'))
+      ->setDescription(t('The corresponding user.'))
+      ->setSetting('target_type', 'user')
+      ->setSetting('handler', 'default')
+      ->setDisplayOptions('form', array(
+        'type' => 'entity_reference_autocomplete',
+        'settings' => array(
+          'match_operator' => 'CONTAINS',
+          'size' => 60,
+          'autocomplete_type' => 'tags',
+          'placeholder' => '',
+        ),
+        'weight' => 10,
+      ))
+      ->setDisplayConfigurable('form', TRUE);
 
-    $fields['message'] = FieldDefinition::create('string')
-      ->setLabel(t('The message text'))
-      ->setDescription(t('The text of the contact message.'));
+    $fields['langcode'] = FieldDefinition::create('language')
+      ->setLabel(t('Language code'))
+      ->setDescription(t('The subscribers preffered language.'));
 
-    $fields['copy'] = FieldDefinition::create('boolean')
-      ->setLabel(t('Copy'))
-      ->setDescription(t('Whether to send a copy of the message to the sender.'));
+    $fields['changes'] = FieldDefinition::create('string_long')
+      ->setLabel(t('Changes'))
+      ->setDescription(t('Contains the requested subscription changes.'));
 
-    $fields['recipient'] = FieldDefinition::create('entity_reference')
-      ->setLabel(t('Recipient ID'))
-      ->setDescription(t('The ID of the recipient user for personal contact messages.'))
-      ->setSettings(array('target_type' => 'user'));
+    $fields['created'] = FieldDefinition::create('created')
+      ->setLabel(t('Created'))
+      ->setDescription(t('The time that the subscriber was created.'));
 
     return $fields;
   }
-
 }

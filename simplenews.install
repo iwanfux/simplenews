@@ -117,12 +117,18 @@ function simplenews_schema() {
   $schema['simplenews_subscriber'] = array(
     'description' => 'Newsletter subscribers. Many-to-many relation via {simplenews_subscription}',
     'fields' => array(
-      'snid' => array(
+      'id' => array(
         'description' => 'Primary key: Unique subscriber ID.',
         'type' => 'serial',
         'not null' => TRUE,
       ),
-      'activated' => array(
+      'uuid' => array(
+        'description' => 'Unique Key: Universally unique identifier for this entity.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'status' => array(
         'description' => 'Boolean indicating the status of the subscription.',
         'type' => 'int',
         'size' => 'tiny',
@@ -142,7 +148,7 @@ function simplenews_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'language' => array(
+      'langcode' => array(
         'type' => 'varchar',
         'length' => 12,
         'not null' => TRUE,
@@ -162,7 +168,7 @@ function simplenews_schema() {
         'default' => 0,
       ),
     ),
-    'primary key' => array('snid'),
+    'primary key' => array('id'),
     'indexes' => array(
       'mail' => array('mail'),
       'uid' => array('uid'),
@@ -345,10 +351,10 @@ function simplenews_install() {
   }
 
   // Init the default newsletter.
-  _simplenews_init_default_newsletter();
+  //_simplenews_init_default_newsletter();
 
   // Add nodetype with newsletter vocabulary.
-  _simplenews_install_nodetype();
+  //_simplenews_install_nodetype();
 }
 
 /**

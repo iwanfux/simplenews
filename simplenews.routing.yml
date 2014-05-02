@@ -23,15 +23,15 @@ simplenews.settings_mail:
     _permission: 'administer simplenews settings'
     
 simplenews.newsletter_list:
-  path: '/admin/structure/simplenews'
+  path: '/admin/config/services/simplenews'
   defaults:
     _entity_list: 'simplenews_newsletter'
-    _title: 'Simplenews newsletters'
+    _title: 'Simplenews'
   requirements:
     _permission: 'administer simplenews forms'
 
 simplenews.newsletter_add:
-  path: '/admin/structure/simplenews/add'
+  path: '/admin/config/services/simplenews/add'
   defaults:
     _entity_form: 'simplenews_newsletter.add'
     _title: 'Add newsletter'
@@ -39,17 +39,41 @@ simplenews.newsletter_add:
     _entity_create_access: 'simplenews_newsletter'
 
 simplenews.newsletter_edit:
-  path: '/admin/structure/simplenews/manage/{simplenews_newsletter}'
+  path: '/admin/config/services/simplenews/manage/{simplenews_newsletter}'
   defaults:
     _entity_form: 'simplenews_newsletter.edit'
-    _title: 'Edit simplenews newsletter'
+    _title: 'Edit newsletter'
   requirements:
     _entity_access: 'simplenews_newsletter.update'
 
 simplenews.newsletter_delete:
-  path: '/admin/structure/simplenews/manage/{simplenews_newsletter}/delete'
+  path: '/admin/config/services/simplenews/manage/{simplenews_newsletter}/delete'
   defaults:
     _entity_form: 'simplenews_newsletter.delete'
     _title: 'Delete'
   requirements:
     _entity_access: 'simplenews_newsletter.delete'
+
+simplenews.subscriber_add:
+  path: 'admin/people/simplenews/add'
+  defaults:
+    _entity_form: 'simplenews_subscriber.default'
+    _title: 'Add subscriber'
+  requirements:
+    _entity_create_access: 'simplenews_subscriber'
+
+simplenews.subscriber_edit:
+  path: 'admin/people/simplenews/edit/{simplenews_subscriber}'
+  defaults:
+    _entity_form: 'simplenews_subscriber.default'
+    _title: 'Edit subscriber'
+  requirements:
+    _entity_access: 'simplenews_subscriber.update'
+
+simplenews.subscriber_delete:
+  path: '/admin/people/simplenews/delete/{simplenews_subscriber}'
+  defaults:
+    _entity_form: 'simplenews_subscriber.delete'
+    _title: 'Delete'
+  requirements:
+    _entity_access: 'simplenews_subscriber.delete'
