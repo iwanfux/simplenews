@@ -1,0 +1,19 @@
+id: simplenews_subscriber.simplenews_subscriber.subscribtions
+status: true
+langcode: en
+field_name: subscribtions
+entity_type: simplenews_subscriber
+bundle: simplenews_subscriber
+label: Subscribtions
+description: ''
+required: false
+default_value: {  }
+default_value_function: ''
+settings:
+  handler: default
+  handler_settings:
+    target_bundles: {  }
+dependencies:
+  entity:
+    - field.field.simplenews_subscriber.subscribtions
+field_type: entity_reference

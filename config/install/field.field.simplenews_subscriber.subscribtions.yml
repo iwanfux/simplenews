@@ -1,0 +1,17 @@
+id: simplenews_subscriber.subscribtions
+status: true
+langcode: en
+name: subscribtions
+entity_type: simplenews_subscriber
+type: entity_reference
+settings:
+  target_type: simplenews_newsletter
+module: entity_reference
+locked: false
+cardinality: -1
+translatable: false
+indexes: {  }
+dependencies:
+  module:
+    - entity_reference
+    - simplenews

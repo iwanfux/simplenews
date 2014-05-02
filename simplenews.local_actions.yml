@@ -1,0 +1,5 @@
+simplenews.newsletter_add:
+  route_name: simplenews.newsletter_add
+  title: 'Add newsletter'
+  appears_on:
+    - simplenews.newsletter_list

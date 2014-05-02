@@ -1,0 +1,30 @@
+id: simplenews_subscriber.simplenews_subscriber.default
+targetEntityType: simplenews_subscriber
+bundle: simplenews_subscriber
+mode: default
+content:
+  mail:
+    type: email_default
+    weight: 5
+    settings:
+      placeholder: ''
+  uid:
+    type: entity_reference_autocomplete
+    weight: 10
+    settings:
+      match_operator: CONTAINS
+      size: 60
+      autocomplete_type: tags
+      placeholder: ''
+  subscribtions:
+    type: options_buttons
+    weight: 11
+    settings: {  }
+hidden: {  }
+status: true
+dependencies:
+  entity:
+    - field.instance.simplenews_subscriber.simplenews_subscriber.subscribtions
+  module:
+    - entity_reference
+    - options
