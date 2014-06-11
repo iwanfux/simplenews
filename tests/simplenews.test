@@ -8,8 +8,6 @@
  */
 class SimplenewsTestCase extends DrupalWebTestCase {
 
-  // Use testing profile to speed up tests.
-  protected $profile = 'testing';
   // Store generated email addresses used to prevent duplications.
   protected $mailadress_cache;
 
@@ -2087,78 +2085,6 @@ class SimpleNewsUpgradePathTestCase extends UpgradePathTestCase {
     $this->drupalPost('admin/config/services/simplenews/add', $edit, t('Save'));
     $this->assertResponse(200);
     $this->assertText($edit['name']);
-  }
-
-}
-
-/**
- * Upgrade test from 6.x-1.x
- */
-class SimpleNewsUpgradePath61TestCase extends SimpleNewsUpgradePathTestCase {
-
-  public static function getInfo() {
-    return array(
-      'name' => 'Simplenews 6.x-1.x upgrade path',
-      'description' => 'Simplenews 6.x-1.x upgrade path tests.',
-      'group' => 'Simplenews',
-    );
-  }
-
-  public function setUp() {
-    // Path to the database dump files.
-    $this->databaseDumpFiles = array(
-      drupal_get_path('module', 'simplenews') . '/tests/d6_simplenews_61.php',
-    );
-    parent::setUp();
-  }
-
-  /**
-   * Test a successful upgrade.
-   */
-  public function testSimplenewsUpgrade() {
-    $this->prepareUpgradePath();
-
-    // Load necessary classes manually. Only necessary for the test itself.
-    $this->assertTrue($this->performUpgrade(), t('Upgraded successfully.'));
-
-    $this->assertUpgradePath();
-  }
-
-}
-
-/**
- * Upgrade test from 6.x-2.x
- */
-class SimpleNewsUpgradePath62TestCase extends SimpleNewsUpgradePathTestCase {
-
-  public static function getInfo() {
-    return array(
-      'name' => 'Simplenews 6.x-2.x upgrade path',
-      'description' => 'Simplenews 6.x-2.x upgrade path tests.',
-      'group' => 'Simplenews',
-    );
-  }
-
-  public function setUp() {
-    // Path to the database dump files.
-    $this->databaseDumpFiles = array(
-      drupal_get_path('module', 'simplenews') . '/tests/d6_simplenews_62.php',
-    );
-    parent::setUp();
-
-    // Use the test mail class instead of the default mail handler class.
-    $this->variable_set('mail_system', array('default-system' => 'TestingMailSystem'));
-  }
-
-  /**
-   * Test a successful upgrade.
-   */
-  public function testSimplenewsUpgrade() {
-    $this->prepareUpgradePath();
-
-    $this->assertTrue($this->performUpgrade(), t('Upgraded successfully.'));
-
-    $this->assertUpgradePath();
   }
 
 }

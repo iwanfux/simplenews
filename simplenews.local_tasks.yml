@@ -3,13 +3,13 @@ simplenews.newsletter_list:
   description: 'Listing of all newsletters.'
   base_route: simplenews.newsletter_list
   route_name: simplenews.newsletter_list
-  
+
 simplenews.settings:
   title: Settings
   description: 'Simplenews settings.'
   base_route: simplenews.newsletter_list
   route_name: simplenews.settings_newsletter
-  
+
 simplenews.settings_newsletter:
   title: Newsletter
   description: 'Simplenews newsletter settings.'
@@ -17,7 +17,7 @@ simplenews.settings_newsletter:
   route_name: simplenews.settings_newsletter
   parent_id: simplenews.settings
   weight: -15
-  
+
 simplenews.settings_subscription:
   title: Subscription
   description: 'Subscription settings, opt-in/out confirmation email text.'

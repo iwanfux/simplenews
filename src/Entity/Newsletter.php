@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\contact\Entity\Category.
+ * Definition of Drupal\simplenews\Entity\Category.
  */
 
 namespace Drupal\simplenews\Entity;

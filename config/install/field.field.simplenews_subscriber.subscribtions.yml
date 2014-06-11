@@ -3,10 +3,10 @@ status: true
 langcode: en
 name: subscribtions
 entity_type: simplenews_subscriber
-type: entity_reference
+type: simplenews_subscription
 settings:
   target_type: simplenews_newsletter
-module: entity_reference
+module: simplenews
 locked: false
 cardinality: -1
 translatable: false

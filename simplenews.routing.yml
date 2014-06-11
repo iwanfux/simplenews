@@ -13,7 +13,7 @@ simplenews.settings_subscription:
     _title: 'Subscription'
   requirements:
     _permission: 'administer simplenews settings'
-  
+
 simplenews.settings_mail:
   path: 'admin/config/services/simplenews/settings/mail'
   defaults:
@@ -21,7 +21,7 @@ simplenews.settings_mail:
     _title: 'Send mail'
   requirements:
     _permission: 'administer simplenews settings'
-    
+
 simplenews.newsletter_list:
   path: '/admin/config/services/simplenews'
   defaults:
