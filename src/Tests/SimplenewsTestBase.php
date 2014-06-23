@@ -7,21 +7,24 @@
  * @ingroup simplenews
  */
 
-namespace Drupal\simplenews;
+namespace Drupal\simplenews\Tests;
 
-class SimplenewsTestCase extends DrupalWebTestCase {
+use Drupal\simpletest\WebTestBase;
+use Drupal\simplenews\Entity\Newsletter;
+use Drupal\user\Entity\Role;
 
-  public static $modules = array('simplenews');
+class SimplenewsTestBase extends WebTestBase {
+
+  public static $modules = array('simplenews', 'block');
 
   public function setUp() {
     parent::setUp();
-    $site_config = $this->configFactory->get('system.site');
+    $site_config = \Drupal::config('system.site');
     $site_config->set('site_mail', 'simpletest@example.com');
 
     // The default newsletter has already been created, so we need to make sure
     // that the defaut newsletter has a valid from address.
-    $newsletters = simplenews_newsletter_load_multiple(FALSE);
-    $newsletter = reset($newsletters);
+    $newsletter = Newsletter::load('default');
     $newsletter->from_address = $site_config->get('site_mail');
     $newsletter->save();
 
@@ -47,11 +50,13 @@ class SimplenewsTestCase extends DrupalWebTestCase {
    *   Allow authenticated subscribing.
    */
   function setAuthenticatedUserSubscription($enabled) {
-
+    $role = Role::load(DRUPAL_AUTHENTICATED_RID);
     if ($enabled) {
-      $role = entity_load('user_role', DRUPAL_AUTHENTICATED_RID);
       $role->grantPermission('subscribe to newsletters');
+    } else {
+      $role->revokePermission('subscribe to newsletters');
     }
+    $role->save();
   }
 
   /**
