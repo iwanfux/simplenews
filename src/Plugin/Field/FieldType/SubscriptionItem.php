@@ -10,6 +10,7 @@ namespace Drupal\simplenews\Plugin\Field\FieldType;
 use \Drupal\entity_reference\ConfigurableEntityReferenceItem;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\TypedData\DataDefinition;
+use Symfony\Component\Validator\Constraints\False;
 
 /**
  * Defines the 'subscription' entity field type (extended entity_reference).
@@ -64,22 +65,19 @@ class SubscriptionItem extends ConfigurableEntityReferenceItem {
       'description' => 'A flag indicating whether the user is subscribed (1) or unsubscribed (0).',
       'type' => 'int',
       'size' => 'tiny',
-      'not null' => TRUE,
-      'default' => 1,
+      'not null' => FALSE,
     );
     $schema['columns']['timestamp'] = array(
       'description' => 'UNIX timestamp of when the user is (un)subscribed.',
       'type' => 'int',
       'unsigned' => TRUE,
-      'not null' => TRUE,
-      'default' => 0,
+      'not null' => FALSE,
     );
     $schema['columns']['source'] = array(
       'description' => 'The source via which the user is (un)subscription.',
       'type' => 'varchar',
       'length' => 24,
-      'not null' => TRUE,
-      'default' => '',
+      'not null' => FALSE,
     );
     return $schema;
   }
