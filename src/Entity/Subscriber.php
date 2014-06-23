@@ -19,6 +19,7 @@ use Drupal\Core\Field\FieldDefinition;
  *   id = "simplenews_subscriber",
  *   label = @Translation("Simplenews subscriber"),
  *   controllers = {
+ *     "list_builder" = "Drupal\simplenews\SubscriberListBuilder",
  *     "form" = {
  *       "default" = "Drupal\simplenews\Form\SubscriberForm",
  *       "delete" = "Drupal\simplenews\Form\SubscriberDeleteForm",
@@ -122,6 +123,85 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    */
   public function setChanges($changes) {
     $this->set('changes', $changes);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isSubscribed($newsletter_id) {
+    foreach ($this->subscriptions as $item) {
+      if ($item->target_id == $newsletter_id) {
+        return $item->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isUnsubscribed($newsletter_id) {
+    foreach ($this->subscriptions as $item) {
+      if ($item->target_id == $newsletter_id) {
+        return $item->status == SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSubscription($newsletter_id) {
+    foreach ($this->subscriptions as $item) {
+      if ($item->target_id == $newsletter_id) {
+        return $item;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSubscribedNewsletterIds() {
+    $ids = array();
+    foreach ($this->subscriptions as $item) {
+      if ($item->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED) {
+        $ids[] = $item->target_id;
+      }
+    }
+    return $ids;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function subscribe($newsletter_id, $status = SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $source = 'unknown', $timestamp = REQUEST_TIME) {
+    if($subscription = $this->getSubscription($newsletter_id)) {
+      $subscription->status = $status;
+    } else {
+      $next_delta = count($this->subscriptions);
+      $this->subscriptions[$next_delta]->target_id = $newsletter_id;
+      $this->subscriptions[$next_delta]->status = $status;
+      $this->subscriptions[$next_delta]->source = $source;
+      $this->subscriptions[$next_delta]->timestamp = $timestamp;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function unsubscribe($newsletter_id, $status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $source = 'unknown', $timestamp = REQUEST_TIME) {
+    if($subscription = $this->getSubscription($newsletter_id)) {
+      $subscription->status = $status;
+    } else {
+      $next_delta = count($this->subscriptions);
+      $this->subscriptions[$next_delta]->target_id = $newsletter_id;
+      $this->subscriptions[$next_delta]->status = $status;
+      $this->subscriptions[$next_delta]->source = $source;
+      $this->subscriptions[$next_delta]->timestamp = $timestamp;
+    }
   }
 
   /**

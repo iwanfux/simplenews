@@ -15,7 +15,7 @@ use Drupal\Core\Entity\ContentEntityInterface;
 interface SubscriberInterface extends ContentEntityInterface {
 
   /**
-   * Returns if the subscriber is avtice or not.
+   * Returns if the subscriber is active or not.
    *
    * @return int
    *   The subscribers status.
@@ -93,5 +93,68 @@ interface SubscriberInterface extends ContentEntityInterface {
    *   The subscriber changes.
    */
   public function setChanges($changes);
+
+  /**
+   * Check if the subscriber has an active subscription to a certain newsletter.
+   *
+   * @param string $newsletter_id
+   *   The ID of a newsletter.
+   *
+   * @return bool
+   *   Returns TRUE if the subscriber has the subscription, otherwise FALSE.
+   */
+  public function isSubscribed($newsletter_id);
+
+  /**
+   * Check if the subscriber has an inactive subscription to a certain newsletter.
+   *
+   * @param string $newsletter_id
+   *   The ID of a newsletter.
+   *
+   * @return bool
+   *   Returns TRUE if the subscriber has the inactive subscription, otherwise FALSE.
+   */
+  public function isUnsubscribed($newsletter_id);
+
+  /**
+   * Check if the subscriber has a subscription to a certain newsletter and return it.
+   *
+   * @param string $newsletter_id
+   *   The ID of a newsletter.
+   *
+   * @return \Drupal\simplenews\SubscriptionItem
+   *   Returns the subscription item if the subscriber has the subscription, otherwise FALSE.
+   */
+  public function getSubscription($newsletter_id);
+
+  /**
+   * Get the ids of all subscribed newsletters.
+   *
+   * @return array of newsletter ids
+   *   Returns the ids of all newsletters the subscriber is subscribed.
+   */
+  public function getSubscribedNewsletterIds();
+
+  /**
+   * Add a subscription to a certain newsletter to the subscriber.
+   *
+   * @param string $newsletter_id
+   *   The ID of a newsletter.
+   * @param int $status
+   *   The status of the subscription.
+   * @param string $source
+   *   The source where the subscription comes from.
+   * @param int $timestamp
+   *   The timestamp of when the subscription was added.
+   */
+  public function subscribe($newsletter_id, $status, $source, $timestamp);
+
+  /**
+   * Delete a subscription to a certain newsletter of the subscriber.
+   *
+   * @param string $newsletter_id
+   *   The ID of a newsletter.
+   */
+  public function unsubscribe($newsletter_id);
 
 }
