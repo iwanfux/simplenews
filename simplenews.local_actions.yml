@@ -3,3 +3,27 @@ simplenews.newsletter_add:
   title: 'Add newsletter'
   appears_on:
     - simplenews.newsletter_list
+
+simplenews.subscriber_add:
+  route_name: simplenews.subscriber_add
+  title: 'Add subscriber'
+  appears_on:
+    - simplenews.subscriber_list
+
+simplenews.subscriber_import:
+  route_name: simplenews.subscriber_import
+  title: 'Mass subscribe'
+  appears_on:
+    - simplenews.subscriber_list
+
+simplenews.subscriber_unsubscribe:
+  route_name: simplenews.subscriber_unsubscribe
+  title: 'Mass unsubscribe'
+  appears_on:
+    - simplenews.subscriber_list
+
+simplenews.subscriber_export:
+  route_name: simplenews.subscriber_export
+  title: 'Export'
+  appears_on:
+    - simplenews.subscriber_list

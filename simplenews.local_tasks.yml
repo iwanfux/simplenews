@@ -34,9 +34,8 @@ simplenews.settings_mail:
   parent_id: simplenews.settings
   weight: -5
 
-simplenews.subscriber_add:
-  title: Subscriber
-  description: 'Add Subscriber.'
-  base_route: simplenews.subscriber_add
-  route_name: simplenews.subscriber_add
-  
+simplenews.newsletter_subscriptions_user:
+  title: Newsletters
+  description: 'Configure your newsletter subscriptions.'
+  base_route: user.view
+  route_name: simplenews.newsletter_subscriptions_user

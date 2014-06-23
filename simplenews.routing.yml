@@ -28,7 +28,7 @@ simplenews.newsletter_list:
     _entity_list: 'simplenews_newsletter'
     _title: 'Simplenews'
   requirements:
-    _permission: 'administer simplenews forms'
+    _permission: 'administer newsletters'
 
 simplenews.newsletter_add:
   path: '/admin/config/services/simplenews/add'
@@ -54,6 +54,14 @@ simplenews.newsletter_delete:
   requirements:
     _entity_access: 'simplenews_newsletter.delete'
 
+simplenews.subscriber_list:
+  path: 'admin/people/simplenews'
+  defaults:
+    _entity_list: 'simplenews_subscriber'
+    _title: 'Subscribers'
+  requirements:
+    _permission: 'administer simplenews subscriptions'
+
 simplenews.subscriber_add:
   path: 'admin/people/simplenews/add'
   defaults:
@@ -77,3 +85,51 @@ simplenews.subscriber_delete:
     _title: 'Delete'
   requirements:
     _entity_access: 'simplenews_subscriber.delete'
+
+simplenews.subscriber_import:
+  path: '/admin/people/simplenews/import'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriberMassSubscribeForm'
+    _title: 'Mass subscribe'
+  requirements:
+    _permission: 'administer simplenews subscriptions'
+
+simplenews.subscriber_unsubscribe:
+  path: '/admin/people/simplenews/unsubscribe'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriberMassUnsubscribeForm'
+    _title: 'Mass unsubscribe'
+  requirements:
+    _permission: 'administer simplenews subscriptions'
+
+simplenews.subscriber_export:
+  path: '/admin/people/simplenews/export'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriberExportForm'
+    _title: 'Export'
+  requirements:
+    _permission: 'administer simplenews subscriptions'
+
+simplenews.newsletter_subscriptions:
+  path: 'newsletter/subscriptions'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriptionsPageForm'
+    _title: 'Your newsletter subscriptions'
+  requirements:
+    _permission: 'subscribe to newsletters'
+
+simplenews.newsletter_subscriptions_arguments:
+  path: 'newsletter/subscriptions/{snid}/{timestamp}/{hash}'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriptionsPageForm'
+    _title: 'Your newsletter subscriptions'
+  requirements:
+    _permission: 'subscribe to newsletters'
+
+simplenews.newsletter_subscriptions_user:
+  path: '/user/{user}/simplenews'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriptionsAccountForm'
+    _title: 'Newsletters'
+  requirements:
+    _permission: 'subscribe to newsletters'
