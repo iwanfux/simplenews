@@ -4,78 +4,12 @@
  * @file
  * Install, update and uninstall functions for the simplenews module
  */
+use Drupal\simplenews\Entity\Newsletter;
 
 /**
  * Implements hook_schema().
  */
 function simplenews_schema() {
-  $schema['simplenews_subscriber'] = array(
-    'description' => 'Newsletter subscribers. Many-to-many relation via {simplenews_subscription}',
-    'fields' => array(
-      'id' => array(
-        'description' => 'Primary key: Unique subscriber ID.',
-        'type' => 'serial',
-        'not null' => TRUE,
-      ),
-      'uuid' => array(
-        'description' => 'Unique Key: Universally unique identifier for this entity.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => FALSE,
-      ),
-      'status' => array(
-        'description' => 'Boolean indicating the status of the subscription.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'mail' => array(
-        'description' => "The subscriber's email address.",
-        'type' => 'varchar',
-        'length' => 64,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'uid' => array(
-        'description' => 'The {users}.uid that has the same email address.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'langcode' => array(
-        'type' => 'varchar',
-        'length' => 12,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'Subscriber preferred language.',
-      ),
-      'changes' => array(
-        'description' => 'Contains the requested subscription changes',
-        'type' => 'text',
-        'serialize' => TRUE,
-      ),
-      'created' => array(
-        'description' => 'UNIX timestamp of when the subscription record was added.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'primary key' => array('id'),
-    'indexes' => array(
-      'mail' => array('mail'),
-      'uid' => array('uid'),
-    ),
-    'foreign keys' => array(
-      'uid' => array(
-        'table' => 'users',
-        'columns' => array('uid' => 'uid'),
-      ),
-    ),
-  );
-
   $schema['simplenews_mail_spool'] = array(
     'description' => 'Spool for temporary storage of newsletter emails.',
     'fields' => array(
@@ -195,7 +129,11 @@ function simplenews_install() {
   }
 
   // Init the default newsletter.
-  //_simplenews_init_default_newsletter();
+  $newsletter = Newsletter::load('default');
+  $newsletter->from_name = $site_name;
+  $newsletter->from_address = $site_mail;
+  $newsletter->save();
+
 
   // Add nodetype with newsletter vocabulary.
   //_simplenews_install_nodetype();
@@ -206,32 +144,6 @@ function simplenews_install() {
  */
 function simplenews_uninstall() {
   //db_query("DELETE FROM {variable} WHERE name LIKE 'simplenews_%%'");
-}
-
-/**
- * Create simplenews node type.
- */
-function _simplenews_install_nodetype() {
-  // Create a newsletter type if needed.
-  $type = node_type_get_type('simplenews');
-  if (!$type) {
-    $type = node_type_set_defaults(array(
-      'type' => 'simplenews',
-      'name' => t('Newsletter issue'),
-      'base' => 'node_content',
-      'description' => t('A newsletter issue to be sent to subscribed email addresses.'),
-      'locked' => 0,
-      'custom' => 1,
-      'modified' => 1,
-      ));
-    node_type_save($type);
-    node_add_body_field($type);
-  }
-
-  simplenews_issue_fields_add($type);
-
-
-  variable_set('simplenews_content_type_' . $type->type, TRUE);
 }
 
 function _simplenews_init_default_newsletter() {
