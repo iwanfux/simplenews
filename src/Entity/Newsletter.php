@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\simplenews\Entity\Category.
+ * Definition of Drupal\simplenews\Entity\Newsletter.
  */
 
 namespace Drupal\simplenews\Entity;
@@ -26,7 +26,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     }
  *   },
  *   config_prefix = "newsletter",
- *   admin_permission = "administer simplenews forms",
+ *   admin_permission = "administer newsletters",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name"
@@ -136,11 +136,11 @@ class Newsletter extends ConfigEntityBase implements NewsletterInterface {
   public static function preCreate(EntityStorageInterface $storage, array &$values) {
     $config = \Drupal::config('simplenews.settings');
     $values += array(
-      'format' => $config->get('newsletter_format'),
-      'priority' => $config->get('newsletter_priority'),
-      'receipt' => $config->get('newsletter_receipt'),
-      'from_name' => $config->get('newsletter_from_name'),
-      'from_address' => $config->get('newsletter_from_address'),
+      'format' => $config->get('newsletter.format'),
+      'priority' => $config->get('newsletter.priority'),
+      'receipt' => $config->get('newsletter.receipt'),
+      'from_name' => $config->get('newsletter.from_name'),
+      'from_address' => $config->get('newsletter.from_address'),
     );
     parent::preCreate($storage, $values);
   }

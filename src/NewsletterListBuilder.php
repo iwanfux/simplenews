@@ -7,14 +7,13 @@
 
 namespace Drupal\simplenews;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Defines a class to build a listing of contact category entities.
+ * Defines a class to build a listing of simplenews newsletter entities.
  *
- * @see \Drupal\contact\Entity\Category
+ * @see \Drupal\simplenews\Entity\Newsletter
  */
 class NewsletterListBuilder extends ConfigEntityListBuilder {
   /**

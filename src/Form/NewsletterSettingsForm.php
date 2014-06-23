@@ -25,7 +25,7 @@ class NewsletterSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    $config = $this->configFactory->get('simplenews.settings');
+    $config = $this->configFactory()->get('simplenews.settings');
     $form['simplenews_default_options'] = array(
       '#type' => 'fieldset',
       '#title' => $this->t('Default newsletter options'),
@@ -118,7 +118,7 @@ class NewsletterSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-    $this->configFactory->get('simplenews.settings')
+    $this->configFactory()->get('simplenews.settings')
       ->set('newsletter.format', $form_state['values']['simplenews_format'])
       ->set('newsletter.priority', $form_state['values']['simplenews_priority'])
       ->set('newsletter.receipt', $form_state['values']['simplenews_receipt'])

@@ -1,0 +1,16 @@
+id: default
+name: 'Default newsletter'
+description: 'This is the auto generated default newsletter'
+format: null
+priority: 0
+receipt: 0
+from_name: ''
+subject: '[[simplenews-newsletter:name]] [node:title]'
+from_address: 'replace@example.org'
+hyperlinks: 1
+new_account: none
+opt_inout: double
+weight: 0
+status: true
+langcode: en
+dependencies: {  }
