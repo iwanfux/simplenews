@@ -16,7 +16,7 @@ content:
       size: 60
       autocomplete_type: tags
       placeholder: ''
-  subscribtions:
+  subscriptions:
     type: options_buttons
     weight: 11
     settings: {  }
@@ -24,7 +24,7 @@ hidden: {  }
 status: true
 dependencies:
   entity:
-    - field.instance.simplenews_subscriber.simplenews_subscriber.subscribtions
+    - field.instance.simplenews_subscriber.simplenews_subscriber.subscriptions
   module:
     - entity_reference
     - options

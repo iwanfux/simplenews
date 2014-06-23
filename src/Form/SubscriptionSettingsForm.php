@@ -10,7 +10,7 @@ namespace Drupal\simplenews\Form;
 use Drupal\Core\Form\ConfigFormBase;
 
 /**
- * Configure simplenews newsletter settings.
+ * Configure simplenews subscription settings.
  */
 class SubscriptionSettingsForm extends ConfigFormBase {
 
@@ -25,7 +25,7 @@ class SubscriptionSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state) {
-    $config = $this->configFactory->get('simplenews.settings');
+    $config = $this->configFactory()->get('simplenews.settings');
     $form['account'] = array(
       '#type' => 'fieldset',
       '#title' => $this->t('User account'),
@@ -205,7 +205,7 @@ class SubscriptionSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, array &$form_state) {
-    $this->configFactory->get('simplenews.settings')
+    $this->configFactory()->get('simplenews.settings')
       ->set('subscription.sync_account', $form_state['values']['simplenews_sync_account'])
       ->set('subscription.use_combined', $form_state['values']['simplenews_use_combined'])
       ->set('subscription.use_combined', $form_state['values']['simplenews_confirm_subscribe_subject'])

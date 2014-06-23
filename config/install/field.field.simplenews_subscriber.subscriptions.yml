@@ -1,7 +1,7 @@
-id: simplenews_subscriber.subscribtions
+id: simplenews_subscriber.subscriptions
 status: true
 langcode: en
-name: subscribtions
+name: subscriptions
 entity_type: simplenews_subscriber
 type: simplenews_subscription
 settings:

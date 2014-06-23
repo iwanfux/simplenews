@@ -8,7 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\Core\Language\Language;
+use Drupal\Component\Utility\String;
 
 /**
  * Form controller for the subscriber edit forms.
@@ -19,28 +19,10 @@ class SubscriberForm extends ContentEntityForm {
    */
   public function form(array $form, array &$form_state) {
     $form = parent::form($form, $form_state);
-    /** @var \Drupal\simplenews\SubscriberInterface */
+    /* @var \Drupal\simplenews\SubscriberInterface */
     $subscriber = $this->entity;
     $options = array();
     $default_value = array();
-
-    // Get newsletters for subscription form checkboxes.
-    // Newsletters with opt-in/out method 'hidden' will not be listed.
-    /*foreach (simplenews_newsletter_get_visible() as $newsletter) {
-      $options[$newsletter->id] = check_plain($newsletter->name);
-      $default_value[$newsletter->id] = FALSE;
-    }
-
-    $form['subscriptions'] = array(
-      '#title' => t('Subscriptions for %mail', array('%mail' => $subscriber->mail)),
-      '#type' => 'fieldset',
-      '#description' => t('Select the newsletter(s) to add/remove from subscription.'),
-    );
-    $form['subscriptions']['newsletters'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => array_merge($default_value, $subscriber->newsletter_ids),
-    );*/
 
     $form['activated'] = array(
       '#title' => t('Status'),

@@ -1,10 +1,10 @@
-id: simplenews_subscriber.simplenews_subscriber.subscribtions
+id: simplenews_subscriber.simplenews_subscriber.subscriptions
 status: true
 langcode: en
-field_name: subscribtions
+field_name: subscriptions
 entity_type: simplenews_subscriber
 bundle: simplenews_subscriber
-label: Subscribtions
+label: Subscriptions
 description: ''
 required: false
 default_value: {  }
@@ -15,5 +15,5 @@ settings:
     target_bundles: {  }
 dependencies:
   entity:
-    - field.field.simplenews_subscriber.subscribtions
+    - field.field.simplenews_subscriber.subscriptions
 field_type: simplenews_subscription
