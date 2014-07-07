@@ -290,35 +290,6 @@ function simplenews_confirm_removal_form_submit($form, &$form_state) {
 }
 
 /**
- * Request new hash form.
- *
- * @param $key
- *   The mail key to be sent.
- * @param $context
- *   Necessary context to send the mail. Must at least include the simplenews
- *   subscriber.
- */
-function simplenews_request_hash($form, &$form_state, $key, $context) {
-  $form_state['key'] = $key;
-  $form_state['context'] = $context;
-
-  return confirm_form($form, t('This link has expired.'), '', '', t('Request new confirmation mail'));
-}
-
-/**
- * Request new hash form submit callback.
- */
-function simplenews_request_hash_submit($form, &$form_state) {
-  module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  $params['from'] = _simplenews_set_from();
-  $params['context'] = $form_state['context'];
-  $subscriber = $params['context']['simplenews_subscriber'];
-  drupal_mail('simplenews', $form_state['key'], $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
-  drupal_set_message(t('The confirmation mail has been sent.'));
-  $form_state['redirect'] = '';
-}
-
-/**
  * FAPI ADMIN subscription form.
  *
  * Menu callback: handle the edit subscription page and a subscription
