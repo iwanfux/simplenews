@@ -133,3 +133,28 @@ simplenews.newsletter_subscriptions_user:
     _title: 'Newsletters'
   requirements:
     _permission: 'subscribe to newsletters'
+
+simplenews.newsletter_confirm_combined:
+  path: 'newsletter/confirm/combined/{snid}/{timestamp}/{hash}'
+  defaults:
+    _content: '\Drupal\simplenews\Controller\ConfirmationController::confirm_combined'
+    _title: 'Confirm newsletter subscriptions'
+  requirements:
+    _permission: 'subscribe to newsletters'
+
+simplenews.newsletter_confirm_subscription:
+  path: 'newsletter/confirm/{action}/{snid}/{newsletter_id}/{timestamp}/{hash}'
+  defaults:
+    _content: '\Drupal\simplenews\Controller\ConfirmationController::confirm_subscription'
+    _title: 'Confirm newsletter subscriptions'
+  requirements:
+    _permission: 'subscribe to newsletters'
+
+simplenews.newsletter_confirm_subscription_immediate:
+  path: 'newsletter/confirm/{action}/{snid}/{newsletter_id}/{timestamp}/{hash}/ok'
+  defaults:
+    _content: '\Drupal\simplenews\Controller\ConfirmationController::confirm_subscription'
+    _title: 'Confirm newsletter subscriptions'
+    immediate: true
+  requirements:
+    _permission: 'subscribe to newsletters'

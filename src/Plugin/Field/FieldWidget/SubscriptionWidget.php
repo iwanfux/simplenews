@@ -7,7 +7,8 @@
 
 namespace Drupal\simplenews\Plugin\Field\FieldWidget;
 
-use Drupal\options\Plugin\Field\FieldWidget\SelectWidget;
+use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\options\Plugin\Field\FieldWidget\ButtonsWidget;
 
 /**
  * Plugin implementation of the 'simplenews_subscription_select' widget.
@@ -16,14 +17,12 @@ use Drupal\options\Plugin\Field\FieldWidget\SelectWidget;
  *   id = "simplenews_subscription_select",
  *   label = @Translation("Select list"),
  *   field_types = {
- *     "list_integer",
- *     "list_float",
- *     "list_text"
+ *     "simplenews_subscription"
  *   },
  *   multiple_values = TRUE
  * )
  */
-class SubscriptionWidget extends SelectWidget {
+class SubscriptionWidget extends ButtonsWidget {
 
   /**
    * {@inheritdoc}
@@ -31,5 +30,14 @@ class SubscriptionWidget extends SelectWidget {
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
     return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function massageFormValues(array $values, array $form, array &$form_state) {
+    //debug($values);
+    //$existing_values = $form_state['controller']->getEntity()->subscriptions->getValue();
+    return $values;
   }
 }

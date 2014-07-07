@@ -130,7 +130,7 @@ class SubscriptionsPageForm extends FormBase {
    */
   public function submitForm(array &$form, array &$form_state) {
     $mail = $form_state['values']['mail'];
-    $account = simplenews_load_user_by_mail($mail);
+    $account = user_load_by_mail($mail);
 
     // Group confirmation mails as necessary and configured.
     simplenews_confirmation_combine(TRUE);

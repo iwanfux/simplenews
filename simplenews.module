@@ -5,9 +5,11 @@
  * Simplenews node handling, sent email, newsletter block and general hooks
  */
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\node\Entity\NodeType;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\UserInterface;
 use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Crypt;
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -131,22 +133,6 @@ function simplenews_menu() {
     'access arguments' => array('administer simplenews subscriptions'),
     'file' => 'includes/simplenews.admin.inc',
   );
-  $items['admin/people/simplenews'] = array(
-    'title' => 'Newsletter subscriptions',
-    'description' => 'Newsletter subscription management.',
-    'type' => MENU_LOCAL_TASK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_subscription'),
-    'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'includes/simplenews.admin.inc',
-  );
-  $items['admin/people/simplenews/users/edit/%'] = array(
-    'title' => 'Subscriptions',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_subscriptions_admin_form', 5),
-    'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'includes/simplenews.subscription.inc',
-  );
 
   // Explicitly define add and remove menu routers even if they are are equal
   // to avoid conflicts with the different combined arguments.
@@ -159,15 +145,6 @@ function simplenews_menu() {
     'file' => 'includes/simplenews.subscription.inc',
   );
   $items['newsletter/confirm/remove/%/%/%/%'] = $items['newsletter/confirm/add/%/%/%/%'];
-
-  $items['newsletter/confirm/combined/%/%/%'] = array(
-    'title' => 'Confirm newsletter subscriptions',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'simplenews_confirm_combined',
-    'page arguments' => array(3, 4, 5),
-    'access arguments' => array('subscribe to newsletters'),
-    'file' => 'includes/simplenews.subscription.inc',
-  );
 
   // Backwards compatibility for old links.
   $items['newsletter/confirm'] = array(
@@ -352,10 +329,10 @@ function simplenews_get_content_types() {
   $simplenews_types = &drupal_static(__FUNCTION__, array());
 
   if (!$simplenews_types) {
-    foreach (node_type_get_types() as $name => $type) {
-      if (variable_get('simplenews_content_type_' . $name, FALSE)) {
+    foreach (NodeType::loadMultiple() as $name => $type) {
+      /*if (variable_get('simplenews_content_type_' . $name, FALSE)) {
         $simplenews_types[] = $name;
-      }
+      }*/
     }
   }
   return $simplenews_types;
@@ -385,7 +362,8 @@ function simplenews_issue_fields_add($type) {
  * @ingroup issue
  */
 function simplenews_issue_newsletter_field_add($type) {
-  $field_name = variable_get('simplenews_newsletter_field', 'simplenews_newsletter');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.newsletter');
   $field = field_info_field($field_name);
   $instance = field_info_instance('node', $field_name, $type->type);
   if (empty($field)) {
@@ -468,7 +446,8 @@ function simplenews_issue_newsletter_field_add($type) {
  * @ingroup issue
  */
 function simplenews_issue_handler_field_add($type) {
-  $field_name = variable_get('simplenews_handler_field', 'simplenews_handler');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.handler');
   $field = field_info_field($field_name);
   $instance = field_info_instance('node', $field_name, $type->type);
 
@@ -521,7 +500,8 @@ function simplenews_issue_handler_field_add($type) {
  * @ingroup issue
  */
 function simplenews_issue_handler_settings_field_add($type) {
-  $field_name = variable_get('simplenews_handler_settings_field', 'simplenews_handler_settings');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.handler_settings');
   $field = field_info_field($field_name);
   $instance = field_info_instance('node', $field_name, $type->type);
 
@@ -585,7 +565,8 @@ function simplenews_handler_field_allowed_values($field = array(), $instance = N
  * @ingroup issue
  */
 function simplenews_issue_status_field_add($type) {
-  $field_name = variable_get('simplenews_issue_status_field', 'simplenews_issue_status');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.issue_status');
   $field = field_info_field($field_name);
   $instance = field_info_instance('node', $field_name, $type->type);
   if (empty($field)) {
@@ -640,7 +621,8 @@ function simplenews_issue_status_field_add($type) {
  * @ingroup issue
  */
 function simplenews_issue_sent_count_field_add($type) {
-  $field_name = variable_get('simplenews_sent_count_field', 'simplenews_sent_count');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.sent_count');
   $field = field_info_field($field_name);
   $instance = field_info_instance('node', $field_name, $type->type);
   if (empty($field)) {
@@ -696,17 +678,18 @@ function simplenews_issue_sent_count_field_add($type) {
  * @ingroup issue
  */
 function simplenews_issue_fields_remove($type) {
-  /*$field_name = variable_get('simplenews_newsletter_field', 'simplenews_newsletter');
+  /*$config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.newsletter');
   $instance = field_info_instance('node', $field_name, $type->type);
   if ($instance) {
     field_delete_instance($instance);
   }
-  $field_name = variable_get('simplenews_issue_status_field', 'simplenews_issue_status');
+  $field_name = $config->get('fields.issue_status');
   $instance = field_info_instance('node', $field_name, $type->type);
   if ($instance) {
     field_delete_instance($instance);
   }
-  $field_name = variable_get('simplenews_sent_count_field', 'simplenews_sent_count');
+  $field_name = $config->get('fields.sent_count');
   $instance = field_info_instance('node', $field_name, $type->type);
   if ($instance) {
     field_delete_instance($instance);
@@ -726,7 +709,8 @@ function simplenews_issue_fields_remove($type) {
  */
 function simplenews_get_newsletter_field($bundle_name) {
   $fields_info = field_info_fields();
-  $field_name = variable_get('simplenews_newsletter_field', 'simplenews_newsletter');
+  $config = \Drupal::config('simplenews.settings');
+  $field_name = $config->get('fields.newsletter');
   $instances = field_info_instances('node', $bundle_name);
   if (isset($instances[$field_name])) {
     return $fields_info[$field_name];
@@ -1023,7 +1007,7 @@ function simplenews_user_presave(UserInterface $account) {
       // Update mail, status and language if they are changed.
       $subscriber->mail = $account->getEmail();
       if (\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
-        $subscriber->activated = $edit['status'];
+        $subscriber->status = $account->isActive();
       }
       $subscriber->setLangcode($account->getPreferredLangcode());
       $subscriber->save();
@@ -1281,7 +1265,7 @@ function simplenews_block_view($delta = '') {
     if (in_array($delta, array_keys($newsletters))) {
       // $delta is validated, the block can be displayed.
       $block = array(
-        'subject' => check_plain($newsletters[$delta]->name),
+        'subject' => String::checkPlain($newsletters[$delta]->name),
         'content' => theme(array('simplenews_block__' . $delta, 'simplenews_block'), array('newsletter_id' => $delta)),
       );
       return $block;
@@ -1454,8 +1438,8 @@ function simplenews_unsubscribe($mail, $newsletter_id, $confirm = TRUE, $source 
  * Check if the email address is subscribed to the given mailing list.
  *
  * @param string $mail
- *   The email address to be checkd.
- * @param integer $newsletter_id
+ *   The email address to be checked.
+ * @param string $newsletter_id
  *   The mailing list id.
  *
  * @return boolean
@@ -1472,7 +1456,7 @@ function simplenews_user_is_subscribed($mail, $newsletter_id) {
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     // Check that a subscriber was found, he is active and subscribed to the
     // requested newsletter_id.
-    $subscribed[$mail][$newsletter_id] = $subscriber && $subscriber->activated && isset($subscriber->newsletter_ids[$newsletter_id]);
+    $subscribed[$mail][$newsletter_id] = $subscriber && $subscriber->getStatus() && $subscriber->isSubscribed($newsletter_id);
   }
   return $subscribed[$mail][$newsletter_id];
 }
@@ -1553,7 +1537,8 @@ function simplenews_subscription_save($subscription) {
  * @ingroup subscription
  */
 function simplenews_subscription_delete($conditions = array()) {
-  $query = db_delete('simplenews_subscription');
+  // @todo: redo this in a proper way
+  $query = db_delete('simplenews_subscriber__subscriptions');
   foreach ($conditions as $key => $condition) {
     $query->condition($key, $condition);
   }
@@ -1566,7 +1551,7 @@ function simplenews_subscription_delete($conditions = array()) {
  * @param $snid
  *   Simplenews subscriber ID.
  *
- * @return \Drupal\user\SimplenewsSubscriber
+ * @return Subscriber
  *   Newsletter subscriber entity, FALSE if subscriber does not exist.
  *
  * @ingroup subscriber
@@ -1598,7 +1583,7 @@ function simplenews_subscriber_load_by_mail($mail) {
  * @param $uid
  *   Subscriber user id.
  *
- * @return SimplenewsSubscriber
+ * @return Subscriber
  *   Newsletter subscriber entity, FALSE if subscriber does not exist.
  *
  * @ingroup subscriber
@@ -1680,12 +1665,13 @@ function simplenews_subscriber_delete_multiple(array $snids) {
  * @todo Replace this list by a View.
  */
 function simplenews_recent_newsletters($newsletter_id, $count = 5) {
+  $config = \Drupal::config('simplenews.settings');
   $query = new EntityFieldQuery;
   $result = $query
     ->entityCondition('entity_type', 'node')
     ->propertyCondition('status', NODE_PUBLISHED)
-    ->fieldCondition(variable_get('simplenews_newsletter_field', 'simplenews_newsletter'), 'target_id', $newsletter_id)
-    ->fieldCondition(variable_get('simplenews_issue_status_field', 'simplenews_issue_status'), 'value', SIMPLENEWS_STATUS_SEND_NOT, '<>')
+    ->fieldCondition($config->get('fields.newsletter'), 'target_id', $newsletter_id)
+    ->fieldCondition($config->get('fields.issue_status'), 'value', SIMPLENEWS_STATUS_SEND_NOT, '<>')
     ->propertyOrderBy('created', 'DESC')
     ->range(0, $count)
     ->execute();
@@ -1738,7 +1724,8 @@ function simplenews_mail($key, &$message, $params) {
 
   // Debug message to check for outgoing emails messages.
   // Debug message of node and test emails is set in simplenews_mail_mail().
-  if (variable_get('simplenews_debug', FALSE) && $key != 'node' && $key != 'test') {
+  $config = \Drupal::config('simplenews.settings');
+  if ($config->get('mail.debug') && $key != 'node' && $key != 'test') {
     watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
   }
 }
@@ -1914,7 +1901,8 @@ function simplenews_newsletter_delete($id) {
  * Create a 32 character identifier.
  */
 function simplenews_private_key() {
-  $key = variable_get('simplenews_private_key', FALSE);
+  $config = \Drupal::config('simplenews.settings');
+  $key = $config->get('private_key');
   if (!$key) {
     //  This will create a 32 character identifier (a 128 bit hex number) that is extremely difficult to predict
     $key = md5(uniqid(rand()));
@@ -1986,8 +1974,8 @@ function simplenews_help($path, $arg) {
  * Generates the hash key used for subscribe/unsubscribe link.
  */
 function simplenews_generate_hash($mail, $action = '', $timestamp = REQUEST_TIME) {
-  $data = $mail . drupal_get_private_key() . $action . $timestamp;
-  return drupal_hash_base64($data);
+  $data = $mail . \Drupal::service('private_key')->get() . $action . $timestamp;
+  return Crypt::hashBase64($data);
 }
 
 /**
@@ -2186,7 +2174,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['rssfeed'] = '';
 
   // Block content variables
-  $variables['message'] = check_plain(variable_get('simplenews_block_m_' . $newsletter_id, t('Stay informed on our latest news!')));
+  $variables['message'] = String::checkPlain(variable_get('simplenews_block_m_' . $newsletter_id, t('Stay informed on our latest news!')));
   if (user_access('subscribe to newsletters')) {
     module_load_include('inc', 'simplenews', 'simplenews.subscription');
     $variables['form'] = drupal_get_form('simplenews_block_form_' . $newsletter_id);
@@ -2208,7 +2196,7 @@ function template_preprocess_simplenews_block(&$variables) {
   $variables['use_rss'] = variable_get('simplenews_block_r_' . $newsletter_id, 1);
 
   // Additional variables
-  $variables['subscribed'] = empty($user->uid) ? FALSE : (simplenews_user_is_subscribed($user->mail, $newsletter_id) == TRUE);
+  $variables['subscribed'] = empty($user->uid) ? FALSE : (simplenews_user_is_subscribed($user->getEmail(), $newsletter_id) == TRUE);
   $variables['user'] = !empty($user->uid);
 }
 
@@ -2223,7 +2211,7 @@ function template_preprocess_simplenews_block(&$variables) {
  */
 function template_preprocess_simplenews_multi_block(&$variables) {
   // Block content variables
-  $variables['message'] = check_plain(variable_get('simplenews_block_m_multiple', t('Select the newsletter(s) to which you want to subscribe or unsubscribe.')));
+  $variables['message'] = String::checkPlain(variable_get('simplenews_block_m_multiple', t('Select the newsletter(s) to which you want to subscribe or unsubscribe.')));
   $variables['form'] = drupal_get_form('simplenews_subscriptions_multi_block_form');
 }
 
@@ -2237,7 +2225,7 @@ function template_preprocess_simplenews_field(&$variables, $hook) {
   $element = $variables['element'];
 
   $variables['label_hidden'] = ($element['#label_display'] == 'hidden');
-  $variables['label'] = $variables['label_hidden'] ? NULL : check_plain($element['#title']);
+  $variables['label'] = $variables['label_hidden'] ? NULL : String::checkPlain($element['#title']);
 
   $variables['items'] = array();
   foreach ($element['#items'] as $delta => $item) {
@@ -2415,7 +2403,8 @@ function simplenews_issue_update_sent_status($node, $status = SIMPLENEWS_STATUS_
  * @ingroup issue
  */
 function simplenews_issue_status($node, $value = NULL) {
-  $field = variable_get('simplenews_issue_status_field', 'simplenews_issue_status');
+  $config = \Drupal::config('simplenews.settings');
+  $field = $config->get('fields.issue_status');
   if ($value) {
     return $node->$field = array(
       LANGUAGE_NONE => array(
@@ -2446,7 +2435,8 @@ function simplenews_issue_status($node, $value = NULL) {
  * @ingroup issue
  */
 function simplenews_issue_sent_count($entity_type, $entity, $value = NULL) {
-  $field = variable_get('simplenews_sent_count_field', 'simplenews_sent_count');
+  $config = \Drupal::config('simplenews.settings');
+  $field = $config->get('fields.sent_count');
   if ($value) {
     return $entity->$field = array(
       LANGUAGE_NONE => array(
@@ -2475,7 +2465,8 @@ function simplenews_issue_sent_count($entity_type, $entity, $value = NULL) {
  * @ingroup issue
  */
 function simplenews_issue_newsletter_id($node, $value = NULL) {
-  $field = variable_get('simplenews_newsletter_field', 'simplenews_newsletter');
+  $config = \Drupal::config('simplenews.settings');
+  $field = $config->get('fields.newsletter');
   if ($value) {
     return $node->$field = array(
       LANGUAGE_NONE => array(
@@ -2504,7 +2495,8 @@ function simplenews_issue_newsletter_id($node, $value = NULL) {
  * @ingroup issue
  */
 function simplenews_issue_handler($node, $handler = NULL) {
-  $field = variable_get('simplenews_handler_field', 'simplenews_handler');
+  $config = \Drupal::config('simplenews.settings');
+  $field = $config->get('fields.handler');
   if ($handler) {
     return $node->$field = array(
       LANGUAGE_NONE => array(
@@ -2533,7 +2525,8 @@ function simplenews_issue_handler($node, $handler = NULL) {
  * @ingroup issue
  */
 function simplenews_issue_handler_settings($node, $settings = NULL) {
-  $field = variable_get('simplenews_handler_settings_field', 'simplenews_handler_settings');
+  $config = \Drupal::config('simplenews.settings');
+  $field = $config->get('fields.handler_settings');
   if ($settings) {
     return $node->$field = array(
       LANGUAGE_NONE => array(
@@ -2607,10 +2600,10 @@ function simplenews_cronapi($op) {
  * @ingroup newsletter
  */
 function simplenews_require_double_opt_in($newsletter_id, $account) {
-  global $user;
+  $user = \Drupal::currentUser();
   // If email belongs to the current registered user, don't send confirmation.
   // Other addresses receive a confirmation if double opt-in is selected.
-  if (!empty($account->uid) && !empty($user->uid) && $account->uid == $user->uid) {
+  if ($user && $account && $account->id() && $user->id() && $account->id() == $user->id()) {
     return FALSE;
   }
   else {
@@ -2748,7 +2741,7 @@ function simplenews_confirmation_combine($collect = NULL) {
 function simplenews_confirmation_add_combined($action = NULL, $subscriber = NULL, $newsletter = NULL) {
   $group = &drupal_static(__FUNCTION__, array());
   if (!empty($action)) {
-    $group[$subscriber->mail][$newsletter->newsletter_id] = $action;
+    $group[$subscriber->getMail()][$newsletter->id()] = $action;
   }
   else {
     return $group;
@@ -2781,29 +2774,30 @@ function simplenews_confirmation_send_combined() {
     $params['from'] = _simplenews_set_from();
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     if (!$subscriber) {
-      $subscriber = new stdClass();
-      $subscriber->mail = $mail;
-      $subscriber->language = \Drupal::languageManager()->getCurrentLanguage();
-      $subscriber->newsletter_ids = array();
+      $subscriber = Subscriber::create(array());
+      $subscriber->setMail($mail);
+      $subscriber->setLangcode(\Drupal::languageManager()->getCurrentLanguage());
+      $subscriber->save();
     }
     $params['context']['simplenews_subscriber'] = $subscriber;
     // Send multiple if there is more than one change for this subscriber
     // single otherwise.
-    $use_combined = variable_get('simplenews_use_combined', 'multiple');
-    $subscriber->changes = $changes;
+    $config = \Drupal::config('simplenews.settings');
+    $use_combined = $config->get('use_combined');
+    $subscriber->setChanges($changes);
     if ((count($changes) > 1 && $use_combined != 'never') || $use_combined == 'always') {
       $key = 'subscribe_combined';
-      drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
+      drupal_mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
     }
     else {
       foreach ($changes as $newsletter_id => $key) {
         $params['context']['newsletter'] = simplenews_newsletter_load($newsletter_id);
-        drupal_mail('simplenews', $key, $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
+        drupal_mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
       }
     }
 
     // Save the changes in the subscriber if there is a real subscriber object.
-    if (!empty($subscriber->snid)) {
+    if ($subscriber && $subscriber->id()) {
       $subscriber->save();
     }
   }
@@ -2846,8 +2840,8 @@ function simplenews_confirmation_send($action, $subscriber, $newsletter) {
  *   Simplenews subscriber object.
  * @param $changes
  *   (Optional) Array of changes, each is an array with the keys action and newsletter_id.
- *   Defaults to $subscriber->changes, which contains the currently saved
- *   changes for the subscriber. No-op changes are removed from this array.
+ *   Defaults to $subscriber->getChanges(), which contains the currently saved
+ *   changes for the subscriber.
  * @param $langcode
  *   (Optional) Specify the language of the description strings, defaults to the
  *   current language.
@@ -2855,38 +2849,40 @@ function simplenews_confirmation_send($action, $subscriber, $newsletter) {
  * @return
  *   Array of description strings describing the changes.
  */
-function simplenews_confirmation_get_changes_list($subscriber, &$changes = NULL, $langcode = NULL) {
+function simplenews_confirmation_get_changes_list(Subscriber $subscriber, $changes = NULL, $langcode = NULL) {
   if (empty($langcode)) {
-    global $language;
-    $langcode = $language->language;
+    $language = \Drupal::languageManager()->getCurrentLanguage();
+    $langcode = $language->getId();
   }
 
   if (empty($changes)) {
-    $changes = $subscriber->changes;
+    $changes = $subscriber->getChanges();
   }
+
+  // Load simplenews settings config object.
+  $config = \Drupal::config('simplenews.settings');
 
   $changes_list = array();
   foreach ($changes as $newsletter_id => $action) {
-    $subscribed = simplenews_user_is_subscribed($subscriber->mail, $newsletter_id);
-
+    $subscribed = simplenews_user_is_subscribed($subscriber->getMail(), $newsletter_id);
     // Get text for each possible combination.
     if ($action == 'subscribe' && !$subscribed) {
-      $line = simplenews_subscription_confirmation_text('combined_line_subscribe_unsubscribed', $langcode);
+      $line = $config->get('subscription.confirm_combined_line_subscribe_unsubscribed');
     }
     elseif ($action == 'subscribe' && $subscribed) {
-      $line = simplenews_subscription_confirmation_text('combined_line_subscribe_subscribed', $langcode);
+      $line = $config->get('subscription.confirm_combined_line_subscribe_subscribed');
     }
     elseif ($action == 'unsubscribe' && !$subscribed) {
-      $line = simplenews_subscription_confirmation_text('combined_line_unsubscribe_unsubscribed', $langcode);
+      $line = $config->get('subscription.confirm_combined_line_unsubscribe_unsubscribed');
     }
     elseif ($action == 'unsubscribe' && $subscribed) {
-      $line = simplenews_subscription_confirmation_text('combined_line_unsubscribe_subscribed', $langcode);
+      $line = $config->get('subscription.confirm_combined_line_unsubscribe_subscribed');
     }
     $newsletter_context = array(
       'simplenews_subscriber' => $subscriber,
       'newsletter' => simplenews_newsletter_load($newsletter_id),
     );
-    $changes_list[$newsletter_id] = token_replace($line, $newsletter_context, array('sanitize' => FALSE));
+    $changes_list[$newsletter_id] = \Drupal::token()->replace($line, $newsletter_context, array('sanitize' => FALSE));
   }
   return $changes_list;
 }
@@ -2915,10 +2911,10 @@ function simplenews_property_simplenews_subscriptions_getter_callback($item) {
  * Implements hook_field_widget_info_alter().
  */
 function simplenews_field_widget_info_alter(&$info) {
-  if (isset($info['options_select'])) {
+/*  if (isset($info['options_select'])) {
     $info['options_select']['field_types'][] = 'simplenews_subscription';
   }
   if (isset($info['options_buttons'])) {
     $info['options_buttons']['field_types'][] = 'simplenews_subscription';
-  }
+  }*/
 }

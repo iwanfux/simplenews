@@ -1,3 +1,9 @@
+simplenews.subscriber_list:
+  title: Subscribers
+  description: 'Listing of all subscribers.'
+  base_route: simplenews.subscriber_list
+  route_name: simplenews.subscriber_list
+
 simplenews.newsletter_list:
   title: Newsletters
   description: 'Listing of all newsletters.'

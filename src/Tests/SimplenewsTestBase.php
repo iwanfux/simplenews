@@ -38,9 +38,12 @@ class SimplenewsTestBase extends WebTestBase {
    */
   function setAnonymousUserSubscription($enabled) {
     if ($enabled) {
-      $role = entity_load('user_role', DRUPAL_ANONYMOUS_RID);
+      $role = Role::load(DRUPAL_ANONYMOUS_RID);
       $role->grantPermission('subscribe to newsletters');
+    } else {
+      $role->revokePermission('subscribe to newsletters');
     }
+    $role->save();
   }
 
   /**

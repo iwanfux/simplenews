@@ -144,4 +144,14 @@ class Newsletter extends ConfigEntityBase implements NewsletterInterface {
     );
     parent::preCreate($storage, $values);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function delete() {
+    simplenews_subscription_delete(array('subscriptions_target_id' => $this->id));
+    drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $this->name)));
+    parent::delete();
+  }
+
 }

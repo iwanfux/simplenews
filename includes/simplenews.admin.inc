@@ -1095,11 +1095,13 @@ function simplenews_count_subscriptions($newsletter_id) {
   if (isset($subscription_count[$newsletter_id])) {
     return $subscription_count[$newsletter_id];
   }
-  $query = db_select('simplenews_subscription', 'ss');
-  $query->leftJoin('simplenews_subscriber', 'sn', 'sn.snid = ss.snid');
-  $query->condition('newsletter_id', $newsletter_id)
-    ->condition('sn.activated', 1)
-    ->condition('status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+
+  // @todo: entity query + aggregate
+  $query = db_select('simplenews_subscriber__subscriptions', 'ss');
+  $query->leftJoin('simplenews_subscriber', 'sn', 'sn.id = ss.entity_id');
+  $query->condition('subscriptions_target_id', $newsletter_id)
+    ->condition('sn.status', 1)
+    ->condition('ss.subscriptions_status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
   $subscription_count[$newsletter_id] = $query->countQuery()->execute()->fetchField();
   return $subscription_count[$newsletter_id];
 }

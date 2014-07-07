@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
+use Drupal\Core\Url;
 
 /**
  * Builds the form to delete a contact category.
@@ -25,9 +26,7 @@ class NewsletterDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelRoute() {
-    return array(
-      'route_name' => 'simplenews.newsletter_list',
-    );
+    return new Url('simplenews.newsletter_list');
   }
 
   /**

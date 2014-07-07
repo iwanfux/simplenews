@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Definition of Drupal\simplenews\NewsletterForm.
+ * Definition of Drupal\simplenews\Form\NewsletterForm.
  */
 
 namespace Drupal\simplenews\Form;

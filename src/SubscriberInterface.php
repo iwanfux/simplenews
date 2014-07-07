@@ -147,14 +147,20 @@ interface SubscriberInterface extends ContentEntityInterface {
    * @param int $timestamp
    *   The timestamp of when the subscription was added.
    */
-  public function subscribe($newsletter_id, $status, $source, $timestamp);
+  public function subscribe($newsletter_id, $status = SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $source = 'unknown', $timestamp = REQUEST_TIME);
 
   /**
    * Delete a subscription to a certain newsletter of the subscriber.
    *
    * @param string $newsletter_id
    *   The ID of a newsletter.
+   * @param int $status
+   *   The status of the subscription.
+   * @param string $source
+   *   The source where the subscription comes from.
+   * @param int $timestamp
+   *   The timestamp of when the subscription was added.
    */
-  public function unsubscribe($newsletter_id);
+  public function unsubscribe($newsletter_id, $status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, $source = 'unknown', $timestamp = REQUEST_TIME);
 
 }

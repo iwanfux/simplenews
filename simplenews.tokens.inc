@@ -5,6 +5,9 @@
  * Token related hook implementations.
  */
 
+use \Drupal\user\Entity\User;
+use \Drupal\Component\Utility\String;
+
 /**
  * Implements hook_token_info().
  */
@@ -89,49 +92,49 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       }
       $subscriber = $data['simplenews_subscriber'];
       $newsletter = isset($data['newsletter']) ? $data['newsletter'] : NULL;
-      $language = isset($subscriber->language->language) ? $subscriber->language : user_preferred_language($subscriber);
+      $language = $subscriber->getLangcode();
 
-      $url_arguments = array('absolute' => TRUE, 'language' => $language);
+      $url_arguments = array('absolute' => TRUE, 'langcode' => $language);
 
       foreach ($tokens as $name => $original) {
         switch ($name) {
           case 'subscribe-url':
-            $hash = simplenews_generate_hash($subscriber->mail, 'add');
-            $url = 'newsletter/confirm/add/' . $subscriber->snid . '/' . $newsletter->newsletter_id. '/' . REQUEST_TIME . '/' . $hash;
+            $hash = simplenews_generate_hash($subscriber->getMail(), 'add');
+            $url = 'newsletter/confirm/add/' . $subscriber->id() . '/' . $newsletter->id(). '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'unsubscribe-url':
-            if (!isset($subscriber->snid)) {
+            if (!$subscriber->id()) {
               // Temporary test subscriber.
               $replacements[$original] = t('No unsubscribe link for test subscribers.');
               continue;
             }
-            $hash = simplenews_generate_hash($subscriber->mail, 'remove');
-            $url = 'newsletter/confirm/remove/' . $subscriber->snid . '/' . $newsletter->newsletter_id . '/' . REQUEST_TIME . '/' . $hash;
+            $hash = simplenews_generate_hash($subscriber->getMail(), 'remove');
+            $url = 'newsletter/confirm/remove/' . $subscriber->id() . '/' . $newsletter->id() . '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'combined-url':
-            $hash = simplenews_generate_hash($subscriber->mail, 'combined' . serialize($subscriber->changes));
-            $url = 'newsletter/confirm/combined/' . $subscriber->snid . '/' . REQUEST_TIME . '/' . $hash;
+            $hash = simplenews_generate_hash($subscriber->getMail(), 'combined' . serialize($subscriber->getChanges()));
+            $url = 'newsletter/confirm/combined/' . $subscriber->id() . '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'manage-url':
-            $hash = simplenews_generate_hash($subscriber->mail, 'manage');
-            $url = 'newsletter/subscriptions/' . $subscriber->snid . '/' . $newsletter->newsletter_id . '/' . REQUEST_TIME . '/' . $hash;
+            $hash = simplenews_generate_hash($subscriber->getMail(), 'manage');
+            $url = 'newsletter/subscriptions/' . $subscriber->id() . '/' . $newsletter->id() . '/' . REQUEST_TIME . '/' . $hash;
             $replacements[$original] = url($url, $url_arguments);
             break;
 
           case 'mail':
-            $replacements[$original] = $sanitize ? check_plain($subscriber->mail) : $subscriber->mail;
+            $replacements[$original] = $sanitize ? String::checkPlain($subscriber->getMail()) : $subscriber->getMail();
             break;
         }
       }
 
-      if (($user_tokens = token_find_with_prefix($tokens, 'user')) && !empty($subscriber->uid)) {
-        $replacements += token_generate('user', $user_tokens, array('user' => user_load($subscriber->uid)), $options);
+      if (($user_tokens = \Drupal::token()->findWithPrefix($tokens, 'user')) && !empty($subscriber->uid)) {
+        $replacements += \Drupal::token()->generate('user', $user_tokens, array('user' => User::load($subscriber->uid)), $options);
       }
 
       break;
@@ -145,7 +148,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
         switch ($name) {
           case 'name':
             if (isset($newsletter->name)) {
-              $replacements[$original] = $sanitize ? check_plain($newsletter->name) : $newsletter->name;
+              $replacements[$original] = $sanitize ? String::checkPlain($newsletter->name) : $newsletter->name;
             }
             else {
               $replacements[$original] = t('Unassigned newsletter');

@@ -1,4 +1,6 @@
 spool_progress_expiration: 3600
+private_key: FALSE
+hash_expiration: 86400
 
 newsletter:
   format: plain
@@ -31,3 +33,10 @@ mail:
   throttle: 20
   spool_expire: 0
   debug: FALSE
+
+fields:
+  newsletter: simplenews_newsletter
+  handler: simplenews_handler
+  handler_settings: simplenews_handler_settings
+  issue_status: simplenews_issue_status
+  sent_count: simplenews_sent_count

@@ -33,7 +33,7 @@ use Drupal\Core\Field\FieldDefinition;
  *   fieldable = TRUE,
  *   admin_permission = "administer simplenews subscriptions",
  *   links = {
- *     "admin-form" = "simplenews.subscriber_add",
+ *     "admin-form" = "simplenews.subscriber_list",
  *     "edit-form" = "simplenews.subscriber_edit",
  *     "delete-form" = "simplenews.subscriber_delete",
  *   }
@@ -87,7 +87,11 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    * {@inheritdoc}
    */
   public function getUserId() {
-    return $this->get('uid')->value;
+    $value = $this->get('uid')->getValue();
+    if (isset($value[0]['target_id'])) {
+      return $value[0]['target_id'];
+    }
+    return '0';
   }
 
   /**
@@ -115,14 +119,14 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    * {@inheritdoc}
    */
   public function getChanges() {
-    return $this->get('changes')->value;
+    return unserialize($this->get('changes')->value);
   }
 
   /**
    * {@inheritdoc}
    */
   public function setChanges($changes) {
-    $this->set('changes', $changes);
+    $this->set('changes', serialize($changes));
   }
 
   /**
@@ -241,16 +245,6 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       ->setDescription(t('The corresponding user.'))
       ->setSetting('target_type', 'user')
       ->setSetting('handler', 'default')
-      ->setDisplayOptions('form', array(
-        'type' => 'entity_reference_autocomplete',
-        'settings' => array(
-          'match_operator' => 'CONTAINS',
-          'size' => 60,
-          'autocomplete_type' => 'tags',
-          'placeholder' => '',
-        ),
-        'weight' => 10,
-      ))
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['langcode'] = FieldDefinition::create('language')

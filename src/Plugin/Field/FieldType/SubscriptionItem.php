@@ -30,6 +30,7 @@ use Symfony\Component\Validator\Constraints\False;
  *   label = @Translation("Simplenews subscription"),
  *   description = @Translation("An entity field containing an extended entityreference."),
  *   no_ui = TRUE,
+ *   default_widget = "simplenews_subscription_select",
  *   constraints = {"ValidReference" = {}}
  * )
  */

@@ -14,6 +14,8 @@ namespace Drupal\simplenews\Tests;
 
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
+use Drupal\simplenews\Entity\Newsletter;
+use Drupal\simplenews\Entity\Subscriber;
 
 class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
@@ -229,7 +231,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->assertTrue(in_array($generated_names[1], $displayed_issues));
     $this->assertTrue(in_array($generated_names[2], $displayed_issues));
 
-    $this->drupalGet('admin/config/services/simplenews/categories/' . $edit_newsletter->newsletter_id . '/edit');
+    $this->drupalGet('admin/config/services/simplenews/manage/' . $edit_newsletter->id());
     $this->assertFieldByName('name', $edit_newsletter->name, t('Newsletter name is displayed when editing'));
     $this->assertFieldByName('description', $edit_newsletter->description, t('Newsletter description is displayed when editing'));
 
@@ -244,10 +246,9 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->assertNoText($edit_newsletter->name, t('Newsletter block was removed'));
 
     // Delete a newsletter.
-    $this->drupalGet('admin/config/services/simplenews/categories/' . $edit_newsletter->newsletter_id . '/edit');
-    $edit = array();
-    $this->drupalPostForm(NULL, $edit, t('Delete'));
-    $this->drupalPostForm(NULL, $edit, t('Delete'));
+    $this->drupalGet('admin/config/services/simplenews/manage/' . $edit_newsletter->id());
+    $this->clickLink(t('Delete'));
+    $this->drupalPostForm(NULL, array(), t('Delete'));
 
     // Verify that the newsletter has been deleted.
     \Drupal::entityManager()->getStorage('simplenews_newsletter')->resetCache();
@@ -322,12 +323,10 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->assertText($user->label());
 
     // Verify that all addresses are displayed in the table.
-    $mail_addresses = $this->xpath('//tr/td[2]');
+    $mail_addresses = $this->xpath('//tr/td[1]');
     $this->assertEqual(15, count($mail_addresses));
     foreach ($mail_addresses as $mail_address) {
       $mail_address = (string) $mail_address;
-      debug($subscribers_flat);
-      debug($mail_address);
       $this->assertTrue(isset($subscribers_flat[$mail_address]));
       unset($subscribers_flat[$mail_address]);
     }
@@ -346,7 +345,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->drupalPostForm(NULL, $edit, t('Filter'));
 
     // Verify that all addresses are displayed in the table.
-    $mail_addresses = $this->xpath('//tr/td[2]');
+    $mail_addresses = $this->xpath('//tr/td[1]');
     $this->assertEqual(10, count($mail_addresses));
     foreach ($mail_addresses as $mail_address) {
       $mail_address = (string) $mail_address;
@@ -513,15 +512,17 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Delete newsletter.
     \Drupal::entityManager()->getStorage('simplenews_newsletter')->resetCache();
-    $this->drupalPostForm('admin/config/services/simplenews/categories/' . $first . '/edit', array(), t('Delete'));
+    $this->drupalGet('admin/config/services/simplenews/manage/' . $first);
+    $this->clickLink(t('Delete'));
     $this->drupalPostForm(NULL, array(), t('Delete'));
 
     $this->assertText(t('All subscriptions to newsletter @newsletter have been deleted.', array('@newsletter' => $newsletters[$first]->name)));
 
     // Verify that all related data has been deleted.
     $this->assertFalse(simplenews_newsletter_load($first));
-    $this->assertFalse(db_query('SELECT newsletter_id FROM {simplenews_newsletter} WHERE newsletter_id = :newsletter_id', array(':newsletter_id' => $first))->fetchField());
-    $this->assertFalse(db_query('SELECT * FROM {block} WHERE module = :module AND delta = :newsletter_id', array(':module' => 'simplenews', ':newsletter_id' => $first))->fetchField());
+    $this->assertFalse(Newsletter::load($first));
+    // @todo: create 2 blocks  that ref on newsletter and than test if deletion works.
+    //$this->assertFalse(db_query('SELECT * FROM {block} WHERE module = :module AND delta = :newsletter_id', array(':module' => 'simplenews', ':newsletter_id' => $first))->fetchField());
 
 
     // Verify that all subscriptions of that newsletter have been removed.
@@ -532,46 +533,47 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Reset list and click on the first subscriber.
     $this->drupalPostForm(NULL, array(), t('Reset'));
-    $this->clickLink(t('edit'));
+    $this->clickLink(t('Edit'));
 
     // Get the subscriber id from the path.
-    $this->assertTrue(preg_match('|admin/people/simplenews/users/edit/(\d+)$|', $this->getUrl(), $matches), 'Subscriber found');
-    $subscriber = simplenews_subscriber_load($matches[1]);
+    $this->assertTrue(preg_match('|admin/people/simplenews/edit/(\d+)$|', $this->getUrl(), $matches), 'Subscriber found');
+    $subscriber =  Subscriber::load($matches[1]);
 
-    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
-    $this->assertFieldChecked('edit-activated--2');
+    $this->assertTitle(t('Edit subscriber @mail', array('@mail' => $subscriber->getMail())) . ' | Drupal');
+    $this->assertFieldChecked('edit-status');
 
     // Disable account.
     $edit = array(
-      'activated' => FALSE,
+      'status' => FALSE,
     );
-    $this->drupalPostForm(NULL, $edit, t('Update'));
+    $this->drupalPostForm(NULL, $edit, t('Save'));
     \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
-    $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is not active')));
+    $this->assertFalse(simplenews_user_is_subscribed($subscriber->getMail(), $this->getRandomNewsletter(), t('Subscriber is not active')));
 
     // Re-enable account.
-    $this->drupalGet('admin/people/simplenews/users/edit/' . $subscriber->snid);
-    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
-    $this->assertNoFieldChecked('edit-activated--2');
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
+    $this->assertTitle(t('Edit subscriber @mail', array('@mail' => $subscriber->getMail())) . ' | Drupal');
+    $this->assertNoFieldChecked('edit-status');
     $edit = array(
-      'activated' => TRUE,
+      'status' => TRUE,
     );
-    $this->drupalPostForm(NULL, $edit, t('Update'));
+    $this->drupalPostForm(NULL, $edit, t('Save'));
     \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
-    $this->assertTrue(simplenews_user_is_subscribed($subscriber->mail, $this->getRandomNewsletter(), t('Subscriber is active again.')));
+    $this->assertTrue(simplenews_user_is_subscribed($subscriber->getMail(), $this->getRandomNewsletter(), t('Subscriber is active again.')));
 
     // Remove the newsletter.
-    $this->drupalGet('admin/people/simplenews/users/edit/' . $subscriber->snid);
-    $this->assertText(t('Subscriptions for @mail', array('@mail' => $subscriber->mail)));
-    $edit = array(
-      'newsletters[' . reset($subscriber->newsletter_ids) . ']' => FALSE,
-    );
-    $this->drupalPostForm(NULL, $edit, t('Update'));
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
+    $this->assertTitle(t('Edit subscriber @mail', array('@mail' => $subscriber->getMail())) . ' | Drupal');
+    $nlids = $subscriber->getSubscribedNewsletterIds();
+    $newsletter_id = reset($nlids);
+    $edit['newsletters[' . $newsletter_id . ']'] = FALSE;
+    $this->drupalPostForm(NULL, $edit, t('Save'));
     \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
-    $this->assertFalse(simplenews_user_is_subscribed($subscriber->mail, reset($subscriber->newsletter_ids), t('Subscriber not subscribed anymore.')));
+    $nlids = $subscriber->getSubscribedNewsletterIds();
+    $this->assertFalse(simplenews_user_is_subscribed($subscriber->getMail(), reset($nlids), t('Subscriber not subscribed anymore.')));
 
     // @todo Test Admin subscriber edit preferred language $subscription->language
 
@@ -584,7 +586,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->assertRaw(String::checkPlain($xss_mail));
 
     $xss_subscriber = simplenews_subscriber_load_by_mail($xss_mail);
-    $this->drupalGet('admin/people/simplenews/users/edit/' . $xss_subscriber->snid);
+    $this->drupalGet('admin/people/simplenews/edit/' . $xss_subscriber->id());
     $this->assertNoRaw($xss_mail);
     $this->assertRaw(String::checkPlain($xss_mail));
   }
