@@ -162,10 +162,10 @@ class ConfirmationController extends ControllerBase {
       // on to the confirmation page.
       if (!$immediate) {
         if ($action == 'remove') {
-          return \Drupal::formBuilder()->getForm('simplenews_confirm_removal_form', $subscriber->getMail(), $newsletter);
+          return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmRemovalForm', $subscriber->getMail(), $newsletter);
         }
         elseif ($action == 'add') {
-          return \Drupal::formBuilder()->getForm('simplenews_confirm_add_form', $subscriber->getMail(), $newsletter);
+          return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmAddForm', $subscriber->getMail(), $newsletter);
         }
       }
       else {

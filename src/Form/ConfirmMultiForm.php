@@ -10,12 +10,11 @@ namespace Drupal\simplenews\Form;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Url;
 use Drupal\simplenews\SubscriberInterface;
-use Symfony\Component\Validator\Constraints\Null;
 
 /**
- * Provides an generic base class for a confirmation form.
+ * Implements a multi confirmation form for simplenews subscriptions.
  */
-abstract class ConfirmMultiForm extends ConfirmFormBase {
+class ConfirmMultiForm extends ConfirmFormBase {
 
   /**
    * {@inheritdoc}
@@ -34,15 +33,21 @@ abstract class ConfirmMultiForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormName() {
+  public function getFormId() {
     return 'simplenews_confirm_multi';
   }
 
   /**
    * {@inheritdoc}
    */
+  public function getCancelRoute() {
+    return new Url('simplenews.newsletter_subscriptions');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function buildForm(array $form, array &$form_state, SubscriberInterface $subscriber = NULL) {
-    $form = array();
     $form['question'] = array(
       '#markup' => '<p>' . t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($subscriber->getMail()))) . "<p>\n",
     );

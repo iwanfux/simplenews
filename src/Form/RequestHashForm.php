@@ -13,7 +13,7 @@ use Drupal\Core\Url;
 /**
  * Provides an generic base class for a confirmation form.
  */
-abstract class RequestHashForm extends ConfirmFormBase {
+class RequestHashForm extends ConfirmFormBase {
 
   /**
    * {@inheritdoc}
@@ -39,8 +39,15 @@ abstract class RequestHashForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormName() {
-    return 'confirm';
+  public function getFormId() {
+    return 'simplenews_request_hash';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCancelRoute() {
+    return new Url('simplenews.newsletter_subscriptions');
   }
 
   /**

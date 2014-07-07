@@ -201,40 +201,6 @@ function simplenews_subscriptions_multi_block_form($form, &$form_state) {
 }
 
 /**
- * Generate the confirm subscription form.
- *
- * @see simplenews_confirm_add_form_submit()
- */
-function simplenews_confirm_add_form($form, &$form_state, $mail, $newsletter) {
-  $form = array();
-  $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)) . "<p>\n",
-  );
-  $form['mail'] = array(
-    '#type' => 'value',
-    '#value' => $mail,
-  );
-  $form['newsletter'] = array(
-    '#type' => 'value',
-    '#value' => $newsletter,
-  );
-
-  return confirm_form($form, t('Confirm subscription'), '', t('You can always unsubscribe later.'), t('Subscribe'), t('Cancel')
-  );
-}
-
-function simplenews_confirm_add_form_submit($form, &$form_state) {
-  simplenews_subscribe($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
-
-  if (!$path = variable_get('simplenews_confirm_subscribe_page', '')) {
-    $path = variable_get('site_frontpage', 'node');
-    drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
-  }
-
-  $form_state['redirect'] = $path;
-}
-
-/**
  * Mask a mail address.
  *
  * For example, name@example.org will be masked as n*****@e*****.org.
@@ -253,40 +219,6 @@ function simplenews_mask_mail($mail) {
     // Missing top-level domain.
     return preg_replace('/^(.).*@(.).*$/', '$1*****@$2*****', $mail);
   }
-}
-
-/**
- * Generate the confirm unsubscription form.
- *
- * @see simplenews_confirm_removal_form_submit()
- */
-function simplenews_confirm_removal_form($form, &$form_state, $mail, $newsletter) {
-  $form = array();
-  $form['question'] = array(
-    '#markup' => '<p>' . t('Are you sure you want to remove %user from the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)) . "<p>\n",
-  );
-  $form['mail'] = array(
-    '#type' => 'value',
-    '#value' => $mail,
-  );
-  $form['newsletter'] = array(
-    '#type' => 'value',
-    '#value' => $newsletter,
-  );
-
-  return confirm_form($form, t('Confirm remove subscription'), '', t('This action will unsubscribe you from the newsletter mailing list.'), t('Unsubscribe'), t('Cancel')
-  );
-}
-
-function simplenews_confirm_removal_form_submit($form, &$form_state) {
-  simplenews_unsubscribe($form_state['values']['mail'], $form_state['values']['newsletter']->newsletter_id, FALSE, 'website');
-
-  if (!$path = variable_get('simplenews_confirm_unsubscribe_page', '')) {
-    $path = variable_get('site_frontpage', 'node');
-    drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
-  }
-
-  $form_state['redirect'] = $path;
 }
 
 /**
