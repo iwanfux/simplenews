@@ -48,6 +48,7 @@ class ConfirmMultiForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state, SubscriberInterface $subscriber = NULL) {
+    $form = parent::buildForm($form, $form_state);
     $form['question'] = array(
       '#markup' => '<p>' . t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($subscriber->getMail()))) . "<p>\n",
     );
@@ -77,11 +78,18 @@ class ConfirmMultiForm extends ConfirmFormBase {
   public function submitForm(array &$form, array &$form_state) {
     $subscriber = $form_state['values']['subscriber'];
     foreach ($subscriber->getChanges() as $newsletter_id => $action) {
+
       if ($action == 'subscribe') {
-        simplenews_subscribe($subscriber->getMail(), $newsletter_id, FALSE, 'website');
+        if (!$subscriber->isSubscribed($newsletter_id)) {
+          // Subscribe the user if not already subscribed.
+          $subscriber->subscribe($newsletter_id);
+        }
       }
       elseif ($action == 'unsubscribe') {
-        simplenews_unsubscribe($subscriber->getMail(), $newsletter_id, FALSE, 'website');
+        if ($subscriber->isSubscribed($newsletter_id)) {
+          // Subscribe the user if not already subscribed.
+          $subscriber->unsubscribe($newsletter_id);
+        }
       }
     }
 

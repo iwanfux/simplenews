@@ -150,6 +150,15 @@ simplenews.newsletter_confirm_subscription:
   requirements:
     _permission: 'subscribe to newsletters'
 
+simplenews.newsletter_confirm_combined_immediate:
+  path: 'newsletter/confirm/combined/{snid}/{timestamp}/{hash}/ok'
+  defaults:
+    _content: '\Drupal\simplenews\Controller\ConfirmationController::confirm_combined'
+    _title: 'Confirm newsletter subscriptions'
+    immediate: true
+  requirements:
+    _permission: 'subscribe to newsletters'
+
 simplenews.newsletter_confirm_subscription_immediate:
   path: 'newsletter/confirm/{action}/{snid}/{newsletter_id}/{timestamp}/{hash}/ok'
   defaults:

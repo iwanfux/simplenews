@@ -60,6 +60,7 @@ class RequestHashForm extends ConfirmFormBase {
    *   subscriber.
    */
   public function buildForm(array $form, array &$form_state, $key = '', $context = array()) {
+    $form = parent::buildForm($form, $form_state);
     $form_state['key'] = $key;
     $form_state['context'] = $context;
 

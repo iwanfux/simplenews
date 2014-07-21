@@ -1374,8 +1374,6 @@ function simplenews_subscribe($mail, $newsletter_id, $confirm = TRUE, $source = 
     // Subscribe the user if not already subscribed.
     $subscriber->subscribe($newsletter_id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $source);
     $subscriber->save();
-
-    \Drupal::moduleHandler()->invokeAll('simplenews_subscribe', array($subscriber, $newsletter_id));
   }
   return TRUE;
 }
@@ -1422,14 +1420,9 @@ function simplenews_unsubscribe($mail, $newsletter_id, $confirm = TRUE, $source 
   }
   elseif ($subscriber && $subscriber->isSubscribed($newsletter_id)) {
     // Unsubscribe the user from the mailing list.
-    $subscriber->unsubscribe($newsletter_id);
+    $subscriber->unsubscribe($newsletter_id, $source);
     $subscriber->save();
 
-    // Clear eventually existing mail spool rows for this subscriber.
-    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    simplenews_delete_spool(array('snid' => $subscriber->snid, 'newsletter_id' => $newsletter_id));
-
-    \Drupal::moduleHandler()->invokeAll('simplenews_unsubscribe', array($subscriber, $newsletter_id));
   }
   return TRUE;
 }
@@ -2783,7 +2776,7 @@ function simplenews_confirmation_send_combined() {
     // Send multiple if there is more than one change for this subscriber
     // single otherwise.
     $config = \Drupal::config('simplenews.settings');
-    $use_combined = $config->get('use_combined');
+    $use_combined = $config->get('subscription.use_combined');
     $subscriber->setChanges($changes);
     if ((count($changes) > 1 && $use_combined != 'never') || $use_combined == 'always') {
       $key = 'subscribe_combined';
@@ -2917,4 +2910,25 @@ function simplenews_field_widget_info_alter(&$info) {
   if (isset($info['options_buttons'])) {
     $info['options_buttons']['field_types'][] = 'simplenews_subscription';
   }*/
+}
+
+/**
+ * Mask a mail address.
+ *
+ * For example, name@example.org will be masked as n*****@e*****.org.
+ *
+ * @param $mail
+ *   A valid mail address to mask.
+ *
+ * @return
+ *   The masked mail address.
+ */
+function simplenews_mask_mail($mail) {
+  if (preg_match('/^(.).*@(.).*(\..+)$/', $mail)) {
+    return preg_replace('/^(.).*@(.).*(\..+)$/', '$1*****@$2*****$3', $mail);
+  }
+  else {
+    // Missing top-level domain.
+    return preg_replace('/^(.).*@(.).*$/', '$1*****@$2*****', $mail);
+  }
 }

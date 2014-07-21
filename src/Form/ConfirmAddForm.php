@@ -55,6 +55,7 @@ class ConfirmAddForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state, $mail = '', NewsletterInterface $newsletter = NULL) {
+    $form = parent::buildForm($form, $form_state);
     $form['question'] = array(
       '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)) . "<p>\n",
     );

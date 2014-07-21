@@ -111,6 +111,8 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->drupalPostForm($confirm_url, NULL, t('Confirm'));
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
 
+    drupal_static_reset('simplenews_user_is_subscribed');
+    \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     // Verify subscription changes.
     foreach ($newsletters as $newsletter_id => $newsletter) {
       $is_subscribed = simplenews_user_is_subscribed($mail, $newsletter_id);
@@ -144,7 +146,10 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
 
     $mails = $this->drupalGetMails();
     $body = $mails[1]['body'];
-
+    /* @todo: get rid of new-line in text
+    vn9whrkr@example.com at http://drupal8.local/:\\n\\n - Unsubscribe from
+rWcewRqx
+     */
     // Verify listed changes.
     foreach ($newsletters as $newsletter_id => $newsletter) {
       $pos = strpos($body, t('Unsubscribe from @name', array('@name' => $newsletter->name)));
@@ -252,7 +257,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Confirmation message displayed.'));
 
     // Verify subscription changes.
-    $controller = \Drupal::entityManager()->getStorageController('simplenews_subscriber');
+    $controller = \Drupal::entityManager()->getStorage('simplenews_subscriber');
 
     $controller->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
