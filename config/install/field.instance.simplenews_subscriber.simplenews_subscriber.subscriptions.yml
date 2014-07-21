@@ -15,5 +15,5 @@ settings:
     target_bundles: {  }
 dependencies:
   entity:
-    - field.field.simplenews_subscriber.subscriptions
+    - field.storage.simplenews_subscriber.subscriptions
 field_type: simplenews_subscription

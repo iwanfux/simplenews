@@ -33,7 +33,7 @@ class ConfirmationController extends ControllerBase {
    * @param $hash
    *   The confirmation hash.
    */
-  public function confirm_combined($snid, $timestamp, $hash) {
+  public function confirm_combined($snid, $timestamp, $hash, $immediate = FALSE) {
     $arguments = array_slice(func_get_args(), 3);
     $config = \Drupal::config('simplenews.settings');
 
@@ -64,10 +64,9 @@ class ConfirmationController extends ControllerBase {
         );
         return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', 'subscribe_combined', $context);
       }
-      // When called with additional arguments the user will be directed to the
-      // (un)subscribe confirmation page. The additional arguments will be passed
-      // on to the confirmation page.
-      if (empty($arguments)) {
+      // When not called with immediate parameter the user will be directed to the
+      // (un)subscribe confirmation page.
+      if (!$immediate) {
         return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmMultiForm', $subscriber);
       }
       else {

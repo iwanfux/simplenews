@@ -8,6 +8,8 @@
  *
  * @todo:
  * Newsletter node create, send draft, send final
+ *
+ * @group simplenews
  */
 
 namespace Drupal\simplenews\Tests;
@@ -17,18 +19,12 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\simplenews\Entity\Newsletter;
 use Drupal\simplenews\Entity\Subscriber;
 
+/**
+ * Managing of newsletter categories and content types.
+ *
+ * @group simplenews
+ */
 class SimplenewsAdministrationTest extends SimplenewsTestBase {
-
-  /**
-   * Implement getInfo().
-   */
-  static function getInfo() {
-    return array(
-      'name' => 'Simplenews administration',
-      'description' => 'Managing of newsletter categories and content types.',
-      'group' => 'Simplenews',
-    );
-  }
 
   /**
    * Overrides SimplenewsTestCase::setUp().

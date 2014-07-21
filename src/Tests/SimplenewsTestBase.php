@@ -13,7 +13,10 @@ use Drupal\simpletest\WebTestBase;
 use Drupal\simplenews\Entity\Newsletter;
 use Drupal\user\Entity\Role;
 
-class SimplenewsTestBase extends WebTestBase {
+/**
+ * Class SimplenewsTestBase
+ */
+abstract class SimplenewsTestBase extends WebTestBase {
 
   public static $modules = array('simplenews', 'block');
 

@@ -1,0 +1,62 @@
+simplenews.newsletter.*:
+  type: config_entity
+  label: 'Newsletter'
+  mapping:
+    name:
+      type: label
+      label: 'Name'
+    id:
+      type: string
+      label: 'Machine-readable name'
+    description:
+      type: text
+      label: 'Description of the newsletter'
+    format:
+      type: string
+      label: 'HTML or plaintext newsletter indicator'
+    priority:
+      type: int
+      label: 'Priority indicator'
+    receipt:
+      type: boolean
+      label: 'TRUE if a read receipt should be requested.'
+    from_name:
+      type: string
+      label: 'Name of the email author.'
+    subject:
+      type: string
+      label: 'Subject of newsletter email. May contain tokens.'
+    from_address:
+      type: string
+      label: 'Email author address'
+    hyperlinks:
+      type: boolean
+      label: 'Indicates if hyperlinks should be kept inline or extracted.'
+    new_account:
+      type: string
+      label: 'Indicates how to integrate with the register form.'
+    opt_inout:
+      type: string
+      label: 'Defines the Opt-In/out options.'
+    weight:
+      type: int
+      label: 'Weight of this newsletter (used for sorting).'
+
+field.simplenews_subscription.settings:
+  type: mapping
+  label: 'Subscription settings'
+  mapping:
+    target_type:
+      type: string
+      label: 'Type of item to reference'
+
+field.simplenews_subscription.instance_settings:
+  type: mapping
+  label: 'Subscription settings'
+  mapping:
+    handler:
+      type: string
+      label: 'Reference method'
+    handler_settings:
+      type: entity_reference.[%parent.handler].handler_settings
+      label: 'Reference method settings'

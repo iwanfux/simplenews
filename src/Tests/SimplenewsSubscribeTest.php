@@ -12,18 +12,14 @@ namespace Drupal\simplenews\Tests;
 use Drupal\Component\Utility\String;
 use Drupal\simplenews\Entity\Subscriber;
 
+/**
+ * (un)subscription of anonymous and authenticated users.
+ *
+ * Subscription via block, subscription page and account page
+ *
+ * @group simplenews
+ */
 class SimplenewsSubscribeTest extends SimplenewsTestBase {
-
-  /**
-   * Implement getInfo().
-   */
-  static function getInfo() {
-    return array(
-      'name' => t('Subscribe and unsubscribe users'),
-      'description' => t('(un)subscription of anonymous and authenticated users. Subscription via block, subscription page and account page'),
-      'group' => t('Simplenews'),
-    );
-  }
 
   /**
    * Overrides SimplenewsTestCase::setUp().
@@ -37,7 +33,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
   /**
    * Subscribe to multiple newsletters at the same time.
    */
-  function testSubscribeMultiple() {
+  function dtestSubscribeMultiple() {
     $admin_user = $this->drupalCreateUser(array(
       'administer blocks',
       'administer content types',
@@ -180,7 +176,7 @@ rWcewRqx
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
 
     // Verify subscription changes.
-    entity_get_controller('simplenews_subscriber')->resetCache();
+    \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
     $still_enabled = array_diff($enable, $disable);
     foreach ($newsletters as $newsletter_id => $newsletter) {
@@ -202,7 +198,6 @@ rWcewRqx
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
     $body = $mails[2]['body'];
-    $confirm_url = $this->extractConfirmationLink($body);
 
     // Load simplenews settings config object.
     $config = \Drupal::config('simplenews.settings');
@@ -217,7 +212,6 @@ rWcewRqx
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
     $body = $mails[3]['body'];
-    $confirm_url = $this->extractConfirmationLink($body);
 
     // Change behavior to never, should send two separate mails.
     $config->set('subscription.use_combined', 'never');
@@ -236,7 +230,7 @@ rWcewRqx
       $this->extractConfirmationLink($body);
     }
 
-    // Make sure that the /ok suffix works, subscribe from everything.
+    // Make sure that the /ok suffix works, unsubscribe from everything.
     $config->set('subscription.use_combined', 'multiple');
     $config->save();
     $edit = array(
@@ -330,38 +324,6 @@ rWcewRqx
 
     $this->drupalPostForm($confirm_url, NULL, t('Confirm'));
     $this->assertRaw(t('Subscription changes confirmed for %user.', array('%user' => $mail)), t('Anonymous subscriber added to newsletter'));
-
-    // Make sure that old links still work.
-    $subscriber = simplenews_subscriber_load_by_mail($mail);
-    foreach ($changes as &$action) {
-      $action = 'unsubscribe';
-    }
-    $subscriber->setChanges($changes);
-    $subscriber->save();
-    $url = 'newsletter/confirm/combined/' . simplenews_generate_old_hash($mail, $subscriber->id(), $newsletter_id);
-
-    $this->drupalGet($url);
-    $this->assertText(t('This link has expired.'));
-    $this->drupalPostForm(NULL, array(), t('Request new confirmation mail'));
-
-    $mails = $this->drupalGetMails();
-    $body = $mails[9]['body'];
-    $confirm_url = $this->extractConfirmationLink($body);
-
-    $this->drupalGet($confirm_url);
-    $newsletter = simplenews_newsletter_load($newsletter_id);
-
-    $this->assertRaw(t('Are you sure you want to confirm the following subscription changes for %user?', array('%user' => simplenews_mask_mail($mail))), t('Subscription confirmation found.'));
-
-    // Verify listed changes.
-    foreach ($newsletters as $newsletter_id => $newsletter) {
-      if (in_array($newsletter_id, $enable)) {
-        $this->assertText(t('Unsubscribe from @name', array('@name' => $newsletter->name)));
-      }
-      else {
-        $this->assertNoText(t('Unsubscribe from @name', array('@name' => $newsletter->name)));
-      }
-    }
   }
 
   /**
@@ -388,7 +350,7 @@ rWcewRqx
    *   2. Subscribe anonymous via subscription page
    *   3. Subscribe anonymous via multi block
    */
-  function dtestSubscribeAnonymous() {
+  function testSubscribeAnonymous() {
     // 0. Preparation
     // Login admin
     // Set permission for anonymous to subscribe

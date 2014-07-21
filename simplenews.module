@@ -1899,7 +1899,8 @@ function simplenews_private_key() {
   if (!$key) {
     //  This will create a 32 character identifier (a 128 bit hex number) that is extremely difficult to predict
     $key = md5(uniqid(rand()));
-    variable_set('simplenews_private_key', $key);
+    $config->set('private_key', $key);
+    $config->save();
   }
   return $key;
 }
@@ -1969,13 +1970,6 @@ function simplenews_help($path, $arg) {
 function simplenews_generate_hash($mail, $action = '', $timestamp = REQUEST_TIME) {
   $data = $mail . \Drupal::service('private_key')->get() . $action . $timestamp;
   return Crypt::hashBase64($data);
-}
-
-/**
- * Generate a hash key in the old format.
- */
-function simplenews_generate_old_hash($mail, $snid, $newsletter_id) {
-  return drupal_substr(md5($mail . simplenews_private_key()), 0, 10) . $snid . 't' . $newsletter_id;
 }
 
 /**
