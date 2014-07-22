@@ -4,6 +4,7 @@
  * @file
  * Simplenews node handling, sent email, newsletter block and general hooks
  */
+
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\node\Entity\NodeType;
 use Drupal\simplenews\Entity\Subscriber;

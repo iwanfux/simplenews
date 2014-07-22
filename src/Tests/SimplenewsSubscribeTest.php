@@ -22,15 +22,6 @@ use Drupal\simplenews\Entity\Subscriber;
 class SimplenewsSubscribeTest extends SimplenewsTestBase {
 
   /**
-   * Overrides SimplenewsTestCase::setUp().
-   */
-  public function setUp() {
-    parent::setUp(array('block'));
-    // Include simplenews.subscription.inc for simplenews_mask_mail().
-    module_load_include('inc', 'simplenews', 'includes/simplenews.subscription');
-  }
-
-  /**
    * Subscribe to multiple newsletters at the same time.
    */
   function dtestSubscribeMultiple() {

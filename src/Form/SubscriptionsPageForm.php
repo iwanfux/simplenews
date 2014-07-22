@@ -26,7 +26,6 @@ class SubscriptionsPageForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, array &$form_state, $snid = NULL, $timestamp = NULL, $hash = NULL) {
-    $config = $this->configFactory()->get('simplenews.subscription');
     $user = \Drupal::currentUser();
 
     $subscriber = $mail = FALSE;

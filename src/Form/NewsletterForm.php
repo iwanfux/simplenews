@@ -152,7 +152,7 @@ class NewsletterForm extends EntityForm {
       '#title' => t('Newsletter subject'),
       '#collapsible' => FALSE,
     );
-    if (module_exists('token')) {
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
       $form['simplenews_subject']['token_help'] = array(
         '#title' => t('Replacement patterns'),
         '#type' => 'fieldset',

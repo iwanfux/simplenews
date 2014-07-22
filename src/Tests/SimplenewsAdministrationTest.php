@@ -27,13 +27,6 @@ use Drupal\simplenews\Entity\Subscriber;
 class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
   /**
-   * Overrides SimplenewsTestCase::setUp().
-   */
-  public function setUp() {
-    parent::setUp(array('block'));
-  }
-
-  /**
    * Implement getNewsletterFieldId($newsletter_id)
    */
   function getNewsletterFieldId($newsletter_id) {
