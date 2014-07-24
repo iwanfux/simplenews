@@ -90,6 +90,6 @@ class ConfirmAddForm extends ConfirmFormBase {
       drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
     }
 
-    $form_state['redirect_route'] = Url::createFromPath($path)->getRouteName();
+    $form_state['redirect_route'] = Url::createFromPath($path);
   }
 }

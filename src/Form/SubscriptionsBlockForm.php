@@ -15,17 +15,29 @@ use Drupal\Core\Form\FormBase;
  */
 class SubscriptionsBlockForm extends FormBase {
 
+  protected $uniqueId;
+
   /**
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'simplenews_subscriptions_block';
+    if (empty($this->uniqueId)) {
+      throw new \Exception('Unique ID must be set with setUniqueId.');
+    }
+    return 'simplenews_subscriptions_block_' . $this->uniqueId;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, $newsletters = array(), $message = '') {
+  public function setUniqueId($id) {
+    $this->uniqueId = $id;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildForm(array $form, array &$form_state, $newsletters = array()) {
     $user = \Drupal::currentUser();
     $subscriber = $mail = FALSE;
     if ($user->getEmail()) {
@@ -36,14 +48,15 @@ class SubscriptionsBlockForm extends FormBase {
     if (count($newsletters) == 1) {
       $keys = array_keys($newsletters);
       $newsletter_id = array_shift($keys);
+
+      $form['newsletters'] = array(
+        '#type' => 'value',
+        '#value' => array($newsletter_id => 1),
+      );
       if ($mail) {
-        $form['newsletters'] = array(
-          '#type' => 'hidden',
-          '#value' => array($newsletter_id => 1),
-        );
         $form['mail'] = array('#type' => 'value', '#value' => $mail);
 
-        if ($subscriber->isSubscribed($newsletter_id)) {
+        if ($subscriber && $subscriber->isSubscribed($newsletter_id)) {
           $form['unsubscribe'] = array(
             '#type' => 'submit',
             '#value' => t('Unsubscribe'),
@@ -59,10 +72,6 @@ class SubscriptionsBlockForm extends FormBase {
           );
         }
       } else {
-        $form['newsletters'] = array(
-          '#type' => 'hidden',
-          '#value' => array($newsletter_id => 1),
-        );
         $form['mail'] = array(
           '#type' => 'textfield',
           '#title' => t('E-mail'),
@@ -146,13 +155,13 @@ class SubscriptionsBlockForm extends FormBase {
   public function validateForm(array &$form, array &$form_state) {
     $valid_email = valid_email_address($form_state['values']['mail']);
     if (!$valid_email) {
-      \Drupal::formBuilder()->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
+      \Drupal::formBuilder()->setErrorByName('mail', $form_state, t('The e-mail address you supplied is not valid.'));
     }
 
     $checked_newsletters = array_filter($form_state['values']['newsletters']);
     // Unless we're in update mode, at least one checkbox must be checked.
     if (!count($checked_newsletters) && $form_state['values']['op'] != t('Update')) {
-      \Drupal::formBuilder()->setErrorByName('newsletters', t('You must select at least one newsletter.'));
+      \Drupal::formBuilder()->setErrorByName('newsletters', $form_state, t('You must select at least one newsletter.'));
     }
 
     parent::validateForm($form, $form_state);
@@ -193,7 +202,7 @@ class SubscriptionsBlockForm extends FormBase {
           drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
         }
         else {
-          drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
+          drupal_set_message(t('You have been subscribed.'));
         }
         break;
       case t('Unsubscribe'):
@@ -207,7 +216,7 @@ class SubscriptionsBlockForm extends FormBase {
           drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
         }
         else {
-          drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
+          drupal_set_message(t('You have been unsubscribed.'));
         }
         break;
         parent::submitForm($form, $form_state);

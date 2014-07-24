@@ -132,7 +132,7 @@ simplenews.newsletter_subscriptions_user:
     _form: '\Drupal\simplenews\Form\SubscriptionsAccountForm'
     _title: 'Newsletters'
   requirements:
-    _permission: 'subscribe to newsletters'
+    _custom_access: 'Drupal\simplenews\Form\SubscriptionsAccountForm::checkAccess'
 
 simplenews.newsletter_confirm_combined:
   path: 'newsletter/confirm/combined/{snid}/{timestamp}/{hash}'

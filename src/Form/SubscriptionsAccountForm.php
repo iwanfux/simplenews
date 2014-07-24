@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -94,4 +95,36 @@ class SubscriptionsAccountForm extends FormBase {
       drupal_set_message(t('The newsletter subscriptions for user %account have been updated.', array('%account' => $account->label() )));
     }
   }
+
+  /**
+   * Checks access for the simplenews account form.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   (optional) The owner of the shortcut set.
+   *
+   * @return mixed
+   *   AccessInterface::ALLOW, AccessInterface::DENY, or AccessInterface::KILL.
+   */
+  public function checkAccess(UserInterface $user = NULL) {
+    $account = $this->currentUser();
+    $this->user = $user;
+
+    if ($account->hasPermission('administer simplenews subscriptions')) {
+      // Administrators can administer anyone's subscriptions.
+      return AccessInterface::ALLOW;
+    }
+
+    if (!$account->hasPermission('subscribe to newsletters')) {
+      // The user has no permission to subscribe to newsletters.
+      return AccessInterface::DENY;
+    }
+
+    if ($this->user->id() == $account->id()) {
+      // Users with the 'subscribe to newsletters' permission can administer their own
+      // subscriptions.
+      return AccessInterface::ALLOW;
+    }
+    return AccessInterface::DENY;
+  }
+
 }

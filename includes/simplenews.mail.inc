@@ -836,7 +836,7 @@ function simplenews_build_subscribe_mail(&$message, $params) {
 
   $message['subject'] = $config->get('subscription.confirm_subscribe_subject');
   $message['subject'] = \Drupal::token()->replace($message['subject'], $context, array('sanitize' => FALSE));
-  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->getMail(), $context['newsletter']->id())) {
+  if ($context['simplenews_subscriber']->isSubscribed($context['newsletter']->id())) {
     $body = $config->get('subscription.confirm_subscribe_subscribed');
   }
   else {
@@ -871,7 +871,7 @@ function simplenews_build_combined_mail(&$message, $params) {
     $changes_list .= ' - ' . $change . "\n";
 
     // Count the actual changes.
-    $subscribed = simplenews_user_is_subscribed($context['simplenews_subscriber']->getMail(), $newsletter_id);
+    $subscribed = $context['simplenews_subscriber']->isSubscribed($newsletter_id);
     $changes = $subscriber->getChanges();
     if ($changes[$newsletter_id] == 'subscribe' && !$subscribed || $changes[$newsletter_id] == 'unsubscribe' && $subscribed) {
       $actual_changes++;
@@ -897,8 +897,8 @@ function simplenews_build_combined_mail(&$message, $params) {
  *   Parameter array as used by hook_mail().
  */
 function simplenews_build_unsubscribe_mail(&$message, $params) {
+  $config = \Drupal::config('simplenews.settings');
   $context = $params['context'];
-  $langcode = $message['language'];
 
   // Use formatted from address "name" <mail_address>
   $message['headers']['From'] = $params['from']['formatted'];
@@ -906,7 +906,7 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
   $message['subject'] = $config->get('subscription.confirm_subscribe_subject');
   $message['subject'] = \Drupal::token()->replace($message['subject'], $context, array('sanitize' => FALSE));
 
-  if (simplenews_user_is_subscribed($context['simplenews_subscriber']->mail, $context['newsletter']->newsletter_id)) {
+  if ($context['simplenews_subscriber']->isSubscribed($context['newsletter']->id())) {
     $body = $config->get('subscription.confirm_unsubscribe_subscribed');
     $message['body'][] = \Drupal::token()->replace($body, $context, array('sanitize' => FALSE));
   }

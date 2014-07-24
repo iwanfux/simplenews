@@ -66,8 +66,8 @@ define('SIMPLENEWS_SEND_TIME_LIMIT', 0.8);
 /**
  * SUBSCRIPTION STATUS
  */
-define('SIMPLENEWS_SUBSCRIPTION_INACTIVE', FALSE);
-define('SIMPLENEWS_SUBSCRIPTION_ACTIVE', TRUE);
+define('SIMPLENEWS_SUBSCRIPTION_INACTIVE', 0);
+define('SIMPLENEWS_SUBSCRIPTION_ACTIVE', 1);
 
 define('SIMPLENEWS_OPT_INOUT_HIDDEN', 'hidden');
 define('SIMPLENEWS_OPT_INOUT_SINGLE', 'single');
@@ -961,18 +961,14 @@ function simplenews_user_insert(UserInterface $account) {
   if ($subscriber) {
     $subscriber->setUserId($account->id());
     $subscriber->setLangcode($account->getPreferredLangcode());
-    $subscriber->setStatus(1);
+    // set inactive if not created by an administrator.
+    if (!\Drupal::currentUser()->hasPermission('administer users')) {
+      // this user will be activated on first login (see simplenews_user_login)
+      $subscriber->setStatus(SIMPLENEWS_SUBSCRIPTION_INACTIVE);
+    } else {
+      $subscriber->setStatus(SIMPLENEWS_SUBSCRIPTION_ACTIVE);
+    }
     $subscriber->save();
-  }
-
-  // set inactive if not created by an administrator.
-  // @todo This needs a cleaner API.
-  if (!$account->hasPermission('administer users')) {
-    // this user will be activated on first login (see simplenews_user_login)
-    $query = db_update('simplenews_subscriber')
-      ->fields(array('status' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
-      ->condition('uid', $account->id())
-      ->execute();
   }
 }
 
@@ -985,10 +981,11 @@ function simplenews_user_login(UserInterface $account) {
   // Subscriptions of users that did sign up by themselves have to be
   // activated first at their first login (-> account::access = 0)
   if ($account->getLastAccessedTime() == 0) {
-    $query = db_update('simplenews_subscriber')
-      ->fields(array('status' => SIMPLENEWS_SUBSCRIPTION_ACTIVE))
-      ->condition('uid', $account->id())
-      ->execute();
+    $subscriber = simplenews_subscriber_load_by_uid($account->id());
+    if ($subscriber) {
+      $subscriber->setStatus(SIMPLENEWS_SUBSCRIPTION_ACTIVE);
+      $subscriber->save();
+    }
   }
 }
 
@@ -1445,7 +1442,6 @@ function simplenews_unsubscribe($mail, $newsletter_id, $confirm = TRUE, $source 
  */
 function simplenews_user_is_subscribed($mail, $newsletter_id) {
   $subscribed = &drupal_static(__FUNCTION__, array());
-
   if (!isset($subscribed[$mail][$newsletter_id])) {
     $subscriber = simplenews_subscriber_load_by_mail($mail);
     // Check that a subscriber was found, he is active and subscribed to the
@@ -2852,7 +2848,7 @@ function simplenews_confirmation_get_changes_list(Subscriber $subscriber, $chang
 
   $changes_list = array();
   foreach ($changes as $newsletter_id => $action) {
-    $subscribed = simplenews_user_is_subscribed($subscriber->getMail(), $newsletter_id);
+    $subscribed = $subscriber->isSubscribed($newsletter_id);
     // Get text for each possible combination.
     if ($action == 'subscribe' && !$subscribed) {
       $line = $config->get('subscription.confirm_combined_line_subscribe_unsubscribed');

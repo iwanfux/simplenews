@@ -17,7 +17,7 @@ interface SubscriberInterface extends ContentEntityInterface {
   /**
    * Returns if the subscriber is active or not.
    *
-   * @return int
+   * @return boolean
    *   The subscribers status.
    */
   public function getStatus();
@@ -25,7 +25,7 @@ interface SubscriberInterface extends ContentEntityInterface {
   /**
    * Sets the status of the subscriber.
    *
-   * @param int $status
+   * @param boolean $status
    *   The subscribers status.
    */
   public function setStatus($status);

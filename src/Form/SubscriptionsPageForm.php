@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormBase;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Configure simplenews subscriptions of the logged user.
@@ -40,8 +41,7 @@ class SubscriptionsPageForm extends FormBase {
         $mail = $subscriber->getMail();
       }
       else {
-        drupal_not_found();
-        return array();
+        throw new NotFoundHttpException();
       }
     }
 
@@ -118,7 +118,7 @@ class SubscriptionsPageForm extends FormBase {
     $checked_newsletters = array_filter($form_state['values']['newsletters']);
     // Unless we're in update mode, at least one checkbox must be checked.
     if (!count($checked_newsletters) && $form_state['values']['op'] != t('Update')) {
-      \Drupal::formBuilder()->setErrorByName('newsletters', t('You must select at least one newsletter.'));
+      \Drupal::formBuilder()->setErrorByName('newsletters', $form_state, t('You must select at least one newsletter.'));
     }
 
     parent::validateForm($form, $form_state);

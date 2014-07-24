@@ -95,55 +95,37 @@ abstract class SimplenewsTestBase extends WebTestBase {
   /**
    * Enable newsletter subscription block.
    *
-   * @param int $newsletter_id
-   *   newsletter id
    * @param array $settings
+   *  ['newsletters'] = Array of newsletters (id => 1)
    *  ['message'] = Block message
    *  ['form'] = '1': Subscription form; '0': Link to form
-   *  ['link to previous'] = {1, 0} Display link to previous issues
-   *  ['previous issues'] = {1, 0} Display previous issues
-   *  ['issue count'] = {1, 2, 3, ...}Number of issues to display
-   *  ['rss feed'] = {1, 0} Display RSS-feed icon
+   *  ['link_previous'] = {1, 0} Display link to previous issues
+   *  ['issue_status'] = {1, 0} Display previous issues
+   *  ['issue_count'] = {1, 2, 3, ...} Number of issues to display
+   *  ['rss_feed'] = {1, 0} Display RSS-feed icon
    */
-  function setupSubscriptionBlock($newsletter_id, $settings = array()) {
-    $bid = db_select('block')
-      ->fields('block', array('bid'))
-      ->condition('module', 'simplenews')
-      ->condition('delta', $newsletter_id)
-      ->execute();
+  function setupSubscriptionBlock($settings = array()) {
 
-    // Check to see if the box was created by checking that it's in the database..
-    $this->assertNotNull($bid, t('Block found in database'));
-
-    // Set block parameters
-    $edit = array();
-    $edit['regions[bartik]'] = 'sidebar_first';
-    if (isset($settings['message'])) {
-      $edit['simplenews_block_m_' . $newsletter_id] = $settings['message'];
-    }
-    if (isset($settings['form'])) {
-      $edit['simplenews_block_f_' . $newsletter_id] = $settings['form'];
-    }
-    if (isset($settings['link to previous'])) {
-      $edit['simplenews_block_l_' . $newsletter_id] = $settings['link to previous'];
-    }
-    if (isset($settings['previous issues'])) {
-      $edit['simplenews_block_i_status_' . $newsletter_id] = $settings['previous issues'];
-    }
-    if (isset($settings['issue count'])) {
-      $edit['simplenews_block_i_' . $newsletter_id] = $settings['issue count'];
-      // @todo check the count
-    }
-    if (isset($settings['rss feed'])) {
-      $edit['simplenews_block_r_' . $newsletter_id] = $settings['rss feed'];
-    }
+    $settings += [
+      'newsletters' => array(),
+      'message' => t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'),
+      'form' => 1,
+      'issue_status' => 0,
+      'issues' => 5,
+      'uuid' => \Drupal::service('uuid')->generate()
+    ];
 
     // Simplify confirmation form submission by hiding the subscribe block on
     // that page. Same for the newsletter/subscriptions page.
-    $edit['pages'] = "newsletter/confirm/*\nnewsletter/subscriptions";
+    $settings['visibility']['request_path']['pages'] = "newsletter/confirm/*\nnewsletter/subscriptions";
+    $settings['visibility']['request_path']['negate'] = TRUE;
+    $settings['region'] = 'sidebar_first';
 
-    $this->drupalPostForm('admin/structure/block/manage/simplenews/' . $newsletter_id . '/configure', $edit, t('Save block'));
-    $this->assertText('The block configuration has been saved.', 'The newsletter block configuration has been saved.');
+    //$this->drupalPostForm('admin/structure/block/manage/simplenews/' . $newsletter_id . '/configure', $edit, t('Save block'));
+    $block = $this->drupalPlaceBlock('simplenews_subscription_block', $settings);
+    $this->assertTrue($block->id());
+
+    return $block;
   }
 
   function setUpSubscribers($count = 100, $newsletter_id = 1) {

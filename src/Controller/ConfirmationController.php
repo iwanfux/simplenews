@@ -154,7 +154,7 @@ class ConfirmationController extends ControllerBase {
           'newsletter' => $newsletter,
         );
         $token = $action == 'add' ? 'subscribe' : 'unsubscribe';
-        return \Drupal::formBuilder()->getForm('simplenews_request_hash', $token, $context);
+        return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', $token, $context);
       }
       // When called with additional arguments the user will be directed to the
       // (un)subscribe confirmation page. The additional arguments will be passed
