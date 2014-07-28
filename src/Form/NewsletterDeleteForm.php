@@ -25,7 +25,7 @@ class NewsletterDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('simplenews.newsletter_list');
   }
 

@@ -40,7 +40,7 @@ class ConfirmMultiForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
+  public function getCancelUrl() {
     return new Url('simplenews.newsletter_subscriptions');
   }
 
