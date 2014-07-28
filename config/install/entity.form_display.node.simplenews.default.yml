@@ -1,0 +1,42 @@
+langcode: en
+status: true
+dependencies:
+  entity:
+    - field.instance.node.simplenews.body
+    - field.instance.node.simplenews.issue
+    - node.type.simplenews
+  module:
+    - options
+    - path
+    - text
+id: node.simplenews.default
+targetEntityType: node
+bundle: simplenews
+mode: default
+content:
+  title:
+    type: string
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  path:
+    type: path
+    weight: 1
+    settings: {  }
+    third_party_settings: {  }
+  body:
+    type: text_textarea_with_summary
+    weight: 2
+    settings:
+      rows: 9
+      summary_rows: 3
+      placeholder: ''
+    third_party_settings: {  }
+  issue:
+    type: options_select
+    weight: 3
+    settings: {  }
+    third_party_settings: {  }
+hidden: {  }

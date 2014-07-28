@@ -217,7 +217,7 @@ function simplenews_node_type_insert($info) {
  * Implements hook_node_view().
  */
 function simplenews_node_view($node, $view_mode) {
-  if (!simplenews_check_node_types($node->type)) {
+  if (!simplenews_check_node_types($node->getEntityTypeId())) {
     return;
   }
 
@@ -233,7 +233,7 @@ function simplenews_node_view($node, $view_mode) {
   );
 
   // If the current user is a subscriber, extend context.
-  if ($GLOBALS['user']->uid > 0 && $subscriber = simplenews_subscriber_load_by_mail($GLOBALS['user']->mail)) {
+  if ($GLOBALS['user']->id() > 0 && $subscriber = simplenews_subscriber_load_by_mail($GLOBALS['user']->getEmail())) {
     $context['simplenews_subscriber'] = $subscriber;
   }
 
@@ -2895,10 +2895,10 @@ function simplenews_property_simplenews_subscriptions_getter_callback($item) {
  * Implements hook_field_widget_info_alter().
  */
 function simplenews_field_widget_info_alter(&$info) {
-/*  if (isset($info['options_select'])) {
-    $info['options_select']['field_types'][] = 'simplenews_subscription';
+  if (isset($info['options_select'])) {
+    $info['options_select']['field_types'][] = 'simplenews_issue';
   }
-  if (isset($info['options_buttons'])) {
+  /*if (isset($info['options_buttons'])) {
     $info['options_buttons']['field_types'][] = 'simplenews_subscription';
   }*/
 }

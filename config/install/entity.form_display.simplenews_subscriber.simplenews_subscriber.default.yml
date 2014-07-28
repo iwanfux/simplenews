@@ -8,7 +8,7 @@ content:
     weight: 5
     settings:
       placeholder: ''
-    third_party_settings: { }
+    third_party_settings: {  }
 hidden:
   subscriptions: true
   uid: true

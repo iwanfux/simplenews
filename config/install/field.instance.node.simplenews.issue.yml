@@ -1,0 +1,20 @@
+id: node.simplenews.issue
+status: true
+langcode: en
+field_name: issue
+entity_type: node
+bundle: simplenews
+label: Issue
+description: ''
+required: false
+default_value: {  }
+default_value_function: ''
+settings:
+  handler: default
+  handler_settings:
+    target_bundles: {  }
+dependencies:
+  entity:
+    - field.storage.node.issue
+    - node.type.simplenews
+field_type: simplenews_issue
