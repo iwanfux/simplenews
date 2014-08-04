@@ -83,7 +83,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
       'form' => 1,
       'issue_status' => 0,
       'issues' => 5,
-      'uuid' => '',
+      'unique_id' => '',
     );
   }
 
@@ -174,7 +174,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     $this->configuration['issue_status'] = $form_state['values']['issue_status'];
     $this->configuration['issue_count'] = $form_state['values']['issue_count'];
     //$this->configuration['rss_feed'] = $form_state['values']['rss_feed'];
-    $this->configuration['uuid'] = \Drupal::service('uuid')->generate();
+    $this->configuration['unique_id'] = \Drupal::service('uuid')->generate();
 }
 
   /**
@@ -184,7 +184,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     $newsletters = $this->newsletterStorage->loadMultiple($this->configuration['newsletters']);
     $message = $this->configuration['message'];
     $form_object = \Drupal::service('class_resolver')->getInstanceFromDefinition('\Drupal\simplenews\Form\SubscriptionsBlockForm');
-    $form_object->setUniqueId($this->configuration['uuid']);
+    $form_object->setUniqueId($this->configuration['unique_id']);
     return $this->formBuilder->getForm($form_object, $newsletters);
   }
 
