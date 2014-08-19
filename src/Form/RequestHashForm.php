@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\ConfirmFormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
 /**
@@ -59,7 +60,7 @@ class RequestHashForm extends ConfirmFormBase {
    *   Necessary context to send the mail. Must at least include the simplenews
    *   subscriber.
    */
-  public function buildForm(array $form, array &$form_state, $key = '', $context = array()) {
+  public function buildForm(array $form, FormStateInterface $form_state, $key = '', $context = array()) {
     $form = parent::buildForm($form, $form_state);
     $form_state['key'] = $key;
     $form_state['context'] = $context;
@@ -70,21 +71,21 @@ class RequestHashForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     $params['from'] = _simplenews_set_from();
     $params['context'] = $form_state['context'];
     $subscriber = $params['context']['simplenews_subscriber'];
     drupal_mail('simplenews', $form_state['key'], $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
     drupal_set_message(t('The confirmation mail has been sent.'));
-    $form_state['redirect_route'] = new Url('<front>');
+    $form_state->setRedirect('<front>');
   }
 
 }

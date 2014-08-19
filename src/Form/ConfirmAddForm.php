@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\ConfirmFormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\simplenews\NewsletterInterface;
 
@@ -54,7 +55,7 @@ class ConfirmAddForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, $mail = '', NewsletterInterface $newsletter = NULL) {
+  public function buildForm(array $form, FomStateInterface $form_state, $mail = '', NewsletterInterface $newsletter = NULL) {
     $form = parent::buildForm($form, $form_state);
     $form['question'] = array(
       '#markup' => '<p>' . t('Are you sure you want to add %user to the %newsletter mailing list?', array('%user' => simplenews_mask_mail($mail), '%newsletter' => $newsletter->name)) . "<p>\n",
@@ -73,14 +74,14 @@ class ConfirmAddForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     simplenews_subscribe($form_state['values']['mail'], $form_state['values']['newsletter']->id(), FALSE, 'website');
 
     $config = \Drupal::config('simplenews.settings');
@@ -90,6 +91,6 @@ class ConfirmAddForm extends ConfirmFormBase {
       drupal_set_message(t('%user was added to the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
     }
 
-    $form_state['redirect_route'] = Url::createFromPath($path);
+    $form_state->setRedirectUrl(Url::createFromPath($path));
   }
 }

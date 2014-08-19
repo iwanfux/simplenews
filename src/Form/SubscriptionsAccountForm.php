@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\user\UserInterface;
 
@@ -27,7 +28,7 @@ class SubscriptionsAccountForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, UserInterface $user = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
     $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
 
     $options = array();
@@ -65,14 +66,14 @@ class SubscriptionsAccountForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = \Drupal::currentUser();
 
     $account = $form_state['user'];

@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Do a mass subscription for a list of email addresses.
@@ -65,7 +66,7 @@ class SubscriberExportForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     // Get sensible default values for the form elements in this form.
     $default['states'] = isset($_GET['states']) ? $_GET['states'] : array('active' => 'active');
     $default['subscribed'] = isset($_GET['subscribed']) ? $_GET['subscribed'] : array('subscribed' => 'subscribed');
@@ -128,14 +129,14 @@ class SubscriberExportForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $form_values = $form_state['values'];
 
     // Get data for query string and redirect back to the current page.

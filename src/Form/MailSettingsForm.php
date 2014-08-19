@@ -8,6 +8,8 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
+
 #    'page arguments' => array('simplenews_admin_settings_mail'),
 
 /**
@@ -25,7 +27,7 @@ class MailSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('simplenews.settings');
     $form['simplenews_mail_backend']['simplenews_use_cron'] = array(
       '#type' => 'checkbox',
@@ -90,14 +92,14 @@ class MailSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory()->get('simplenews.settings')
       ->set('mail.use_cron', $form_state['values']['simplenews_use_cron'])
       ->set('mail.source_cache', $form_state['values']['simplenews_source_cache'])

@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Configure simplenews newsletter settings.
@@ -24,7 +25,7 @@ class NewsletterSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('simplenews.settings');
     $form['simplenews_default_options'] = array(
       '#type' => 'fieldset',
@@ -110,14 +111,14 @@ class NewsletterSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory()->get('simplenews.settings')
       ->set('newsletter.format', $form_state['values']['simplenews_format'])
       ->set('newsletter.priority', $form_state['values']['simplenews_priority'])

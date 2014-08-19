@@ -217,6 +217,7 @@ function simplenews_node_type_insert($info) {
  * Implements hook_node_view().
  */
 function simplenews_node_view($node, $view_mode) {
+  return;
   if (!simplenews_check_node_types($node->getEntityTypeId())) {
     return;
   }

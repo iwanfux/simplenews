@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Base form for category edit forms.
@@ -18,7 +19,7 @@ class NewsletterForm extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
-  public function form(array $form, array &$form_state) {
+  public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
     $newsletter = $this->entity;
@@ -204,14 +205,14 @@ class NewsletterForm extends EntityForm {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::validate().
    */
-  public function validate(array $form, array &$form_state) {
+  public function validate(array $form, FormStateInterface $form_state) {
     parent::validate($form, $form_state);
   }
 
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
-  public function save(array $form, array &$form_state) {
+  public function save(array $form, FormStateInterface $form_state) {
     $newsletter = $this->entity;
     $status = $newsletter->save();
 
@@ -226,7 +227,7 @@ class NewsletterForm extends EntityForm {
       watchdog('simplenews', 'Newsletter %label has been added.', array('%label' => $newsletter->label()), WATCHDOG_NOTICE, $edit_link);
     }
 
-    $form_state['redirect_route']['route_name'] = 'simplenews.newsletter_list';
+    $form_state->setRedirect('simplenews.newsletter_list');
   }
 
 }

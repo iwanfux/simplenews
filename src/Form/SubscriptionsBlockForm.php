@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Configure simplenews subscriptions of the logged user.
@@ -37,7 +38,7 @@ class SubscriptionsBlockForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state, $newsletters = array()) {
+  public function buildForm(array $form, FormStateInterface $form_state, $newsletters = array()) {
     $user = \Drupal::currentUser();
     $subscriber = $mail = FALSE;
     if ($user->getEmail()) {
@@ -152,7 +153,7 @@ class SubscriptionsBlockForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     $valid_email = valid_email_address($form_state['values']['mail']);
     if (!$valid_email) {
       \Drupal::formBuilder()->setErrorByName('mail', $form_state, t('The e-mail address you supplied is not valid.'));
@@ -170,7 +171,7 @@ class SubscriptionsBlockForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $mail = $form_state['values']['mail'];
     $account = user_load_by_mail($mail);
 

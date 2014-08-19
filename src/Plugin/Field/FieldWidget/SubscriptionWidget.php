@@ -27,7 +27,7 @@ class SubscriptionWidget extends ButtonsWidget {
   /**
    * {@inheritdoc}
    */
-  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, array &$form_state) {
+  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     $element = parent::formElement($items, $delta, $element, $form, $form_state);
     return $element;
   }
@@ -35,7 +35,7 @@ class SubscriptionWidget extends ButtonsWidget {
   /**
    * {@inheritdoc}
    */
-  public function massageFormValues(array $values, array $form, array &$form_state) {
+  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     //debug($values);
     //$existing_values = $form_state['controller']->getEntity()->subscriptions->getValue();
     return $values;

@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Do a mass subscription for a list of email addresses.
@@ -25,7 +26,7 @@ class SubscriberMassSubscribeForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $form['emails'] = array(
       '#type' => 'textarea',
       '#title' => t('Email addresses'),
@@ -90,14 +91,14 @@ class SubscriberMassSubscribeForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
+  public function validateForm(array &$form, FormStateInterface $form_state) {
     parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $added = array();
     $invalid = array();
     $unsubscribed = array();
