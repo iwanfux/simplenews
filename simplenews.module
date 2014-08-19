@@ -1032,9 +1032,9 @@ function simplenews_user_cancel($edit, $account, $method) {
 /**
  * Implements hook_user_delete().
  */
-function simplenews_user_delete($account) {
+function simplenews_user_delete(UserInterface $account) {
   // Delete subscription when account is removed.
-  $subscriber = simplenews_subscriber_load_by_mail($account->mail);
+  $subscriber = simplenews_subscriber_load_by_mail($account->getEmail());
   if ($subscriber) {
     $subscriber->delete();
   }
