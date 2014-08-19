@@ -113,13 +113,13 @@ class SubscriptionsPageForm extends FormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $valid_email = valid_email_address($form_state['values']['mail']);
     if (!$valid_email) {
-      \Drupal::formBuilder()->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
+      $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
     }
 
     $checked_newsletters = array_filter($form_state['values']['newsletters']);
     // Unless we're in update mode, at least one checkbox must be checked.
     if (!count($checked_newsletters) && $form_state['values']['op'] != t('Update')) {
-      \Drupal::formBuilder()->setErrorByName('newsletters', $form_state, t('You must select at least one newsletter.'));
+      $form_state->setErrorByName('newsletters', t('You must select at least one newsletter.'));
     }
 
     parent::validateForm($form, $form_state);
