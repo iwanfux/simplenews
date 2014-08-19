@@ -6,13 +6,14 @@
  *
  * @ingroup simplenews
  */
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Menu callback: Admin form for sent and draft newsletters.
  *
  * @see simplenews_admin_newsletter_submit()
  */
-function simplenews_admin_newsletter_issues($form, &$form_state, $action = 'sent') {
+function simplenews_admin_newsletter_issues($form, FormStateInterface $form_state, $action = 'sent') {
   // @todo Fix the delete operation
 
   $form['filter'] = simplenews_issue_filter_form();
@@ -93,7 +94,7 @@ function _simplenews_issue_filter_default() {
 /**
  * Form submit callback for the newsletter issue filter.
  */
-function simplenews_issue_filter_form_submit($form, &$form_state) {
+function simplenews_issue_filter_form_submit($form, FormStateInterface $form_state) {
   switch ($form_state['values']['op']) {
     case t('Filter'):
       $_SESSION['simplenews_issue_filter'] = array(
@@ -227,7 +228,7 @@ function simplenews_simplenews_issue_operations() {
 /**
  * Form vaidate callback for the issue list operations.
  */
-function simplenews_admin_issues_validate($form, &$form_state) {
+function simplenews_admin_issues_validate($form, FormStateInterface $form_state) {
   if (isset($form_state['input']['operation'])) {
     $nids = array_keys(array_filter($form_state['input']['issues']));
     if (empty($nids)) {
@@ -239,7 +240,7 @@ function simplenews_admin_issues_validate($form, &$form_state) {
 /**
  * Form submit callback for the issue operations.
  */
-function simplenews_admin_issues_submit($form, &$form_state) {
+function simplenews_admin_issues_submit($form, FormStateInterface $form_state) {
   // Call operation functions as defined in hook_simplenews_issue_operations().
   $operations = module_invoke_all('simplenews_issue_operations');
   $operation = $operations[$form_state['values']['operation']];
@@ -353,7 +354,7 @@ function simplenews_admin_categories() {
 /**
  * Form submit callback for the simplenews categories.
  */
-function simplenews_admin_categories_submit($form, &$form_state) {
+function simplenews_admin_categories_submit($form, FormStateInterface $form_state) {
   foreach ($form_state['values'] as $newsletter_id => $newsletter) {
     if (is_numeric($newsletter_id) && $form[$newsletter_id]['#newsletter']->weight != $newsletter['weight']) {
       $form[$newsletter_id]['#newsletter']->weight = $newsletter['weight'];
@@ -402,7 +403,7 @@ function theme_simplenews_admin_categories($variables) {
  *
  * @see simplenews_admin_newsletter_delete_submit()
  */
-function simplenews_admin_newsletter_delete($form, &$form_state, $newsletter) {
+function simplenews_admin_newsletter_delete($form, FormStateInterface $form_state, $newsletter) {
   // Store some newsletter values for submit handling.
   $form = array();
   $form['newsletter_id'] = array('#type' => 'value', '#value' => $newsletter->newsletter_id);
@@ -601,7 +602,7 @@ function simplenews_node_tab_page($node) {
 /**
  * @todo
  */
-function simplenews_node_tab_send_form($form, &$form_state, $node) {
+function simplenews_node_tab_send_form($form, FormStateInterface $form_state, $node) {
 
   $status = simplenews_issue_status($node);
 
@@ -621,132 +622,123 @@ function simplenews_node_tab_send_form($form, &$form_state, $node) {
     '#tree' => TRUE,
   );
 
-  // Translations of newsletters don't have the 'send' option. Only the
-  // translation source (and non translated) newsletters will get these options.
-  if (module_exists('translation') && translation_supported_type($node->type)
-    && (isset($node->translate) && ($node->tnid > 0) && ($node->tnid != $node->nid))) {
-    $form['simplenews']['#description'] = t('This newsletter issue is part of a translation set. Sending this set is controlled from the <a href="@link">translation source newsletter</a>.', array('@link' => url('node/' . $node->tnid)));
-    // @todo Translated nodes must also have the same newsletter!
-    //      Move the newsletter in here and give the user feedback.
-  }
-  else {
-    // Show newsletter sending options if newsletter has not been send yet.
-    // If send a notification is shown.
-    if ($status == SIMPLENEWS_STATUS_SEND_NOT || $status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
+  // Show newsletter sending options if newsletter has not been send yet.
+  // If send a notification is shown.
+  if ($status == SIMPLENEWS_STATUS_SEND_NOT || $status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
 
-      $options = array(
-        SIMPLENEWS_COMMAND_SEND_TEST => t('Send one test newsletter to the test address'),
-      );
+    $options = array(
+      SIMPLENEWS_COMMAND_SEND_TEST => t('Send one test newsletter to the test address'),
+    );
 
-      // Add option to send on publish when the node is unpublished.
-      if ($node->status == NODE_NOT_PUBLISHED) {
-        $options[SIMPLENEWS_COMMAND_SEND_PUBLISH] = t('Send newsletter when published');
-      }
-      else {
-        $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
-      }
-
-      if ($status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
-        $send_default = SIMPLENEWS_STATUS_SEND_PUBLISH;
-      }
-      else {
-        $send_default = variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_TEST);
-      }
-      $form['simplenews']['send'] = array(
-        '#type' => 'radios',
-        '#title' => t('Send newsletter'),
-        '#default_value' => $send_default,
-        '#options' => $options,
-        '#attributes' => array(
-          'class' => array('simplenews-command-send'),
-        ),
-      );
-
-      $address_default = variable_get('site_mail', ini_get('sendmail_from'));
-      if (variable_get('simplenews_test_address_override', 0)) {
-        $form['simplenews']['test_address'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Test email addresses'),
-          '#description' => t('A comma-separated list of email addresses to be used as test addresses.'),
-          '#default_value' => variable_get('simplenews_test_address', $address_default),
-          '#size' => 60,
-          '#maxlength' => 128,
-        );
-      }
-      else {
-        $form['simplenews']['test_address'] = array(
-          '#type' => 'value',
-          '#value' => variable_get('simplenews_test_address', $address_default),
-        );
-      }
-
-      $default_handler = isset($form_state['values']['simplenews']['recipient_handler']) ? $form_state['values']['simplenews']['recipient_handler'] : simplenews_issue_handler($node);
-      $options = simplenews_handler_field_allowed_values();
-      $form['simplenews']['recipient_handler'] = array(
-        '#type' => 'select',
-        '#title' => t('Recipients'),
-        '#description' => t('Please select to configure who to send the email to.'),
-        '#options' => $options,
-        '#default_value' => $default_handler,
-        '#access' => count($options) > 1,
-        '#ajax' => array(
-          'callback' => 'simplenews_node_tab_send_form_handler_update',
-          'wrapper' => 'recipient-handler-settings',
-          'method' => 'replace',
-          'effect' => 'fade',
-        ),
-      );
-
-      // Get the handler class
-      ctools_include('plugins');
-      $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $default_handler);
-      $class = $handler['class'];
-      $settings = simplenews_issue_handler_settings($node);
-
-      if (method_exists($class, 'settingsForm')) {
-        $element = array(
-          '#parents' => array('simplenews', 'recipient_handler_settings'),
-          '#prefix' => '<div id="recipient-handler-settings">',
-          '#suffix' => '</div>',
-        );
-
-        $form['simplenews']['recipient_handler_settings'] = $class::settingsForm($element, $settings);
-      }
-      else {
-        $form['simplenews']['recipient_handler']['#suffix'] = '<div id="recipient-handler-settings"></div>';
-      }
+    // Add option to send on publish when the node is unpublished.
+    if ($node->status == NODE_NOT_PUBLISHED) {
+      $options[SIMPLENEWS_COMMAND_SEND_PUBLISH] = t('Send newsletter when published');
     }
     else {
-      $form['simplenews']['none'] = array(
-        '#type' => 'checkbox',
-        '#return_value' => 0,
-        '#attributes' => array(
-          'checked' => 'checked',
-          'disabled' => 'disabled',
-        ),
-      );
-      $form['simplenews']['none']['#title'] = ($status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
-      return $form;
+      $options[SIMPLENEWS_COMMAND_SEND_NOW] = t('Send newsletter');
     }
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Submit'),
+
+    if ($status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
+      $send_default = SIMPLENEWS_STATUS_SEND_PUBLISH;
+    }
+    else {
+      $send_default = variable_get('simplenews_send', SIMPLENEWS_COMMAND_SEND_TEST);
+    }
+    $form['simplenews']['send'] = array(
+      '#type' => 'radios',
+      '#title' => t('Send newsletter'),
+      '#default_value' => $send_default,
+      '#options' => $options,
+      '#attributes' => array(
+        'class' => array('simplenews-command-send'),
+      ),
     );
+
+    $address_default = variable_get('site_mail', ini_get('sendmail_from'));
+    if (variable_get('simplenews_test_address_override', 0)) {
+      $form['simplenews']['test_address'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Test email addresses'),
+        '#description' => t('A comma-separated list of email addresses to be used as test addresses.'),
+        '#default_value' => variable_get('simplenews_test_address', $address_default),
+        '#size' => 60,
+        '#maxlength' => 128,
+      );
+    }
+    else {
+      $form['simplenews']['test_address'] = array(
+        '#type' => 'value',
+        '#value' => variable_get('simplenews_test_address', $address_default),
+      );
+    }
+
+    $default_handler = isset($form_state['values']['simplenews']['recipient_handler']) ? $form_state['values']['simplenews']['recipient_handler'] : simplenews_issue_handler($node);
+    $options = simplenews_handler_field_allowed_values();
+    $form['simplenews']['recipient_handler'] = array(
+      '#type' => 'select',
+      '#title' => t('Recipients'),
+      '#description' => t('Please select to configure who to send the email to.'),
+      '#options' => $options,
+      '#default_value' => $default_handler,
+      '#access' => count($options) > 1,
+      '#ajax' => array(
+        'callback' => 'simplenews_node_tab_send_form_handler_update',
+        'wrapper' => 'recipient-handler-settings',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+    );
+
+    // Get the handler class
+    ctools_include('plugins');
+    $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $default_handler);
+    $class = $handler['class'];
+    $settings = simplenews_issue_handler_settings($node);
+
+    if (method_exists($class, 'settingsForm')) {
+      $element = array(
+        '#parents' => array('simplenews', 'recipient_handler_settings'),
+        '#prefix' => '<div id="recipient-handler-settings">',
+        '#suffix' => '</div>',
+      );
+
+      $form['simplenews']['recipient_handler_settings'] = $class::settingsForm($element, $settings);
+    }
+    else {
+      $form['simplenews']['recipient_handler']['#suffix'] = '<div id="recipient-handler-settings"></div>';
+    }
   }
+  else {
+    $form['simplenews']['none'] = array(
+      '#type' => 'checkbox',
+      '#return_value' => 0,
+      '#attributes' => array(
+        'checked' => 'checked',
+        'disabled' => 'disabled',
+      ),
+    );
+    $form['simplenews']['none']['#title'] = ($status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
+    return $form;
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
   return $form;
 }
 
 /**
  * Return the updated recipient handler settings form.
  */
-function simplenews_node_tab_send_form_handler_update($form, $form_state) {
+function simplenews_node_tab_send_form_handler_update($form, FormStateInterface $form_state) {
   return empty($form['simplenews']['recipient_handler_settings']) ? array('#markup' => '<div id="recipient-handler-settings"></div>') : $form['simplenews']['recipient_handler_settings'];
 }
 
 /**
  * @todo
  */
-function simplenews_node_tab_send_form_validate($form, &$form_state) {
+function simplenews_node_tab_send_form_validate($form, FormStateInterface $form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
 
@@ -788,7 +780,7 @@ function simplenews_node_tab_send_form_validate($form, &$form_state) {
 /**
  * @todo
  */
-function simplenews_node_tab_send_form_submit($form, &$form_state) {
+function simplenews_node_tab_send_form_submit($form, FormStateInterface $form_state) {
   $values = $form_state['values'];
   $node = node_load($values['nid']);
 

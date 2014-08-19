@@ -11,6 +11,7 @@ use Drupal\block\BlockBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Form\FormBuilderInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -98,7 +99,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
   /**
    * Overrides \Drupal\block\BlockBase::blockForm().
    */
-  public function blockForm($form, &$form_state) {
+  public function blockForm($form, FormStateInterface $form_state) {
     $newsletters = simplenews_newsletter_get_visible();
     foreach ($newsletters as $newsletter) {
       $options[$newsletter->id()] = $newsletter->name;
@@ -166,7 +167,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     /**
    * Overrides \Drupal\block\BlockBase::blockSubmit().
    */
-  public function blockSubmit($form, &$form_state) {
+  public function blockSubmit($form, FormStateInterface $form_state) {
     $this->configuration['newsletters'] = array_filter($form_state['values']['newsletters']);
     $this->configuration['message'] = $form_state['values']['message'];
     $this->configuration['form'] = $form_state['values']['form'];

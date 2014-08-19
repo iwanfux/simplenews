@@ -598,7 +598,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
       $GLOBALS['language'] = $languages[$language];
       $GLOBALS['language_url'] = $languages[$language];
       // Overwrites the current content language for i18n_select.
-      if (module_exists('i18n_select')) {
+      if (\Drupal::moduleHandler()->moduleExists('i18n_select')) {
         $GLOBALS['language_content'] = $languages[$language];
       }
     }
@@ -618,7 +618,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     if (!empty($this->original_language)) {
       $GLOBALS['language'] = $this->original_language;
       $GLOBALS['language_url'] = $this->original_language;
-      if (module_exists('i18n_select')) {
+      if (\Drupal::moduleHandler()->moduleExists('i18n_select')) {
         $GLOBALS['language_content'] = $this->original_language;
       }
     }
@@ -846,7 +846,7 @@ class SimplenewsSourceNode extends SimplenewsSourceEntity {
     $this->entity_type = $entity_type;
     $langcode = $this->getLanguage();
     $nid = $node->nid;
-    if (module_exists('translation')) {
+    if (\Drupal::moduleHandler()->moduleExists('translation')) {
       // If the node has translations and a translation is required
       // the equivalent of the node in the required language is used
       // or the base node (nid == tnid) is used.

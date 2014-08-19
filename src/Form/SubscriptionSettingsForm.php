@@ -57,7 +57,7 @@ class SubscriptionSettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('subscription.use_combined'),
     );
 
-    if (module_exists('token')) {
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
       $form['subscription_mail']['token_help'] = array(
         '#title' => $this->t('Replacement patterns'),
         '#type' => 'fieldset',
