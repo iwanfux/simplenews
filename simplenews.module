@@ -2389,6 +2389,8 @@ function simplenews_field_extra_fields() {
  * Don't allow deletion when a newsletter is pending
  */
 function simplenews_node_access($node, $op, $account) {
+  // @todo access check
+  return NODE_ACCESS_IGNORE;
   if ($op == 'delete') {
     // Check if a newsletter is pending
     if (simplenews_issue_status($node) == SIMPLENEWS_STATUS_SEND_PENDING) {
