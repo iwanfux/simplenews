@@ -159,6 +159,6 @@ class SubscriberMassSubscribeForm extends FormBase {
     }
 
     // Return to the parent page.
-    $form_state['redirect'] = 'admin/people/simplenews';
+    $form_state->setRedirect('simplenews.subscriber_list');
   }
 }

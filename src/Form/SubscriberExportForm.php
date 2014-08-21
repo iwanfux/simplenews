@@ -143,6 +143,6 @@ class SubscriberExportForm extends FormBase {
     $options['query']['states'] = array_filter($form_values['states']);
     $options['query']['subscribed'] = array_filter($form_values['subscribed']);
     $options['query']['newsletters'] = array_keys(array_filter($form_values['newsletters']));
-    $form_state['redirect'] = array('admin/people/simplenews/export', $options);
+    $form_state->setRedirect('simplenews.subscriber_export', array(), $options);
   }
 }

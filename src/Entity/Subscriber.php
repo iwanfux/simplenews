@@ -8,9 +8,9 @@
 namespace Drupal\simplenews\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\simplenews\SubscriberInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\Core\Field\FieldDefinition;
 
 /**
  * Defines the simplenews subscriber entity.
@@ -31,9 +31,9 @@ use Drupal\Core\Field\FieldDefinition;
  *     "label" = "mail"
  *   },
  *   fieldable = TRUE,
+ *   field_ui_base_route = "simplenews.subscriber_list",
  *   admin_permission = "administer simplenews subscriptions",
  *   links = {
- *     "admin-form" = "simplenews.subscriber_list",
  *     "edit-form" = "simplenews.subscriber_edit",
  *     "delete-form" = "simplenews.subscriber_delete",
  *   }
@@ -220,23 +220,23 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields['id'] = FieldDefinition::create('integer')
+    $fields['id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Subscriber ID'))
       ->setDescription(t('Primary key: Unique subscriber ID.'))
       ->setReadOnly(TRUE)
       ->setSetting('unsigned', TRUE);
 
-    $fields['uuid'] = FieldDefinition::create('uuid')
+    $fields['uuid'] = BaseFieldDefinition::create('uuid')
       ->setLabel(t('UUID'))
       ->setDescription(t('The subscriber UUID.'))
       ->setReadOnly(TRUE);
 
-    $fields['status'] = FieldDefinition::create('boolean')
+    $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Status'))
       ->setDescription(t('Boolean indicating the status of the subscriber.'))
       ->setSetting('default_value', FALSE);
 
-    $fields['mail'] = FieldDefinition::create('email')
+    $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
       ->setDescription(t('The subscribers email address.'))
       ->setSetting('default_value', '')
@@ -248,22 +248,22 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       )) 
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['uid'] = FieldDefinition::create('entity_reference')
+    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('User'))
       ->setDescription(t('The corresponding user.'))
       ->setSetting('target_type', 'user')
       ->setSetting('handler', 'default')
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['langcode'] = FieldDefinition::create('language')
+    $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
       ->setDescription(t('The subscribers preffered language.'));
 
-    $fields['changes'] = FieldDefinition::create('string_long')
+    $fields['changes'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Changes'))
       ->setDescription(t('Contains the requested subscription changes.'));
 
-    $fields['created'] = FieldDefinition::create('created')
+    $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Created'))
       ->setDescription(t('The time that the subscriber was created.'));
 
