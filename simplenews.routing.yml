@@ -167,3 +167,11 @@ simplenews.newsletter_confirm_subscription_immediate:
     immediate: true
   requirements:
     _permission: 'subscribe to newsletters'
+
+simplenews.node_tab:
+  path: '/node/{node}/simplenews'
+  defaults:
+    _form: '\Drupal\simplenews\Form\NodeTabForm'
+    _title: 'Newsletter'
+  requirements:
+    _custom_access: 'Drupal\simplenews\Form\NodeTabForm::checkAccess'

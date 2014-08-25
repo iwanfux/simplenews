@@ -34,7 +34,7 @@ content:
       summary_rows: 3
       placeholder: ''
     third_party_settings: {  }
-  issue:
+  simplenews_issue:
     type: options_select
     weight: 3
     settings: {  }

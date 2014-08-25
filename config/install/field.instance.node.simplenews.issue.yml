@@ -1,7 +1,7 @@
 id: node.simplenews.issue
 status: true
 langcode: en
-field_name: issue
+field_name: simplenews_issue
 entity_type: node
 bundle: simplenews
 label: Issue

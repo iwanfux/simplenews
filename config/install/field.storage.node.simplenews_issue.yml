@@ -1,7 +1,7 @@
 id: simplenews.issue
 status: true
 langcode: en
-name: issue
+name: simplenews_issue
 entity_type: node
 type: simplenews_issue
 settings:

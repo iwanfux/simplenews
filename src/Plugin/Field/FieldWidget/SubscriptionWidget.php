@@ -2,12 +2,13 @@
 
 /**
  * @file
- * Contains \Drupal\options\Plugin\Field\FieldWidget\SelectWidget.
+ * Contains \Drupal\simplenews\Plugin\Field\FieldWidget\SubscriptionWidget.
  */
 
 namespace Drupal\simplenews\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\options\Plugin\Field\FieldWidget\ButtonsWidget;
 
 /**

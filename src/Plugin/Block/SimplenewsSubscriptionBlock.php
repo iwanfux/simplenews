@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\src\Plugin\Block\SimplenewsSubscriptionBlock.
+ * Contains \Drupal\simplenews\Plugin\Block\SimplenewsSubscriptionBlock.
  */
 
 namespace Drupal\simplenews\Plugin\Block;

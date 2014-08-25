@@ -8,10 +8,13 @@
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\UserInterface;
 use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Language\Language;
+
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -2191,10 +2194,10 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 }
 
 /**
- * Access callback; Acces to Newsletter tab page.
+ * Access callback; Access to Newsletter tab page.
  */
-function simplenews_node_tab_access($node) {
-  return simplenews_check_node_types($node->type) && user_access('send newsletter');
+function simplenews_node_tab_access(NodeInterface $node) {
+  return simplenews_check_node_types($node->getType()) && user_access('send newsletter');
 }
 
 /**
@@ -2210,9 +2213,9 @@ function simplenews_node_tab_access($node) {
  *
  * @ingroup issue
  */
-function simplenews_issue_update_sent_status($node, $status = SIMPLENEWS_STATUS_SEND_PENDING) {
+function simplenews_issue_update_sent_status(NodeInterface $node, $status = SIMPLENEWS_STATUS_SEND_PENDING) {
   simplenews_issue_status($node, $status);
-  node_save($node);
+  $node->save();
 }
 
 /**
@@ -2227,19 +2230,19 @@ function simplenews_issue_update_sent_status($node, $status = SIMPLENEWS_STATUS_
  *
  * @ingroup issue
  */
-function simplenews_issue_status($node, $value = NULL) {
+function simplenews_issue_status(NodeInterface $node, $value = NULL) {
   $config = \Drupal::config('simplenews.settings');
   $field = $config->get('fields.issue_status');
   if ($value) {
     return $node->$field = array(
-      LANGUAGE_NONE => array(
+      Language::LANGCODE_NOT_SPECIFIED => array(
         array(
           'value' => $value
         ),
       ),
     );
   }
-  elseif ($status = field_get_items('node', $node, $field)) {
+  elseif ($status = $node->getTranslation(Language::LANGCODE_NOT_SPECIFIED)->get($field)) {
     return $status[0]['value'];
   }
   return SIMPLENEWS_STATUS_SEND_NOT;
@@ -2271,7 +2274,7 @@ function simplenews_issue_sent_count($entity_type, $entity, $value = NULL) {
       ),
     );
   }
-  elseif ($status = field_get_items($entity_type, $entity, $field)) {
+  elseif ($status = $node->getTranslation(LANGUAGE_NONE)->get($field)) {
     return $status[0]['value'];
   }
   return 0;

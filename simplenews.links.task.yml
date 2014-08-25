@@ -1,8 +1,9 @@
 simplenews.subscriber_list:
   title: Subscribers
   description: 'Listing of all subscribers.'
-  base_route: simplenews.subscriber_list
+  base_route: user.admin_account
   route_name: simplenews.subscriber_list
+  weight: 9
 
 simplenews.newsletter_list:
   title: Newsletters
@@ -45,3 +46,9 @@ simplenews.newsletter_subscriptions_user:
   description: 'Configure your newsletter subscriptions.'
   base_route: user.view
   route_name: simplenews.newsletter_subscriptions_user
+
+simplenews.node_tab:
+  title: Newsletter
+  route_name: simplenews.node_tab
+  base_route: entity.node.canonical
+  weight: 9
