@@ -76,7 +76,7 @@ abstract class SimplenewsTestBase extends WebTestBase {
    * this correctly.
    */
   function randomEmail($number = 4, $prefix = 'simpletest_', $domain = 'example.com') {
-    $mail = drupal_strtolower($this->randomName($number, $prefix) . '@' . $domain);
+    $mail = drupal_strtolower($this->randomMachineName($number, $prefix) . '@' . $domain);
     return $mail;
   }
 
@@ -112,7 +112,7 @@ abstract class SimplenewsTestBase extends WebTestBase {
       'form' => 1,
       'issue_status' => 0,
       'issues' => 5,
-      'uuid' => \Drupal::service('uuid')->generate()
+      'unique_id' => \Drupal::service('uuid')->generate()
     ];
 
     // Simplify confirmation form submission by hiding the subscribe block on

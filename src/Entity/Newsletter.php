@@ -17,7 +17,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  * @ConfigEntityType(
  *   id = "simplenews_newsletter",
  *   label = @Translation("Simplenews newsletter"),
- *   controllers = {
+ *   handlers = {
  *     "list_builder" = "Drupal\simplenews\NewsletterListBuilder",
  *     "form" = {
  *       "add" = "Drupal\simplenews\Form\NewsletterForm",

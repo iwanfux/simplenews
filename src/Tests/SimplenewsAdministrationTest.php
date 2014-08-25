@@ -76,7 +76,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
           'opt_inout' => $opt_inout_setting,
           'priority' => rand(0, 5),
           'receipt' => rand(0, 1) ? TRUE : FALSE,
-          'from_name' => $this->randomName(),
+          'from_name' => $this->randomMachineName(),
           'from_address' => $this->randomEmail(),
         );
         $this->drupalPostForm(NULL, $edit, t('Save'));
@@ -113,9 +113,9 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Register a new user through the form.
     $edit = array(
-      'name' => $this->randomName(),
+      'name' => $this->randomMachineName(),
       'mail' => $this->randomEmail(),
-      'pass[pass1]' => $pass = $this->randomName(),
+      'pass[pass1]' => $pass = $this->randomMachineName(),
       'pass[pass2]' => $pass,
       'newsletters[' . $off_double_newsletter_id . ']' => $off_double_newsletter_id,
     );
@@ -195,7 +195,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $generated_names = array();
     $date = strtotime('monday this week');
     for ($index = 0; $index < 3; $index++) {
-      $name = $this->randomName();
+      $name = $this->randomMachineName();
       $generated_names[] = $name;
       $this->drupalGet('node/add/simplenews');
       $edit = array(
@@ -257,7 +257,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Create a second newsletter.
     $edit = array(
-      'name' => $name = $this->randomName(),
+      'name' => $name = $this->randomMachineName(),
       'id'  => Unicode::strtolower($name),
     );
     $this->drupalPostForm('admin/config/services/simplenews/add', $edit, t('Save'));
@@ -590,7 +590,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->drupalGet('admin/structure/types');
     $this->clickLink(t('Add content type'));
     $edit = array(
-      'name' => $name = $this->randomName(),
+      'name' => $name = $this->randomMachineName(),
       'type' => $type = drupal_strtolower($name),
       'simplenews_content_type' => TRUE,
     );
@@ -602,7 +602,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Create an issue.
     $edit = array(
-      'title' => $this->randomName(),
+      'title' => $this->randomMachineName(),
     );
     $this->drupalPostForm(NULL, $edit, ('Save'));
 

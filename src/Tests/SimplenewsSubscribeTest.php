@@ -40,7 +40,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->drupalGet('admin/config/services/simplenews');
     for ($i = 0; $i < 5; $i++) {
       $this->clickLink(t('Add newsletter'));
-      $name = $this->randomName();
+      $name = $this->randomMachineName();
       $edit = array(
         'name' => $name,
         'id' => strtolower($name),
@@ -362,7 +362,7 @@ rWcewRqx
     $this->drupalGet('admin/config/services/simplenews');
     for ($i = 0; $i < 5; $i++) {
       $this->clickLink(t('Add newsletter'));
-      $name = $this->randomName();
+      $name = $this->randomMachineName();
       $edit = array(
         'name' => $name,
         'id' => strtolower($name),
@@ -389,7 +389,7 @@ rWcewRqx
     // Setup subscription block with subscription form.
     $block_settings = array(
       'newsletters' => array($newsletter_id),
-      'message' => $this->randomName(4),
+      'message' => $this->randomMachineName(4),
       'form' => 1,
       'issue_status' => 0,
     );
@@ -425,9 +425,9 @@ rWcewRqx
     $site_config->save();
 
     $edit = array(
-      'name' => $this->randomName(),
+      'name' => $this->randomMachineName(),
       'mail' => $mail,
-      'pass[pass1]' => $pass = $this->randomName(),
+      'pass[pass1]' => $pass = $this->randomMachineName(),
       'pass[pass2]' => $pass,
     );
     $this->drupalPostForm('user/register', $edit, t('Create new account'));
@@ -481,7 +481,7 @@ rWcewRqx
     // Setup subscription block with subscription form.
     $block_settings = array(
       'newsletters' => array_keys(simplenews_newsletter_get_all()),
-      'message' => $this->randomName(4),
+      'message' => $this->randomMachineName(4),
       'form' => 1,
       'issue_status' => 0,
     );
@@ -682,7 +682,7 @@ rWcewRqx
 
     $this->drupalGet('admin/config/services/simplenews');
     $this->clickLink(t('Add newsletter'));
-    $name = $this->randomName();
+    $name = $this->randomMachineName();
     $edit = array(
       'name' => $name,
       'id' => strtolower($name),
@@ -698,7 +698,7 @@ rWcewRqx
     // Setup subscription block with subscription form.
     $block_settings = array(
       'newsletters' => array($newsletter_id),
-      'message' => $this->randomName(4),
+      'message' => $this->randomMachineName(4),
       'form' => 1,
       'issue_status' => 0,
     );
@@ -768,7 +768,7 @@ rWcewRqx
     $this->drupalGet('admin/config/services/simplenews');
     for ($i = 0; $i < 5; $i++) {
       $this->clickLink(t('Add newsletter'));
-      $name = $this->randomName();
+      $name = $this->randomMachineName();
       $edit = array(
         'name' => $name,
         'id' => strtolower($name),
@@ -784,7 +784,7 @@ rWcewRqx
     // Setup subscription block with subscription form.
     $block_settings = array(
       'newsletters' => array($newsletter_id),
-      'message' => $this->randomName(4),
+      'message' => $this->randomMachineName(4),
       'form' => 1,
       'issue_status' => 0,
     );
@@ -852,7 +852,7 @@ rWcewRqx
     // Setup subscription block with subscription form.
     $block_settings = array(
       'newsletters' => array_keys(simplenews_newsletter_get_all()),
-      'message' => $this->randomName(4),
+      'message' => $this->randomMachineName(4),
       'form' => 1,
       'issue_status' => 0,
     );

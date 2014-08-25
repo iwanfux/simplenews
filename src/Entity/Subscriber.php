@@ -18,7 +18,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * @ContentEntityType(
  *   id = "simplenews_subscriber",
  *   label = @Translation("Simplenews subscriber"),
- *   controllers = {
+ *   handlers = {
  *     "list_builder" = "Drupal\simplenews\SubscriberListBuilder",
  *     "form" = {
  *       "default" = "Drupal\simplenews\Form\SubscriberForm",
