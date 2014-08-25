@@ -546,24 +546,6 @@ function simplenews_issue_handler_settings_field_add($type) {
 }
 
 /**
- * Returns the array of allowed values for the simplenews_newsletter_handler
- * field.
- *
- * @see list_allowed_values
- */
-function simplenews_handler_field_allowed_values($field = array(), $instance = NULL, $entity_type = NULL, $entity = NULL) {
-  ctools_include('plugins');
-  $handlers = ctools_get_plugins('simplenews', 'recipient_handlers');
-
-  $allowed_values = array();
-  foreach ($handlers as $handler => $settings) {
-    $allowed_values[$handler] = filter_xss($settings['title']);
-  }
-
-  return $allowed_values;
-}
-
-/**
  * Add field for status
  *
  * @param $type A node type object.

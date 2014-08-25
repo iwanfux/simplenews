@@ -98,10 +98,9 @@ class NodeTabForm extends FormBase {
       }
 
       $default_handler = isset($form_state['values']['simplenews']['recipient_handler']) ? $form_state['values']['simplenews']['recipient_handler'] : $node->simplenews_issue->handler;
-      $handler = \Drupal::service('plugin.manager.simplenews_recipient_handler')->getDefinitions();
-      debug($handler);
-      return $form;
-      $options = simplenews_handler_field_allowed_values();
+
+      $recipient_handler_manager = \Drupal::service('plugin.manager.simplenews_recipient_handler');
+      $options = $recipient_handler_manager->getOptions();
       $form['simplenews']['recipient_handler'] = array(
         '#type' => 'select',
         '#title' => t('Recipients'),
@@ -118,9 +117,10 @@ class NodeTabForm extends FormBase {
       );
 
       // Get the handler class
-      ctools_include('plugins');
-      $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $default_handler);
+      $handler_definitions = $recipient_handler_manager->getDefinitions();
+      $handler = $handler_definitions[$default_handler];
       $class = $handler['class'];
+
       $settings = $node->simplenews_issue->handler_settings;
 
       if (method_exists($class, 'settingsForm')) {

@@ -6,6 +6,7 @@
 
 namespace Drupal\simplenews\RecipientHandler;
 
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
@@ -33,7 +34,22 @@ class RecipientHandlerManager extends DefaultPluginManager {
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
     parent::__construct('Plugin/simplenews/RecipientHandler', $namespaces, $module_handler, 'Drupal\simplenews\RecipientHandler\Annotation\RecipientHandler');
     $this->alterInfo('simplenews_recipient_handler_info');
-    //$this->setCacheBackend($cache_backend, 'simplenews_recipient_handler_info_plugins');
+    $this->setCacheBackend($cache_backend, 'simplenews_recipient_handler_info_plugins');
+  }
+
+  /**
+   * Returns the array of recipient handler labels.
+   * @todo documentation
+   */
+  public function getOptions() {
+    $handlers = $this->getDefinitions();
+
+    $allowed_values = array();
+    foreach ($handlers as $handler => $settings) {
+      $allowed_values[$handler] = Xss::filter($settings['title']);
+    }
+
+    return $allowed_values;
   }
 
 }

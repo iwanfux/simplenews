@@ -3,7 +3,7 @@ simplenews.subscriber_list:
   description: 'Listing of all subscribers.'
   base_route: user.admin_account
   route_name: simplenews.subscriber_list
-  weight: 9
+  weight: 11
 
 simplenews.newsletter_list:
   title: Newsletters
