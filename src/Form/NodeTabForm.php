@@ -257,8 +257,8 @@ class NodeTabForm extends FormBase {
    *   AccessInterface::ALLOW, AccessInterface::DENY, or AccessInterface::KILL.
    */
   public function checkAccess(UserInterface $user = NULL) {
+    return AccessInterface::DENY;
     $account = $this->currentUser();
-    $this->user = $user;
 
     if ($account->hasPermission('administer simplenews subscriptions')) {
       // Administrators can administer anyone's subscriptions.
@@ -270,7 +270,7 @@ class NodeTabForm extends FormBase {
       return AccessInterface::DENY;
     }
 
-    if ($this->user->id() == $account->id()) {
+    if ($user->id() == $account->id()) {
       // Users with the 'subscribe to newsletters' permission can administer their own
       // subscriptions.
       return AccessInterface::ALLOW;

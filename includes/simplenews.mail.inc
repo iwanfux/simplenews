@@ -292,8 +292,8 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     if (lock_acquire('simplenews_update_sent_count')) {
       foreach ($sent as $entity_type => $ids) {
         foreach ($ids as $entity_id => $count) {
-          entity_get_controller($entity_type)->resetCache(array($entity_id));
-          $entity = entity_load_single($entity_type, $entity_id);
+          \Drupal::entityManager()->getStorage($entity_type)->resetCache(array($entity_id));
+          $entity = entity_load($entity_type, $entity_id);
           simplenews_issue_sent_count($entity_type, $entity, simplenews_issue_sent_count($entity_type, $entity) + $count);
           entity_save($entity_type, $entity);
         }
