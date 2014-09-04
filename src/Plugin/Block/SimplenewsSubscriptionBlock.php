@@ -97,7 +97,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
   }
 
   /**
-   * Overrides \Drupal\block\BlockBase::blockForm().
+   * {@inheritdoc}
    */
   public function blockForm($form, FormStateInterface $form_state) {
     $newsletters = simplenews_newsletter_get_visible();
@@ -164,8 +164,8 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     return $form;
   }
 
-    /**
-   * Overrides \Drupal\block\BlockBase::blockSubmit().
+  /**
+   * {@inheritdoc}
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
     $this->configuration['newsletters'] = array_filter($form_state['values']['newsletters']);

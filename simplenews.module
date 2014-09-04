@@ -918,7 +918,7 @@ function simplenews_form_user_register_form_alter(&$form, FormStateInterface $fo
  * Submit callback for the user profile form to save the simplenews newsletters setting.
  */
 function simplenews_user_profile_form_submit($form, FormStateInterface $form_state) {
-  $account = $form_state['controller']->getEntity();
+  $account = $form_state->getFormObject()->getEntity();
   // Process subscription check boxes.
   if (isset($form_state['values']['newsletters'])) {
     $newsletters = simplenews_newsletter_load_multiple(array_filter($form_state['values']['newsletters']));
