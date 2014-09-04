@@ -1,7 +1,24 @@
 <?php
+
 /**
- * Created by PhpStorm.
- * User: admin
- * Date: 26.08.14
- * Time: 16:57
- */ 
+ * @file
+ * Contains \Drupal\simplenews\Source\SimplenewsSourceCacheNone.
+ */
+
+namespace Drupal\simplenews\Source;
+
+/**
+ * Cache implementation that does not cache anything at all.
+ *
+ * @ingroup source
+ */
+class SimplenewsSourceCacheNone extends SimplenewsSourceCacheStatic {
+
+  /**
+   * Implements SimplenewsSourceCacheStatic::set().
+   */
+  public function isCacheable($group, $key) {
+    return FALSE;
+  }
+
+}
