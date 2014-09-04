@@ -57,7 +57,7 @@ class NodeTabForm extends FormBase {
       );
 
       // Add option to send on publish when the node is unpublished.
-      if ($node->isPublished()) {
+      if (!$node->isPublished()) {
         $options[SIMPLENEWS_COMMAND_SEND_PUBLISH] = t('Send newsletter when published');
       }
       else {
@@ -160,14 +160,18 @@ class NodeTabForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
+    $config = \Drupal::config('simplenews.settings');
+
     $values = $form_state['values'];
     $node = $form_state['node'];
 
     // Validate recipient handler settings.
     if (!empty($form['simplenews']['recipient_handler_settings'])) {
-      ctools_include('plugins');
       $handler = $values['simplenews']['recipient_handler'];
-      $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $handler);
+      $handler_definitions = \Drupal::service('plugin.manager.simplenews_recipient_handler')->getDefinitions();
+
+      // Get the handler class
+      $handler = $handler_definitions[$handler];
       $class = $handler['class'];
 
       if (method_exists($class, 'settingsFormValidate')) {
@@ -175,24 +179,24 @@ class NodeTabForm extends FormBase {
       }
     }
 
-    $default_address = variable_get('simplenews_test_address', variable_get('site_mail', ini_get('sendmail_from')));
+    $default_address = $config->get('newsletter.test_address');
     $mails = array($default_address);
-    if (isset($values['simplenews']['send']) && $values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST && variable_get('simplenews_test_address_override', 0)) {
+    if (isset($values['simplenews']['send']) && $values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST && $config->get('newsletter.test_address_override')) {
       // @todo Can we simplify and use only two kind of messages?
       if (!empty($values['simplenews']['test_address'])) {
         $mails = explode(',', $values['simplenews']['test_address']);
         foreach ($mails as $mail) {
           $mail = trim($mail);
           if ($mail == '') {
-            form_set_error('simplenews][test_address', t('Test email address is empty.'));
+            $form_state->setErrorByName('simplenews][test_address', t('Test email address is empty.'));
           }
           elseif (!valid_email_address($mail)) {
-            form_set_error('simplenews][test_address', t('Invalid email address "%mail".', array('%mail' => $mail)));
+            $form_state->setErrorByName('simplenews][test_address', t('Invalid email address "%mail".', array('%mail' => $mail)));
           }
         }
       }
       else {
-        form_set_error('simplenews][test_address', t('Missing test email address.'));
+        $form_state->setErrorByName('simplenews][test_address', t('Missing test email address.'));
       }
     }
     $form_state['test_addresses'] = $mails;
@@ -208,17 +212,17 @@ class NodeTabForm extends FormBase {
     $node = $form_state['node'];
 
     // Save the recipient handler and it's settings.
-    simplenews_issue_handler($node, $values['simplenews']['recipient_handler']);
+    $node->simplenews_issue->handler = $values['simplenews']['recipient_handler'];
 
     if (!empty($form['simplenews']['recipient_handler_settings'])) {
-      ctools_include('plugins');
       $handler = $values['simplenews']['recipient_handler'];
-      $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $handler);
+      $handler_definitions = \Drupal::service('plugin.manager.simplenews_recipient_handler')->getDefinitions();
+      $handler = $handler_definitions[$handler];
       $class = $handler['class'];
 
       if (method_exists($class, 'settingsFormSubmit')) {
         $settings = $class::settingsFormSubmit($form['simplenews']['recipient_handler_settings'], $form_state);
-        simplenews_issue_handler_settings($node, $settings);
+        $node->simplenews_issue->handler_settings = (array) $settings;
       }
     }
 
@@ -227,11 +231,11 @@ class NodeTabForm extends FormBase {
     if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
       simplenews_add_node_to_spool($node);
       // Attempt to send immediatly, if configured to do so.
-      if (simplenews_mail_attempt_immediate_send(array('entity_id' => $node->nid, 'entity_type' => 'node'))) {
-        drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->title)));
+      if (simplenews_mail_attempt_immediate_send(array('entity_id' => $node->id(), 'entity_type' => 'node'))) {
+        drupal_set_message(t('Newsletter %title sent.', array('%title' => $node->getTitle())));
       }
       else {
-        drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->title)));
+        drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->getTitle())));
       }
     }
     elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
@@ -240,11 +244,11 @@ class NodeTabForm extends FormBase {
 
     // If the selected command is send on publish, just set the newsletter status.
     if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_PUBLISH) {
-      simplenews_issue_status($node, SIMPLENEWS_STATUS_SEND_PUBLISH);
+      $node->simplenews_issue->status = SIMPLENEWS_STATUS_SEND_PUBLISH;
       drupal_set_message(t('The newsletter will be sent when the content is published.'));
     }
 
-    node_save($node);
+    $node->save();
   }
 
   /**
@@ -256,24 +260,19 @@ class NodeTabForm extends FormBase {
    * @return mixed
    *   AccessInterface::ALLOW, AccessInterface::DENY, or AccessInterface::KILL.
    */
-  public function checkAccess(UserInterface $user = NULL) {
+  public function checkAccess(NodeInterface $node = NULL) {
     $account = $this->currentUser();
-    $this->user = $user;
 
-    if ($account->hasPermission('administer simplenews subscriptions')) {
-      // Administrators can administer anyone's subscriptions.
-      return AccessInterface::ALLOW;
-    }
+    if ($node->hasField('simplenews_issue') && $node->simplenews_issue->target_id != NULL) {
+      if ($account->hasPermission('administer newsletters')) {
+        // Administrators can send all newsletters.
+        return AccessInterface::ALLOW;
+      }
 
-    if (!$account->hasPermission('subscribe to newsletters')) {
-      // The user has no permission to subscribe to newsletters.
-      return AccessInterface::DENY;
-    }
-
-    if ($this->user->id() == $account->id()) {
-      // Users with the 'subscribe to newsletters' permission can administer their own
-      // subscriptions.
-      return AccessInterface::ALLOW;
+      if ($account->hasPermission('send newsletter')) {
+        // The user has the permission to send newsletters.
+        return AccessInterface::ALLOW;
+      }
     }
     return AccessInterface::DENY;
   }

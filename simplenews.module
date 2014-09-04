@@ -262,15 +262,15 @@ function simplenews_node_view($node, $view_mode) {
 }
 
 /**
- * Implements hook_node_update().
+ * Implements hook_node_presave().
  */
-function simplenews_node_update($node) {
-  if (!simplenews_check_node_types($node->type)) {
+function simplenews_node_presave(NodeInterface $node) {
+  if (!$node->hasField('simplenews_issue')) {
     return;
   }
 
   // Check if the newsletter is set to send on publish and needs to be send.
-  if (simplenews_issue_status($node) == SIMPLENEWS_STATUS_SEND_PUBLISH && $node->status == NODE_PUBLISHED) {
+  if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PUBLISH && $node->isPublished()) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     simplenews_add_node_to_spool($node);
   }
@@ -1559,36 +1559,11 @@ function simplenews_mail($key, &$message, $params) {
 }
 
 /**
- * Implements hook_views_api().
- */
-function simplenews_views_api() {
-  return array(
-    'api' => 3,
-    'path' => drupal_get_path('module', 'simplenews') . '/includes/views'
-  );
-}
-
-/**
- * Implements hook_ctools_plugin_type() to inform CTools about the recipients
- * plugin.
- */
-function simplenews_ctools_plugin_type() {
-  $plugins['recipient_handlers'] = array(
-    'defaults' => array(
-      'class' => 'SimplenewsRecipientsHandlerBase',
-      'settings' => array(),
-    ),
-  );
-
-  return $plugins;
-}
-
-/**
  * Build a recipient handler class from a given plugin id and settings array.
  *
  * @param $handler
  *   The id of the simplenews_recipient_handler plugin to use.
- * @param $settings
+ * @param $configuration
  *   An array of settings to pass to the handler class.
  *
  * @return SimplenewsRecipientHandlerInterface
@@ -1596,25 +1571,9 @@ function simplenews_ctools_plugin_type() {
  *
  * @throws Exception if the handler class does not exist.
  */
-function simplenews_get_recipient_handler($newsletter, $handler, $settings = array()) {
-  ctools_include('plugins');
-  $handler = ctools_get_plugins('simplenews', 'recipient_handlers', $handler);
-  $class = $handler['class'];
-
-  if (!class_exists($class)) {
-    throw new Exception(t('Recipient Handler Class @class does not exist.', array('@class' => $class)));
-  }
-
-  return new $class($newsletter, $handler, $settings);
-}
-
-/**
- * Implements hook_ctools_plugin_directory().
- */
-function simplenews_ctools_plugin_directory($owner, $plugin_type) {
-  if ($owner == 'simplenews' && $plugin_type == 'recipient_handlers') {
-    return 'plugins/recipient_handlers';
-  }
+function simplenews_get_recipient_handler($newsletter, $handler, $configuration = array()) {
+  $configuration['newsletter'] = $newsletter;
+  return  \Drupal::service('plugin.manager.simplenews_recipient_handler')->createInstance($handler, $configuration);
 }
 
 /**
@@ -2472,8 +2431,8 @@ function simplenews_simplenews_source_cache_info() {
  *
  * @see simplenews_revert_user()
  */
-function simplenews_impersonate_user($new_user = NULL) {
-  global $user;
+function simplenews_impersonate_user(UserInterface $new_user = NULL) {
+  $account = \Drupal::currentUser();
   $user_original = &drupal_static(__FUNCTION__);
 
   if (!isset($new_user)) {
@@ -2489,18 +2448,18 @@ function simplenews_impersonate_user($new_user = NULL) {
   }
   else {
     // Push the original user onto the stack and prevent session saving.
-    $user_original[] = $user;
+    $user_original[] = $account;
     drupal_save_session(FALSE);
 
     if (is_numeric($new_user)) {
-      $user = user_load($new_user);
+      $account = $new_user->load();
     }
     else {
-      $user = is_object($new_user) ? $new_user : (object) $new_user;
+      $account = is_object($new_user) ? $new_user : (object) $new_user;
     }
   }
 
-  return $user;
+  return $account;
 }
 
 /**

@@ -40,10 +40,11 @@ function simplenews_schema() {
         'default' => 0,
       ),
       'newsletter_id' => array(
-        'description' => 'The {simplenews_newsletter}.newsletter_id this issue belongs to.',
-        'type' => 'int',
+        'description' => 'The {simplenews_newsletter}.id this issue belongs to.',
+        'type' => 'varchar',
+        'length' => 255,
         'not null' => TRUE,
-        'default' => 0,
+        'default' => '',
       ),
       'status' => array(
         'description' => 'The sent status of the email (0 = hold, 1 = pending, 2 = done).',
@@ -75,7 +76,7 @@ function simplenews_schema() {
         'description' => 'A serialized array of name value pairs that are related to the email address.',
       ),
       'snid' => array(
-        'description' => 'Foreign key for subscriber table ({simplenews_subscriptions}.snid)',
+        'description' => 'Foreign key for subscriber table ({simplenews_subscriber}.id)',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,

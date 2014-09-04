@@ -7,6 +7,9 @@
  * @ingroup mail
  */
 
+use Drupal\Core\Session\AnonymousUserSession;
+use Drupal\simplenews\Entity\Subscriber;
+
 /**
  * Add the newsletter node to the mail spool.
  *
@@ -16,9 +19,9 @@
  * @ingroup issue
  */
 function simplenews_add_node_to_spool($node) {
-  $newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($node));
-  $handler = simplenews_issue_handler($node);
-  $handler_settings = simplenews_issue_handler_settings($node);
+  $newsletter = $node->simplenews_issue->entity;
+  $handler = $node->simplenews_issue->handler;
+  $handler_settings = $node->simplenews_issue->handler_settings;
 
   $recipient_handler = simplenews_get_recipient_handler($newsletter, $handler, $handler_settings);
 
@@ -27,7 +30,7 @@ function simplenews_add_node_to_spool($node) {
   // Only subscribed recipients are stored in the spool (status = 1).
   $select = $recipient_handler->buildRecipientQuery();
   $select->addExpression('\'node\'', 'entity_type');
-  $select->addExpression($node->nid, 'entity_id');
+  $select->addExpression($node->id(), 'entity_id');
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
 
@@ -36,10 +39,10 @@ function simplenews_add_node_to_spool($node) {
     ->execute();
 
   // Update simplenews newsletter status to send pending.
-  simplenews_issue_update_sent_status($node);
+  $node->simplenews_issue->status = SIMPLENEWS_STATUS_SEND_PENDING;
 
   // Notify other modules that a newsletter was just spooled.
-  module_invoke_all('simplenews_spooled', $node);
+  \Drupal::moduleHandler()->invokeAll('simplenews_spooled', array($node));
 }
 
 /**
@@ -49,13 +52,14 @@ function simplenews_add_node_to_spool($node) {
  *   (Optional) Array of spool conditions which are applied to the query.
  */
 function simplenews_mail_attempt_immediate_send(array $conditions = array(), $use_batch = TRUE) {
-  if (variable_get('simplenews_use_cron', TRUE)) {
+  $config = \Drupal::configFactory()->get('simplenews.settings');
+  if ($config->get('mail.use_cron')) {
     return FALSE;
   }
   if ($use_batch) {
     // Set up as many send operations as necessary to send all mails with the
     // defined throttle amount.
-    $throttle = variable_get('simplenews_throttle', 20);
+    $throttle = $config->get('mail.throttle');
     $spool_count = simplenews_count_spool($conditions);
     $num_operations = ceil($spool_count / $throttle);
 
@@ -94,13 +98,14 @@ function simplenews_mail_attempt_immediate_send(array $conditions = array(), $us
  */
 function simplenews_send_test($node, $test_addresses) {
   // Prevent session information from being saved while sending.
-  if ($original_session = drupal_save_session()) {
+  /*if ($original_session = drupal_save_session()) {
     drupal_save_session(FALSE);
-  }
+  }*/
 
   // Force the current user to anonymous to ensure consistent permissions.
   $original_user = $GLOBALS['user'];
-  $GLOBALS['user'] = drupal_anonymous_user();
+  $anonymous_user = new AnonymousUserSession();
+  $GLOBALS['user'] = $anonymous_user;
 
   // Send the test newsletter to the test address(es) specified in the node.
   // Build array of test email addresses
@@ -115,14 +120,15 @@ function simplenews_send_test($node, $test_addresses) {
       if (!$subscriber) {
         // The source expects a subscriber object with mail and language set.
         // @todo: Find a cleaner way to do this.
-        $subscriber = new stdClass();
-        $subscriber->uid = 0;
-        $subscriber->mail = $mail;
-        $subscriber->language = $GLOBALS['language']->language;
+        $subscriber = Subscriber::create(array());
+        $subscriber->setUserId(0);
+        $subscriber->setMail($mail);
+        $subscriber->setLangcode($GLOBALS['language']->language);
       }
 
-      if (!empty($account->uid)) {
-        $recipients['user'][] = $account->name . ' <' . $mail . '>';
+      if ($subscriber->getUserId()) {
+        $account = $subscriber->uid->entity;
+        $recipients['user'][] = $account->getUserName() . ' <' . $mail . '>';
       }
       else {
         $recipients['anonymous'][] = $mail;
@@ -142,9 +148,9 @@ function simplenews_send_test($node, $test_addresses) {
   }
 
   $GLOBALS['user'] = $original_user;
-  if ($original_session) {
+  /*if ($original_session) {
     drupal_save_session(TRUE);
-  }
+  }*/
 }
 
 /**
@@ -159,18 +165,19 @@ function simplenews_send_test($node, $test_addresses) {
  * @ingroup source
  */
 function simplenews_send_source(SimplenewsSourceInterface $source) {
+  $config = \Drupal::configFactory()->get('simplenews.settings');
   $params['simplenews_source'] = $source;
 
   // Send mail.
   $message = drupal_mail('simplenews', $source->getKey(), $source->getRecipient(), $source->getLanguage(), $params, $source->getFromFormatted());
 
   // Log sent result in watchdog.
-  if (variable_get('simplenews_debug', FALSE)) {
+  if ($config->get('mail.debug')) {
     if ($message['result']) {
-      watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $source->getKey(), '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+      \Drupal::logger('simplenews')->debug('Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $source->getKey(), '%to' => $message['to'], '%subject' => $message['subject']));
     }
     else {
-      watchdog('simplenews', 'Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $source->getKey(), '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_ERROR);
+      \Drupal::logger('simplenews')->error('Outgoing email failed. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $source->getKey(), '%to' => $message['to'], '%subject' => $message['subject']));
     }
   }
 
@@ -221,7 +228,9 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
   if ($spool_list) {
 
     // Switch to the anonymous user.
-    simplenews_impersonate_user(drupal_anonymous_user());
+    // @todo change to something similar like in WebTestBase.php line 705
+    $anonymous_user = new AnonymousUserSession();
+    simplenews_impersonate_user($anonymous_user);
 
     $count_fail = $count_success = 0;
     $sent = array();
@@ -261,7 +270,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
         if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * ini_get('max_execution_time')) {
-          watchdog('simplenews', 'Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be sent during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')), WATCHDOG_WARNING);
+          \Drupal::logger('simplenews')->warning('Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be sent during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')));
           break;
         }
       }
@@ -304,14 +313,15 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     // Report sent result and elapsed time. On Windows systems getrusage() is
     // not implemented and hence no elapsed time is available.
     if (function_exists('getrusage')) {
-      watchdog('simplenews', '%success emails sent in %sec seconds, %fail failed sending.', array('%success' => $count_success, '%sec' => round(_simplenews_measure_usec(), 1), '%fail' => $count_fail));
+      \Drupal::logger('simplenews')->notice('%success emails sent in %sec seconds, %fail failed sending.', array('%success' => $count_success, '%sec' => round(_simplenews_measure_usec(), 1), '%fail' => $count_fail));
     }
     else {
-      watchdog('simplenews', '%success emails sent, %fail failed.', array('%success' => $count_success, '%fail' => $count_fail));
+      \Drupal::logger('simplenews')->notice('%success emails sent, %fail failed.', array('%success' => $count_success, '%fail' => $count_fail));
     }
 
-    variable_set('simplenews_last_cron', REQUEST_TIME);
-    variable_set('simplenews_last_sent', $count_success);
+    $config = \Drupal::configFactory()->get('simplenews.settings');
+    $config->set('mail.last_cron', REQUEST_TIME);
+    $config->set('mail.last_sent', $count_success);
 
     simplenews_revert_user();
     return $count_success;
@@ -358,7 +368,7 @@ function simplenews_save_spool($spool) {
  */
 function simplenews_get_expiration_time() {
   $config = \Drupal::config('simplenews.settings');
-  $timeout = $config->get('spool_progress_expiration');
+  $timeout = $config->get('mail.spool_progress_expiration');
   $expiration_time = REQUEST_TIME - $timeout;
   return $expiration_time;
 }

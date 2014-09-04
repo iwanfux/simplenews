@@ -6,6 +6,7 @@
 
 namespace Drupal\simplenews\Plugin\simplenews\RecipientHandler;
 
+use Drupal\Core\Plugin\PluginBase;
 use Drupal\simplenews\RecipientHandler\RecipientHandlerInterface;
 
 
@@ -20,7 +21,7 @@ use Drupal\simplenews\RecipientHandler\RecipientHandlerInterface;
  *   title = @Translation("All newsletter subscribers")
  * )
  */
-class RecipientHandlerBase implements RecipientHandlerInterface  {
+class RecipientHandlerBase extends PluginBase implements RecipientHandlerInterface  {
 
   /**
    * The newsletter entity.
@@ -30,20 +31,6 @@ class RecipientHandlerBase implements RecipientHandlerInterface  {
   public $newsletter;
 
   /**
-   * Name of the handler plugin to be used.
-   *
-   * @var String
-   */
-  public $handler = '';
-
-  /**
-   * Settings array.
-   *
-   * @var array
-   */
-  public $settings = array();
-
-  /**
    * @param SimplenewsNewsletter $newsletter
    *   The simplenews newsletter.
    * @param String $handler
@@ -51,10 +38,9 @@ class RecipientHandlerBase implements RecipientHandlerInterface  {
    * @param array $settings
    *   An array of settings used by the handler to build the list of recipients.
    */
-  public function __construct($newsletter, $handler, $settings = array()) {
-    $this->newsletter = $newsletter;
-    $this->handler = $handler;
-    $this->settings = $settings;
+  public function __construct(array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->newsletter = $configuration['newsletter'];
   }
 
   /**
@@ -62,13 +48,13 @@ class RecipientHandlerBase implements RecipientHandlerInterface  {
    */
   public function buildRecipientQuery() {
     $select = db_select('simplenews_subscriber', 's');
-    $select->innerJoin('simplenews_subscription', 't', 's.snid = t.snid');
-    $select->addField('s', 'snid');
+    $select->innerJoin('simplenews_subscriber__subscriptions', 't', 's.id = t.entity_id');
+    $select->addField('s', 'id', 'snid');
     $select->addField('s', 'mail');
-    $select->addField('t', 'newsletter_id');
-    $select->condition('t.newsletter_id', $this->newsletter->id());
-    $select->condition('t.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-    $select->condition('s.activated', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
+    $select->addField('t', 'subscriptions_target_id', 'newsletter_id');
+    $select->condition('t.subscriptions_target_id', $this->newsletter->id());
+    $select->condition('t.subscriptions_status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+    $select->condition('s.status', SIMPLENEWS_SUBSCRIPTION_ACTIVE);
 
     return $select;
   }

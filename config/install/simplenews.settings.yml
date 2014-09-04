@@ -1,4 +1,3 @@
-spool_progress_expiration: 3600
 private_key: FALSE
 hash_expiration: 86400
 
@@ -31,12 +30,8 @@ mail:
   use_cron: TRUE
   source_cache: SimplenewsSourceCacheBuild
   throttle: 20
+  spool_progress_expiration: 3600
   spool_expire: 0
   debug: FALSE
-
-fields:
-  newsletter: simplenews_newsletter
-  handler: simplenews_handler
-  handler_settings: simplenews_handler_settings
-  issue_status: simplenews_issue_status
-  sent_count: simplenews_sent_count
+  last_cron: 0
+  last_sent: 0
