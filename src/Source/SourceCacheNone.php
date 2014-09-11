@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceCacheNone.
+ * Contains \Drupal\simplenews\Source\SourceCacheNone.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,10 +12,10 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-class SimplenewsSourceCacheNone extends SimplenewsSourceCacheStatic {
+class SourceCacheNone extends SourceCacheStatic {
 
   /**
-   * Implements SimplenewsSourceCacheStatic::set().
+   * Implements SourceCacheStatic::set().
    */
   public function isCacheable($group, $key) {
     return FALSE;

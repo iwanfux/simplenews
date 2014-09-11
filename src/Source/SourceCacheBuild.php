@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceCacheBuild.
+ * Contains \Drupal\simplenews\Source\SourceCacheBuild.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,15 +12,15 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-class SimplenewsSourceCacheBuild extends SimplenewsSourceCacheStatic {
+class SourceCacheBuild extends SourceCacheStatic {
 
   /**
-   * Implements SimplenewsSourceCacheStatic::set().
+   * Implements SourceCacheStatic::set().
    */
   function isCacheable($group, $key) {
 
     // Only cache for anon users.
-    if (user_is_logged_in()) {
+    if (\Drupal::currentUser()->isAuthenticated()) {
       return FALSE;
     }
 

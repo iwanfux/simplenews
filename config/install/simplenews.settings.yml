@@ -28,7 +28,7 @@ subscription:
 
 mail:
   use_cron: TRUE
-  source_cache: SimplenewsSourceCacheBuild
+  source_cache: \Drupal\simplenews\Source\SourceCacheBuild
   throttle: 20
   spool_progress_expiration: 3600
   spool_expire: 0

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceInterface.
+ * Contains \Drupal\simplenews\Source\SourceInterface.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,7 +12,7 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-interface SimplenewsSourceInterface {
+interface SourceInterface {
 
   /**
    * Returns the mail headers.

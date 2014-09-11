@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceEntityInterface.
+ * Contains \Drupal\simplenews\Source\SourceEntityInterface.
  */
 
 namespace Drupal\simplenews\Source;
@@ -10,7 +10,7 @@ namespace Drupal\simplenews\Source;
 /**
  * Source interface based on an entity.
  */
-interface SimplenewsSourceEntityInterface extends SimplenewsSourceInterface {
+interface SourceEntityInterface extends SourceInterface {
 
   /**
    * Create a source based on an entity.

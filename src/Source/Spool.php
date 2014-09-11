@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSpool.
+ * Contains \Drupal\simplenews\Source\Spool.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,7 +12,7 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup spool
  */
-class SimplenewsSpool implements SimplenewsSpoolInterface {
+class Spool implements SpoolInterface {
 
   /**
    * Array with mail spool rows being processed.
@@ -27,14 +27,14 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
   protected $processed = array();
 
   /**
-   * Implements SimplenewsSpoolInterface::_construct($spool_list);
+   * Implements SpoolInterface::_construct($spool_list);
    */
   public function __construct($spool_list) {
     $this->spool_list = $spool_list;
   }
 
   /**
-   * Implements SimplenewsSpoolInterface::nextSource();
+   * Implements SpoolInterface::nextSource();
    */
   public function nextSource() {
     // Get the current mail spool row and update the internal pointer to the
@@ -88,7 +88,7 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
   }
 
   /**
-   * Implements SimplenewsSpoolInterface::getProcessed();
+   * Implements SpoolInterface::getProcessed();
    */
   function getProcessed() {
     $processed = $this->processed;
@@ -100,16 +100,16 @@ class SimplenewsSpool implements SimplenewsSpoolInterface {
    * Return the Simplenews source implementation for the given mail spool row.
    */
   protected function getSourceImplementation($spool_data) {
-    $default = ($spool_data->entity_type == 'node') ? 'SimplenewsSourceNode' : NULL;
+    $default = ($spool_data->entity_type == 'node') ? 'SourceNode' : NULL;
 
     // First check if there is a class set for this entity type (default
-    // 'simplenews_source_node' to SimplenewsSourceNode.
+    // 'simplenews_source_node' to SourceNode.
     $class = variable_get('simplenews_source_' . $spool_data->entity_type, $default);
 
     // If no class was found, fall back to the generic 'simplenews_source'
     // variable.
     if (empty($class)) {
-      $class = variable_get('simplenews_source', 'SimplenewsSourceEntity');
+      $class = variable_get('simplenews_source', 'SourceEntity');
     }
 
     return $class;

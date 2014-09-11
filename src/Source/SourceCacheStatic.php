@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceCacheStatic.
+ * Contains \Drupal\simplenews\Source\SourceCacheStatic.
  */
 
 namespace Drupal\simplenews\Source;
@@ -15,12 +15,12 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInterface {
+abstract class SourceCacheStatic implements SourceCacheInterface {
 
   /**
    * The simplenews source for which this cache is used.
    *
-   * @var SimplenewsSourceNodeInterface
+   * @var SourceNodeInterface
    */
   protected $source;
 
@@ -35,9 +35,9 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
   protected static $cache = array();
 
   /**
-   * Implements SimplenewsSourceCacheInterface::__construct().
+   * Implements SourceCacheInterface::__construct().
    */
-  public function __construct(SimplenewsSourceEntityInterface $source) {
+  public function __construct(SourceEntityInterface $source) {
     $this->source = $source;
 
     self::$cache = &drupal_static(__CLASS__, array());
@@ -55,7 +55,7 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
   }
 
   /**
-   * Implements SimplenewsSourceNodeInterface::get().
+   * Implements SourceNodeInterface::get().
    */
   public function get($group, $key) {
     if (!$this->isCacheable($group, $key)) {
@@ -68,7 +68,7 @@ abstract class SimplenewsSourceCacheStatic implements SimplenewsSourceCacheInter
   }
 
   /**
-   * Implements SimplenewsSourceNodeInterface::set().
+   * Implements SourceNodeInterface::set().
    */
   public function set($group, $key, $data) {
     if (!$this->isCacheable($group, $key)) {

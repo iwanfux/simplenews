@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceCacheInterface.
+ * Contains \Drupal\simplenews\Source\SourceCacheInterface.
  */
 
 namespace Drupal\simplenews\Source;
@@ -10,17 +10,17 @@ namespace Drupal\simplenews\Source;
 /**
  * Interface for a simplenews source cache implementation.
  *
- * This is only compatible with the SimplenewsSourceNodeInterface interface.
+ * This is only compatible with the SourceNodeInterface interface.
  *
  * @ingroup source
  */
-interface SimplenewsSourceCacheInterface {
+interface SourceCacheInterface {
 
   /**
    * Create a new instance, allows to initialize based on the used
    * source.
    */
-  function __construct(SimplenewsSourceEntityInterface $source);
+  function __construct(SourceEntityInterface $source);
 
   /**
    * Return a cached element, if existing.

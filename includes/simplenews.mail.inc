@@ -7,8 +7,12 @@
  * @ingroup mail
  */
 
+use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\simplenews\Entity\Subscriber;
+use Drupal\simplenews\Source\SourceInterface;
+use Drupal\simplenews\Source\SourceNode;
+use Drupal\simplenews\Source\Spool;
 
 /**
  * Add the newsletter node to the mail spool.
@@ -118,12 +122,11 @@ function simplenews_send_test($node, $test_addresses) {
     if (!empty($mail)) {
       $subscriber = simplenews_subscriber_load_by_mail($mail);
       if (!$subscriber) {
-        // The source expects a subscriber object with mail and language set.
         // @todo: Find a cleaner way to do this.
         $subscriber = Subscriber::create(array());
         $subscriber->setUserId(0);
         $subscriber->setMail($mail);
-        $subscriber->setLangcode($GLOBALS['language']->language);
+        $subscriber->setLangcode(\Drupal::languageManager()->getCurrentLanguage());
       }
 
       if ($subscriber->getUserId()) {
@@ -133,7 +136,7 @@ function simplenews_send_test($node, $test_addresses) {
       else {
         $recipients['anonymous'][] = $mail;
       }
-      $source = new SimplenewsSourceNode($node, $subscriber);
+      $source = new SourceNode($node, $subscriber);
       $source->setKey('test');
       $result = simplenews_send_source($source);
     }
@@ -164,7 +167,7 @@ function simplenews_send_test($node, $test_addresses) {
  *
  * @ingroup source
  */
-function simplenews_send_source(SimplenewsSourceInterface $source) {
+function simplenews_send_source(SourceInterface $source) {
   $config = \Drupal::configFactory()->get('simplenews.settings');
   $params['simplenews_source'] = $source;
 
@@ -237,7 +240,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
 
     _simplenews_measure_usec(TRUE);
 
-    $spool = new SimplenewsSpool($spool_list);
+    $spool = new Spool($spool_list);
     while ($source = $spool->nextSource()) {
       $source->setKey('node');
       $result = simplenews_send_source($source);
@@ -807,11 +810,11 @@ function _simplenews_measure_usec($start = FALSE) {
  * @param array $message
  *   Message array as used by hook_mail().
  * @param array $source
- *   The SimplenewsSource instance.
+ *   The Source instance.
  *
  * @ingroup source
  */
-function simplenews_build_newsletter_mail(&$message, SimplenewsSourceInterface $source) {
+function simplenews_build_newsletter_mail(&$message, SourceInterface $source) {
   // Get message data from source.
   $message['headers'] = $source->getHeaders($message['headers']);
   $message['subject'] = $source->getSubject();

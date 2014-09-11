@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceTest.
+ * Contains \Drupal\simplenews\Source\SourceTest.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,7 +12,7 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-class SimplenewsSourceTest implements SimplenewsSourceInterface {
+class SourceTest implements SourceInterface {
 
   protected $format;
 

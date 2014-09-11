@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceNode.
+ * Contains \Drupal\simplenews\Source\SourceNode.
  */
 
 namespace Drupal\simplenews\Source;
@@ -12,17 +12,17 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup source
  */
-class SimplenewsSourceNode extends SimplenewsSourceEntity {
+class SourceNode extends SourceEntity {
 
   /**
-   * Overrides SimplenewsSourceEntity::__construct();
+   * Overrides SourceEntity::__construct();
    */
   public function __construct($node, $subscriber, $entity_type = 'node') {
     parent::__construct($node, $subscriber, $entity_type);
   }
 
   /**
-   * Overrides SimplenewsSourceEntity::setEntity().
+   * Overrides SourceEntity::setEntity().
    *
    * Handles node translation.
    */
@@ -72,7 +72,7 @@ class SimplenewsSourceNode extends SimplenewsSourceEntity {
   }
 
   /**
-   * Implements SimplenewsSourceSpoolInterface::getNode().
+   * Implements SourceSpoolInterface::getNode().
    */
   function getNode() {
     return $this->entity;

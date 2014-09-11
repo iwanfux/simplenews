@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSourceEntity.
+ * Contains \Drupal\simplenews\Source\SourceEntity.
  */
 
 namespace Drupal\simplenews\Source;
@@ -10,7 +10,7 @@ namespace Drupal\simplenews\Source;
 /**
  * Default source class for entities.
  */
-class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
+class SourceEntity implements SourceEntityInterface {
 
   /**
    * The entity object.
@@ -45,18 +45,18 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   /**
    * Cache implementation used for this source.
    *
-   * @var SimplenewsSourceCacheInterface
+   * @var SourceCacheInterface
    */
   protected $cache;
 
   /**
-   * Implements SimplenewsSourceEntityInterface::_construct();
+   * Implements SourceEntityInterface::_construct();
    */
   public function __construct($entity, $subscriber, $entity_type) {
     $this->setSubscriber($subscriber);
     $this->setEntity($entity, $entity_type);
     $this->initCache();
-    $this->newsletter = simplenews_newsletter_load(simplenews_issue_newsletter_id($entity));
+    $this->newsletter = $entity->simplenews_issue->entity;
   }
 
   /**
@@ -71,7 +71,8 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
    * Initialize the cache implementation.
    */
   protected function initCache() {
-    $class = variable_get('simplenews_source_cache', 'SimplenewsSourceCacheBuild');
+    $config = \Drupal::configFactory()->get('simplenews.settings');
+    $class = $config->get('mail.source_cache');
     $this->cache = new $class($this);
   }
 
@@ -97,7 +98,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getHeaders().
+   * Implements SourceInterface::getHeaders().
    */
   public function getHeaders(array $headers) {
 
@@ -138,7 +139,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
 
     // Add user specific header data.
     $headers['From'] = $this->getFromFormatted();
-    $headers['List-Unsubscribe'] = '<' . token_replace('[simplenews-subscriber:unsubscribe-url]', $this->getTokenContext(), array('sanitize' => FALSE)) . '>';
+    $headers['List-Unsubscribe'] = '<' . \Drupal::token()->replace('[simplenews-subscriber:unsubscribe-url]', $this->getTokenContext(), array('sanitize' => FALSE)) . '>';
 
     // Add general headers
     $headers['Precedence'] = 'bulk';
@@ -146,7 +147,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getTokenContext().
+   * Implements SourceInterface::getTokenContext().
    */
   function getTokenContext() {
     return array(
@@ -164,14 +165,14 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getKey().
+   * Implements SourceInterface::getKey().
    */
   function getKey() {
     return $this->key;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getFromFormatted().
+   * Implements SourceInterface::getFromFormatted().
    */
   function getFromFormatted() {
     // Windows based PHP systems don't accept formatted email addresses.
@@ -183,57 +184,55 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getFromAddress().
+   * Implements SourceInterface::getFromAddress().
    */
   function getFromAddress() {
     return $this->getNewsletter()->from_address;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getRecipient().
+   * Implements SourceInterface::getRecipient().
    */
   function getRecipient() {
-    return $this->getSubscriber()->mail;
+    return $this->getSubscriber()->getMail();
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getFormat().
+   * Implements SourceInterface::getFormat().
    */
   function getFormat() {
     return $this->getNewsletter()->format;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getLanguage().
+   * Implements SourceInterface::getLanguage().
    */
   function getLanguage() {
-    return $this->getSubscriber()->language;
+    return $this->getSubscriber()->getLangcode();
   }
 
   /**
-   * Implements SimplenewsSourceEntityInterface::getEntity().
+   * Implements SourceEntityInterface::getEntity().
    */
   function getEntity() {
     return $this->entity;
   }
 
   /**
-   * Implements SimplenewsSourceEntityInterface::getEntityType().
+   * Implements SourceEntityInterface::getEntityType().
    */
   function getEntityType() {
     return $this->entity_type;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getSubject().
+   * Implements SourceInterface::getSubject().
    */
   function getSubject() {
     // Build email subject and perform some sanitizing.
-    $langcode = $this->getLanguage();
-    $language_list = language_list();
     // Use the requested language if enabled.
-    $language = isset($language_list[$langcode]) ? $language_list[$langcode] : NULL;
-    $subject = token_replace($this->getNewsletter()->email_subject, $this->getTokenContext(), array('sanitize' => FALSE, 'language' => $language));
+    $langcode = $this->getLanguage();
+    $subject = \Drupal::token()->replace($this->getNewsletter()->subject, $this->getTokenContext(), array('sanitize' => FALSE, 'langcode' => $langcode));
 
     // Line breaks are removed from the email subject to prevent injection of
     // malicious data into the email header.
@@ -247,22 +246,22 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
   protected function setContext() {
 
     // Switch to the user
-    if ($this->uid = $this->getSubscriber()->uid) {
-      simplenews_impersonate_user($this->uid);
+    if ($this->uid = $this->getSubscriber()->getUserId()) {
+      //simplenews_impersonate_user($this->uid);
     }
 
     // Change language if the requested language is enabled.
-    $language = $this->getLanguage();
-    $languages = language_list();
+    /*$language = $this->getLanguage();
+    $languages = LanguageManagerInterface::getLanguages();
     if (isset($languages[$language])) {
-      $this->original_language = $GLOBALS['language'];
+      $this->original_language = \Drupal::languageManager()->getCurrentLanguage();
       $GLOBALS['language'] = $languages[$language];
       $GLOBALS['language_url'] = $languages[$language];
       // Overwrites the current content language for i18n_select.
       if (\Drupal::moduleHandler()->moduleExists('i18n_select')) {
         $GLOBALS['language_content'] = $languages[$language];
       }
-    }
+    }*/
   }
 
   /**
@@ -302,8 +301,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
 
     // Build message body
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
-    $build = entity_view($this->getEntityType(), array($this->getEntity()), 'email_' . $format);
-    $build = reset($build[$this->getEntityType()]);
+    $build = entity_view($this->getEntity(), 'email_' . $format);
 
     // We need to prevent the standard theming hooks, but we do want to allow
     // modules such as panelizer that override it, so only clear the standard
@@ -312,8 +310,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
       unset($build['#theme']);
     }
 
-    list(, , $bundle) = entity_extract_ids($this->getEntityType(), $this->getEntity());
-    foreach (field_info_instances($this->getEntityType(), $bundle) as $field_name => $field) {
+    foreach (\Drupal::entityManager()->getFieldDefinitions($this->getEntityType(), $this->getEntity()->bundle()) as $field_name => $field) {
       if (isset($build[$field_name])) {
         $build[$field_name]['#theme'] = 'simplenews_field';
       }
@@ -336,20 +333,27 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     if ($cache = $this->cache->get('build', 'body:' . $format)) {
       return $cache;
     }
-    $body = theme('simplenews_newsletter_body', array('build' => $this->build($format), 'newsletter' => $this->getNewsletter(), 'language' => $this->getLanguage(), 'simplenews_subscriber' => $this->getSubscriber()));
-    $this->cache->set('build', 'body:' . $format, $body);
-    return $body;
+    $body = array(
+      '#type' => 'simplenews_newsletter_body',
+      '#build' => $this->build($format),
+      '#newsletter' => $this->getNewsletter(),
+      '#language' => $this->getLanguage(),
+      '#simplenews_subscriber' => $this->getSubscriber(),
+    );
+    $markup = drupal_render($body);
+    $this->cache->set('build', 'body:' . $format, $markup);
+    return $markup;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getBody().
+   * Implements SourceInterface::getBody().
    */
   public function getBody() {
     return $this->getBodyWithFormat($this->getFormat());
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getBody().
+   * Implements SourceInterface::getBody().
    */
   public function getPlainBody() {
     return $this->getBodyWithFormat('plain');
@@ -375,7 +379,7 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     $body = $this->buildBody($format);
 
     // Build message body, replace tokens.
-    $body = token_replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
+    $body = \Drupal::token()->replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
     if ($format == 'plain') {
       // Convert HTML to text if requested to do so.
       $body = simplenews_html_to_text($body, $this->getNewsletter()->hyperlinks);
@@ -402,27 +406,30 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     }
 
     // Build and buffer message footer
-    $footer = theme('simplenews_newsletter_footer', array(
-      'build' => $this->build($format),
-      'newsletter' => $this->getNewsletter(),
-      'context' => $this->getTokenContext(),
-      'key' => $this->getKey(),
-      'language' => $this->getLanguage(),
-      'format' => $format,
-    ));
-    $this->cache->set('build', 'footer:' . $format, $footer);
-    return $footer;
+    $footer = array(
+      '#type' => 'simplenews_newsletter_footer',
+      '#build' => $this->build($format),
+      '#newsletter' => $this->getNewsletter(),
+      '#context' => $this->getTokenContext(),
+      '#key' => $this->getKey(),
+      '#language' => $this->getLanguage(),
+      '#format' => $format,
+    );
+    $markup = drupal_render($footer);
+
+    $this->cache->set('build', 'footer:' . $format, $markup);
+    return $markup;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getFooter().
+   * Implements SourceInterface::getFooter().
    */
   public function getFooter() {
     return $this->getFooterWithFormat($this->getFormat());
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getPlainFooter().
+   * Implements SourceInterface::getPlainFooter().
    */
   public function getPlainFooter() {
     return $this->getFooterWithFormat('plain');
@@ -443,14 +450,14 @@ class SimplenewsSourceEntity implements SimplenewsSourceEntityInterface {
     if ($cache = $this->cache->get('final', 'footer:' . $format)) {
       return $cache;
     }
-    $final_footer = token_replace($this->buildFooter($format), $this->getTokenContext(), array('sanitize' => FALSE));
+    $final_footer = \Drupal::token()->replace($this->buildFooter($format), $this->getTokenContext(), array('sanitize' => FALSE));
     $this->cache->set('final', 'footer:' . $format, $final_footer);
     $this->resetContext();
     return $final_footer;
   }
 
   /**
-   * Implements SimplenewsSourceInterface::getAttachments().
+   * Implements SourceInterface::getAttachments().
    */
   function getAttachments() {
     if ($cache = $this->cache->get('data', 'attachments')) {

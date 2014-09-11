@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\simplenews\Source\SimplenewsSpoolInterface.
+ * Contains \Drupal\simplenews\Source\SpoolInterface.
  */
 
 namespace Drupal\simplenews\Source;
@@ -19,7 +19,7 @@ namespace Drupal\simplenews\Source;
  *
  * @ingroup spool
  */
-interface SimplenewsSpoolInterface {
+interface SpoolInterface {
 
   /**
    * Initalizes the spool implementation.
