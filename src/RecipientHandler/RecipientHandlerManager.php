@@ -32,7 +32,7 @@ class RecipientHandlerManager extends DefaultPluginManager {
    *   The module handler to invoke the alter hook with.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/simplenews/RecipientHandler', $namespaces, $module_handler, 'Drupal\simplenews\RecipientHandler\Annotation\RecipientHandler');
+    parent::__construct('Plugin/simplenews/RecipientHandler', $namespaces, $module_handler, 'Drupal\simplenews\RecipientHandler\RecipientHandlerInterface', 'Drupal\simplenews\RecipientHandler\Annotation\RecipientHandler');
     $this->alterInfo('simplenews_recipient_handler_info');
     $this->setCacheBackend($cache_backend, 'simplenews_recipient_handler_info_plugins');
   }

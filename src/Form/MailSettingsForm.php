@@ -73,9 +73,9 @@ class MailSettingsForm extends ConfigFormBase {
       '#title' => $this->t('Mail spool expiration'),
       '#options' => array(
         0 => $this->t('Immediate'),
-        1 => format_plural(1, '1 day', '@count days'),
-        7 => format_plural(1, '1 week', '@count weeks'),
-        14 => format_plural(2, '1 week', '@count weeks'),
+        1 => \Drupal::translation()->formatPlural(1, '1 day', '@count days'),
+        7 => \Drupal::translation()->formatPlural(1, '1 week', '@count weeks'),
+        14 => \Drupal::translation()->formatPlural(2, '1 week', '@count weeks'),
       ),
       '#default_value' => $config->get('mail.spool_expire'),
       '#description' => $this->t('Newsletter mails are spooled. How long must messages be retained in the spool after successful sending. Keeping the message in the spool allows mail statistics (which is not yet implemented). If cron is not used, immediate expiration is advised.'),

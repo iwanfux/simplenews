@@ -6,6 +6,7 @@
  *
  * @ingroup simplenews
  */
+use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -310,7 +311,7 @@ function simplenews_build_issue_filter_query(EntityFieldQuery $query) {
         case 'newsletter':
           if ($value != 'all') {
             list($key, $value) = explode('-', $value, 2);
-            $query->fieldCondition(variable_get('simplenews_newsletter_field', 'simplenews_newsletter'), 'target_id', $value);
+            $query->fieldCondition('simplenews_issue', 'target_id', $value);
           }
           break;
       }
@@ -358,7 +359,7 @@ function simplenews_admin_categories_submit($form, FormStateInterface $form_stat
   foreach ($form_state['values'] as $newsletter_id => $newsletter) {
     if (is_numeric($newsletter_id) && $form[$newsletter_id]['#newsletter']->weight != $newsletter['weight']) {
       $form[$newsletter_id]['#newsletter']->weight = $newsletter['weight'];
-      simplenews_newsletter_save($form[$newsletter_id]['#newsletter']);
+      $form[$newsletter_id]['#newsletter']->save();
     }
   }
   drupal_set_message(t('Your configuration has been saved.'));
@@ -548,15 +549,16 @@ function theme_simplenews_status($variables) {
   // Build the output
   if (isset($images[$status])) {
     $img_vars = array(
-      'path' => drupal_get_path('module', 'simplenews') . '/' . $images[$status],
-      'alt' => $title[$status],
-      'title' => $title[$status],
-      'getsize' => TRUE,
+      '#theme' => 'image',
+      '#uri' => drupal_get_path('module', 'simplenews') . '/' . $images[$status],
+      '#alt' => $title[$status],
+      '#title' => $title[$status],
+      '#getsize' => TRUE,
     );
-    $output = theme('image', $img_vars);
+    $output = drupal_render($img_vars);
   }
   else {
-    $output = check_plain($title[$status]);
+    $output = String::checkPlain($title[$status]);
   }
   return $output;
 }

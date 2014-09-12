@@ -48,7 +48,7 @@ abstract class SourceCacheStatic implements SourceCacheInterface {
    */
   protected function getCid() {
     if (empty($this->cid)) {
-      $entity_id = entity_id($this->source->getEntityType(), $this->source->getEntity());
+      $entity_id = $this->source->getEntity()->id();
       $this->cid = $this->source->getEntityType() . ':' . $entity_id . ':' . $this->source->getLanguage();
     }
     return $this->cid;

@@ -9,6 +9,7 @@
 
 use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Session\AnonymousUserSession;
+use Drupal\node\Entity\Node;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simplenews\Source\SourceInterface;
 use Drupal\simplenews\Source\SourceNode;
@@ -172,7 +173,7 @@ function simplenews_send_source(SourceInterface $source) {
   $params['simplenews_source'] = $source;
 
   // Send mail.
-  $message = drupal_mail('simplenews', $source->getKey(), $source->getRecipient(), $source->getLanguage(), $params, $source->getFromFormatted());
+  $message = \Drupal::service('plugin.manager.mail')->mail('simplenews', $source->getKey(), $source->getRecipient(), $source->getLanguage(), $params, $source->getFromFormatted());
 
   // Log sent result in watchdog.
   if ($config->get('mail.debug')) {
@@ -233,7 +234,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     // Switch to the anonymous user.
     // @todo change to something similar like in WebTestBase.php line 705
     $anonymous_user = new AnonymousUserSession();
-    simplenews_impersonate_user($anonymous_user);
+    //simplenews_impersonate_user($anonymous_user);
 
     $count_fail = $count_success = 0;
     $sent = array();
@@ -301,16 +302,17 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     }
 
     // Update subscriber count.
-    if (lock_acquire('simplenews_update_sent_count')) {
+    $lock = \Drupal::lock();
+    if ($lock->acquire('simplenews_update_sent_count')) {
       foreach ($sent as $entity_type => $ids) {
         foreach ($ids as $entity_id => $count) {
           \Drupal::entityManager()->getStorage($entity_type)->resetCache(array($entity_id));
           $entity = entity_load($entity_type, $entity_id);
-          simplenews_issue_sent_count($entity_type, $entity, simplenews_issue_sent_count($entity_type, $entity) + $count);
-          entity_save($entity_type, $entity);
+          $entity->simplenews_issue->sent_count = $entity->simplenews_issue->sent_count + $count;
+          $entity->save();
         }
       }
-      lock_release('simplenews_update_sent_count');
+      $lock->release('simplenews_update_sent_count');
     }
 
     // Report sent result and elapsed time. On Windows systems getrusage() is
@@ -397,7 +399,7 @@ function simplenews_get_expiration_time() {
  * @ingroup spool
  */
 function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array()) {
-  $messages = array(); return $messages; // temp solution
+  $messages = array();
 
   // Continue to support 'nid' as a condition.
   if (!empty($conditions['nid'])) {
@@ -442,8 +444,8 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
   /* BEGIN CRITICAL SECTION */
   // The semaphore ensures that multiple processes get different message ID's,
   // so that duplicate messages are not sent.
-
-  if (lock_acquire('simplenews_acquire_mail')) {
+  $lock = \Drupal::lock();
+  if ($lock->acquire('simplenews_acquire_mail')) {
     // Get message id's
     // Allocate messages
     if ($limit > 0) {
@@ -465,7 +467,7 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
       );
     }
 
-    lock_release('simplenews_acquire_mail');
+    $lock->release('simplenews_acquire_mail');
   }
 
   /* END CRITICAL SECTION */
@@ -573,11 +575,13 @@ function simplenews_count_spool(array $conditions = array()) {
  * @ingroup spool
  */
 function simplenews_clear_spool() {
-  /*$expiration_time = REQUEST_TIME - variable_get('simplenews_spool_expire', 0) * 86400;
+  $config = \Drupal::config('simplenews.settings');
+
+  $expiration_time = REQUEST_TIME - $config->get('mail.spool_expire') * 86400;
   return db_delete('simplenews_mail_spool')
     ->condition('status', SIMPLENEWS_SPOOL_DONE)
     ->condition('timestamp', $expiration_time, '<=')
-    ->execute();*/
+    ->execute();
 }
 
 /**
@@ -624,19 +628,19 @@ function simplenews_delete_spool(array $conditions) {
  * @ingroup issue
  */
 function simplenews_send_status_update() {
-  $counts = array(); // number pending of emails in the spool
+  $counts = array(); // number of pending emails in the spool
   $sum = array(); // sum of emails in the spool per tnid (translation id)
   $send = array(); // nodes with the status 'send'
 
   // For each pending newsletter count the number of pending emails in the spool.
-  /*$query = new EntityFieldQuery;
+  $query = \Drupal::entityQuery('node');
   $nodes = $query
-    ->entityCondition('entity_type', 'node')
-    ->fieldCondition(variable_get('simplenews_issue_status_field', 'simplenews_issue_status'), 'value', SIMPLENEWS_STATUS_SEND_PENDING)
+    ->condition('simplenews_issue.status', SIMPLENEWS_STATUS_SEND_PENDING)
     ->execute();
+  debug($nodes);
   if ($nodes) {
     foreach (reset($nodes) as $node) {
-      $counts[simplenews_issue_newsletter_id($node)][$node->nid] = simplenews_count_spool(array('entity_id' => $node->nid, 'entity_type' => 'node'));
+      $counts[$node->simplenews_issue->target_id][$node->id()] = simplenews_count_spool(array('entity_id' => $node->id(), 'entity_type' => 'node'));
     }
   }
   // Determine which nodes are send per translation group and per individual node.
@@ -659,11 +663,11 @@ function simplenews_send_status_update() {
   // Update overall newsletter status
   if (!empty($send)) {
     foreach ($send as $nid) {
-      $node = node_load($nid);
-      simplenews_issue_status($node, SIMPLENEWS_STATUS_SEND_READY);
-      node_save($node);
+      $node = Node::load($nid);
+      $node->simplenews_issue->status = SIMPLENEWS_STATUS_SEND_READY;
+      $node->save();
     }
-  }*/
+  }
 }
 
 /**

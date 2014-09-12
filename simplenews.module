@@ -336,11 +336,8 @@ function simplenews_get_content_types() {
   $simplenews_types = &drupal_static(__FUNCTION__, array());
 
   if (!$simplenews_types) {
-    foreach (NodeType::loadMultiple() as $name => $type) {
-      /*if (variable_get('simplenews_content_type_' . $name, FALSE)) {
-        $simplenews_types[] = $name;
-      }*/
-    }
+    $field_map = \Drupal::entityManager()->getFieldMapByFieldType('simplenews_issue');
+    $simplenews_types = $field_map['node']['simplenews_issue']['bundles'];
   }
   return $simplenews_types;
 }
@@ -1662,18 +1659,6 @@ function simplenews_newsletter_load_multiple($ids = NULL, $reset = FALSE) {
 }
 
 /**
- * Store newsletter in the database.
- *
- * @param $newsletter
- *   Newsletter entity object
- *
- * @ingroup newsletter
- */
-function simplenews_newsletter_save($newsletter) {
-  return entity_save('simplenews_newsletter', $newsletter);
-}
-
-/**
  * Delete one or many newsletter from the database.
  *
  * @param $id
@@ -2250,11 +2235,11 @@ function simplenews_get_source_caches() {
  */
 function simplenews_simplenews_source_cache_info() {
   return array(
-    'SimplenewsSourceCacheNone' => array(
+    '\Drupal\simplenews\Source\SourceCacheNone' => array(
       'label' => t('No caching'),
       'description' => t('This allows to theme each newsletter separately.'),
     ),
-    'SimplenewsSourceCacheBuild' => array(
+    '\Drupal\simplenews\Source\SourceCacheBuild' => array(
       'label' => t('Cached content source'),
       'description' => t('This caches the rendered content to be sent for multiple recipients. It is not possible to use subscriber specific theming but tokens can be used for personalization.'),
     ),

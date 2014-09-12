@@ -13,6 +13,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\node\NodeInterface;
 use Drupal\user\UserInterface;
+use Symfony\Component\Validator\Constraints\False;
 
 /**
  * Configure simplenews subscriptions of a user.
@@ -39,15 +40,6 @@ class NodeTabForm extends FormBase {
     // We will need the node
     $form_state['node'] = $node;
 
-    // @todo delete this fieldset?
-    $form['simplenews'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Send newsletter'),
-      '#collapsible' => FALSE,
-      '#collapsed' => FALSE,
-      '#tree' => TRUE,
-    );
-
     // Show newsletter sending options if newsletter has not been send yet.
     // If send a notification is shown.
     if ($status == SIMPLENEWS_STATUS_SEND_NOT || $status == SIMPLENEWS_STATUS_SEND_PUBLISH) {
@@ -70,7 +62,7 @@ class NodeTabForm extends FormBase {
       else {
         $send_default = $config->get('newsletter.send');
       }
-      $form['simplenews']['send'] = array(
+      $form['send'] = array(
         '#type' => 'radios',
         '#title' => t('Send newsletter'),
         '#default_value' => $send_default,
@@ -81,7 +73,7 @@ class NodeTabForm extends FormBase {
       );
 
       if ($config->get('newsletter.test_address_override')) {
-        $form['simplenews']['test_address'] = array(
+        $form['test_address'] = array(
           '#type' => 'textfield',
           '#title' => t('Test email addresses'),
           '#description' => t('A comma-separated list of email addresses to be used as test addresses.'),
@@ -91,7 +83,7 @@ class NodeTabForm extends FormBase {
         );
       }
       else {
-        $form['simplenews']['test_address'] = array(
+        $form['test_address'] = array(
           '#type' => 'value',
           '#value' => $config->get('newsletter.test_address'),
         );
@@ -101,7 +93,7 @@ class NodeTabForm extends FormBase {
 
       $recipient_handler_manager = \Drupal::service('plugin.manager.simplenews_recipient_handler');
       $options = $recipient_handler_manager->getOptions();
-      $form['simplenews']['recipient_handler'] = array(
+      $form['recipient_handler'] = array(
         '#type' => 'select',
         '#title' => t('Recipients'),
         '#description' => t('Please select to configure who to send the email to.'),
@@ -130,14 +122,14 @@ class NodeTabForm extends FormBase {
           '#suffix' => '</div>',
         );
 
-        $form['simplenews']['recipient_handler_settings'] = $class::settingsForm($element, $settings);
+        $form['recipient_handler_settings'] = $class::settingsForm($element, $settings);
       }
       else {
-        $form['simplenews']['recipient_handler']['#suffix'] = '<div id="recipient-handler-settings"></div>';
+        $form['recipient_handler']['#suffix'] = '<div id="recipient-handler-settings"></div>';
       }
     }
     else {
-      $form['simplenews']['none'] = array(
+      $form['none'] = array(
         '#type' => 'checkbox',
         '#return_value' => 0,
         '#attributes' => array(
@@ -145,7 +137,7 @@ class NodeTabForm extends FormBase {
           'disabled' => 'disabled',
         ),
       );
-      $form['simplenews']['none']['#title'] = ($status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
+      $form['none']['#title'] = ($status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
       return $form;
     }
     $form['submit'] = array(
@@ -166,8 +158,8 @@ class NodeTabForm extends FormBase {
     $node = $form_state['node'];
 
     // Validate recipient handler settings.
-    if (!empty($form['simplenews']['recipient_handler_settings'])) {
-      $handler = $values['simplenews']['recipient_handler'];
+    if (!empty($form['recipient_handler_settings'])) {
+      $handler = $values['recipient_handler'];
       $handler_definitions = \Drupal::service('plugin.manager.simplenews_recipient_handler')->getDefinitions();
 
       // Get the handler class
@@ -175,28 +167,28 @@ class NodeTabForm extends FormBase {
       $class = $handler['class'];
 
       if (method_exists($class, 'settingsFormValidate')) {
-        $class::settingsFormValidate($form['simplenews']['recipient_handler_settings'], $form_state);
+        $class::settingsFormValidate($form['recipient_handler_settings'], $form_state);
       }
     }
 
     $default_address = $config->get('newsletter.test_address');
     $mails = array($default_address);
-    if (isset($values['simplenews']['send']) && $values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST && $config->get('newsletter.test_address_override')) {
+    if (isset($values['send']) && $values['send'] == SIMPLENEWS_COMMAND_SEND_TEST && $config->get('newsletter.test_address_override')) {
       // @todo Can we simplify and use only two kind of messages?
-      if (!empty($values['simplenews']['test_address'])) {
-        $mails = explode(',', $values['simplenews']['test_address']);
+      if (!empty($values['test_address'])) {
+        $mails = explode(',', $values['test_address']);
         foreach ($mails as $mail) {
           $mail = trim($mail);
           if ($mail == '') {
-            $form_state->setErrorByName('simplenews][test_address', t('Test email address is empty.'));
+            $form_state->setErrorByName('test_address', t('Test email address is empty.'));
           }
           elseif (!valid_email_address($mail)) {
-            $form_state->setErrorByName('simplenews][test_address', t('Invalid email address "%mail".', array('%mail' => $mail)));
+            $form_state->setErrorByName('test_address', t('Invalid email address "%mail".', array('%mail' => $mail)));
           }
         }
       }
       else {
-        $form_state->setErrorByName('simplenews][test_address', t('Missing test email address.'));
+        $form_state->setErrorByName('test_address', t('Missing test email address.'));
       }
     }
     $form_state['test_addresses'] = $mails;
@@ -212,23 +204,23 @@ class NodeTabForm extends FormBase {
     $node = $form_state['node'];
 
     // Save the recipient handler and it's settings.
-    $node->simplenews_issue->handler = $values['simplenews']['recipient_handler'];
+    $node->simplenews_issue->handler = $values['recipient_handler'];
 
-    if (!empty($form['simplenews']['recipient_handler_settings'])) {
-      $handler = $values['simplenews']['recipient_handler'];
+    if (!empty($form['recipient_handler_settings'])) {
+      $handler = $values['recipient_handler'];
       $handler_definitions = \Drupal::service('plugin.manager.simplenews_recipient_handler')->getDefinitions();
       $handler = $handler_definitions[$handler];
       $class = $handler['class'];
 
       if (method_exists($class, 'settingsFormSubmit')) {
-        $settings = $class::settingsFormSubmit($form['simplenews']['recipient_handler_settings'], $form_state);
+        $settings = $class::settingsFormSubmit($form['recipient_handler_settings'], $form_state);
         $node->simplenews_issue->handler_settings = (array) $settings;
       }
     }
 
     // Send newsletter to all subscribers or send test newsletter
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
+    if ($values['send'] == SIMPLENEWS_COMMAND_SEND_NOW) {
       simplenews_add_node_to_spool($node);
       // Attempt to send immediatly, if configured to do so.
       if (simplenews_mail_attempt_immediate_send(array('entity_id' => $node->id(), 'entity_type' => 'node'))) {
@@ -238,12 +230,12 @@ class NodeTabForm extends FormBase {
         drupal_set_message(t('Newsletter %title pending.', array('%title' => $node->getTitle())));
       }
     }
-    elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
+    elseif ($values['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
       simplenews_send_test($node, $form_state['test_addresses']);
     }
 
     // If the selected command is send on publish, just set the newsletter status.
-    if ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_PUBLISH) {
+    if ($values['send'] == SIMPLENEWS_COMMAND_SEND_PUBLISH) {
       $node->simplenews_issue->status = SIMPLENEWS_STATUS_SEND_PUBLISH;
       drupal_set_message(t('The newsletter will be sent when the content is published.'));
     }

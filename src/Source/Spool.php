@@ -48,7 +48,8 @@ class Spool implements SpoolInterface {
 
     // Store this spool row as processed.
     $this->processed[$spool_data->msid] = $spool_data;
-    $entity = entity_load_single($spool_data->entity_type, $spool_data->entity_id);
+
+    $entity = entity_load($spool_data->entity_type, $spool_data->entity_id);
     if (!$entity) {
       // If the entity load failed, set the processed status done and proceed with
       // the next mail.
@@ -76,14 +77,14 @@ class Spool implements SpoolInterface {
       return $this->nextSource();
     }
 
-    $source_class = $this->getSourceImplementation($spool_data);
+    $source_class = $this->getSourceImplementation($spool_data) ? '\Drupal\simplenews\Source\SourceNode' : '\Drupal\simplenews\Source\SourceNode';
     $source = new $source_class($entity, $subscriber, $spool_data->entity_type);
 
     // Set which entity is actually used. In case of a translation set, this might
     // not be the same entity.
     $this->processed[$spool_data->msid]->actual_entity_type = $source->getEntityType();
     $this->processed[$spool_data->msid]->actual_entity_id
-      = entity_id($source->getEntityType(), $source->getEntity());
+      = $source->getEntity()->id();
     return $source;
   }
 
@@ -100,16 +101,16 @@ class Spool implements SpoolInterface {
    * Return the Simplenews source implementation for the given mail spool row.
    */
   protected function getSourceImplementation($spool_data) {
-    $default = ($spool_data->entity_type == 'node') ? 'SourceNode' : NULL;
+    $config = \Drupal::config('simplenews.settings');
 
     // First check if there is a class set for this entity type (default
-    // 'simplenews_source_node' to SourceNode.
-    $class = variable_get('simplenews_source_' . $spool_data->entity_type, $default);
+    // 'source_node' to SourceNode.
+    $class = $config->get('mail.source_' . $spool_data->entity_type);
 
-    // If no class was found, fall back to the generic 'simplenews_source'
+    // If no class was found, fall back to the generic 'source'
     // variable.
     if (empty($class)) {
-      $class = variable_get('simplenews_source', 'SourceEntity');
+      $class = $config->get('mail.source');
     }
 
     return $class;

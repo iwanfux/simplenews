@@ -28,10 +28,12 @@ subscription:
 
 mail:
   use_cron: TRUE
-  source_cache: \Drupal\simplenews\Source\SourceCacheBuild
   throttle: 20
   spool_progress_expiration: 3600
   spool_expire: 0
   debug: FALSE
   last_cron: 0
   last_sent: 0
+  source_cache: \Drupal\simplenews\Source\SourceCacheBuild
+  source: \Drupal\simplenews\Source\SourceEntity
+  source_node: \Drupal\simplenews\Source\SourceNode
