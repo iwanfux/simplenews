@@ -8,8 +8,6 @@
  *
  * @todo:
  * Newsletter node create, send draft, send final
- *
- * @group simplenews
  */
 
 namespace Drupal\simplenews\Tests;
@@ -36,7 +34,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
   /**
    * Test various combinations of newsletter settings.
    */
-  function dtestNewsletterSettings() {
+  function testNewsletterSettings() {
 
     // Allow registration of new accounts without approval.
     $site_config = \Drupal::config('user.settings');

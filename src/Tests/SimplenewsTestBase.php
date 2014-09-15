@@ -18,7 +18,7 @@ use Drupal\user\Entity\Role;
  */
 abstract class SimplenewsTestBase extends WebTestBase {
 
-  public static $modules = array('simplenews', 'block');
+  public static $modules = array('simplenews', 'block', 'options');
 
   public function setUp() {
     parent::setUp();
@@ -128,7 +128,7 @@ abstract class SimplenewsTestBase extends WebTestBase {
     return $block;
   }
 
-  function setUpSubscribers($count = 100, $newsletter_id = 1) {
+  function setUpSubscribers($count = 100, $newsletter_id = 'default') {
     // Subscribe users.
     $this->subscribers = array();
     for ($i = 0; $i < $count; $i++) {

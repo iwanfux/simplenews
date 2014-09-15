@@ -578,6 +578,7 @@ function simplenews_clear_spool() {
   $config = \Drupal::config('simplenews.settings');
 
   $expiration_time = REQUEST_TIME - $config->get('mail.spool_expire') * 86400;
+  debug($expiration_time);
   return db_delete('simplenews_mail_spool')
     ->condition('status', SIMPLENEWS_SPOOL_DONE)
     ->condition('timestamp', $expiration_time, '<=')
@@ -634,13 +635,13 @@ function simplenews_send_status_update() {
 
   // For each pending newsletter count the number of pending emails in the spool.
   $query = \Drupal::entityQuery('node');
-  $nodes = $query
+  $nids = $query
     ->condition('simplenews_issue.status', SIMPLENEWS_STATUS_SEND_PENDING)
     ->execute();
-  debug($nodes);
+  $nodes = Node::loadMultiple($nids);
   if ($nodes) {
-    foreach (reset($nodes) as $node) {
-      $counts[$node->simplenews_issue->target_id][$node->id()] = simplenews_count_spool(array('entity_id' => $node->id(), 'entity_type' => 'node'));
+    foreach ($nodes as $nid => $node) {
+      $counts[$node->simplenews_issue->target_id][$nid] = simplenews_count_spool(array('entity_id' => $nid, 'entity_type' => 'node'));
     }
   }
   // Determine which nodes are send per translation group and per individual node.

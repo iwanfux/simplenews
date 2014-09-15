@@ -281,23 +281,23 @@ function simplenews_node_presave(NodeInterface $node) {
  * Implements hook_node_delete().
  */
 function simplenews_node_delete($node) {
-  if (!simplenews_check_node_types($node->type)) {
+  if (!simplenews_check_node_types($node->getType())) {
     return;
   }
   // Check if pending emails of this newsletter issue exist and delete these too.
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-  $count = simplenews_delete_spool(array('entity_id' => $node->nid, 'entity_type' => 'node'));
+  $count = simplenews_delete_spool(array('entity_id' => $node->id(), 'entity_type' => 'node'));
   if ($count) {
     drupal_set_message(t('Newsletter %title was deleted but had @count pending emails. They can no longer be sent.', array(
-        '%title' => $node->title,
+        '%title' => $node->getTitle(),
         '@count' => $count,
       )), 'warning');
-    watchdog('simplenews', 'Newsletter %title deleted with @count pending emails. Emails can no longer be sent.', array(
-      '%title' => $node->title,
+    \Drupal::logger('simplenews')->alert('Newsletter %title deleted with @count pending emails. Emails can no longer be sent.', array(
+      '%title' => $node->getTitle(),
       '@count' => $count,
-      ), WATCHDOG_ALERT);
+      ));
   }
-  drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->title)));
+  drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->getTitle())));
 }
 
 /**
@@ -723,12 +723,10 @@ function simplenews_form_node_type_form_alter(&$form, $form_state) {
 /**
  * Implements hook_form_alter().
  */
-function simplenews_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function simplenews_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   // Add Simplenews settings to simplenews newsletter node form.
-  if (!empty($form['#node_edit_form'])) {
-    if (in_array($form['type']['#value'], simplenews_get_content_types())) {
-      _simplenews_node_form($form, $form_state);
-    }
+  if (in_array($form_state->getFormObject()->getEntity()->getType(), simplenews_get_content_types())) {
+    _simplenews_node_form($form, $form_state);
   }
 }
 
@@ -738,8 +736,9 @@ function simplenews_form_alter(&$form, FormStateInterface $form_state, $form_id)
 function _simplenews_node_form(&$form, $form_state) {
 
   // Display warning if the node is currently being sent.
-  if (!empty($form['#node']->nid)) {
-    if (simplenews_issue_status(node_load($form['#node']->nid)) == SIMPLENEWS_STATUS_SEND_PENDING) {
+  if (!$form_state->getFormObject()->getEntity()->isNew()) {
+    $node = $form_state->getFormObject()->getEntity();
+    if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING) {
       drupal_set_message(t('This newsletter issue is currently being sent. Any changes will be reflected in the e-mails which have not been sent yet.'), 'warning');
     }
   }
@@ -756,6 +755,7 @@ function _simplenews_node_form(&$form, $form_state) {
     $form['simplenews_token_help']['browser'] = array(
       '#theme' => 'token_tree',
       '#token_types' => array('simplenews-newsletter', 'simplenews-subscriber', 'node'),
+      '#dialog' => TRUE,
     );
   }
 }
@@ -2167,11 +2167,9 @@ function simplenews_field_extra_fields() {
  * Don't allow deletion when a newsletter is pending
  */
 function simplenews_node_access($node, $op, $account) {
-  // @todo access check
-  return NODE_ACCESS_IGNORE;
   if ($op == 'delete') {
     // Check if a newsletter is pending
-    if (simplenews_issue_status($node) == SIMPLENEWS_STATUS_SEND_PENDING) {
+    if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING) {
       drupal_set_message(t('You can\'t delete this newsletter because it has not been sent to all its subscribers.'), 'warning');
       return NODE_ACCESS_DENY;
     }

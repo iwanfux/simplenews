@@ -545,7 +545,6 @@ function theme_simplenews_status($variables) {
       );
       break;
   }
-
   // Build the output
   if (isset($images[$status])) {
     $img_vars = array(

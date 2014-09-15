@@ -212,7 +212,7 @@ class NewsletterIssueListForm extends FormBase {
         'published' => drupal_render($published_render_array),
         'sent' => $send_status,
         'subscribers' => $subscriber_count,
-        'operations' => l(t('edit'), $node_edit_url->getRouteName(), $node_edit_url->getRouteParameters(), array('query' => drupal_get_destination())),
+        'operations' => \Drupal::l(t('edit'), $node_edit_url->getRouteName(), $node_edit_url->getRouteParameters(), array('query' => drupal_get_destination())),
       );
     }
 
@@ -238,7 +238,6 @@ class NewsletterIssueListForm extends FormBase {
    *   Number of subscribers.
    */
   public function countSubscriptions($newsletter_id) {
-    return 1;
     $subscription_count = &drupal_static(__FUNCTION__);
 
     if (isset($subscription_count[$newsletter_id])) {
