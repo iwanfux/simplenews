@@ -18,7 +18,7 @@ use Drupal\simplenews\Entity\Subscriber;
 /**
  * Test cases for creating and sending newsletters.
  *
- * @group simplnews
+ * @group simplenews
  */
 class SimplenewsSourceTest extends SimplenewsTestBase {
 
