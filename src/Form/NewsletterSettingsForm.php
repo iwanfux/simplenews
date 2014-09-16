@@ -120,14 +120,14 @@ class NewsletterSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory()->get('simplenews.settings')
-      ->set('newsletter.format', $form_state['values']['simplenews_format'])
-      ->set('newsletter.priority', $form_state['values']['simplenews_priority'])
-      ->set('newsletter.receipt', $form_state['values']['simplenews_receipt'])
-      ->set('newsletter.send', $form_state['values']['simplenews_send'])
-      ->set('newsletter.test_address', $form_state['values']['simplenews_test_address'])
-      ->set('newsletter.test_address_override', $form_state['values']['simplenews_test_address_override'])
-      ->set('newsletter.from_name', $form_state['values']['simplenews_from_name'])
-      ->set('newsletter.from_address', $form_state['values']['simplenews_from_address'])
+      ->set('newsletter.format', $form_state->getValue('simplenews_format'))
+      ->set('newsletter.priority', $form_state->getValue('simplenews_priority'))
+      ->set('newsletter.receipt', $form_state->getValue('simplenews_receipt'))
+      ->set('newsletter.send', $form_state->getValue('simplenews_send'))
+      ->set('newsletter.test_address', $form_state->getValue('simplenews_test_address'))
+      ->set('newsletter.test_address_override', $form_state->getValue('simplenews_test_address_override'))
+      ->set('newsletter.from_name', $form_state->getValue('simplenews_from_name'))
+      ->set('newsletter.from_address', $form_state->getValue('simplenews_from_address'))
       ->save();
 
     parent::submitForm($form, $form_state);

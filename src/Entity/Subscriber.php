@@ -31,7 +31,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *     "label" = "mail"
  *   },
  *   fieldable = TRUE,
- *   field_ui_base_route = "simplenews.newsletter_list",
+ *   field_ui_base_route = "simplenews.settings_subscriber",
  *   admin_permission = "administer simplenews subscriptions",
  *   links = {
  *     "edit-form" = "simplenews.subscriber_edit",

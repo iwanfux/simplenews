@@ -18,7 +18,7 @@ use Drupal\user\Entity\Role;
  */
 abstract class SimplenewsTestBase extends WebTestBase {
 
-  public static $modules = array('simplenews', 'block', 'options');
+  public static $modules = array('simplenews', 'block');
 
   public function setUp() {
     parent::setUp();

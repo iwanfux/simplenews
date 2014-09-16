@@ -168,13 +168,13 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
    * {@inheritdoc}
    */
   public function blockSubmit($form, FormStateInterface $form_state) {
-    $this->configuration['newsletters'] = array_filter($form_state['values']['newsletters']);
-    $this->configuration['message'] = $form_state['values']['message'];
-    $this->configuration['form'] = $form_state['values']['form'];
-    //$this->configuration['link_previous'] = $form_state['values']['link_previous'];
-    $this->configuration['issue_status'] = $form_state['values']['issue_status'];
-    $this->configuration['issue_count'] = $form_state['values']['issue_count'];
-    //$this->configuration['rss_feed'] = $form_state['values']['rss_feed'];
+    $this->configuration['newsletters'] = array_filter($form_state->getValue('newsletters'));
+    $this->configuration['message'] = $form_state->getValue('message');
+    $this->configuration['form'] = $form_state->getValue('form');
+    //$this->configuration['link_previous'] = $form_state->getValue('link_previous');
+    $this->configuration['issue_status'] = $form_state->getValue('issue_status');
+    $this->configuration['issue_count'] = $form_state->getValue('issue_count');
+    //$this->configuration['rss_feed'] = $form_state->getValue('rss_feed');
     $this->configuration['unique_id'] = \Drupal::service('uuid')->generate();
 }
 

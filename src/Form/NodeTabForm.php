@@ -38,7 +38,7 @@ class NodeTabForm extends FormBase {
     $form['#title'] = t('<em>Newsletter</em> @title', array('@title' => $node->getTitle()));
 
     // We will need the node
-    $form_state['node'] = $node;
+    $form_state->set('node', $node);
 
     // Show newsletter sending options if newsletter has not been send yet.
     // If send a notification is shown.
@@ -89,7 +89,7 @@ class NodeTabForm extends FormBase {
         );
       }
 
-      $default_handler = isset($form_state['values']['simplenews']['recipient_handler']) ? $form_state['values']['simplenews']['recipient_handler'] : $node->simplenews_issue->handler;
+      $default_handler = isset($form_state->getValue('simplenews')['recipient_handler']) ? $form_state->getValue('simplenews')['recipient_handler'] : $node->simplenews_issue->handler;
 
       $recipient_handler_manager = \Drupal::service('plugin.manager.simplenews_recipient_handler');
       $options = $recipient_handler_manager->getOptions();
@@ -154,8 +154,8 @@ class NodeTabForm extends FormBase {
   public function validateForm(array &$form, FormStateInterface $form_state) {
     $config = \Drupal::config('simplenews.settings');
 
-    $values = $form_state['values'];
-    $node = $form_state['node'];
+    $values = $form_state->getValues();
+    $node = $form_state->get('node');
 
     // Validate recipient handler settings.
     if (!empty($form['recipient_handler_settings'])) {
@@ -191,7 +191,7 @@ class NodeTabForm extends FormBase {
         $form_state->setErrorByName('test_address', t('Missing test email address.'));
       }
     }
-    $form_state['test_addresses'] = $mails;
+    $form_state->set('test_addresses', $mails);
 
     parent::validateForm($form, $form_state);
   }
@@ -200,8 +200,8 @@ class NodeTabForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state['values'];
-    $node = $form_state['node'];
+    $values = $form_state->getValues();
+    $node = $form_state->get('node');
 
     // Save the recipient handler and it's settings.
     $node->simplenews_issue->handler = $values['recipient_handler'];
@@ -231,7 +231,7 @@ class NodeTabForm extends FormBase {
       }
     }
     elseif ($values['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
-      simplenews_send_test($node, $form_state['test_addresses']);
+      simplenews_send_test($node, $form_state->get('test_addresses'));
     }
 
     // If the selected command is send on publish, just set the newsletter status.

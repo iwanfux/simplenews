@@ -70,9 +70,9 @@ class SubscriberMassUnsubscribeForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $removed = array();
     $invalid = array();
-    $checked_lists = array_keys(array_filter($form_state['values']['newsletters']));
+    $checked_lists = array_keys(array_filter($form_state->getValue('newsletters')));
 
-    $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
+    $emails = preg_split("/[\s,]+/", $form_state->getValue('emails'));
     foreach ($emails as $email) {
       $email = trim($email);
       if (valid_email_address($email)) {

@@ -40,7 +40,7 @@ class SubscriptionsAccountForm extends FormBase {
       $options[$newsletter->id()] = String::checkPlain($newsletter->name);
     }
 
-    $form_state['user'] = $user;
+    $form_state->set('user', $user);
 
     $form['subscriptions'] = array(
       '#type' => 'fieldset',
@@ -76,12 +76,12 @@ class SubscriptionsAccountForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $user = \Drupal::currentUser();
 
-    $account = $form_state['user'];
+    $account = $form_state->get('user');
 
     // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
     // when unsubscribed from the
-    arsort($form_state['values']['newsletters'], SORT_NUMERIC);
-    foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
+    arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
+    foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
       if ($checked) {
         simplenews_subscribe($account->getEmail(), $newsletter_id, FALSE, 'website');
       }

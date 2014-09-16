@@ -77,7 +77,7 @@ class ConfirmMultiForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $subscriber = $form_state['values']['subscriber'];
+    $subscriber = $form_state->getValue('subscriber');
     foreach ($subscriber->getChanges() as $newsletter_id => $action) {
 
       if ($action == 'subscribe') {

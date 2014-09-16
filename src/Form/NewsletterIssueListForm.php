@@ -47,10 +47,10 @@ class NewsletterIssueListForm extends FormBase {
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    /*switch ($form_state['values']['op']) {
+    /*switch ($form_state->getVallue('op')) {
       case t('Filter'):
         $_SESSION['simplenews_issue_filter'] = array(
-          'newsletter' => $form_state['values']['newsletter'],
+          'newsletter' => $form_state->getValue('newsletter'),
         );
         break;
       case t('Reset'):

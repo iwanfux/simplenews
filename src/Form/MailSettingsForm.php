@@ -101,11 +101,11 @@ class MailSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory()->get('simplenews.settings')
-      ->set('mail.use_cron', $form_state['values']['simplenews_use_cron'])
-      ->set('mail.source_cache', $form_state['values']['simplenews_source_cache'])
-      ->set('mail.throttle', $form_state['values']['simplenews_throttle'])
-      ->set('mail.spool_expire', $form_state['values']['simplenews_spool_expire'])
-      ->set('mail.debug', $form_state['values']['simplenews_debug'])
+      ->set('mail.use_cron', $form_state->getValue('simplenews_use_cron'))
+      ->set('mail.source_cache', $form_state->getValue('simplenews_source_cache'))
+      ->set('mail.throttle', $form_state->getValue('simplenews_throttle'))
+      ->set('mail.spool_expire', $form_state->getValue('simplenews_spool_expire'))
+      ->set('mail.debug', $form_state->getValue('simplenews_debug'))
       ->save();
 
     parent::submitForm($form, $form_state);

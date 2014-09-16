@@ -62,8 +62,8 @@ class RequestHashForm extends ConfirmFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $key = '', $context = array()) {
     $form = parent::buildForm($form, $form_state);
-    $form_state['key'] = $key;
-    $form_state['context'] = $context;
+    $form_state->set('key', $key);
+    $form_state->set('context', $context);
 
     return $form;
   }
@@ -81,9 +81,9 @@ class RequestHashForm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
     $params['from'] = _simplenews_set_from();
-    $params['context'] = $form_state['context'];
+    $params['context'] = $form_state->get('context');
     $subscriber = $params['context']['simplenews_subscriber'];
-    drupal_mail('simplenews', $form_state['key'], $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
+    drupal_mail('simplenews', $form_state->get('key'), $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
     drupal_set_message(t('The confirmation mail has been sent.'));
     $form_state->setRedirect('<front>');
   }

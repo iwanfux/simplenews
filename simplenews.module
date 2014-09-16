@@ -918,16 +918,16 @@ function simplenews_form_user_register_form_alter(&$form, FormStateInterface $fo
 function simplenews_user_profile_form_submit($form, FormStateInterface $form_state) {
   $account = $form_state->getFormObject()->getEntity();
   // Process subscription check boxes.
-  if (isset($form_state['values']['newsletters'])) {
-    $newsletters = simplenews_newsletter_load_multiple(array_filter($form_state['values']['newsletters']));
+  if ($form_state->getValue('newsletters')) {
+    $newsletters = simplenews_newsletter_load_multiple(array_filter($form_state->getValue('newsletters')));
     foreach ($newsletters as $newsletter) {
       simplenews_subscribe($account->getEmail(), $newsletter->id(), FALSE, 'website', $account->getPreferredLangcode());
       drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
     }
   }
   // Process hidden (automatic) subscriptions.
-  if (isset($form_state['values']['simplenews_hidden'])) {
-    foreach (explode(',', $form_state['values']['simplenews_hidden']) as $newsletter_id) {
+  if ($form_state->getValue('simplenews_hidden')) {
+    foreach (explode(',', $form_state->getValue('simplenews_hidden')) as $newsletter_id) {
       simplenews_subscribe($account->getEmail(), $newsletter_id, FALSE, 'automatically', $account->getPreferredLangcode());
     }
   }

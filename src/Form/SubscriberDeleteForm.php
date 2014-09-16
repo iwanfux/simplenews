@@ -41,10 +41,10 @@ class SubscriberDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submit(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->entity->delete();
     drupal_set_message(t('Subscriber %label has been deleted.', array('%label' => $this->entity->label())));
-    watchdog('simplenews', 'Subscriber %label has been deleted.', array('%label' => $this->entity->label()), WATCHDOG_NOTICE);
+    \Drupal::logger('simplenews')->notice('Subscriber %label has been deleted.', array('%label' => $this->entity->label()));
     $form_state->setRedirect('simplenews.subscriber_add');
   }
 

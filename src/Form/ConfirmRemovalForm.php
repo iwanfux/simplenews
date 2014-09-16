@@ -82,13 +82,13 @@ class ConfirmRemovalForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    simplenews_unsubscribe($form_state['values']['mail'], $form_state['values']['newsletter']->id(), FALSE, 'website');
+    simplenews_unsubscribe($form_state->getValue('mail'), $form_state->getValue('newsletter')->id(), FALSE, 'website');
 
     $config = \Drupal::config('simplenews.settings');
     if (!$path = $config->get('subscription.confirm_unsubscribe_page')) {
       $site_config = \Drupal::config('system.site');
       $path = $site_config->get('page.front');
-      drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state['values']['mail'], '%newsletter' => $form_state['values']['newsletter']->name)));
+      drupal_set_message(t('%user was unsubscribed from the %newsletter mailing list.', array('%user' => $form_state->getValue('mail'), '%newsletter' => $form_state->getValue('newsletter')->name)));
     }
 
     $form_state->setRedirectUrl(Url::createFromPath($path));

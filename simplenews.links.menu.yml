@@ -3,3 +3,9 @@ simplenews.settings:
   description: 'Configure your sites newsletters.'
   parent: system.admin_config_services
   route_name: simplenews.newsletter_list
+
+simplenews.subscriber_settings:
+  title: Subscriber settings
+  description: 'Administer your subscriber settings.'
+  parent: user.admin_index
+  route_name: simplenews.settings_subscriber

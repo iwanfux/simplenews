@@ -102,10 +102,10 @@ class SubscriberMassSubscribeForm extends FormBase {
     $added = array();
     $invalid = array();
     $unsubscribed = array();
-    $checked_newsletters = array_keys(array_filter($form_state['values']['newsletters']));
-    $langcode = $form_state['values']['language'];
+    $checked_newsletters = array_keys(array_filter($form_state->getValue('newsletters')));
+    $langcode = $form_state->getValue('language');
 
-    $emails = preg_split("/[\s,]+/", $form_state['values']['emails']);
+    $emails = preg_split("/[\s,]+/", $form_state->getValue('emails'));
     foreach ($emails as $email) {
       $email = trim($email);
       if ($email == '') {
@@ -118,7 +118,7 @@ class SubscriberMassSubscribeForm extends FormBase {
           // the current newsletter and if this subscription has the status
           // unsubscribed.
           $is_unsubscribed = $subscriber ? $subscriber->isUnsubscribed($newsletter->id()) : FALSE;
-          if (!$is_unsubscribed || $form_state['values']['resubscribe'] == TRUE) {
+          if (!$is_unsubscribed || $form_state->getValue('resubscribe') == TRUE) {
             simplenews_subscribe($email, $newsletter->id(), FALSE, 'mass subscribe', $langcode);
             $added[] = $email;
           }

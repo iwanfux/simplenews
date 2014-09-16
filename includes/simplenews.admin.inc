@@ -8,6 +8,8 @@
  */
 use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\Node;
+use Drupal\simplenews\Entity\Newsletter;
 
 /**
  * Menu callback: Admin form for sent and draft newsletters.
@@ -96,10 +98,10 @@ function _simplenews_issue_filter_default() {
  * Form submit callback for the newsletter issue filter.
  */
 function simplenews_issue_filter_form_submit($form, FormStateInterface $form_state) {
-  switch ($form_state['values']['op']) {
+  switch ($form_state->getValue('op')) {
     case t('Filter'):
       $_SESSION['simplenews_issue_filter'] = array(
-        'newsletter' => $form_state['values']['newsletter'],
+        'newsletter' => $form_state->getValue('newsletter'),
       );
       break;
     case t('Reset'):
@@ -230,8 +232,8 @@ function simplenews_simplenews_issue_operations() {
  * Form vaidate callback for the issue list operations.
  */
 function simplenews_admin_issues_validate($form, FormStateInterface $form_state) {
-  if (isset($form_state['input']['operation'])) {
-    $nids = array_keys(array_filter($form_state['input']['issues']));
+  if ($form_state->getUserInput('input')['operation']) {
+    $nids = array_keys(array_filter($form_state->getUserInput('input')['issues']));
     if (empty($nids)) {
       form_set_error('', t('No items selected.'));
     }
@@ -244,9 +246,9 @@ function simplenews_admin_issues_validate($form, FormStateInterface $form_state)
 function simplenews_admin_issues_submit($form, FormStateInterface $form_state) {
   // Call operation functions as defined in hook_simplenews_issue_operations().
   $operations = module_invoke_all('simplenews_issue_operations');
-  $operation = $operations[$form_state['values']['operation']];
+  $operation = $operations[$form_state->getValue('operation')];
   // Filter out unchecked list issues
-  $nids = array_filter($form_state['values']['issues']);
+  $nids = array_filter($form_state->getValue('issues'));
   if ($function = $operation['callback']) {
     // Add in callback arguments if present.
     if (isset($operation['callback arguments'])) {
@@ -260,7 +262,7 @@ function simplenews_admin_issues_submit($form, FormStateInterface $form_state) {
   else {
     // We need to rebuild the form to go to a second step. For example, to
     // show the confirmation form for the deletion of nodes.
-    $form_state['rebuild'] = TRUE;
+    $form_state->set('rebuild', TRUE);
   }
 }
 
@@ -328,7 +330,7 @@ function simplenews_build_issue_filter_query(EntityFieldQuery $query) {
  */
 function simplenews_admin_categories() {
   $form['#tree'] = TRUE;
-  if ($newsletters = entity_load('simplenews_newsletter')) {
+  if ($newsletters = Newsletter::loadMultiple()) {
     foreach ($newsletters as $newsletter) {
       $form[$newsletter->newsletter_id]['#newsletter'] = $newsletter;
       $form[$newsletter->newsletter_id]['name'] = array('#markup' => check_plain($newsletter->name));
@@ -356,7 +358,7 @@ function simplenews_admin_categories() {
  * Form submit callback for the simplenews categories.
  */
 function simplenews_admin_categories_submit($form, FormStateInterface $form_state) {
-  foreach ($form_state['values'] as $newsletter_id => $newsletter) {
+  foreach ($form_state->getValues() as $newsletter_id => $newsletter) {
     if (is_numeric($newsletter_id) && $form[$newsletter_id]['#newsletter']->weight != $newsletter['weight']) {
       $form[$newsletter_id]['#newsletter']->weight = $newsletter['weight'];
       $form[$newsletter_id]['#newsletter']->save();
@@ -673,7 +675,7 @@ function simplenews_node_tab_send_form($form, FormStateInterface $form_state, $n
       );
     }
 
-    $default_handler = isset($form_state['values']['simplenews']['recipient_handler']) ? $form_state['values']['simplenews']['recipient_handler'] : simplenews_issue_handler($node);
+    $default_handler = isset($form_state->getValue('simplenews')['recipient_handler']) ? $form_state->getValue('simplenews')['recipient_handler'] : simplenews_issue_handler($node);
     $options = simplenews_handler_field_allowed_values();
     $form['simplenews']['recipient_handler'] = array(
       '#type' => 'select',
@@ -740,8 +742,8 @@ function simplenews_node_tab_send_form_handler_update($form, FormStateInterface 
  * @todo
  */
 function simplenews_node_tab_send_form_validate($form, FormStateInterface $form_state) {
-  $values = $form_state['values'];
-  $node = node_load($values['nid']);
+  $values = $form_state->getValues();
+  $node = Node::load($values['nid']);
 
   // Validate recipient handler settings.
   if (!empty($form['simplenews']['recipient_handler_settings'])) {
@@ -775,15 +777,15 @@ function simplenews_node_tab_send_form_validate($form, FormStateInterface $form_
       form_set_error('simplenews][test_address', t('Missing test email address.'));
     }
   }
-  $form_state['test_addresses'] = $mails;
+  $form_state->set('test_addresses', $mails);
 }
 
 /**
  * @todo
  */
 function simplenews_node_tab_send_form_submit($form, FormStateInterface $form_state) {
-  $values = $form_state['values'];
-  $node = node_load($values['nid']);
+  $values = $form_state->getValues();
+  $node = Node::load($values['nid']);
 
   // Save the recipient handler and it's settings.
   simplenews_issue_handler($node, $values['simplenews']['recipient_handler']);
@@ -813,7 +815,7 @@ function simplenews_node_tab_send_form_submit($form, FormStateInterface $form_st
     }
   }
   elseif ($values['simplenews']['send'] == SIMPLENEWS_COMMAND_SEND_TEST) {
-    simplenews_send_test($node, $form_state['test_addresses']);
+    simplenews_send_test($node, $form_state->get('test_addresses'));
   }
 
   // If the selected command is send on publish, just set the newsletter status.

@@ -43,7 +43,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Creates and sends a node using the API.
    */
-  function dtestProgrammaticNewsletter() {
+  function testProgrammaticNewsletter() {
     // Create a very basic node.
     $node = Node::create(array(
       'type' => 'simplenews',
@@ -109,7 +109,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Send a newsletter using cron.
    */
-  function dtestSendNowNoCron() {
+  function testSendNowNoCron() {
     // Disable cron.
     $config = \Drupal::config('simplenews.settings');
     $config->set('mail.use_cron', FALSE);
@@ -159,7 +159,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Send a newsletter using cron.
    */
-  function dtestSendMultipleNoCron() {
+  function testSendMultipleNoCron() {
     // Disable cron.
     $config = \Drupal::config('simplenews.settings');
     $config->set('mail.use_cron', FALSE);
@@ -225,7 +225,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Send a newsletter using cron and a low throttle.
    */
-  function dtestSendNowCronThrottle() {
+  function testSendNowCronThrottle() {
     $config = \Drupal::config('simplenews.settings');
     $config->set('mail.throttle', 3);
     $config->save();
@@ -305,7 +305,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Send a newsletter without using cron.
    */
-  function dtestSendNowCron() {
+  function testSendNowCron() {
 
     // Verify that the newsletter settings are shown.
     $this->drupalGet('node/add/simplenews');
@@ -380,7 +380,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
   /**
    * Send a newsletter on publish without using cron.
    */
-  function dtestSendPublishNoCron() {
+  function testSendPublishNoCron() {
     // Disable cron.
     $config = \Drupal::config('simplenews.settings');
     $config->set('mail.use_cron', FALSE);
@@ -439,7 +439,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have been received a mail'));
   }
 
-  function dtestUpdateNewsletter() {
+  function testUpdateNewsletter() {
     // Create a second newsletter.
     $this->drupalGet('admin/config/services/simplenews');
     $this->clickLink(t('Add newsletter'));

@@ -220,11 +220,11 @@ class NewsletterForm extends EntityForm {
 
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Newsletter %label has been updated.', array('%label' => $newsletter->label())));
-      watchdog('simplenews', 'Newsletter %label has been updated.', array('%label' => $newsletter->label()), WATCHDOG_NOTICE, $edit_link);
+      \Drupal::logger('simplenews')->notice('Newsletter %label has been updated.', array('%label' => $newsletter->label()), $edit_link);
     }
     else {
       drupal_set_message(t('Newsletter %label has been added.', array('%label' => $newsletter->label())));
-      watchdog('simplenews', 'Newsletter %label has been added.', array('%label' => $newsletter->label()), WATCHDOG_NOTICE, $edit_link);
+      \Drupal::logger('simplenews')->notice('Newsletter %label has been added.', array('%label' => $newsletter->label()), $edit_link);
     }
 
     $form_state->setRedirect('simplenews.newsletter_list');

@@ -6,6 +6,14 @@ simplenews.settings_newsletter:
   requirements:
     _permission: 'administer simplenews settings'
 
+simplenews.settings_subscriber:
+  path: 'admin/config/people/simplenews/settings/subscriber'
+  defaults:
+    _form: '\Drupal\simplenews\Form\SubscriberSettingsForm'
+    _title: 'Subscriber'
+  requirements:
+    _permission: 'administer simplenews settings'
+
 simplenews.settings_subscription:
   path: 'admin/config/services/simplenews/settings/subscription'
   defaults:

@@ -109,7 +109,8 @@ class SubscriberExportForm extends FormBase {
 
     // Get export results and display them in a text area. Only get the results
     // if the form is build after redirect, not after submit.
-    if (isset($_GET['states']) && empty($form_state['input'])) {
+    $input = $form_state->getUserInput();
+    if (isset($_GET['states']) && empty($input)) {
       $form['emails'] = array(
         '#type' => 'textarea',
         '#title' => t('Export results'),
@@ -137,7 +138,7 @@ class SubscriberExportForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_values = $form_state['values'];
+    $form_values = $form_state->getValues();
 
     // Get data for query string and redirect back to the current page.
     $options['query']['states'] = array_filter($form_values['states']);

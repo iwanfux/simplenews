@@ -7,6 +7,6 @@ version: VERSION
 dependencies:
 - node
 - entity_reference
-#- number
-#- list
+- field
+- options
 configure: simplenews.admin

@@ -38,7 +38,7 @@ class SubscriptionWidget extends ButtonsWidget {
    */
   public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
     //debug($values);
-    //$existing_values = $form_state['controller']->getEntity()->subscriptions->getValue();
+    //$existing_values = $form_state->get('controller')->getEntity()->subscriptions->getValue();
     return $values;
   }
 }

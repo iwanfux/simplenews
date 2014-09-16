@@ -78,7 +78,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Tests that sending a minimal implementation of the source interface works.
    */
-  function dtestSendMinimalSourceImplementation() {
+  function testSendMinimalSourceImplementation() {
 
     // Create a basic plaintext test source and send it.
     $plain_source = new SourceTest('plain');
@@ -132,7 +132,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Test sending a newsletter to 100 recipients with caching enabled.
    */
-  function dtestSendCaching() {
+  function testSendCaching() {
 
     $this->setUpSubscribers(100);
     // Enable build caching.
@@ -230,6 +230,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
 
     // Test that tokens are correctly replaced.
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
+      debug($mail['body']);
       // Verify title.
       $this->assertTrue(strpos($mail['body'], '<h2>' . $node->getTitle() . '</h2>') !== FALSE);
 
@@ -265,12 +266,12 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Send a issue with the newsletter set to hidden.
    */
-  function dtestSendHidden() {
+  function testSendHidden() {
     $this->setUpSubscribers(5);
 
     // Set the format to HTML.
     $this->drupalGet('admin/config/services/simplenews');
-    $this->clickLink(t('edit newsletter'));
+    $this->clickLink(t('Edit'));
     $edit = array(
       'opt_inout' => 'hidden',
       // @todo: This shouldn't be necessary.
@@ -283,7 +284,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
       'body[0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
       'simplenews_issue' => 'default',
     );
-    $this->drupalPostForm('node/add/simplenews', $edit, ('Save'));
+    $this->drupalPostForm('node/add/simplenews', $edit, ('Save and publish'));
     $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
     $node = Node::load($matches[1]);
 
@@ -305,11 +306,11 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Test with disabled caching.
    */
-  function dtestSendNoCaching() {
+  function testSendNoCaching() {
     $this->setUpSubscribers(100);
     // Disable caching.
     $edit = array(
-      'simplenews_source_cache' => 'SimplenewsSourceCacheNone',
+      'simplenews_source_cache' => '\Drupal\simplenews\Source\SourceCacheNone',
     );
     $this->drupalPostForm('admin/config/services/simplenews/settings/mail', $edit, t('Save configuration'));
 
@@ -349,7 +350,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Test with disabled caching.
    */
-  function dtestSendMissingNode() {
+  function testSendMissingNode() {
     $this->setUpSubscribers(1);
 
     $edit = array(
@@ -385,14 +386,15 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
   /**
    * Test with disabled caching.
    */
-  function dtestSendMissingSubscriber() {
+  function testSendMissingSubscriber() {
     $this->setUpSubscribers(1);
 
     $edit = array(
-      'title' => $this->randomString(10),
-      'body[und][0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
+      'title[0][value]' => $this->randomString(10),
+      'body[0][value]' => "Mail token: <strong>[simplenews-subscriber:mail]</strong>",
+      'simplenews_issue' => 'default',
     );
-    $this->drupalPostForm('node/add/simplenews', $edit, ('Save'));
+    $this->drupalPostForm('node/add/simplenews', $edit, ('Save and publish'));
     $this->assertTrue(preg_match('|node/(\d+)$|', $this->getUrl(), $matches), 'Node created');
     $node = Node::load($matches[1]);
 

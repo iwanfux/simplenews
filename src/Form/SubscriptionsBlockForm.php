@@ -154,14 +154,14 @@ class SubscriptionsBlockForm extends FormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $valid_email = valid_email_address($form_state['values']['mail']);
+    $valid_email = valid_email_address($form_state->getValue('mail'));
     if (!$valid_email) {
       $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
     }
 
-    $checked_newsletters = array_filter($form_state['values']['newsletters']);
+    $checked_newsletters = array_filter($form_state->getValue('newsletters'));
     // Unless we're in update mode, at least one checkbox must be checked.
-    if (!count($checked_newsletters) && $form_state['values']['op'] != t('Update')) {
+    if (!count($checked_newsletters) && $form_state->getValue('op') != t('Update')) {
       $form_state->setErrorByName('newsletters', t('You must select at least one newsletter.'));
     }
 
@@ -172,17 +172,17 @@ class SubscriptionsBlockForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $mail = $form_state['values']['mail'];
+    $mail = $form_state->getValue('mail');
     $account = user_load_by_mail($mail);
 
     // Group confirmation mails as necessary and configured.
     simplenews_confirmation_combine(TRUE);
-    switch ($form_state['values']['op']) {
+    switch ($form_state->getValue('op')) {
       case t('Update'):
         // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
         // when unsubscribed from the newsletter.
-        arsort($form_state['values']['newsletters'], SORT_NUMERIC);
-        foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
+        arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
+        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
           if ($checked) {
             simplenews_subscribe($mail, $newsletter_id, FALSE, 'website');
           }
@@ -190,10 +190,10 @@ class SubscriptionsBlockForm extends FormBase {
             simplenews_unsubscribe($mail, $newsletter_id, FALSE, 'website');
           }
         }
-        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state['values']['mail'])));
+        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail'))));
         break;
       case t('Subscribe'):
-        foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
+        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
           if ($checked) {
             $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
             simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
@@ -207,7 +207,7 @@ class SubscriptionsBlockForm extends FormBase {
         }
         break;
       case t('Unsubscribe'):
-        foreach ($form_state['values']['newsletters'] as $newsletter_id => $checked) {
+        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
           if ($checked) {
             $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
             simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
