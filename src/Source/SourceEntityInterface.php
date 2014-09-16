@@ -19,6 +19,7 @@ interface SourceEntityInterface extends SourceInterface {
 
   /**
    * Returns the actually used entity of this source.
+   * @return \Drupal\Core\Entity\ContentEntityInterface
    */
   function getEntity();
 

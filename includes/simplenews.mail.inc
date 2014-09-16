@@ -8,6 +8,7 @@
  */
 
 use Drupal\Core\Language\LanguageManager;
+use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\node\Entity\Node;
 use Drupal\simplenews\Entity\Subscriber;
@@ -934,34 +935,36 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
   }
 }
 
+
 /**
  * A mail sending implementation that captures sent messages to a variable.
  *
  * This class is for running tests or for development and does not convert HTML
  * to plaintext.
  */
-/*class SimplenewsHTMLTestingMailSystem implements MailSystemInterface {
+class SimplenewsHTMLTestingMailSystem implements MailInterface {
 
   /**
    * Implements MailSystemInterface::format().
-   *
+   */
   public function format(array $message) {
     // Join the body array into one string.
     $message['body'] = implode("\n\n", $message['body']);
     // Wrap the mail body for sending.
-    $message['body'] = drupal_wrap_mail($message['body']);
+    $message['body'] = Drupal\Core\Mail\MailFormatHelper::wrapMail($message['body']);
     return $message;
   }
 
   /**
    * Implements MailSystemInterface::mail().
-   *
+   */
   public function mail(array $message) {
-    $captured_emails = variable_get('drupal_test_email_collector', array());
+    $config = \Drupal::config('simplenews.settigs');
+    $captured_emails = $config->get('drupal_test_email_collector');
     $captured_emails[] = $message;
     // @todo: This is rather slow when sending 100 and more mails during tests.
     // Investigate in other methods like APC shared memory.
-    variable_set('drupal_test_email_collector', $captured_emails);
+    $config->set('drupal_test_email_collector', $captured_emails);
     return TRUE;
   }
-}*/
+}

@@ -47,11 +47,11 @@ class SourceTest implements SourceInterface {
   }
 
   public function getFromAddress() {
-    return 'test@example.org';
+    return 'simpletest@example.com';
   }
 
   public function getFromFormatted() {
-    return 'Test <test@example.org>';
+    return 'Test <simpletest@example.com>';
   }
 
   public function getHeaders(array $headers) {

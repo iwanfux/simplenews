@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\simplenews\Source;
+use Drupal\file\Entity\File;
 
 /**
  * Default source class for entities.
@@ -179,7 +180,6 @@ class SourceEntity implements SourceEntityInterface {
     if (drupal_substr(PHP_OS, 0, 3) == 'WIN') {
       return $this->getFromAddress();
     }
-
     return '"' . addslashes(mime_header_encode($this->getNewsletter()->from_name)) . '" <' . $this->getFromAddress() . '>';
   }
 
@@ -302,6 +302,7 @@ class SourceEntity implements SourceEntityInterface {
     // Build message body
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
     $build = entity_view($this->getEntity(), 'email_' . $format);
+    $build['#entity_type'] = $this->getEntityType();
 
     // We need to prevent the standard theming hooks, but we do want to allow
     // modules such as panelizer that override it, so only clear the standard
@@ -334,7 +335,7 @@ class SourceEntity implements SourceEntityInterface {
       return $cache;
     }
     $body = array(
-      '#type' => 'simplenews_newsletter_body',
+      '#theme' => 'simplenews_newsletter_body',
       '#build' => $this->build($format),
       '#newsletter' => $this->getNewsletter(),
       '#language' => $this->getLanguage(),
@@ -397,6 +398,9 @@ class SourceEntity implements SourceEntityInterface {
    *   format.
    */
   protected function buildFooter($format = NULL) {
+    if ($format == 'plain') {
+      //debug(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
+    }
     if (empty($format)) {
       $format = $this->getFormat();
     }
@@ -407,7 +411,7 @@ class SourceEntity implements SourceEntityInterface {
 
     // Build and buffer message footer
     $footer = array(
-      '#type' => 'simplenews_newsletter_footer',
+      '#theme' => 'simplenews_newsletter_footer',
       '#build' => $this->build($format),
       '#newsletter' => $this->getNewsletter(),
       '#context' => $this->getTokenContext(),
@@ -467,23 +471,22 @@ class SourceEntity implements SourceEntityInterface {
     $attachments = array();
     $build = $this->build();
     $fids = array();
-    list(, , $bundle) = entity_extract_ids($this->getEntityType(), $this->getEntity());
-    foreach (field_info_instances($this->getEntityType(), $bundle) as $field_name => $field_instance) {
+    $bundle = $this->getEntity()->bundle();
+    foreach ($this->getEntity()->getFieldDefinitions($this->getEntityType(), $bundle) as $field_name => $field_definition) {
       // @todo: Find a better way to support more field types.
       // Only add fields of type file which are enabled for the current view
       // mode as attachments.
-      $field = field_info_field($field_name);
-      if ($field['type'] == 'file' && isset($build[$field_name])) {
+      if ($field_definition->getType() == 'file' && isset($build[$field_name])) {
 
-        if ($items = field_get_items('node', $this->node, $field_name)) {
+        if ($items = $this->node->get($field_name)) {
           foreach ($items as $item) {
-            $fids[] = $item['fid'];
+            $fids[] = $item->target_id;
           }
         }
       }
     }
     if (!empty($fids)) {
-      $attachments = file_load_multiple($fids);
+      $attachments = File::loadMultiple($fids);
     }
 
     $this->cache->set('data', 'attachments', $attachments);

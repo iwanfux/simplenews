@@ -1,5 +1,4 @@
-<?php
-
+{#
 /**
  * @file
  * Default theme implementation to format the simplenews newsletter body.
@@ -26,6 +25,6 @@
  *
  * @see template_preprocess_simplenews_newsletter_body()
  */
-?>
-<h2><?php print $title; ?></h2>
-<?php print render($build); ?>
+#}
+<h2>{{ title }}</h2>
+{{ build }}

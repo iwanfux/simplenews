@@ -1,5 +1,4 @@
-<?php
-
+{#
 /**
  * @file
  * Default theme implementation to format the simplenews newsletter footer.
@@ -27,15 +26,16 @@
  *
  * @see template_preprocess_simplenews_newsletter_footer()
  */
-?>
-<?php if (!$opt_out_hidden): ?>
-  <?php if ($format == 'html'): ?>
-    <p class="newsletter-footer"><a href="[simplenews-subscriber:unsubscribe-url]"><?php print $unsubscribe_text ?></a></p>
-  <?php else: ?>
-  -- <?php print $unsubscribe_text ?>: [simplenews-subscriber:unsubscribe-url]
-  <?php endif ?>
-<?php endif; ?>
+#}
+  {% if not opt_out_hidden %}
+      {{ format }}
+    {% if format == 'html' %}
+    <p class="newsletter-footer"><a href="[simplenews-subscriber:unsubscribe-url]">{{ unsubscribe_text }}</a></p>
+    {% else %}
+  -- {{ unsubscribe_text }} : [simplenews-subscriber:unsubscribe-url]
+    {% endif %}
+  {% endif %}
 
-<?php if ($key == 'test'): ?>
-- - - <?php print $test_message ?> - - -
-<?php endif ?>
+{% if key == 'test' %}
+- - - {{ test_message }} - - -
+{% endif %}

@@ -115,6 +115,7 @@ function simplenews_install() {
   $site_name = \Drupal::config('system.site')->get('name');
 
   $config = \Drupal::config('simplenews.settings');
+  $config->set('drupal_test_email_collector', array());
 
   if (isset($config)) {
     if (empty($site_mail)) {
@@ -134,10 +135,6 @@ function simplenews_install() {
   $newsletter->from_name = $site_name;
   $newsletter->from_address = $site_mail;
   $newsletter->save();
-
-
-  // Add nodetype with newsletter vocabulary.
-  //_simplenews_install_nodetype();
 }
 
 /**

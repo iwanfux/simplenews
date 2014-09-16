@@ -1239,7 +1239,7 @@ function simplenews_unsubscribe($mail, $newsletter_id, $confirm = TRUE, $source 
 
   // The unlikely case that a user is unsubscribed from a non existing mailing list is logged
   if (!$newsletter = simplenews_newsletter_load($newsletter_id)) {
-    watchdog('simplenews', 'Attempt to unsubscribe from non existing mailing list ID %id', array('%id' => $newsletter_id), WATCHDOG_ERROR);
+    \Drupal::logger('simplenews')->error('Attempt to unsubscribe from non existing mailing list ID %id', array('%id' => $newsletter_id));
     return FALSE;
   }
 
@@ -1901,6 +1901,7 @@ function simplenews_theme() {
         'newsletter' => NULL,
         'context' => NULL,
         'key' => NULL,
+        'format' => NULL,
         'language' => NULL,
       ),
       'path' => $path . '/theme',
@@ -2074,18 +2075,18 @@ function template_preprocess_simplenews_newsletter_body(&$variables) {
   $entity_type = $variables['build']['#entity_type'];
   $entity = !empty($variables['build']['#' . $entity_type]) ? $variables['build']['#' . $entity_type] : $variables['build']['#entity'];
 
-  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
+  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : \Drupal::theme()->getActiveTheme()->getPath();
   $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
-  $variables['title'] = entity_label($entity_type, $entity);
-  $variables['language'] = $variables['build']["#language"];
+  $variables['title'] = $entity->label();
+  $variables['language'] = $variables['build']["#langcode"];
   $variables['view_mode'] = $variables['build']['#view_mode'];
 
   // Add specific suggestions that can override the default implementation.
   $variables['theme_hook_suggestions'] = array(
-    'simplenews_newsletter_body__' . $variables['newsletter']->newsletter_id,
+    'simplenews_newsletter_body__' . $variables['newsletter']->id(),
     'simplenews_newsletter_body__' . $variables['build']['#view_mode'],
-    'simplenews_newsletter_body__' . $variables['newsletter']->newsletter_id . '__' . $variables['build']['#view_mode'],
+    'simplenews_newsletter_body__' . $variables['newsletter']->id() . '__' . $variables['build']['#view_mode'],
   );
 }
 
@@ -2101,7 +2102,7 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
   unset($variables['build']['links']);
   unset($variables['build']['comments']);
 
-  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : path_to_theme();
+  $theme = function_exists('mailsystem_get_mail_theme') ? mailsystem_get_mail_theme() : \Drupal::theme()->getActiveTheme()->getPath();
   $variables['simplenews_theme'] = drupal_get_path('theme', $theme);
 
   $variables['unsubscribe_text'] = t('Unsubscribe from this newsletter', array(), array('langcode' => $variables['language']));
@@ -2111,9 +2112,9 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 
   // Add specific suggestions that can override the default implementation.
   $variables['theme_hook_suggestions'] = array(
-    'simplenews_newsletter_footer__' . $variables['newsletter']->newsletter_id,
+    'simplenews_newsletter_footer__' . $variables['newsletter']->id(),
     'simplenews_newsletter_footer__' . $variables['build']['#view_mode'],
-    'simplenews_newsletter_footer__' . $variables['newsletter']->newsletter_id . '__' . $variables['build']['#view_mode'],
+    'simplenews_newsletter_footer__' . $variables['newsletter']->id() . '__' . $variables['build']['#view_mode'],
   );
 
   // Do not display the unsubscribe link by default for hidden categories.
@@ -2124,7 +2125,7 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
  * Access callback; Access to Newsletter tab page.
  */
 function simplenews_node_tab_access(NodeInterface $node) {
-  return simplenews_check_node_types($node->getType()) && user_access('send newsletter');
+  return simplenews_check_node_types($node->getType()) && \Drupal::currentUser()->hasPermission('send newsletter');
 }
 
 /**
