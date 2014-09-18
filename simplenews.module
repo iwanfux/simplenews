@@ -5,6 +5,7 @@
  * Simplenews node handling, sent email, newsletter block and general hooks
  */
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -2172,10 +2173,10 @@ function simplenews_node_access($node, $op, $account) {
     // Check if a newsletter is pending
     if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING) {
       drupal_set_message(t('You can\'t delete this newsletter because it has not been sent to all its subscribers.'), 'warning');
-      return NODE_ACCESS_DENY;
+      return AccessResult::forbidden();
     }
   }
-  return NODE_ACCESS_IGNORE;
+  return AccessResult::allowed();
 }
 
 /**

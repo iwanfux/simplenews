@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
@@ -101,31 +102,18 @@ class SubscriptionsAccountForm extends FormBase {
    * Checks access for the simplenews account form.
    *
    * @param \Drupal\user\UserInterface $user
-   *   (optional) The owner of the shortcut set.
+   *   The account to use in the form.
    *
-   * @return mixed
-   *   AccessInterface::ALLOW, AccessInterface::DENY, or AccessInterface::KILL.
+   * @return \Drupal\Core\Access\AccessResult
+   *   An access result object.
    */
-  public function checkAccess(UserInterface $user = NULL) {
+  public function checkAccess(UserInterface $user) {
     $account = $this->currentUser();
     $this->user = $user;
 
-    if ($account->hasPermission('administer simplenews subscriptions')) {
-      // Administrators can administer anyone's subscriptions.
-      return AccessInterface::ALLOW;
-    }
-
-    if (!$account->hasPermission('subscribe to newsletters')) {
-      // The user has no permission to subscribe to newsletters.
-      return AccessInterface::DENY;
-    }
-
-    if ($this->user->id() == $account->id()) {
-      // Users with the 'subscribe to newsletters' permission can administer their own
-      // subscriptions.
-      return AccessInterface::ALLOW;
-    }
-    return AccessInterface::DENY;
+    return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
+      ->orIf(AccessResult::allowedIfHasPermission($account, 'subscribe to newsletters')
+        ->andIf(AccessResult::allowedIf($this->user->id() == $account->id())));
   }
 
 }
