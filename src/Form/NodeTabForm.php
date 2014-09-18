@@ -8,6 +8,7 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
@@ -246,27 +247,20 @@ class NodeTabForm extends FormBase {
   /**
    * Checks access for the simplenews node tab.
    *
-   * @param \Drupal\user\UserInterface $user
-   *   (optional) The owner of the shortcut set.
+   * @param \Drupal\node\NodeInterface $node
+   *   The node where the tab should be added.
    *
-   * @return mixed
-   *   AccessInterface::ALLOW, AccessInterface::DENY, or AccessInterface::KILL.
+   * @return \Drupal\Core\Access\AccessResult
+   *   An access result object.
    */
-  public function checkAccess(NodeInterface $node = NULL) {
+  public function checkAccess(NodeInterface $node) {
     $account = $this->currentUser();
 
     if ($node->hasField('simplenews_issue') && $node->simplenews_issue->target_id != NULL) {
-      if ($account->hasPermission('administer newsletters')) {
-        // Administrators can send all newsletters.
-        return AccessInterface::ALLOW;
-      }
-
-      if ($account->hasPermission('send newsletter')) {
-        // The user has the permission to send newsletters.
-        return AccessInterface::ALLOW;
-      }
+      return AccessResult::allowedIfHasPermission($account, 'administer newsletters')
+        ->orIf(AccessResult::allowedIfHasPermission($account, 'send newsletter'));
     }
-    return AccessInterface::DENY;
+    return AccessResult::forbidden();
   }
 
 }
