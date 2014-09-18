@@ -32,7 +32,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     parent::setUp();
     $this->installEntitySchema('user');
     $this->installEntitySchema('simplenews_subscriber');
-    $this->installSchema('system', array('sequences'));
+    $this->installSchema('system', array('sequences', 'sessions'));
   }
 
   /**
@@ -54,28 +54,38 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $user = User::create(array(
       'field_on_user' => 'foo',
       'field_on_both' => 'foo',
+      'mail' => 'user@example.com',
+      'created' => 1000,
     ));
     $user->save();
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
     $subscriber = Subscriber::create(array(
       'field_on_subscriber' => 'foo',
       'field_on_both' => 'foo',
+      'mail' => 'user@example.com',
+      'created' => 2000,
     ));
     $subscriber->save();
 
     // Update the fields on the subscriber.
     $subscriber->set('field_on_both', 'bar');
+    $subscriber->set('created', 3000);
     $subscriber->save();
 
-    // Assert that the shared field is also updated on the user.
+    // Assert that (only) the shared field is also updated on the user.
+    $user = User::load($user->id());
     $this->assertEqual($user->get('field_on_both')->value, 'bar');
+    $this->assertEqual($user->get('created')->value, 1000);
 
     // Update the fields on the user.
     $user->set('field_on_both', 'baz');
+    $user->set('created', 4000);
     $user->save();
 
-    // Assert that the shared field is also updated on the subscriber.
+    // Assert that (only) the shared field is also updated on the subscriber.
+    $subscriber = Subscriber::load($subscriber->id());
     $this->assertEqual($subscriber->get('field_on_both')->value, 'baz');
+    $this->assertEqual($subscriber->get('created')->value, 3000);
   }
 
   /**

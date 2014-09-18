@@ -8,9 +8,11 @@
 namespace Drupal\simplenews\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\simplenews\SubscriberInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\user\Entity\User;
 
 /**
  * Defines the simplenews subscriber entity.
@@ -214,6 +216,34 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     simplenews_delete_spool(array('snid' => $this->id(), 'newsletter_id' => $newsletter_id));
 
     \Drupal::moduleHandler()->invokeAll('simplenews_unsubscribe', array($this, $newsletter_id));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+
+    // Find a user with the same email.
+    $user_ids = \Drupal::entityQuery('user')
+      ->condition('mail', $this->getMail())
+      ->execute();
+    if (!empty($user_ids)) {
+      /** @var \Drupal\user\UserInterface $user */
+      $user = User::load(array_pop($user_ids));
+      // Find any fields sharing a name and type.
+      foreach ($this->getFieldDefinitions() as $field_definition) {
+        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+        $field_name = $field_definition->getName();
+        $user_field = $user->getFieldDefinition($field_name);
+        if (isset($user_field) && $user_field->getType() == $field_definition->getType()) {
+          // Set the field also on the user.
+          $user->set($field_name, $this->get($field_name)->getValue());
+          debug($this->get($field_name)->getValue(), $field_name);
+        }
+      }
+      $user->save();
+    }
   }
 
   /**
