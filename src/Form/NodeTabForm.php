@@ -11,10 +11,7 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\node\NodeInterface;
-use Drupal\user\UserInterface;
-use Symfony\Component\Validator\Constraints\False;
 
 /**
  * Configure simplenews subscriptions of a user.
@@ -260,7 +257,7 @@ class NodeTabForm extends FormBase {
       return AccessResult::allowedIfHasPermission($account, 'administer newsletters')
         ->orIf(AccessResult::allowedIfHasPermission($account, 'send newsletter'));
     }
-    return AccessResult::forbidden();
+    return AccessResult::create();
   }
 
 }
