@@ -34,18 +34,14 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('simplenews_subscriber');
     $this->installSchema('system', array('sequences', 'sessions'));
-    $this->installConfig(array('language'));
     \Drupal::config('system.mail')->set('interface.default', 'test_mail_collector')->save();
-
-    ConfigurableLanguage::create(array(
-      'id' => 'fr',
-    ))->save();
+    ConfigurableLanguage::create(array('id' => 'fr'))->save();
   }
 
   /**
-   * Tests that fields of new/updated User are synced to existing Subscriber.
+   * Tests that creating/updating User updates existing Subscriber base fields.
    */
-  public function testUpdateSubscriberFromUser() {
+  public function testSynchronizeBaseFields() {
     // Create subscriber.
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
     $subscriber = Subscriber::create(array(
@@ -89,13 +85,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
   /**
    * Tests that shared fields are synchronized.
    */
-  public function testSynchronizeFields() {
-    // Create and attach a field only to subscriber.
-    $this->addField('string', 'field_on_subscriber', 'simplenews_subscriber');
-
-    // Create and attach a field only to user.
-    $this->addField('string', 'field_on_user', 'user');
-
+  public function testSynchronizeConfigurableFields() {
     // Create and attach a field to both.
     $this->addField('string', 'field_on_both', 'simplenews_subscriber');
     $this->addField('string', 'field_on_both', 'user');
@@ -103,7 +93,6 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     // Create a user and a subscriber.
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
     $subscriber = Subscriber::create(array(
-      'field_on_subscriber' => 'foo',
       'field_on_both' => 'foo',
       'mail' => 'user@example.com',
       'created' => 2000,
@@ -111,7 +100,6 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $subscriber->save();
     /** @var \Drupal\user\Entity\User $user */
     $user = User::create(array(
-      'field_on_user' => 'foo',
       'field_on_both' => 'foo',
       'mail' => 'user@example.com',
       'created' => 1000,
@@ -144,10 +132,6 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
    * Tests that new entities copy values from corresponding user/subscriber.
    */
   public function testSetSharedFieldAutomatically() {
-    // Create and attach a field only to subscriber.
-
-    // Create and attach a field only to user.
-
     // Create and attach a field to both.
     $this->addField('string', 'field_on_both', 'simplenews_subscriber');
     $this->addField('string', 'field_on_both', 'user');
