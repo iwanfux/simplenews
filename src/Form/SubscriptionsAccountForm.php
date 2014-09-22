@@ -11,7 +11,6 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\user\UserInterface;
 
 /**
@@ -109,11 +108,10 @@ class SubscriptionsAccountForm extends FormBase {
    */
   public function checkAccess(UserInterface $user) {
     $account = $this->currentUser();
-    $this->user = $user;
 
     return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
       ->orIf(AccessResult::allowedIfHasPermission($account, 'subscribe to newsletters')
-        ->andIf(AccessResult::allowedIf($this->user->id() == $account->id())));
+        ->andIf(AccessResult::allowedIf($user->id() == $account->id())));
   }
 
 }
