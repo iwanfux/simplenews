@@ -6,7 +6,7 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\field\Entity\FieldInstanceConfig;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simpletest\KernelTestBase;
@@ -133,7 +133,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
       'entity_type' => $entity_type,
       'type' => $type,
     ))->save();
-    FieldInstanceConfig::create(array(
+    FieldConfig::create(array(
       'field_name' => $field_name,
       'entity_type' => $entity_type,
       'bundle' => $bundle,

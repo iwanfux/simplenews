@@ -236,10 +236,9 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
         /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
         $field_name = $field_definition->getName();
         $user_field = $user->getFieldDefinition($field_name);
-        if (isset($user_field) && $user_field->getType() == $field_definition->getType()) {
+        if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
           // Set the field also on the user.
           $user->set($field_name, $this->get($field_name)->getValue());
-          debug($this->get($field_name)->getValue(), $field_name);
         }
       }
       $user->save();
