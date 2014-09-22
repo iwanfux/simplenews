@@ -101,14 +101,6 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $this->addField('string', 'field_on_both', 'user');
 
     // Create a user and a subscriber.
-    /** @var \Drupal\user\Entity\User $user */
-    $user = User::create(array(
-      'field_on_user' => 'foo',
-      'field_on_both' => 'foo',
-      'mail' => 'user@example.com',
-      'created' => 1000,
-    ));
-    $user->save();
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
     $subscriber = Subscriber::create(array(
       'field_on_subscriber' => 'foo',
@@ -117,8 +109,17 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
       'created' => 2000,
     ));
     $subscriber->save();
+    /** @var \Drupal\user\Entity\User $user */
+    $user = User::create(array(
+      'field_on_user' => 'foo',
+      'field_on_both' => 'foo',
+      'mail' => 'user@example.com',
+      'created' => 1000,
+    ));
+    $user->save();
 
     // Update the fields on the subscriber.
+    $subscriber = Subscriber::load($subscriber->id());
     $subscriber->set('field_on_both', 'bar');
     $subscriber->set('created', 3000);
     $subscriber->save();

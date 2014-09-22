@@ -992,7 +992,7 @@ function simplenews_user_presave(UserInterface $account) {
   // We only process existing accounts.
   if (!$account->isNew()) {
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
-    $subscriber = Subscriber::load($account->id());
+    $subscriber = simplenews_subscriber_load_by_uid($account->id());
     if ($subscriber && !$subscriber->isSyncing()) {
       $syncing = TRUE;
       // Update mail, status and language if they are changed.
