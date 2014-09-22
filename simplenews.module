@@ -989,33 +989,33 @@ function simplenews_user_login(UserInterface $account) {
 function simplenews_user_presave(UserInterface $account) {
   $syncing = &drupal_static(__FUNCTION__, FALSE);
 
-  // We only process existing accounts.
-  if (!$account->isNew()) {
-    /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
-    $subscriber = simplenews_subscriber_load_by_uid($account->id());
-    if ($subscriber && !$subscriber->isSyncing()) {
-      $syncing = TRUE;
+  /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
+  $subscriber = simplenews_subscriber_load_by_uid($account->id());
+  if ($subscriber && !$subscriber->isSyncing()) {
+    $syncing = TRUE;
+    // We only process existing accounts.
+    if (!$account->isNew()) {
       // Update mail, status and language if they are changed.
       $subscriber->mail = $account->getEmail();
       if (\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
         $subscriber->status = $account->isActive();
       }
       $subscriber->setLangcode($account->getPreferredLangcode());
-
-      // Find any fields sharing a name and type.
-      foreach ($account->getFieldDefinitions() as $field_definition) {
-        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
-        $field_name = $field_definition->getName();
-        $subscriber_field = $subscriber->getFieldDefinition($field_name);
-        if ($field_definition->getBundle() && isset($subscriber_field) && $subscriber_field->getType() == $field_definition->getType()) {
-          // Set the field also on the subscriber.
-          $subscriber->set($field_name, $account->get($field_name)->getValue());
-        }
-      }
-
-      $subscriber->save();
-      $syncing = FALSE;
     }
+
+    // Find any fields sharing name and type.
+    foreach ($account->getFieldDefinitions() as $field_definition) {
+      /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+      $field_name = $field_definition->getName();
+      $subscriber_field = $subscriber->getFieldDefinition($field_name);
+      if ($field_definition->getBundle() && isset($subscriber_field) && $subscriber_field->getType() == $field_definition->getType()) {
+        // Set the field also on the subscriber.
+        $subscriber->set($field_name, $account->get($field_name)->getValue());
+      }
+    }
+
+    $subscriber->save();
+    $syncing = FALSE;
   }
 }
 

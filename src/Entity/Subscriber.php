@@ -246,7 +246,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       static::$syncing = TRUE;
       /** @var \Drupal\user\UserInterface $user */
       $user = User::load(array_pop($user_ids));
-      // Find any fields sharing a name and type.
+      // Find any fields sharing name and type.
       foreach ($this->getFieldDefinitions() as $field_definition) {
         /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
         $field_name = $field_definition->getName();
@@ -258,6 +258,32 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       }
       $user->save();
       static::$syncing = FALSE;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postCreate(EntityStorageInterface $storage) {
+    parent::postCreate($storage);
+
+    // Find a user with the same email.
+    $user_ids = \Drupal::entityQuery('user')
+      ->condition('mail', $this->getMail())
+      ->execute();
+    if (!empty($user_ids)) {
+      /** @var \Drupal\user\UserInterface $user */
+      $user = User::load(array_pop($user_ids));
+      // Find any fields sharing name and type.
+      foreach ($this->getFieldDefinitions() as $field_definition) {
+        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+        $field_name = $field_definition->getName();
+        $user_field = $user->getFieldDefinition($field_name);
+        if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
+          // Copy the value from the user.
+          $this->set($field_name, $user->get($field_name)->getValue());
+        }
+      }
     }
   }
 

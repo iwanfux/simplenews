@@ -144,24 +144,45 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
    * Tests that new entities copy values from corresponding user/subscriber.
    */
   public function testSetSharedFieldAutomatically() {
-    $this->fail('To be implemented.');
     // Create and attach a field only to subscriber.
 
     // Create and attach a field only to user.
 
     // Create and attach a field to both.
+    $this->addField('string', 'field_on_both', 'simplenews_subscriber');
+    $this->addField('string', 'field_on_both', 'user');
 
     // Create a user with values for the fields.
+    /** @var \Drupal\user\Entity\User $user */
+    $user = User::create(array(
+      'field_on_both' => 'foo',
+      'mail' => 'user@example.com',
+    ));
+    $user->save();
 
     // Create a subscriber.
+    /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
+    $subscriber = Subscriber::create(array(
+        'mail' => 'user@example.com',
+    ));
 
     // Assert that the shared field already has a value.
+    $this->assertEqual($subscriber->get('field_on_both')->value, $user->get('field_on_both')->value);
 
     // Create a subscriber with values for the fields.
+    $subscriber = Subscriber::create(array(
+      'field_on_both' => 'bar',
+      'mail' => 'user@example.com',
+    ));
+    $subscriber->save();
 
     // Create a user.
+    $user = User::create(array(
+      'mail' => 'user@example.com',
+    ));
 
     // Assert that the shared field already has a value.
+    $this->assertEqual($user->get('field_on_both')->value, $subscriber->get('field_on_both')->value);
   }
 
   /**
