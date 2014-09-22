@@ -9,10 +9,11 @@ namespace Drupal\simplenews\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\simplenews\SubscriberInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
 
 /**
  * Defines the simplenews subscriber entity.
@@ -238,23 +239,12 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     parent::postSave($storage, $update);
 
-    // Find a user with the same email.
-    $user_ids = \Drupal::entityQuery('user')
-      ->condition('mail', $this->getMail())
-      ->execute();
-    if (!empty($user_ids) && !drupal_static('simplenews_user_presave')) {
+    // Copy values for shared fields to existing user.
+    $user = User::load($this->getUserId());
+    if (isset($user)) {
       static::$syncing = TRUE;
-      /** @var \Drupal\user\UserInterface $user */
-      $user = User::load(array_pop($user_ids));
-      // Find any fields sharing name and type.
-      foreach ($this->getFieldDefinitions() as $field_definition) {
-        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
-        $field_name = $field_definition->getName();
-        $user_field = $user->getFieldDefinition($field_name);
-        if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
-          // Set the field also on the user.
-          $user->set($field_name, $this->get($field_name)->getValue());
-        }
+      foreach ($this->getUserSharedFields($user) as $field_name) {
+        $user->set($field_name, $this->get($field_name)->getValue());
       }
       $user->save();
       static::$syncing = FALSE;
@@ -267,24 +257,45 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function postCreate(EntityStorageInterface $storage) {
     parent::postCreate($storage);
 
-    // Find a user with the same email.
+    // Set the uid field if there is a user with the same email.
     $user_ids = \Drupal::entityQuery('user')
       ->condition('mail', $this->getMail())
       ->execute();
     if (!empty($user_ids)) {
-      /** @var \Drupal\user\UserInterface $user */
-      $user = User::load(array_pop($user_ids));
-      // Find any fields sharing name and type.
-      foreach ($this->getFieldDefinitions() as $field_definition) {
-        /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
-        $field_name = $field_definition->getName();
-        $user_field = $user->getFieldDefinition($field_name);
-        if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
-          // Copy the value from the user.
-          $this->set($field_name, $user->get($field_name)->getValue());
-        }
+      $this->setUserId(array_pop($user_ids));
+    }
+
+    // Copy values for shared fields from existing user.
+    $user = User::load($this->getUserId());
+    if (isset($user)) {
+      foreach ($this->getUserSharedFields($user) as $field_name) {
+        $this->set($field_name, $user->get($field_name)->getValue());
       }
     }
+  }
+
+  /**
+   * Identifies configurable fields shared with a user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to match fields against.
+   *
+   * @return string[]
+   *   An indexed array of the names of each field for which there is also a
+   *   field on the given user with the same name and type.
+   */
+  public function getUserSharedFields(UserInterface $user) {
+    $field_names = array();
+    // Find any fields sharing name and type.
+    foreach ($this->getFieldDefinitions() as $field_definition) {
+      /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+      $field_name = $field_definition->getName();
+      $user_field = $user->getFieldDefinition($field_name);
+      if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
+        $field_names[] = $field_name;
+      }
+    }
+    return $field_names;
   }
 
   /**

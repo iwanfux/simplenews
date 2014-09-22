@@ -61,7 +61,7 @@ interface SubscriberInterface extends ContentEntityInterface {
    *   The corresponding user ID.
    */
   public function setUserId($uid);
-  
+
   /**
    * Returns the lang code.
    *
