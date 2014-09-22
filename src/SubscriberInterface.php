@@ -8,6 +8,7 @@
 namespace Drupal\simplenews;
 
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Provides an interface defining a contant message entity
@@ -168,5 +169,17 @@ interface SubscriberInterface extends ContentEntityInterface {
    *   TRUE if invoked during syncing, otherwise FALSE.
    */
   public function isSyncing();
+
+  /**
+   * Identifies configurable fields shared with a user.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to match fields against.
+   *
+   * @return string[]
+   *   An indexed array of the names of each field for which there is also a
+   *   field on the given user with the same name and type.
+   */
+  public function getUserSharedFields(UserInterface $user);
 
 }
