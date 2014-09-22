@@ -8,6 +8,7 @@ namespace Drupal\simplenews\Tests;
 
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simpletest\KernelTestBase;
 use Drupal\user\Entity\User;
@@ -23,7 +24,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
    *
    * @var array()
    */
-  public static $modules = array('simplenews', 'user', 'field', 'system');
+  public static $modules = array('simplenews', 'user', 'field', 'system', 'language');
 
   /**
    * {@inheritdoc}
@@ -33,6 +34,56 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('simplenews_subscriber');
     $this->installSchema('system', array('sequences', 'sessions'));
+    $this->installConfig(array('language'));
+    \Drupal::config('system.mail')->set('interface.default', 'test_mail_collector')->save();
+
+    ConfigurableLanguage::create(array(
+      'id' => 'fr',
+    ))->save();
+  }
+
+  /**
+   * Tests that fields of new/updated User are synced to existing Subscriber.
+   */
+  public function testUpdateSubscriberFromUser() {
+    // Create subscriber.
+    /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
+    $subscriber = Subscriber::create(array(
+      'mail' => 'user@example.com',
+    ));
+    $subscriber->save();
+
+    // Create user with same email.
+    /** @var \Drupal\user\Entity\User $user */
+    $user = User::create(array(
+      'mail' => 'user@example.com',
+      'preferred_langcode' => 'fr',
+    ));
+    $user->save();
+
+    // Assert that subscriber's fields are updated.
+    $subscriber = Subscriber::load($subscriber->id());
+    $this->assertEqual($subscriber->getUserId(), $user->id());
+    $this->assertEqual($subscriber->getLangcode(), 'fr');
+    $this->assertFalse($subscriber->getStatus());
+
+    // Update user fields.
+    $user->setEmail('user2@example.com');
+    $user->set('preferred_langcode', 'en');
+    $user->activate();
+    $user->save();
+
+    // Assert that subscriber's fields are updated again.
+    $subscriber = Subscriber::load($subscriber->id());
+    $this->assertEqual($subscriber->getMail(), 'user2@example.com');
+    $this->assertEqual($subscriber->getLangcode(), 'en');
+
+    // Status is only synced if sync_account is set.
+    $this->assertFalse($subscriber->getStatus());
+    \Drupal::config('simplenews.settings')->set('subscription.sync_account', TRUE)->save();
+    $user->save();
+    $subscriber = Subscriber::load($subscriber->id());
+    $this->assertTrue($subscriber->getStatus());
   }
 
   /**
