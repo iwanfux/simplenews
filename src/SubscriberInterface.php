@@ -161,4 +161,12 @@ interface SubscriberInterface extends ContentEntityInterface {
    */
   public function unsubscribe($newsletter_id, $source = 'unknown', $timestamp = REQUEST_TIME);
 
+  /**
+   * Returns whether currently syncing field values to corresponding User.
+   *
+   * @return bool
+   *   TRUE if invoked during syncing, otherwise FALSE.
+   */
+  public function isSyncing();
+
 }

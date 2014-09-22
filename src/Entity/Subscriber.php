@@ -44,6 +44,13 @@ use Drupal\user\Entity\User;
 class Subscriber extends ContentEntityBase implements SubscriberInterface {
 
   /**
+   * Whether currently copying field values to corresponding User.
+   *
+   * @var bool
+   */
+  protected static $syncing;
+
+  /**
    * {@inheritdoc}
    */
   public function getMessage() {
@@ -129,6 +136,13 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    */
   public function setChanges($changes) {
     $this->set('changes', serialize($changes));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isSyncing() {
+    return static::$syncing;
   }
 
   /**
@@ -229,6 +243,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       ->condition('mail', $this->getMail())
       ->execute();
     if (!empty($user_ids)) {
+      static::$syncing = TRUE;
       /** @var \Drupal\user\UserInterface $user */
       $user = User::load(array_pop($user_ids));
       // Find any fields sharing a name and type.
@@ -242,6 +257,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
         }
       }
       $user->save();
+      static::$syncing = FALSE;
     }
   }
 
