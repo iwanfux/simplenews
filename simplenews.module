@@ -987,11 +987,14 @@ function simplenews_user_login(UserInterface $account) {
  * @see simplenews_user_insert()
  */
 function simplenews_user_presave(UserInterface $account) {
+  $syncing = &drupal_static(__FUNCTION__, FALSE);
+
   // We only process existing accounts.
   if (!$account->isNew()) {
     /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
     $subscriber = Subscriber::load($account->id());
     if ($subscriber && !$subscriber->isSyncing()) {
+      $syncing = TRUE;
       // Update mail, status and language if they are changed.
       $subscriber->mail = $account->getEmail();
       if (\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
@@ -1011,6 +1014,7 @@ function simplenews_user_presave(UserInterface $account) {
       }
 
       $subscriber->save();
+      $syncing = FALSE;
     }
   }
 }

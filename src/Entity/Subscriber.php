@@ -242,7 +242,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     $user_ids = \Drupal::entityQuery('user')
       ->condition('mail', $this->getMail())
       ->execute();
-    if (!empty($user_ids)) {
+    if (!empty($user_ids) && !drupal_static('simplenews_user_presave')) {
       static::$syncing = TRUE;
       /** @var \Drupal\user\UserInterface $user */
       $user = User::load(array_pop($user_ids));
