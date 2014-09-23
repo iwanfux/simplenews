@@ -18,7 +18,7 @@ use Drupal\user\UserInterface;
 /**
  * Configure simplenews subscriptions of a user.
  */
-class SubscriptionsAccountForm extends ContentEntityForm {
+class SubscriptionsAccountForm extends SubscriberFormBase {
 
   /**
    * {@inheritdoc}
@@ -46,34 +46,7 @@ class SubscriptionsAccountForm extends ContentEntityForm {
       }
     }
 
-    $options = array();
-    $default_value = $this->entity->getSubscribedNewsletterIds();
-
-    // Get newsletters for subscription form checkboxes.
-    // Newsletters with opt-in/out method 'hidden' will not be listed.
-    foreach (simplenews_newsletter_get_visible() as $newsletter) {
-      $options[$newsletter->id()] = String::checkPlain($newsletter->name);
-    }
-
-
-    $form['subscriptions'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Current newsletter subscriptions.'),
-      '#description' => t('Select your newsletter subscriptions.'),
-    );
-    $form['subscriptions']['newsletters'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => $default_value,
-    );
-
-    $form = parent::buildForm($form, $form_state);
-
-    if ($uid > 0) {
-      $form['mail']['#disabled'] = 'disabled';
-    }
-
-    return $form;
+    return parent::buildForm($form, $form_state);
   }
 
   /**

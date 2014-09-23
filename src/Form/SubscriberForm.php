@@ -14,7 +14,7 @@ use Drupal\Core\Form\FormStateInterface;
 /**
  * Form controller for the subscriber edit forms.
  */
-class SubscriberForm extends ContentEntityForm {
+class SubscriberForm extends SubscriberFormBase {
   /**
    * Overrides Drupal\Core\Entity\EntityForm::form().
    */
@@ -22,33 +22,8 @@ class SubscriberForm extends ContentEntityForm {
     $form = parent::form($form, $form_state);
     /* @var \Drupal\simplenews\SubscriberInterface $subscriber */
     $subscriber = $this->entity;
-    $uid = $subscriber->getUserId();
 
     $form['#title'] = $this->t('Edit subscriber @mail', array('@mail' => $subscriber->getMail()));
-    if ($uid > 0) {
-      $form['mail']['#disabled'] = 'disabled';
-    }
-
-    $options = array();
-    $default_value = $subscriber ? $subscriber->getSubscribedNewsletterIds() : array();
-
-    // Get newsletters for subscription form checkboxes.
-    // Newsletters with opt-in/out method 'hidden' will not be listed.
-    foreach (simplenews_newsletter_get_visible() as $newsletter) {
-      $options[$newsletter->id()] = String::checkPlain($newsletter->name);
-    }
-
-    $form['subscriptions'] = array(
-      '#type' => 'fieldset',
-      '#description' => t('Select your newsletter subscriptions.'),
-    );
-    $form['subscriptions']['newsletters'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => $default_value,
-    );
-
-    $form['subscriptions']['#title'] = t('Current newsletter subscriptions');
 
     $form['activated'] = array(
       '#title' => t('Status'),
