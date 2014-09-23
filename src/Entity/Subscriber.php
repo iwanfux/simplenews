@@ -26,6 +26,7 @@ use Drupal\user\UserInterface;
  *     "form" = {
  *       "default" = "Drupal\simplenews\Form\SubscriberForm",
  *       "account" = "Drupal\simplenews\Form\SubscriptionsAccountForm",
+ *       "block" = "Drupal\simplenews\Form\SubscriptionsBlockForm",
  *       "delete" = "Drupal\simplenews\Form\SubscriberDeleteForm",
  *     }
  *   },

@@ -8,7 +8,6 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 
 /**

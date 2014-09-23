@@ -7,16 +7,23 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Component\Utility\String;
-use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\simplenews\Entity\Subscriber;
+use Drupal\simplenews\NewsletterInterface;
 
 /**
  * Configure simplenews subscriptions of the logged user.
  */
-class SubscriptionsBlockForm extends FormBase {
+class SubscriptionsBlockForm extends SubscriberFormBase {
 
   protected $uniqueId;
+
+  /**
+   * The newsletters to display in this block.
+   *
+   * @var \Drupal\simplenews\NewsletterInterface[]
+   */
+  protected $newsletters;
 
   /**
    * {@inheritdoc}
@@ -39,15 +46,19 @@ class SubscriptionsBlockForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $newsletters = array()) {
-    $user = \Drupal::currentUser();
-    $subscriber = $mail = FALSE;
-    if ($user->getEmail()) {
-      $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
-      $mail = $user->getEmail();
-    }
+    $this->newsletters = $newsletters;
+    return parent::buildForm($form, $form_state);
+  }
 
-    if (count($newsletters) == 1) {
-      $keys = array_keys($newsletters);
+  /**
+   * {@inheritdoc}
+   */
+  public function form(array $form, FormStateInterface $form_state) {
+
+    $mail = $this->entity->getMail();
+
+    if (count($this->newsletters) == 1) {
+      $keys = array_keys($this->newsletters);
       $newsletter_id = array_shift($keys);
 
       $form['newsletters'] = array(
@@ -57,7 +68,7 @@ class SubscriptionsBlockForm extends FormBase {
       if ($mail) {
         $form['mail'] = array('#type' => 'value', '#value' => $mail);
 
-        if ($subscriber && $subscriber->isSubscribed($newsletter_id)) {
+        if ($this->entity->isSubscribed($newsletter_id)) {
           $form['unsubscribe'] = array(
             '#type' => 'submit',
             '#value' => t('Unsubscribe'),
@@ -89,22 +100,7 @@ class SubscriptionsBlockForm extends FormBase {
         );
       }
     } else {
-      $options = array();
-      $default_value = $subscriber ? $subscriber->getSubscribedNewsletterIds() : array();
-      $default_value = array_intersect($default_value, array_keys($newsletters));
-
-      foreach ($newsletters as $id => $newsletter) {
-        $options[$id] = String::checkPlain($newsletter->name);
-      }
-
-      $form['subscriptions'] = array(
-        '#type' => 'fieldset',
-      );
-      $form['subscriptions']['newsletters'] = array(
-        '#type' => 'checkboxes',
-        '#options' => $options,
-        '#default_value' => $default_value
-      );
+      $form = parent::form($form, $form_state);
 
       // If we have a mail address, which is either from a logged in user or a
       // subscriber identified through the hash code, display the mail address
