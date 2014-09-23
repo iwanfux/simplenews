@@ -25,6 +25,7 @@ use Drupal\user\UserInterface;
  *     "list_builder" = "Drupal\simplenews\SubscriberListBuilder",
  *     "form" = {
  *       "default" = "Drupal\simplenews\Form\SubscriberForm",
+ *       "account" = "Drupal\simplenews\Form\SubscriptionsAccountForm",
  *       "delete" = "Drupal\simplenews\Form\SubscriberDeleteForm",
  *     }
  *   },

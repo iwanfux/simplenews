@@ -137,7 +137,7 @@ simplenews.newsletter_subscriptions_arguments:
 simplenews.newsletter_subscriptions_user:
   path: '/user/{user}/simplenews'
   defaults:
-    _form: '\Drupal\simplenews\Form\SubscriptionsAccountForm'
+    _entity_form: 'simplenews_subscriber.account'
     _title: 'Newsletters'
   requirements:
     _custom_access: 'Drupal\simplenews\Form\SubscriptionsAccountForm::checkAccess'

@@ -9,14 +9,16 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 
 /**
  * Configure simplenews subscriptions of a user.
  */
-class SubscriptionsAccountForm extends FormBase {
+class SubscriptionsAccountForm extends ContentEntityForm {
 
   /**
    * {@inheritdoc}
@@ -28,11 +30,24 @@ class SubscriptionsAccountForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
-    $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
+  public function buildForm(array $form, FormStateInterface $form_state, $user = NULL) {
+    // Uid parameter has to be named $user but we use that name for the entity.
+    $uid = $user;
+    if (isset($uid)) {
+      $user = User::load($uid);
+      $form_state->set('user', $user);
+
+      $subscriber = simplenews_subscriber_load_by_uid($uid);
+      if (!$subscriber && $user) {
+        $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
+      }
+      if ($subscriber) {
+        $this->entity = $subscriber;
+      }
+    }
 
     $options = array();
-    $default_value = $subscriber ? $subscriber->getSubscribedNewsletterIds() : array();
+    $default_value = $this->entity->getSubscribedNewsletterIds();
 
     // Get newsletters for subscription form checkboxes.
     // Newsletters with opt-in/out method 'hidden' will not be listed.
@@ -40,10 +55,10 @@ class SubscriptionsAccountForm extends FormBase {
       $options[$newsletter->id()] = String::checkPlain($newsletter->name);
     }
 
-    $form_state->set('user', $user);
 
     $form['subscriptions'] = array(
       '#type' => 'fieldset',
+      '#title' => t('Current newsletter subscriptions.'),
       '#description' => t('Select your newsletter subscriptions.'),
     );
     $form['subscriptions']['newsletters'] = array(
@@ -52,13 +67,11 @@ class SubscriptionsAccountForm extends FormBase {
       '#default_value' => $default_value,
     );
 
-    $form['subscriptions']['#title'] = t('Current newsletter subscriptions');
+    $form = parent::buildForm($form, $form_state);
 
-    $form['save'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#weight' => 20,
-    );
+    if ($uid > 0) {
+      $form['mail']['#disabled'] = 'disabled';
+    }
 
     return $form;
   }
@@ -95,18 +108,21 @@ class SubscriptionsAccountForm extends FormBase {
     else {
       drupal_set_message(t('The newsletter subscriptions for user %account have been updated.', array('%account' => $account->label() )));
     }
+
+    parent::submitForm($form, $form_state);
   }
 
   /**
    * Checks access for the simplenews account form.
    *
-   * @param \Drupal\user\UserInterface $user
-   *   The account to use in the form.
+   * @param int $user
+   *   The ID of the account to use in the form.
    *
    * @return \Drupal\Core\Access\AccessResult
    *   An access result object.
    */
-  public function checkAccess(UserInterface $user) {
+  public function checkAccess($user) {
+    $user = User::load($user);
     $account = $this->currentUser();
 
     return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
