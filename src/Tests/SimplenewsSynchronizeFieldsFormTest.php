@@ -10,6 +10,7 @@ use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simpletest\WebTestBase;
+use Drupal\user\Entity\User;
 
 /**
  * Tests that shared fields are synchronized when using forms.
@@ -20,7 +21,7 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
 
   /**
    * Modules to enable.
-   * 
+   *
    * @var array
    */
   public static $modules = array('field', 'simplenews');
@@ -45,7 +46,7 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
       'administer simplenews subscriptions',
     ));
     $this->user->setEmail('user@example.com');
-    $this->user->set('field_shared', 'foo');
+    $this->user->set('field_shared', $this->randomMachineName());
     $this->user->save();
   }
 
@@ -55,15 +56,24 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
   public function testSubscriberFormFieldSync() {
     // Create a subscriber for the user.
     $subscriber = Subscriber::create(array(
-      'field_shared' => 'foo',
+      // Subscribers are linked to users by the uid field.
       'uid' => $this->user->id(),
+      'mail' => 'anything@example.com',
     ));
+    $subscriber->save();
 
-    // Evaluate the edit form.
+    // Edit subscriber field and assert user field is changed accordingly.
     $this->drupalLogin($this->user);
-    $this->drupalGet('admin/people/simplenews/add');
-    $this->assertField('field_shared[0]');
-    $this->assertText('foo');
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
+    $this->assertField('field_shared[0][value]');
+    $this->assertRaw($this->user->field_shared->value);
+
+    $new_value = $this->randomMachineName();
+    $this->drupalPostForm(NULL, array('field_shared[0][value]' => $new_value), t('Save'));
+    $this->assertRaw($new_value);
+
+    $this->user = User::load($this->user->id());
+    $this->assertEqual($this->user->field_shared->value, $new_value);
   }
 
   /**
@@ -92,6 +102,10 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
       'entity_type' => $entity_type,
       'bundle' => $bundle,
     ))->save();
+    entity_get_form_display($entity_type, $bundle, 'default')
+      ->setComponent($field_name, array(
+        'type' => 'string_textfield',
+      ))->save();
   }
 
 }
