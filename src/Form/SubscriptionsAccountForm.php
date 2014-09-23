@@ -12,6 +12,7 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 
@@ -33,27 +34,15 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $user = NULL) {
     // Uid parameter has to be named $user but we use that name for the entity.
     $uid = $user;
+
+    // Try to load a subscriber from the uid.
     if (isset($uid)) {
       $user = User::load($uid);
       $form_state->set('user', $user);
-
-      $subscriber = simplenews_subscriber_load_by_uid($uid);
-      if (!$subscriber && $user) {
-        $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
-      }
-      if ($subscriber) {
-        $this->entity = $subscriber;
-      }
+      $this->setEntity(simplenews_subscriber_load_by_uid($uid) ?: Subscriber::create(array('mail' => $user->getEmail())));
     }
 
     return parent::buildForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
   }
 
   /**
