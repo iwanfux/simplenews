@@ -190,19 +190,17 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
    * {@inheritdoc}
    */
   public function build() {
-    $newsletters = $this->entityManager
-      ->getStorage('simplenews_newsletter')
-      ->loadMultiple($this->configuration['newsletters']);
     $message = $this->configuration['message'];
     $form_object = \Drupal::entityManager()->getFormObject('simplenews_subscriber', 'block');
     $form_object->setUniqueId($this->configuration['unique_id']);
+    $form_object->setNewsletters($this->configuration['newsletters']);
 
     // Set the entity on the form.
     if ($user = \Drupal::currentUser()) {
       $form_object->setEntity(simplenews_subscriber_load_by_uid($user->id()) ?: Subscriber::create(array('mail' => $user->getEmail())));
     }
 
-    return $this->formBuilder->getForm($form_object, $newsletters);
+    return $this->formBuilder->getForm($form_object);
   }
 
 }

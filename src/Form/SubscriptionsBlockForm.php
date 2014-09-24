@@ -17,13 +17,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   protected $uniqueId;
 
   /**
-   * The newsletters to display in this block.
-   *
-   * @var \Drupal\simplenews\NewsletterInterface[]
-   */
-  protected $newsletters;
-
-  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -41,10 +34,26 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   }
 
   /**
+   * Convenience method for the case of only one available newsletter.
+   *
+   * @see ::setNewsletter()
+   *
+   * @return string|null
+   *   If there is exactly one newsletter available in this form, this method
+   *   returns its ID. Otherwise it returns NULL.
+   */
+  protected function getOnlyNewsletter() {
+    $newsletters = $this->getNewsletters();
+    if (count($newsletters) == 1) {
+      return array_shift($newsletters);
+    }
+    return NULL;
+  }
+
+  /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $newsletters = array()) {
-    $this->newsletters = $newsletters;
+  public function buildForm(array $form, FormStateInterface $form_state) {
     return parent::buildForm($form, $form_state);
   }
 
@@ -55,11 +64,11 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
     $form = parent::form($form, $form_state);
 
     $form['subscriptions']['widget']['#options']
-      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->newsletters);
+      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->getNewsletters());
     $mail = $this->entity->getMail();
 
     // Tweak the appearance of the subscriptions widget.
-    if (count($this->newsletters) == 1) {
+    if ($this->getOnlyNewsletter() != NULL) {
       $form['subscriptions']['#access'] = FALSE;
     }
     else {
@@ -81,9 +90,9 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     // Set up some flags from which submit button visibility can be determined.
-    $multiple = count($this->newsletters) > 1;
+    $multiple = count($this->getNewsletters()) > 1;
     $mail = $this->entity->getMail();
-    $subscribed = !$multiple && $mail && $this->entity->isSubscribed(key($this->newsletters));
+    $subscribed = !$multiple && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
 
     // Add all buttons, but conditionally set #access.
     $action_defaults = array(
@@ -134,11 +143,15 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    if (count($this->newsletters) == 1) {
-      $form_state->setValue('subscriptions', array(array('target_id' => key($this->newsletters))));
+    // Pretend that the '#type' => 'value' field is a widget.
+    if (count($this->getNewsletters()) == 1) {
+      if ($this->entity->isSubscribed($this->getOnlyNewsletter())) {
+        $form_state->unsetValue('subscriptions');
+      }
+      else {
+        $form_state->setValue('subscriptions', array(array('target_id' => $this->getOnlyNewsletter())));
+      }
     }
-    $mail = $form_state->getValue('mail');
-    $account = user_load_by_mail($mail);
 
     // Group confirmation mails as necessary and configured.
     simplenews_confirmation_combine(TRUE);
