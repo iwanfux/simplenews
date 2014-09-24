@@ -221,12 +221,6 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function unsubscribe($newsletter_id, $source = 'unknown', $timestamp = REQUEST_TIME) {
     if($subscription = $this->getSubscription($newsletter_id)) {
       $subscription->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
-    } else {
-      $next_delta = count($this->subscriptions);
-      $this->subscriptions[$next_delta]->target_id = $newsletter_id;
-      $this->subscriptions[$next_delta]->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
-      $this->subscriptions[$next_delta]->source = $source;
-      $this->subscriptions[$next_delta]->timestamp = $timestamp;
     }
     // Clear eventually existing mail spool rows for this subscriber.
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');

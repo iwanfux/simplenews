@@ -70,22 +70,6 @@ class SubscriberForm extends SubscriberFormBase {
     return $form;
   }
 
-  public function buildEntity(array $form, FormStateInterface $form_state) {
-    $subscriber =  parent::buildEntity($form, $form_state);
-    // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
-    // when unsubscribed from the
-    arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
-    foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-      if ($checked) {
-        $subscriber->subscribe($newsletter_id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
-      }
-      else {
-        $subscriber->subscribe($newsletter_id, SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED, 'website');
-      }
-    }
-    return $subscriber;
-  }
-
   /**
    * Overrides Drupal\Core\Entity\EntityForm::save().
    */

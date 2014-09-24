@@ -6,8 +6,8 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Entity\ContentEntityForm;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -21,26 +21,6 @@ class SubscriberFormBase extends ContentEntityForm {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
-    $options = array();
-    $default_value = $this->entity->getSubscribedNewsletterIds();
-
-    // Get newsletters for subscription form checkboxes.
-    // Newsletters with opt-in/out method 'hidden' will not be listed.
-    foreach (simplenews_newsletter_get_visible() as $newsletter) {
-      $options[$newsletter->id()] = String::checkPlain($newsletter->name);
-    }
-
-    $form['subscriptions'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Current newsletter subscriptions.'),
-      '#description' => t('Select your newsletter subscriptions.'),
-    );
-    $form['subscriptions']['newsletters'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => $default_value,
-    );
-
     if ($this->entity->getUserId() > 0) {
       $form['mail']['#disabled'] = 'disabled';
     }
@@ -48,4 +28,41 @@ class SubscriberFormBase extends ContentEntityForm {
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
+    /** @var \Drupal\simplenews\Entity\Subscriber $entity */
+    // Subscribe to new selected newsletters.
+    foreach ($this->getSubscriptionsValueIds($form_state) as $id) {
+      if (!$entity->isSubscribed($id)) {
+        $entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+      }
+    }
+
+    // Unsubscribe from deselected newsletters.
+    $subscriptions_to_remove = array_diff($entity->getSubscribedNewsletterIds(), $this->getSubscriptionsValueIds($form_state));
+    foreach ($subscriptions_to_remove as $id) {
+      $entity->unsubscribe($id, 'website');
+    }
+
+    // Copy rest.
+    $form_state->unsetValue('subscriptions');
+    parent::copyFormValuesToEntity($entity, $form, $form_state);
+  }
+
+  /**
+   * Extracts the IDs of the newsletters selected in the subscriptions widget.
+   *
+   * @param FormStateInterface $form_state
+   *   Form state object.
+   *
+   * @return array
+   *   Selected newsletter IDs.
+   */
+  protected function getSubscriptionsValueIds(FormStateInterface $form_state) {
+    return array_map(function($item) {
+      return $item['target_id'];
+    }, $form_state->getValue('subscriptions'));
+  }
 }

@@ -28,17 +28,18 @@ class SubscriptionWidget extends ButtonsWidget {
   /**
    * {@inheritdoc}
    */
-  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
-    $element = parent::formElement($items, $delta, $element, $form, $form_state);
-    return $element;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function massageFormValues(array $values, array $form, FormStateInterface $form_state) {
-    //debug($values);
-    //$existing_values = $form_state->get('controller')->getEntity()->subscriptions->getValue();
-    return $values;
+  protected function getSelectedOptions(FieldItemListInterface $items, $delta = 0) {
+    // Copy parent behavior but also check the status property.
+    $flat_options = $this->flattenOptions($this->getOptions($items[$delta]));
+    $selected_options = array();
+    foreach ($items as $item) {
+      $value = $item->{$this->column};
+      // Keep the value if it actually is in the list of options (needs to be
+      // checked against the flat list).
+      if ($item->status && isset($flat_options[$value])) {
+        $selected_options[] = $value;
+      }
+    }
+    return $selected_options;
   }
 }

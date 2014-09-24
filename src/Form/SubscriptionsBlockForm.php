@@ -8,8 +8,6 @@
 namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\simplenews\Entity\Subscriber;
-use Drupal\simplenews\NewsletterInterface;
 
 /**
  * Configure simplenews subscriptions of the logged user.
@@ -54,92 +52,24 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+    $form = parent::form($form, $form_state);
 
+    $form['subscriptions']['widget']['#options']
+      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->newsletters);
     $mail = $this->entity->getMail();
 
+    // Tweak the appearance of the subscriptions widget.
     if (count($this->newsletters) == 1) {
-      $keys = array_keys($this->newsletters);
-      $newsletter_id = array_shift($keys);
-
-      $form['newsletters'] = array(
-        '#type' => 'value',
-        '#value' => array($newsletter_id => 1),
-      );
+      $form['subscriptions']['#access'] = FALSE;
+    }
+    else {
       if ($mail) {
-        $form['mail'] = array('#type' => 'value', '#value' => $mail);
-
-        if ($this->entity->isSubscribed($newsletter_id)) {
-          $form['unsubscribe'] = array(
-            '#type' => 'submit',
-            '#value' => t('Unsubscribe'),
-            '#weight' => 30,
-            // @todo: add clean submit handler
-          );
-        } else {
-          $form['subscribe'] = array(
-            '#type' => 'submit',
-            '#value' => t('Subscribe'),
-            '#weight' => 20,
-            // @todo: add clean submit handler
-          );
-        }
-      } else {
-        $form['mail'] = array(
-          '#type' => 'textfield',
-          '#title' => t('E-mail'),
-          '#size' => 20,
-          '#maxlength' => 128,
-          '#weight' => 10,
-          '#required' => TRUE,
-        );
-        $form['subscribe'] = array(
-          '#type' => 'submit',
-          '#value' => t('Subscribe'),
-          '#weight' => 20,
-          // @todo: add clean submit handler
-        );
-      }
-    } else {
-      $form = parent::form($form, $form_state);
-
-      // If we have a mail address, which is either from a logged in user or a
-      // subscriber identified through the hash code, display the mail address
-      // instead of a textfield. Anonymous users will still have to confirm any
-      // changes.
-      if ($mail) {
-        $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
-        $form['subscriptions']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
-        $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $mail);
-        $form['update'] = array(
-          '#type' => 'submit',
-          '#value' => t('Update'),
-          '#weight' => 20,
-          // @todo: add clean submit handler
-        );
+        $form['subscriptions']['widget']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
+        $form['subscriptions']['widget']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
       }
       else {
-        $form['subscriptions']['#title'] = t('Manage your newsletter subscriptions');
-        $form['subscriptions']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
-        $form['subscriptions']['mail'] = array(
-          '#type' => 'textfield',
-          '#title' => t('E-mail'),
-          '#size' => 20,
-          '#maxlength' => 128,
-          '#weight' => 10,
-          '#required' => TRUE,
-        );
-        $form['subscribe'] = array(
-          '#type' => 'submit',
-          '#value' => t('Subscribe'),
-          '#weight' => 20,
-          // @todo: add clean submit handler
-        );
-        $form['unsubscribe'] = array(
-          '#type' => 'submit',
-          '#value' => t('Unsubscribe'),
-          '#weight' => 30,
-          // @todo: add clean submit handler
-        );
+        $form['subscriptions']['widget']['#title'] = t('Manage your newsletter subscriptions');
+        $form['subscriptions']['widget']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
       }
     }
 
@@ -149,16 +79,52 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    // Set up some flags from which submit button visibility can be determined.
+    $multiple = count($this->newsletters) > 1;
+    $mail = $this->entity->getMail();
+    $subscribed = !$multiple && $mail && $this->entity->isSubscribed(key($this->newsletters));
+
+    // Add all buttons, but conditionally set #access.
+    $action_defaults = array(
+      '#type' => 'submit',
+      '#submit' => array('::submitForm', '::save'),
+    );
+    $actions = array(
+      'subscribe' => array(
+        // Show 'Subscribe' if not subscribed, or user is unknown.
+        '#access' => (!$multiple && !$subscribed) || !$mail,
+        '#value' => t('Subscribe'),
+        // @todo: add clean submit handler
+      ) + $action_defaults,
+      'unsubscribe' => array(
+        // Show 'Unsubscribe' if subscribed, or unknown and can select.
+        '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
+        '#value' => t('Unsubscribe'),
+        // @todo: add clean submit handler
+      ) + $action_defaults,
+      'update' => array(
+        // Show 'Update' if user is known and can select newsletters.
+        '#access' => $multiple && $mail,
+        '#value' => t('Update'),
+        // @todo: add clean submit handler
+      ) + $action_defaults,
+    );
+    return $actions;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $valid_email = valid_email_address($form_state->getValue('mail'));
+    $valid_email = valid_email_address($form_state->getValue('mail')[0]['value']);
     if (!$valid_email) {
       $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
     }
 
-    $checked_newsletters = array_filter($form_state->getValue('newsletters'));
     // Unless we're in update mode, at least one checkbox must be checked.
-    if (!count($checked_newsletters) && $form_state->getValue('op') != t('Update')) {
-      $form_state->setErrorByName('newsletters', t('You must select at least one newsletter.'));
+    if (!count($form_state->getValue('subscriptions')) && $form_state->getValue('op') != t('Update')) {
+      $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
     }
 
     parent::validateForm($form, $form_state);
@@ -168,6 +134,9 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    if (count($this->newsletters) == 1) {
+      $form_state->setValue('subscriptions', array(array('target_id' => key($this->newsletters))));
+    }
     $mail = $form_state->getValue('mail');
     $account = user_load_by_mail($mail);
 
@@ -175,26 +144,9 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
     simplenews_confirmation_combine(TRUE);
     switch ($form_state->getValue('op')) {
       case t('Update'):
-        // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
-        // when unsubscribed from the newsletter.
-        arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
-        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-          if ($checked) {
-            simplenews_subscribe($mail, $newsletter_id, FALSE, 'website');
-          }
-          else {
-            simplenews_unsubscribe($mail, $newsletter_id, FALSE, 'website');
-          }
-        }
-        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail'))));
+        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value'])));
         break;
       case t('Subscribe'):
-        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-          if ($checked) {
-            $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-            simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
-          }
-        }
         if (simplenews_confirmation_send_combined()) {
           drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
         }
@@ -203,12 +155,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
         }
         break;
       case t('Unsubscribe'):
-        foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-          if ($checked) {
-            $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-            simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
-          }
-        }
         if (simplenews_confirmation_send_combined()) {
           drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
         }
@@ -216,7 +162,7 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
           drupal_set_message(t('You have been unsubscribed.'));
         }
         break;
-        parent::submitForm($form, $form_state);
     }
+    parent::submitForm($form, $form_state);
   }
 }

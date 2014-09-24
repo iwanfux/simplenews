@@ -3,6 +3,11 @@ targetEntityType: simplenews_subscriber
 bundle: simplenews_subscriber
 mode: default
 content:
+  subscriptions:
+    type: simplenews_subscription_select
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
   mail:
     type: email_default
     weight: 5
@@ -10,12 +15,10 @@ content:
       placeholder: ''
     third_party_settings: {  }
 hidden:
-  subscriptions: true
   uid: true
 status: true
 dependencies:
   entity:
     - field.instance.simplenews_subscriber.simplenews_subscriber.subscriptions
   module:
-    - entity_reference
-    - options
+    - simplenews

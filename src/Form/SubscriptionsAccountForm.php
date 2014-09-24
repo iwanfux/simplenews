@@ -24,13 +24,6 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormId() {
-    return 'simplenews_subscriptions_account';
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function buildForm(array $form, FormStateInterface $form_state, $user = NULL) {
     // Uid parameter has to be named $user but we use that name for the entity.
     $uid = $user;
