@@ -96,30 +96,29 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
       }
     }
 
-    parent::submitForm($form, $form_state);
-
-    // Group confirmation mails as necessary and configured.
     simplenews_confirmation_combine(TRUE);
-    switch ($form_state->getValue('op')) {
-      case t('Update'):
-        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value'])));
-        break;
-      case t('Subscribe'):
-        if (simplenews_confirmation_send_combined()) {
-          drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
+    parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
+    switch ($op) {
+      case static::SUBMIT_UPDATE:
+        return $this->t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value']));
+
+      case static::SUBMIT_SUBSCRIBE:
+        if ($confirm) {
+          return $this->t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.');
         }
-        else {
-          drupal_set_message(t('You have been subscribed.'));
+        return $this->t('You have been subscribed.');
+
+      case static::SUBMIT_UNSUBSCRIBE:
+        if ($confirm) {
+          return $this->t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.');
         }
-        break;
-      case t('Unsubscribe'):
-        if (simplenews_confirmation_send_combined()) {
-          drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
-        }
-        else {
-          drupal_set_message(t('You have been unsubscribed.'));
-        }
-        break;
+        return $this->t('You have been unsubscribed.');
     }
   }
 

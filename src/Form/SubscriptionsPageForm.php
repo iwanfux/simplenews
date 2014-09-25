@@ -63,32 +63,17 @@ class SubscriptionsPageForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    parent::submitForm($form, $form_state);
+  protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
+    if ($confirm) {
+      switch ($op) {
+        case static::SUBMIT_SUBSCRIBE:
+          return $this->t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.');
 
-    // Group confirmation mails as necessary and configured.
-    simplenews_confirmation_combine(TRUE);
-    switch ($form_state->getValue('op')) {
-      case t('Update'):
-        drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value'])));
-        break;
-      case t('Subscribe'):
-        if (simplenews_confirmation_send_combined()) {
-          drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
-        }
-        else {
-          drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value'])));
-        }
-        break;
-      case t('Unsubscribe'):
-        if (simplenews_confirmation_send_combined()) {
-          drupal_set_message(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
-        }
-        else {
-          drupal_set_message(t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value'])));
-        }
-        break;
+        case static::SUBMIT_UNSUBSCRIBE:
+          return $this->t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.');
+      }
     }
+    return $this->t('The newsletter subscriptions for %mail have been updated.', array('%mail' => $form_state->getValue('mail')[0]['value']));
   }
 
 }

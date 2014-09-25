@@ -41,30 +41,12 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    $user = \Drupal::currentUser();
-
-    $account = $form_state->get('user');
-
-    // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
-    // when unsubscribed from the
-    arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
-    foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-      if ($checked) {
-        simplenews_subscribe($account->getEmail(), $newsletter_id, FALSE, 'website');
-      }
-      else {
-        simplenews_unsubscribe($account->getEmail(), $newsletter_id, FALSE, 'website');
-      }
+  protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
+    $user = $form_state->get('user');
+    if (\Drupal::currentUser()->id() == $user->id()) {
+      return $this->t('Your newsletter subscriptions have been updated.');
     }
-    if ($user->id() == $account->id()) {
-      drupal_set_message(t('Your newsletter subscriptions have been updated.'));
-    }
-    else {
-      drupal_set_message(t('The newsletter subscriptions for user %account have been updated.', array('%account' => $account->label() )));
-    }
-
-    parent::submitForm($form, $form_state);
+    return $this->t('The newsletter subscriptions for user %account have been updated.', array('%account' => $user->label()));
   }
 
   /**
