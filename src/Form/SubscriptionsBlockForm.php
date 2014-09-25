@@ -64,7 +64,7 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
     $form = parent::form($form, $form_state);
 
     $form['subscriptions']['widget']['#options']
-      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->getNewsletters());
+      = array_intersect_key($form['subscriptions']['widget']['#options'], array_flip($this->getNewsletters()));
     $mail = $this->entity->getMail();
 
     // Tweak the appearance of the subscriptions widget.
@@ -131,8 +131,9 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
       $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
     }
 
-    // Unless we're in update mode, at least one checkbox must be checked.
-    if (!count($form_state->getValue('subscriptions')) && $form_state->getValue('op') != t('Update')) {
+    // Unless we're in update mode, or only one newsletter is available, at
+    // least one checkbox must be checked.
+    if (!count($form_state->getValue('subscriptions')) && $this->getOnlyNewsletter() == NULL && $form_state->getValue('op') != t('Update')) {
       $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
     }
 

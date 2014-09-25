@@ -40,8 +40,8 @@ abstract class SimplenewsTestBase extends WebTestBase {
    *   Allow anonymous subscribing.
    */
   function setAnonymousUserSubscription($enabled) {
+    $role = Role::load(DRUPAL_ANONYMOUS_RID);
     if ($enabled) {
-      $role = Role::load(DRUPAL_ANONYMOUS_RID);
       $role->grantPermission('subscribe to newsletters');
     } else {
       $role->revokePermission('subscribe to newsletters');

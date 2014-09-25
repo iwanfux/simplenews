@@ -1444,7 +1444,7 @@ function simplenews_subscriber_load_by_mail($mail) {
  */
 function simplenews_subscriber_load_by_uid($uid) {
   $subscribers = entity_load_multiple_by_properties('simplenews_subscriber', array('uid' => $uid));
-  return $subscribers ? reset($subscribers) : FALSE;
+  return $uid && $subscribers ? reset($subscribers) : FALSE;
 }
 
 /**
