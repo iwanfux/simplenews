@@ -53,73 +53,15 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
-    return parent::buildForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
-
-    $form['subscriptions']['widget']['#options']
-      = array_intersect_key($form['subscriptions']['widget']['#options'], array_flip($this->getNewsletters()));
-    $mail = $this->entity->getMail();
 
     // Tweak the appearance of the subscriptions widget.
     if ($this->getOnlyNewsletter() != NULL) {
       $form['subscriptions']['#access'] = FALSE;
     }
-    else {
-      if ($mail) {
-        $form['subscriptions']['widget']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
-        $form['subscriptions']['widget']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
-      }
-      else {
-        $form['subscriptions']['widget']['#title'] = t('Manage your newsletter subscriptions');
-        $form['subscriptions']['widget']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
-      }
-    }
 
     return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function actions(array $form, FormStateInterface $form_state) {
-    // Set up some flags from which submit button visibility can be determined.
-    $multiple = count($this->getNewsletters()) > 1;
-    $mail = $this->entity->getMail();
-    $subscribed = !$multiple && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
-
-    // Add all buttons, but conditionally set #access.
-    $action_defaults = array(
-      '#type' => 'submit',
-      '#submit' => array('::submitForm', '::save'),
-    );
-    $actions = array(
-      'subscribe' => array(
-        // Show 'Subscribe' if not subscribed, or user is unknown.
-        '#access' => (!$multiple && !$subscribed) || !$mail,
-        '#value' => t('Subscribe'),
-        // @todo: add clean submit handler
-      ) + $action_defaults,
-      'unsubscribe' => array(
-        // Show 'Unsubscribe' if subscribed, or unknown and can select.
-        '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
-        '#value' => t('Unsubscribe'),
-        // @todo: add clean submit handler
-      ) + $action_defaults,
-      'update' => array(
-        // Show 'Update' if user is known and can select newsletters.
-        '#access' => $multiple && $mail,
-        '#value' => t('Update'),
-        // @todo: add clean submit handler
-      ) + $action_defaults,
-    );
-    return $actions;
   }
 
   /**
@@ -154,6 +96,8 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
       }
     }
 
+    parent::submitForm($form, $form_state);
+
     // Group confirmation mails as necessary and configured.
     simplenews_confirmation_combine(TRUE);
     switch ($form_state->getValue('op')) {
@@ -177,6 +121,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
         }
         break;
     }
-    parent::submitForm($form, $form_state);
   }
+
 }

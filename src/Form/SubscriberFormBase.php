@@ -60,11 +60,65 @@ class SubscriberFormBase extends ContentEntityForm {
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
+    // Filter newsletter options as indicated with ::setNewsletters().
+    $form['subscriptions']['widget']['#options']
+      = array_intersect_key($form['subscriptions']['widget']['#options'], array_flip($this->getNewsletters()));
+
+    // Modify UI texts.
+    if ($mail = $this->entity->getMail()) {
+      $form['subscriptions']['widget']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
+      $form['subscriptions']['widget']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
+    }
+    else {
+      $form['subscriptions']['widget']['#title'] = t('Manage your newsletter subscriptions');
+      $form['subscriptions']['widget']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
+    }
+
+    // E-mail field is not editable for authenticated users.
     if ($this->entity->getUserId() > 0) {
       $form['mail']['#disabled'] = 'disabled';
+      // No need for an attentive red asterisk.
+      $form['mail']['#required'] = FALSE;
     }
 
     return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    // Set up some flags from which submit button visibility can be determined.
+    $multiple = count($this->getNewsletters()) > 1;
+    $mail = $this->entity->getMail();
+    $subscribed = !$multiple && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
+
+    // Add all buttons, but conditionally set #access.
+    $action_defaults = array(
+      '#type' => 'submit',
+      '#submit' => array('::submitForm', '::save'),
+    );
+    $actions = array(
+      'subscribe' => array(
+          // Show 'Subscribe' if not subscribed, or user is unknown.
+          '#access' => (!$multiple && !$subscribed) || !$mail,
+          '#value' => t('Subscribe'),
+          // @todo: add clean submit handler
+        ) + $action_defaults,
+      'unsubscribe' => array(
+          // Show 'Unsubscribe' if subscribed, or unknown and can select.
+          '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
+          '#value' => t('Unsubscribe'),
+          // @todo: add clean submit handler
+        ) + $action_defaults,
+      'update' => array(
+          // Show 'Update' if user is known and can select newsletters.
+          '#access' => $multiple && $mail,
+          '#value' => t('Update'),
+          // @todo: add clean submit handler
+        ) + $action_defaults,
+    );
+    return $actions;
   }
 
   /**
@@ -76,6 +130,7 @@ class SubscriberFormBase extends ContentEntityForm {
     foreach ($this->getSubscriptionsValueIds($form_state) as $id) {
       if (!$entity->isSubscribed($id)) {
         $entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+        simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
       }
     }
 
@@ -84,6 +139,7 @@ class SubscriberFormBase extends ContentEntityForm {
     foreach ($this->getNewsletters() as $id) {
       if ($entity->isSubscribed($id) && array_search($id, $selected) === FALSE) {
         $entity->unsubscribe($id, 'website');
+        simplenews_confirmation_send('unsubscribe', $this->entity, simplenews_newsletter_load($id));
       }
     }
 

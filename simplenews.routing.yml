@@ -121,7 +121,7 @@ simplenews.subscriber_export:
 simplenews.newsletter_subscriptions:
   path: 'newsletter/subscriptions'
   defaults:
-    _form: '\Drupal\simplenews\Form\SubscriptionsPageForm'
+    _entity_form: 'simplenews_subscriber.page'
     _title: 'Your newsletter subscriptions'
   requirements:
     _permission: 'subscribe to newsletters'
@@ -129,7 +129,7 @@ simplenews.newsletter_subscriptions:
 simplenews.newsletter_subscriptions_arguments:
   path: 'newsletter/subscriptions/{snid}/{timestamp}/{hash}'
   defaults:
-    _form: '\Drupal\simplenews\Form\SubscriptionsPageForm'
+    _entity_form: 'simplenews_subscriber.page'
     _title: 'Your newsletter subscriptions'
   requirements:
     _permission: 'subscribe to newsletters'
