@@ -186,7 +186,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     $message = $this->configuration['message'];
     $form_object = \Drupal::service('class_resolver')->getInstanceFromDefinition('\Drupal\simplenews\Form\SubscriptionsBlockForm');
     $form_object->setUniqueId($this->configuration['unique_id']);
-    return $this->formBuilder->getForm($form_object, $newsletters);
+    return $this->formBuilder->getForm($form_object, $newsletters, $message);
   }
 
 }

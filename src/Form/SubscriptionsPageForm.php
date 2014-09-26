@@ -55,10 +55,7 @@ class SubscriptionsPageForm extends FormBase {
       $options[$newsletter->id()] = String::checkPlain($newsletter->name);
     }
 
-    $form['subscriptions'] = array(
-      '#type' => 'fieldset',
-    );
-    $form['subscriptions']['newsletters'] = array(
+    $form['newsletters'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
       '#default_value' => $default_value
@@ -69,9 +66,8 @@ class SubscriptionsPageForm extends FormBase {
     // instead of a textfield. Anonymous users will still have to confirm any
     // changes.
     if ($mail) {
-      $form['subscriptions']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
-      $form['subscriptions']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
-      $form['subscriptions']['mail'] = array('#type' => 'value', '#value' => $mail);
+      $form['newsletters']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
+      $form['mail'] = array('#type' => 'value', '#value' => $mail);
       $form['update'] = array(
         '#type' => 'submit',
         '#value' => t('Update'),
@@ -80,9 +76,8 @@ class SubscriptionsPageForm extends FormBase {
       );
     }
     else {
-      $form['subscriptions']['#title'] = t('Manage your newsletter subscriptions');
-      $form['subscriptions']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
-      $form['subscriptions']['mail'] = array(
+      $form['newsletters']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
+      $form['mail'] = array(
         '#type' => 'textfield',
         '#title' => t('E-mail'),
         '#size' => 20,
