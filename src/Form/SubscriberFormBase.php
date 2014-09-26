@@ -105,19 +105,13 @@ abstract class SubscriberFormBase extends ContentEntityForm {
 
     // Modify UI texts.
     if ($mail = $this->entity->getMail()) {
+      $form['mail']['#access'] = FALSE;
       $form['subscriptions']['widget']['#title'] = t('Subscriptions for %mail', array('%mail' => $mail));
       $form['subscriptions']['widget']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
     }
     else {
       $form['subscriptions']['widget']['#title'] = t('Manage your newsletter subscriptions');
       $form['subscriptions']['widget']['#description'] = t('Select the newsletter(s) to which you want to subscribe or unsubscribe.');
-    }
-
-    // E-mail field is not editable for authenticated users.
-    if ($this->entity->getUserId() > 0) {
-      $form['mail']['#disabled'] = 'disabled';
-      // No need for an attentive red asterisk.
-      $form['mail']['#required'] = FALSE;
     }
 
     return $form;

@@ -7,9 +7,9 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Component\Utility\String;
-use Drupal\Core\Form\FormBase;
+use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\simplenews\Entity\Subscriber;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -25,6 +25,9 @@ class SubscriptionsPageForm extends SubscriberFormBase {
 
     if (\Drupal::config('simplenews.settings')->get('subscription.sync_account') && $subscriber = simplenews_subscriber_load_by_uid($user->id())) {
       $this->setEntity($subscriber);
+    }
+    elseif ($mail = $user->getEmail()) {
+      $this->setEntity(Subscriber::create(array('mail' => $mail)));
     }
     // If a hash is provided, try to load the corresponding subscriber.
     elseif ($snid && $timestamp && $hash) {

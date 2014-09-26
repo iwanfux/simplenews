@@ -9,9 +9,6 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\Component\Utility\String;
-use Drupal\simplenews\Entity\Subscriber;
-
 /**
  * (un)subscription of anonymous and authenticated users.
  *
@@ -872,12 +869,12 @@ rWcewRqx
     $this->drupalGet('user/' . $subscriber_user2->id() . '/simplenews');
     $this->assertResponse(200);
 
-    $this->assertNoField('mail');
+    $this->assertNoField('mail[0][value]');
     $this->drupalPostForm(NULL, array(), t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->getEmail())));
 
     // Nothing should have happened.
-    $this->assertNoFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertNoFieldChecked('edit-subscriptions-' . $newsletter_id);
 
     // Now fill out the form and try again.
     $edit = array(
@@ -886,7 +883,7 @@ rWcewRqx
     $this->drupalPostForm(NULL, $edit, t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->getEmail())));
 
-    $this->assertFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertFieldChecked('edit-subscriptions-' . $newsletter_id);
 
     // Unsubscribe.
     $edit = array(
@@ -895,18 +892,18 @@ rWcewRqx
     $this->drupalPostForm(NULL, $edit, t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user2->getEmail())));
 
-    $this->assertNoFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertNoFieldChecked('edit-subscriptions-' . $newsletter_id);
 
     // And now the same for the newsletter/subscriptions page.
     $subscriber_user3 = $this->drupalCreateUser(array('subscribe to newsletters'));
     $this->drupalLogin($subscriber_user3);
 
-    $this->assertNoField('mail');
+    $this->assertNoField('mail[0][value]');
     $this->drupalPostForm('newsletter/subscriptions', array(), t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->getEmail())));
 
     // Nothing should have happened.
-    $this->assertNoFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertNoFieldChecked('edit-subscriptions-' . $newsletter_id);
 
     // Now fill out the form and try again.
     $edit = array(
@@ -915,7 +912,7 @@ rWcewRqx
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->getEmail())));
 
-    $this->assertFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertFieldChecked('edit-subscriptions-' . $newsletter_id);
 
     // Unsubscribe.
     $edit = array(
@@ -924,7 +921,7 @@ rWcewRqx
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Update'));
     $this->assertText(t('The newsletter subscriptions for @mail have been updated.', array('@mail' => $subscriber_user3->getEmail())));
 
-    $this->assertNoFieldChecked('edit-newsletters-' . $newsletter_id);
+    $this->assertNoFieldChecked('edit-subscriptions-' . $newsletter_id);
   }
 
 }

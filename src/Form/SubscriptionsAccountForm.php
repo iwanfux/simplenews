@@ -41,6 +41,15 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions[static::SUBMIT_UPDATE]['#value'] = $this->t('Save');
+    return $actions;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
     $user = $form_state->get('user');
     if (\Drupal::currentUser()->id() == $user->id()) {

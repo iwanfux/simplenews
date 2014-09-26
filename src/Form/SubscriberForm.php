@@ -71,19 +71,12 @@ class SubscriberForm extends SubscriberFormBase {
   }
 
   /**
-   * Overrides Drupal\Core\Entity\EntityForm::save().
+   * {@inheritdoc}
    */
-  public function save(array $form, FormStateInterface $form_state) {
-    $subscriber = $this->entity;
-    $status = $subscriber->save();
-
-    if ($status == SAVED_UPDATED) {
-      drupal_set_message(t('Subscriber %label has been updated.', array('%label' => $subscriber->label())));
+  protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
+    if ($this->entity->isNew()) {
+      return $this->t('Subscriber %label has been added.', array('%label' => $this->entity->label()));
     }
-    else {
-      drupal_set_message(t('Subscriber %label has been added.', array('%label' => $subscriber->label())));
-    }
-
-    $form_state->setRedirect('simplenews.subscriber_edit', array('simplenews_subscriber' => $subscriber->id()));
+    return $this->t('Subscriber %label has been updated.', array('%label' => $this->entity->label()));
   }
 }
