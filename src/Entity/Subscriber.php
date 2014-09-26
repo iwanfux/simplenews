@@ -8,9 +8,12 @@
 namespace Drupal\simplenews\Entity;
 
 use Drupal\Core\Entity\ContentEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\simplenews\SubscriberInterface;
-use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
 
 /**
  * Defines the simplenews subscriber entity.
@@ -40,6 +43,13 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * )
  */
 class Subscriber extends ContentEntityBase implements SubscriberInterface {
+
+  /**
+   * Whether currently copying field values to corresponding User.
+   *
+   * @var bool
+   */
+  protected static $syncing;
 
   /**
    * {@inheritdoc}
@@ -132,6 +142,13 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   /**
    * {@inheritdoc}
    */
+  public function isSyncing() {
+    return static::$syncing;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function isSubscribed($newsletter_id) {
     foreach ($this->subscriptions as $item) {
       if ($item->target_id == $newsletter_id) {
@@ -214,6 +231,64 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     simplenews_delete_spool(array('snid' => $this->id(), 'newsletter_id' => $newsletter_id));
 
     \Drupal::moduleHandler()->invokeAll('simplenews_unsubscribe', array($this, $newsletter_id));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postSave(EntityStorageInterface $storage, $update = TRUE) {
+    parent::postSave($storage, $update);
+
+    // Copy values for shared fields to existing user.
+    $user = User::load($this->getUserId());
+    if (isset($user)) {
+      static::$syncing = TRUE;
+      foreach ($this->getUserSharedFields($user) as $field_name) {
+        $user->set($field_name, $this->get($field_name)->getValue());
+      }
+      $user->save();
+      static::$syncing = FALSE;
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function postCreate(EntityStorageInterface $storage) {
+    parent::postCreate($storage);
+
+    // Set the uid field if there is a user with the same email.
+    $user_ids = \Drupal::entityQuery('user')
+      ->condition('mail', $this->getMail())
+      ->execute();
+    if (!empty($user_ids)) {
+      $this->setUserId(array_pop($user_ids));
+    }
+
+    // Copy values for shared fields from existing user.
+    $user = User::load($this->getUserId());
+    if (isset($user)) {
+      foreach ($this->getUserSharedFields($user) as $field_name) {
+        $this->set($field_name, $user->get($field_name)->getValue());
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUserSharedFields(UserInterface $user) {
+    $field_names = array();
+    // Find any fields sharing name and type.
+    foreach ($this->getFieldDefinitions() as $field_definition) {
+      /** @var \Drupal\Core\Field\FieldDefinitionInterface $field_definition */
+      $field_name = $field_definition->getName();
+      $user_field = $user->getFieldDefinition($field_name);
+      if ($field_definition->getBundle() && isset($user_field) && $user_field->getType() == $field_definition->getType()) {
+        $field_names[] = $field_name;
+      }
+    }
+    return $field_names;
   }
 
   /**

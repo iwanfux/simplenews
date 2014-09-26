@@ -935,6 +935,19 @@ function simplenews_user_profile_form_submit($form, FormStateInterface $form_sta
 }
 
 /**
+ * Implements hook_ENTITY_TYPE_create().
+ */
+function simplenews_user_create(UserInterface $account) {
+  // Copy values for shared fields from existing subscriber.
+  $mail = $account->getEmail();
+  if ($mail && $subscriber = simplenews_subscriber_load_by_mail($mail)) {
+    foreach ($subscriber->getUserSharedFields($account) as $field_name) {
+      $account->set($field_name, $subscriber->get($field_name)->getValue());
+    }
+  }
+}
+
+/**
  * Implements hook_user_insert().
  *
  * Update uid and preferred language when the new account was already subscribed.
@@ -977,24 +990,38 @@ function simplenews_user_login(UserInterface $account) {
 /**
  * Implements hook_user_presave().
  *
- * User data (mail, status, language) is synchronized with subscriber.
+ * User data (mail, status, language) and all configurable fields are
+ * synchronized with subscriber.
+ *
  * This function handles existing user account, simplenews_user_insert takes
  * care of new accounts.
+ *
  * @see simplenews_user_insert()
  */
 function simplenews_user_presave(UserInterface $account) {
-  // We only process existing accounts.
-  if (!$account->isNew()) {
-    $subscriber = simplenews_subscriber_load_by_uid($account->id());
-    if ($subscriber) {
+  $syncing = &drupal_static(__FUNCTION__, FALSE);
+
+  /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
+  $subscriber = simplenews_subscriber_load_by_uid($account->id());
+  if ($subscriber && !$subscriber->isSyncing()) {
+    $syncing = TRUE;
+    // We only process existing accounts.
+    if (!$account->isNew()) {
       // Update mail, status and language if they are changed.
       $subscriber->setMail($account->getEmail());
       if (\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
         $subscriber->status = $account->isActive();
       }
       $subscriber->setLangcode($account->getPreferredLangcode());
-      $subscriber->save();
     }
+
+    // Copy values for shared fields to existing subscriber.
+    foreach ($subscriber->getUserSharedFields($account) as $field_name) {
+      $subscriber->set($field_name, $account->get($field_name)->getValue());
+    }
+
+    $subscriber->save();
+    $syncing = FALSE;
   }
 }
 
