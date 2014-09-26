@@ -339,7 +339,7 @@ rWcewRqx
    *   2. Subscribe anonymous via subscription page
    *   3. Subscribe anonymous via multi block
    */
-  function testSubscribeAnonymous() {
+  function dtestSubscribeAnonymous() {
     // 0. Preparation
     // Login admin
     // Set permission for anonymous to subscribe
@@ -661,7 +661,7 @@ rWcewRqx
    *   0. Preparation
    *   1. Subscribe anonymous via block
    */
-  function testSubscribeAnonymousSingle() {
+  function dtestSubscribeAnonymousSingle() {
     // 0. Preparation
     // Login admin
     // Create single opt in newsletter.
@@ -744,7 +744,7 @@ rWcewRqx
    *   5. Subscribe authenticated via account page
    *   6. Subscribe authenticated via multi block
    */
-  function testSubscribeAuthenticated() {
+  function dtestSubscribeAuthenticated() {
     // 0. Preparation
     // Login admin
     // Set permission for anonymous to subscribe

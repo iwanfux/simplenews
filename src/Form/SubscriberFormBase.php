@@ -154,6 +154,23 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    $mail = $form_state->getValue('mail')[0]['value'];
+    // Users should login to manage their subscriptions.
+    if (\Drupal::currentUser()->isAnonymous() && $user = user_load_by_mail($mail)) {
+      drupal_set_message($this->t('There is an account registered for the e-mail address %mail. Please log in to manage your newsletter subscriptions.', array('%mail' => $mail)));
+    }
+    // Merge with any existing subscriber.
+    elseif ($this->entity->isNew() && $subscriber = simplenews_subscriber_load_by_mail($form_state->getValue('mail')[0]['value'])) {
+      $this->setEntity($subscriber);
+    }
+
+    parent::submitForm($form, $form_state);
+  }
+
+  /**
    * Submit callback that subscribes to selected newsletters.
    *
    * @param array $form

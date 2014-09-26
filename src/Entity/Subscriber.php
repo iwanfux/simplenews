@@ -306,7 +306,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Status'))
       ->setDescription(t('Boolean indicating the status of the subscriber.'))
-      ->setSetting('default_value', FALSE);
+      ->setDefaultValue(TRUE);
 
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
@@ -317,7 +317,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
         'type' => 'email',
         'settings' => array(),
         'weight' => 5,
-      )) 
+      ))
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['uid'] = BaseFieldDefinition::create('entity_reference')
