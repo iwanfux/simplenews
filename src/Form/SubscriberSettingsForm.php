@@ -27,12 +27,18 @@ class SubscriberSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('simplenews.settings');
-    $form['simplenews_default_options'] = array(
+    $form['account'] = array(
       '#type' => 'fieldset',
-      '#title' => $this->t('Default subscriber options'),
+      '#title' => $this->t('User account'),
       '#collapsible' => FALSE,
-      '#description' => $this->t('These options will be the defaults for new subscribers, but can be overridden in the subscriber editing form.'),
     );
+    $form['account']['simplenews_sync_account'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Synchronize with account'),
+      '#default_value' => $config->get('subscriber.sync_account'),
+      '#description' => $this->t('When checked subscriptions will be synchronized with site accounts. When accounts are deleted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -47,9 +53,9 @@ class SubscriberSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    /*$this->configFactory()->get('simplenews.settings')
-      ->set('subscriber.xy', $form_state->getValue('xy'))
-      ->save();*/
+    $this->configFactory()->get('simplenews.settings')
+      ->set('subscriber.sync_account', $form_state->getValue('simplenews_sync_account'))
+      ->save();
 
     parent::submitForm($form, $form_state);
   }

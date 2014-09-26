@@ -135,7 +135,16 @@ class NodeTabForm extends FormBase {
           'disabled' => 'disabled',
         ),
       );
-      $form['none']['#title'] = ($status == SIMPLENEWS_STATUS_SEND_READY) ? t('This newsletter has been sent') : t('This newsletter is pending');
+      if ($status == SIMPLENEWS_STATUS_SEND_READY) {
+        $form['none']['#title'] = t('This newsletter has been sent');
+      } else {
+        $form['none']['#title'] = t('This newsletter is pending');
+        $form['stop'] = array(
+          '#type' => 'submit',
+          '#submit' => array('::submitStop'),
+          '#value' => t('Stop sending'),
+        );
+      }
       return $form;
     }
     $form['submit'] = array(
@@ -239,6 +248,28 @@ class NodeTabForm extends FormBase {
     }
 
     $node->save();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitStop(array &$form, FormStateInterface $form_state) {
+    $node = $form_state->get('node');
+
+    module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+    // Delete the mail spool entries of this newsletter issue.
+    $count = simplenews_delete_spool(array('nid' => $node->id()));
+
+    // Set newsletter issue to not sent yet.
+    $node->simplenews_issue->status = SIMPLENEWS_STATUS_SEND_NOT;
+
+    $node->save();
+
+    drupal_set_message(t('Sending of %title was stopped. @count pending email(s) were deleted.', array(
+      '%title' => $node->getTitle(),
+      '@count' => $count,
+    )));
+
   }
 
   /**

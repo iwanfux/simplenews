@@ -1,6 +1,6 @@
 type: simplenews
-name: Simplenews
-description: 'Use <em>simplenews</em> for newsletters.'
+name: Newsletter Issue
+description: 'Use <em>Newsletter Issue</em> for newsletters.'
 help: ''
 has_title: true
 title_label: Title

@@ -125,6 +125,6 @@ class SubscriberForm extends ContentEntityForm {
       drupal_set_message(t('Subscriber %label has been added.', array('%label' => $subscriber->label())));
     }
 
-    $form_state->setRedirect('simplenews.subscriber_edit', array('simplenews_subscriber' => $subscriber->id()));
+    $form_state->setRedirect('simplenews.subscriber_list');
   }
 }
