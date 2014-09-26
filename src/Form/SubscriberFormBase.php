@@ -241,9 +241,11 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    * {@inheritdoc}
    */
   protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    // Subscriptions are been handled by submit callback instead.
+    // Subscriptions are handled by submit callback instead.
+    $subsciptions_value = $form_state->getValue('subscriptions');
     $form_state->unsetValue('subscriptions');
     parent::copyFormValuesToEntity($entity, $form, $form_state);
+    $form_state->setValue('subscriptions', $subsciptions_value);
   }
 
   /**
