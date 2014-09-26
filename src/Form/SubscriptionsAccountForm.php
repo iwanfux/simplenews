@@ -62,6 +62,11 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
     $user = User::load($user);
     $account = $this->currentUser();
 
+    // Hide the form from menus/tabs if sync is disabled.
+    if (!\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
+      return AccessResult::forbidden();
+    }
+
     return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
       ->orIf(AccessResult::allowedIfHasPermission($account, 'subscribe to newsletters')
         ->andIf(AccessResult::allowedIf($user->id() == $account->id())));

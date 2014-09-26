@@ -23,7 +23,7 @@ class SubscriptionsPageForm extends SubscriberFormBase {
   public function buildForm(array $form, FormStateInterface $form_state, $snid = NULL, $timestamp = NULL, $hash = NULL) {
     $user = \Drupal::currentUser();
 
-    if ($subscriber = simplenews_subscriber_load_by_uid($user->id())) {
+    if (\Drupal::config('simplenews.settings')->get('subscription.sync_account') && $subscriber = simplenews_subscriber_load_by_uid($user->id())) {
       $this->setEntity($subscriber);
     }
     // If a hash is provided, try to load the corresponding subscriber.

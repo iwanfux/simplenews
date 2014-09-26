@@ -36,7 +36,7 @@ class SubscriptionSettingsForm extends ConfigFormBase {
       '#type' => 'checkbox',
       '#title' => $this->t('Synchronize with account'),
       '#default_value' => $config->get('subscription.sync_account'),
-      '#description' => $this->t('When checked subscriptions will be synchronized with site accounts. When accounts are deleted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
+      '#description' => $this->t('<p>When checked subscriptions will be synchronized with site accounts. Fields that exist with identical name and type on subscriber and accounts will be synchronized. When accounts are deleted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.</p><p><strong>Note:</strong> This option is intended to be set once only. If disabled and later enabled again, beware of data inconsistency.</p>'),
     );
 
     $form['subscription_mail'] = array(
