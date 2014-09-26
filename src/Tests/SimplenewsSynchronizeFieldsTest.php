@@ -76,7 +76,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
 
     // Status is only synced if sync_account is set.
     $this->assertFalse($subscriber->getStatus());
-    \Drupal::config('simplenews.settings')->set('subscription.sync_account', TRUE)->save();
+    \Drupal::config('simplenews.settings')->set('subscriber.sync_account', TRUE)->save();
     $user->save();
     $subscriber = Subscriber::load($subscriber->id());
     $this->assertTrue($subscriber->getStatus());
