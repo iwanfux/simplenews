@@ -40,6 +40,10 @@ function simplenews_add_node_to_spool($node) {
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
 
+  module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
+  $node->simplenews_issue->subscribers = simplenews_count_subscriptions($node->simplenews_issue->target_id);
+  $node->save();
+
   db_insert('simplenews_mail_spool')
     ->from($select)
     ->execute();
@@ -579,7 +583,6 @@ function simplenews_clear_spool() {
   $config = \Drupal::config('simplenews.settings');
 
   $expiration_time = REQUEST_TIME - $config->get('mail.spool_expire') * 86400;
-  debug($expiration_time);
   return db_delete('simplenews_mail_spool')
     ->condition('status', SIMPLENEWS_SPOOL_DONE)
     ->condition('timestamp', $expiration_time, '<=')
@@ -934,7 +937,6 @@ function simplenews_build_unsubscribe_mail(&$message, $params) {
     $message['body'][] = \Drupal::token()->replace($body, $context, array('sanitize' => FALSE));
   }
 }
-
 
 /**
  * A mail sending implementation that captures sent messages to a variable.

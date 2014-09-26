@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\EntityConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Builds the form to delete a contact category.
@@ -25,10 +26,8 @@ class SubscriberDeleteForm extends EntityConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getCancelRoute() {
-    return array(
-      'route_name' => 'simplenews.subscriber_add',
-    );
+  public function getCancelUrl() {
+    return new Url('simplenews.subscriber_list');
   }
 
   /**
@@ -45,7 +44,7 @@ class SubscriberDeleteForm extends EntityConfirmFormBase {
     $this->entity->delete();
     drupal_set_message(t('Subscriber %label has been deleted.', array('%label' => $this->entity->label())));
     \Drupal::logger('simplenews')->notice('Subscriber %label has been deleted.', array('%label' => $this->entity->label()));
-    $form_state->setRedirect('simplenews.subscriber_add');
+    $form_state->setRedirect('simplenews.subscriber_list');
   }
 
 }

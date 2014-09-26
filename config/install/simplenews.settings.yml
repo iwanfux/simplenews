@@ -8,8 +8,10 @@ newsletter:
   send: 0
   test_address_override: 0
 
-subscription:
+subscriber:
   sync_account: TRUE
+
+subscription:
   use_combined: multiple
   confirm_subscribe_subject: 'Confirmation for [simplenews-newsletter:name] from [site:name]'
   confirm_subscribe_unsubscribed: 'We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:subscribe-url]'

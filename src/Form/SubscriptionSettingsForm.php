@@ -27,17 +27,6 @@ class SubscriptionSettingsForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->configFactory()->get('simplenews.settings');
-    $form['account'] = array(
-      '#type' => 'fieldset',
-      '#title' => $this->t('User account'),
-      '#collapsible' => FALSE,
-    );
-    $form['account']['simplenews_sync_account'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Synchronize with account'),
-      '#default_value' => $config->get('subscription.sync_account'),
-      '#description' => $this->t('When checked subscriptions will be synchronized with site accounts. When accounts are deleted, subscriptions with the same email address will be removed. When site accounts are blocked/unblocked, subscriptions will be deactivated/activated. When not checked subscriptions will be unchanged when associated accounts are deleted or blocked.'),
-    );
 
     $form['subscription_mail'] = array(
       '#type' => 'fieldset',
@@ -207,7 +196,6 @@ class SubscriptionSettingsForm extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->configFactory()->get('simplenews.settings')
-      ->set('subscription.sync_account', $form_state->getValue('simplenews_sync_account'))
       ->set('subscription.use_combined', $form_state->getValue('simplenews_use_combined'))
       ->set('subscription.use_combined', $form_state->getValue('simplenews_confirm_subscribe_subject'))
       ->set('subscription.confirm_subscribe_unsubscribed', $form_state->getValue('simplenews_confirm_subscribe_unsubscribed'))
