@@ -133,21 +133,21 @@ abstract class SubscriberFormBase extends ContentEntityForm {
         '#access' => (!$multiple && !$subscribed) || !$mail,
         '#type' => 'submit',
         '#value' => t('Subscribe'),
-        '#submit' => array('::submitForm', '::submitSubscribe', '::save'),
+        '#submit' => array('::submitForm', '::save', '::submitSubscribe'),
       ),
       static::SUBMIT_UNSUBSCRIBE => array(
         // Show 'Unsubscribe' if subscribed, or unknown and can select.
         '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
         '#type' => 'submit',
         '#value' => t('Unsubscribe'),
-        '#submit' => array('::submitForm', '::submitUnsubscribe', '::save'),
+        '#submit' => array('::submitForm', '::save', '::submitUnsubscribe'),
       ),
       static::SUBMIT_UPDATE => array(
         // Show 'Update' if user is known and can select newsletters.
         '#access' => $multiple && $mail,
         '#type' => 'submit',
         '#value' => t('Update'),
-        '#submit' => array('::submitForm', '::submitUpdate', '::save'),
+        '#submit' => array('::submitForm', '::save', '::submitUpdate'),
       ),
     );
     return $actions;
@@ -163,17 +163,21 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function submitSubscribe(array $form, FormStateInterface $form_state) {
     $user = User::load($this->entity->getUserId());
+    $to_subscribe = array();
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getSelectedNewsletters($form_state) as $id) {
       if (!$this->entity->isSubscribed($id)) {
-        $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+        $to_subscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
         }
       }
     }
-    $confirm = simplenews_confirmation_send_combined();
-    drupal_set_message($this->getSubmitMessage($form_state, 'subscribe', $confirm));
+    $confirm = simplenews_confirmation_send_combined($this->entity);
+    foreach ($to_subscribe as $id) {
+      $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+    }
+    drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_SUBSCRIBE, $confirm));
   }
 
   /**
@@ -186,17 +190,21 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function submitUnsubscribe(array $form, FormStateInterface $form_state) {
     $user = User::load($this->entity->getUserId());
+    $to_unsubscribe = array();
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getSelectedNewsletters($form_state) as $id) {
       if ($this->entity->isSubscribed($id)) {
-        $this->entity->unsubscribe($id, 'website');
+        $to_unsubscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('unsubscribe', $this->entity, simplenews_newsletter_load($id));
         }
       }
     }
-    $confirm = simplenews_confirmation_send_combined();
-    drupal_set_message($this->getSubmitMessage($form_state, 'unsubscribe', $confirm));
+    $confirm = simplenews_confirmation_send_combined($this->entity);
+    foreach ($to_unsubscribe as $id) {
+      $this->entity->unsubscribe($id, 'website');
+    }
+    drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UNSUBSCRIBE, $confirm));
   }
 
   /**
@@ -210,10 +218,13 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   public function submitUpdate(array $form, FormStateInterface $form_state) {
     $selected = $this->getSelectedNewsletters($form_state);
     $user = User::load($this->entity->getUserId());
+    $to_subscribe = array();
+    $to_unsubscribe = array();
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getNewsletters() as $id) {
       // Subscribe if selected and not already subscribed.
       if (!$this->entity->isSubscribed($id) && array_search($id, $selected) !== FALSE) {
+        $to_subscribe[] = $id;
         $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
@@ -221,14 +232,20 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       }
       // Unsubscribe if subscribed and deselected.
       if ($this->entity->isSubscribed($id) && array_search($id, $selected) === FALSE) {
-        $this->entity->unsubscribe($id, 'website');
+        $to_unsubscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('unsubscribe', $this->entity, simplenews_newsletter_load($id));
         }
       }
     }
-    $confirm = simplenews_confirmation_send_combined();
-    drupal_set_message($this->getSubmitMessage($form_state, 'update', $confirm));
+    $confirm = simplenews_confirmation_send_combined($this->entity);
+    foreach ($to_subscribe as $id) {
+      $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+    }
+    foreach ($to_unsubscribe as $id) {
+      $this->entity->unsubscribe($id, 'website');
+    }
+    drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, $confirm));
   }
 
   /**

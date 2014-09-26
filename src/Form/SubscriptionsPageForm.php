@@ -7,7 +7,6 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
