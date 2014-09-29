@@ -17,6 +17,13 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   protected $uniqueId;
 
   /**
+   * A message to use as description for the block.
+   *
+   * @var string
+   */
+  public $message;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -55,6 +62,11 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
+
+    $form['message'] = array(
+      '#type' => 'item',
+      '#markup' => $this->message,
+    );
 
     // Tweak the appearance of the subscriptions widget.
     if ($this->getOnlyNewsletter() != NULL) {

@@ -7,8 +7,6 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\Component\Utility\String;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -79,4 +77,13 @@ class SubscriberForm extends SubscriberFormBase {
     }
     return $this->t('Subscriber %label has been updated.', array('%label' => $this->entity->label()));
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
+    parent::submitForm($form, $form_state);
+    $form_state->setRedirect('simplenews.subscriber_list');
+  }
+
 }

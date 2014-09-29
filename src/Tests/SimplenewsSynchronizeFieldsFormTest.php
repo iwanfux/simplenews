@@ -70,6 +70,7 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
 
     $new_value = $this->randomMachineName();
     $this->drupalPostForm(NULL, array('field_shared[0][value]' => $new_value), t('Save'));
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
     $this->assertRaw($new_value);
 
     $this->user = User::load($this->user->id());

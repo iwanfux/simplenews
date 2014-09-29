@@ -195,11 +195,12 @@ class NewsletterIssueListForm extends FormBase {
     $options = array();
 
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
+    module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $categories = simplenews_newsletter_list();
     foreach (Node::loadMultiple($nids) as $node) {
-      $subscriber_count = $this->countSubscriptions($node->simplenews_issue->target_id);
+      $subscriber_count = $node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_READY ? $node->simplenews_issue->subscribers : simplenews_count_subscriptions($node->simplenews_issue->target_id);
       $pending_count = simplenews_count_spool(array('entity_id' => $node->id(), 'entity_type' => 'node'));
-      $status_render_array = array('#theme' => 'simplenews_status','#source' => 'sent', '#status' => $node->simplenews_issue->status);
+      $status_render_array = array('#theme' => 'simplenews_status','#source' => 'sent', '#status' => $node->simplenews_issue->status, '#sent_count' => $node->simplenews_issue->sent_count);
       $send_status = $node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : drupal_render($status_render_array);
 
       $published_render_array = array('#theme' => 'simplenews_status','#source' => 'published', '#status' => $node->isPublished());
@@ -227,31 +228,4 @@ class NewsletterIssueListForm extends FormBase {
 
     return $form;
   }
-
-  /**
-   * Count number of subscribers per newsletter list.
-   *
-   * @param $newsletter_id
-   *   The newsletter id.
-   *
-   * @return
-   *   Number of subscribers.
-   */
-  public function countSubscriptions($newsletter_id) {
-    $subscription_count = &drupal_static(__FUNCTION__);
-
-    if (isset($subscription_count[$newsletter_id])) {
-      return $subscription_count[$newsletter_id];
-    }
-
-    // @todo: entity query + aggregate
-    $query = db_select('simplenews_subscriber__subscriptions', 'ss');
-    $query->leftJoin('simplenews_subscriber', 'sn', 'sn.id = ss.entity_id');
-    $query->condition('subscriptions_target_id', $newsletter_id)
-      ->condition('sn.status', 1)
-      ->condition('ss.subscriptions_status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
-    $subscription_count[$newsletter_id] = $query->countQuery()->execute()->fetchField();
-    return $subscription_count[$newsletter_id];
-  }
-
 }

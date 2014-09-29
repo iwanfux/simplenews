@@ -27,7 +27,7 @@ class SubscriberDeleteForm extends EntityConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('simplenews.subscriber_add');
+    return new Url('simplenews.subscriber_list');
   }
 
   /**
@@ -44,7 +44,7 @@ class SubscriberDeleteForm extends EntityConfirmFormBase {
     $this->entity->delete();
     drupal_set_message(t('Subscriber %label has been deleted.', array('%label' => $this->entity->label())));
     \Drupal::logger('simplenews')->notice('Subscriber %label has been deleted.', array('%label' => $this->entity->label()));
-    $form_state->setRedirect('simplenews.subscriber_add');
+    $form_state->setRedirect('simplenews.subscriber_list');
   }
 
 }

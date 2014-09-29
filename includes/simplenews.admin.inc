@@ -513,6 +513,12 @@ function simplenews_count_subscriptions($newsletter_id) {
 function theme_simplenews_status($variables) {
   $source = $variables['source'];
   $status = $variables['status'];
+  $sent_count = NULL;
+  if (isset($variables['sent_count'])) {
+    $sent_count = $variables['sent_count'];
+  }
+  $additional = '';
+
   switch ($source) {
     case 'published':
       $images = array(
@@ -545,6 +551,9 @@ function theme_simplenews_status($variables) {
         SIMPLENEWS_STATUS_SEND_READY => t('Sent'),
         SIMPLENEWS_STATUS_SEND_PUBLISH => t('Send on publish'),
       );
+      if ($status == SIMPLENEWS_STATUS_SEND_READY && $sent_count !== NULL) {
+        $additional = ' (' . $sent_count . ')';
+      }
       break;
   }
   // Build the output
@@ -552,8 +561,8 @@ function theme_simplenews_status($variables) {
     $img_vars = array(
       '#theme' => 'image',
       '#uri' => drupal_get_path('module', 'simplenews') . '/' . $images[$status],
-      '#alt' => $title[$status],
-      '#title' => $title[$status],
+      '#alt' => $title[$status] . $additional,
+      '#title' => $title[$status] .$additional,
       '#getsize' => TRUE,
     );
     $output = drupal_render($img_vars);

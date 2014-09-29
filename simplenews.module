@@ -289,16 +289,15 @@ function simplenews_node_delete($node) {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
   $count = simplenews_delete_spool(array('entity_id' => $node->id(), 'entity_type' => 'node'));
   if ($count) {
-    drupal_set_message(t('Newsletter %title was deleted but had @count pending emails. They can no longer be sent.', array(
+    drupal_set_message(t('@count pending emails for %title were found and deleted.', array(
         '%title' => $node->getTitle(),
         '@count' => $count,
       )), 'warning');
-    \Drupal::logger('simplenews')->alert('Newsletter %title deleted with @count pending emails. Emails can no longer be sent.', array(
+    \Drupal::logger('simplenews')->alert('Newsletter %title deleted with @count pending emails..', array(
       '%title' => $node->getTitle(),
       '@count' => $count,
       ));
   }
-  drupal_set_message(t('Newsletter %title was deleted.', array('%title' => $node->getTitle())));
 }
 
 /**
@@ -1009,8 +1008,8 @@ function simplenews_user_presave(UserInterface $account) {
     // We only process existing accounts.
     if (!$account->isNew()) {
       // Update mail, status and language if they are changed.
-      $subscriber->mail = $account->getEmail();
-      if (\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
+      $subscriber->setMail($account->getEmail());
+      if (\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
         $subscriber->status = $account->isActive();
       }
       $subscriber->setLangcode($account->getPreferredLangcode());
@@ -1910,6 +1909,7 @@ function simplenews_theme() {
       'variables' => array(
         'source' => NULL,
         'status' => NULL,
+        'sent_count' => NULL,
       ),
     ),
     'simplenews_newsletter_body' => array(
