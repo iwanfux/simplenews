@@ -85,31 +85,6 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
 define('SIMPLENEWS_UNLIMITED', -1);
 
 /**
- * Implements hook_permission().
- *
- * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
- */
-function simplenews_permission() {
-  return array(
-    'administer newsletters' => array(
-      'title' => t('Administer newsletters'),
-    ),
-    'administer simplenews subscriptions' => array(
-      'title' => t('Administer simplenews subscriptions'),
-    ),
-    'administer simplenews settings' => array(
-      'title' => t('Administer simplenews settings'),
-    ),
-    'send newsletter' => array(
-      'title' => t('Send newsletter'),
-    ),
-    'subscribe to newsletters' => array(
-      'title' => t('Subscribe to newsletters'),
-    ),
-  );
-}
-
-/**
  * Implements hook_init().
  *
  * @todo move this to a specific form theme function ?
