@@ -15,7 +15,7 @@ hidden:
 status: true
 dependencies:
   entity:
-    - field.instance.simplenews_subscriber.simplenews_subscriber.subscriptions
+    - field.field.simplenews_subscriber.simplenews_subscriber.subscriptions
   module:
     - entity_reference
     - options
