@@ -9,8 +9,10 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\simpletest\WebTestBase;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Newsletter;
+use Drupal\simpletest\WebTestBase;
 use Drupal\user\Entity\Role;
 
 /**
@@ -20,8 +22,17 @@ abstract class SimplenewsTestBase extends WebTestBase {
 
   public static $modules = array('simplenews', 'block');
 
+  /**
+   * The Simplenews settings config object.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $config;
+
   public function setUp() {
     parent::setUp();
+    $this->config = \Drupal::config('simplenews.settings');
+
     $site_config = \Drupal::config('system.site');
     $site_config->set('site_mail', 'simpletest@example.com');
 
@@ -75,8 +86,8 @@ abstract class SimplenewsTestBase extends WebTestBase {
    * Email addresses are case sensitive, simplenews system should handle with
    * this correctly.
    */
-  function randomEmail($number = 4, $prefix = 'simpletest_', $domain = 'example.com') {
-    $mail = drupal_strtolower($this->randomMachineName($number, $prefix) . '@' . $domain);
+  function randomEmail($number = 4, $domain = 'example.com') {
+    $mail = drupal_strtolower($this->randomMachineName($number) . '@' . $domain);
     return $mail;
   }
 
@@ -145,5 +156,100 @@ abstract class SimplenewsTestBase extends WebTestBase {
       'newsletters[' . $newsletter_id . ']' => TRUE,
     );
     $this->drupalPostForm(NULL, $edit, t('Subscribe'));
+  }
+
+  /**
+   * Creates and saves a field storage and instance.
+   *
+   * @param string $type
+   *   The field type.
+   * @param string $field_name
+   *   The name of the new field.
+   * @param string $entity_type
+   *   The ID of the entity type to attach the field instance to.
+   * @param string $bundle
+   *   (optional) The entity bundle. Defaults to same as $entity_type.
+   */
+  protected function addField($type, $field_name, $entity_type, $bundle = NULL) {
+    if (!isset($bundle)) {
+      $bundle = $entity_type;
+    }
+    FieldStorageConfig::create(array(
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'type' => $type,
+    ))->save();
+    FieldConfig::create(array(
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+    ))->save();
+    entity_get_form_display($entity_type, $bundle, 'default')
+      ->setComponent($field_name, array(
+        'type' => 'string_textfield',
+      ))->save();
+    entity_get_display($entity_type, $bundle, 'default')
+      ->setComponent($field_name, array(
+        'type' => 'string',
+      ))->save();
+  }
+
+  /**
+   * Visits and submits a newsletter management form.
+   *
+   * @param string|string[] $newsletter_ids
+   *   An ID or an array of IDs of the newsletters to subscribe to.
+   * @param string $email
+   *   The email to subscribe.
+   * @param array $edit
+   *   (optional) Additional form field values, keyed by form field names.
+   * @param string $submit
+   *   (optional) The value of the form submit button. Defaults to
+   *   t('Subscribe').
+   * @param string $path
+   *   (optional) The path where to expect the form, defaults to
+   *   'newsletter/subscriptions'.
+   * @param int $response
+   *   (optional) Expected response, defaults to 200.
+   */
+  protected function subscribe($newsletter_ids, $email = NULL, array $edit = array(), $submit = NULL, $path = 'newsletter/subscriptions', $response = 200) {
+    if (isset($email)) {
+      $edit += array(
+        'mail[0][value]' => $email,
+      );
+    }
+    if (!is_array($newsletter_ids)) {
+      $newsletter_ids = [$newsletter_ids];
+    }
+    foreach ($newsletter_ids as $newsletter_id) {
+      $edit["subscriptions[$newsletter_id]"] = $newsletter_id;
+    }
+    $this->drupalPostForm($path, $edit, $submit ?: t('Subscribe'));
+    $this->assertResponse($response);
+  }
+
+  /**
+   * Visits and submits the user registration form.
+   *
+   * @param string $email
+   *   (optional) The email of the new user. Defaults to a random email.
+   * @param array $edit
+   *   (optional) Additional form field values, keyed by form field names.
+   *
+   * @return int
+   *   Uid of the new user.
+   */
+  protected function registerUser($email = NULL, array $edit = array()) {
+    $edit += array(
+      'mail' => $email ?: $this->randomEmail(),
+      'name' => $this->randomMachineName(),
+    );
+    $this->drupalPostForm('user/register', $edit, t('Create new account'));
+    // Return uid of new user.
+    $uids = \Drupal::entityQuery('user')
+      ->sort('created', 'DESC')
+      ->range(0, 1)
+      ->execute();
+    return array_shift($uids);
   }
 }

@@ -53,7 +53,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
 
     $enable = array_rand($newsletters, 3);
 
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
@@ -261,7 +261,7 @@ rWcewRqx
     // Test expired confirmation links.
     $enable = array_rand($newsletters, 3);
 
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
@@ -393,7 +393,7 @@ rWcewRqx
     );
     $single_block = $this->setupSubscriptionBlock($block_settings);
 
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
@@ -455,7 +455,7 @@ rWcewRqx
     // Confirm using mail link
     // Assert confirmation message
 
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       "subscriptions[$newsletter_id]" => '1',
       'mail[0][value]' => $mail,
@@ -487,7 +487,7 @@ rWcewRqx
     $multi_block = $this->setupSubscriptionBlock($block_settings);
 
     // Try to submit multi-signup form without selecting a newsletter.
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
@@ -526,7 +526,7 @@ rWcewRqx
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $subscription->status);
 
     // Now the same with the newsletter/subscriptions page.
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
@@ -708,7 +708,7 @@ rWcewRqx
     // Assert confirmation message
     // Verify subscription state.
 
-    $mail = $this->randomEmail(8, 'testmail');
+    $mail = $this->randomEmail(8);
     $edit = array(
       'mail[0][value]' => $mail,
     );
