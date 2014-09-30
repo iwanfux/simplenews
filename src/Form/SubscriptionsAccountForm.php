@@ -7,14 +7,10 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Entity\ContentEntityForm;
-use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\Entity\User;
-use Drupal\user\UserInterface;
 
 /**
  * Configure simplenews subscriptions of a user.
@@ -72,7 +68,7 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
     $account = $this->currentUser();
 
     // Hide the form from menus/tabs if sync is disabled.
-    if (!\Drupal::config('simplenews.settings')->get('subscription.sync_account')) {
+    if (!\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
       return AccessResult::forbidden();
     }
 

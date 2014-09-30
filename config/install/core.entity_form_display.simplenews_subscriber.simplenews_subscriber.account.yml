@@ -1,0 +1,22 @@
+langcode: und
+status: true
+dependencies:
+  entity:
+    - core.entity_form_mode.simplenews_subscriber.account
+    - field.field.simplenews_subscriber.simplenews_subscriber.subscriptions
+  module:
+    - simplenews
+id: simplenews_subscriber.simplenews_subscriber.account
+targetEntityType: simplenews_subscriber
+bundle: simplenews_subscriber
+mode: account
+content:
+  subscriptions:
+    type: simplenews_subscription_select
+    weight: 0
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  uid: true
+  mail: true
+third_party_settings: {  }
