@@ -78,6 +78,23 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   }
 
   /**
+   * Convenience method for the case of only one available newsletter.
+   *
+   * @see ::setNewsletter()
+   *
+   * @return string|null
+   *   If there is exactly one newsletter available in this form, this method
+   *   returns its ID. Otherwise it returns NULL.
+   */
+  protected function getOnlyNewsletter() {
+    $newsletters = $this->getNewsletters();
+    if (count($newsletters) == 1) {
+      return array_shift($newsletters);
+    }
+    return NULL;
+  }
+
+  /**
    * Returns a message to display to the user upon successful form submission.
    *
    * @param \Drupal\Core\Form\FormStateInterface $form_state
@@ -144,7 +161,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       ),
       static::SUBMIT_UPDATE => array(
         // Show 'Update' if user is known and can select newsletters.
-        '#access' => $multiple && $mail,
+        '#access' => $mail,
         '#type' => 'submit',
         '#value' => t('Update'),
         '#submit' => array('::submitForm', '::save', '::submitUpdate'),

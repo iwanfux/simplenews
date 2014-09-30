@@ -30,7 +30,7 @@ class SubscriptionWidget extends ButtonsWidget {
    */
   protected function getSelectedOptions(FieldItemListInterface $items, $delta = 0) {
     // Copy parent behavior but also check the status property.
-    $flat_options = $this->flattenOptions($this->getOptions($items[$delta]));
+    $flat_options = $this->flattenOptions($this->getOptions($items->getEntity()));
     $selected_options = array();
     foreach ($items as $item) {
       $value = $item->{$this->column};

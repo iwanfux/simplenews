@@ -41,23 +41,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   }
 
   /**
-   * Convenience method for the case of only one available newsletter.
-   *
-   * @see ::setNewsletter()
-   *
-   * @return string|null
-   *   If there is exactly one newsletter available in this form, this method
-   *   returns its ID. Otherwise it returns NULL.
-   */
-  protected function getOnlyNewsletter() {
-    $newsletters = $this->getNewsletters();
-    if (count($newsletters) == 1) {
-      return array_shift($newsletters);
-    }
-    return NULL;
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
@@ -74,6 +57,20 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
     }
 
     return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    // If only one newsletter, show Subscribe/Unsubscribe instead of Update.
+    $actions = parent::actions($form, $form_state);
+    if ($this->getOnlyNewsletter()) {
+      $actions[static::SUBMIT_UPDATE]['#access'] = FALSE;
+      $actions[static::SUBMIT_SUBSCRIBE]['#access'] = !$this->entity->isSubscribed($this->getOnlyNewsletter());
+      $actions[static::SUBMIT_UNSUBSCRIBE]['#access'] = $this->entity->isSubscribed($this->getOnlyNewsletter());
+    }
+    return parent::actions($form, $form_state);
   }
 
   /**

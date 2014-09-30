@@ -71,6 +71,15 @@ class SubscriberForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions[static::SUBMIT_UPDATE]['#value'] = $this->t('Save');
+    return $actions;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
     if ($this->entity->isNew()) {
       return $this->t('Subscriber %label has been added.', array('%label' => $this->entity->label()));
