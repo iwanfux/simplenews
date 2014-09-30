@@ -288,7 +288,7 @@ class NodeTabForm extends FormBase {
       return AccessResult::allowedIfHasPermission($account, 'administer newsletters')
         ->orIf(AccessResult::allowedIfHasPermission($account, 'send newsletter'));
     }
-    return AccessResult::create();
+    return AccessResult::neutral();
   }
 
 }
