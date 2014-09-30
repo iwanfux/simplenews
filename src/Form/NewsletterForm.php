@@ -216,15 +216,15 @@ class NewsletterForm extends EntityForm {
     $newsletter = $this->entity;
     $status = $newsletter->save();
 
-    $edit_link = \Drupal::linkGenerator()->generateFromUrl($this->t('Edit'), $this->entity->urlInfo());
+    $edit_link = \Drupal::linkGenerator()->generate($this->t('Edit'), $this->entity->urlInfo());
 
     if ($status == SAVED_UPDATED) {
       drupal_set_message(t('Newsletter %label has been updated.', array('%label' => $newsletter->label())));
-      \Drupal::logger('simplenews')->notice('Newsletter %label has been updated.', array('%label' => $newsletter->label()), $edit_link);
+      \Drupal::logger('simplenews')->notice('Newsletter %label has been updated.', array('%label' => $newsletter->label(), 'link' => $edit_link));
     }
     else {
       drupal_set_message(t('Newsletter %label has been added.', array('%label' => $newsletter->label())));
-      \Drupal::logger('simplenews')->notice('Newsletter %label has been added.', array('%label' => $newsletter->label()), $edit_link);
+      \Drupal::logger('simplenews')->notice('Newsletter %label has been added.', array('%label' => $newsletter->label(), 'link' => $edit_link));
     }
 
     $form_state->setRedirect('simplenews.newsletter_list');

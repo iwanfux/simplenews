@@ -66,6 +66,7 @@ class SubscriptionsPageForm extends FormBase {
     // instead of a textfield. Anonymous users will still have to confirm any
     // changes.
     if ($mail) {
+      $form['#title'] = $this->t('Subscriptions for %mail', array('%mail' => $mail));
       $form['newsletters']['#description'] = t('Check the newsletters you want to subscribe to. Uncheck the ones you want to unsubscribe from.');
       $form['mail'] = array('#type' => 'value', '#value' => $mail);
       $form['update'] = array(

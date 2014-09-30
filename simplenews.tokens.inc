@@ -5,8 +5,9 @@
  * Token related hook implementations.
  */
 
-use \Drupal\user\Entity\User;
-use \Drupal\Component\Utility\String;
+use Drupal\Component\Utility\String;
+use Drupal\Core\Url;
+use Drupal\user\Entity\User;
 
 /**
  * Implements hook_token_info().
@@ -72,7 +73,6 @@ function simplenews_token_info() {
 
 /**
  * Implements hook_tokens().
- *
  */
 function simplenews_tokens($type, $tokens, $data = array(), $options = array()) {
   $replacements = array();
@@ -90,6 +90,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       if (!isset($data['simplenews_subscriber'])) {
         return;
       }
+      /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
       $subscriber = $data['simplenews_subscriber'];
       $newsletter = isset($data['newsletter']) ? $data['newsletter'] : NULL;
       $language = $subscriber->getLangcode();
@@ -97,11 +98,16 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
       $url_arguments = array('absolute' => TRUE, 'langcode' => $language);
 
       foreach ($tokens as $name => $original) {
+        $route_parameters = array('snid' => $subscriber->id(), 'timestamp' => REQUEST_TIME);
         switch ($name) {
           case 'subscribe-url':
             $hash = simplenews_generate_hash($subscriber->getMail(), 'add');
-            $url = 'newsletter/confirm/add/' . $subscriber->id() . '/' . $newsletter->id(). '/' . REQUEST_TIME . '/' . $hash;
-            $replacements[$original] = url($url, $url_arguments);
+            $route_parameters += array(
+              'action' => 'add',
+              'newsletter_id' => $newsletter->id(),
+              'hash' => $hash,
+            );
+            $replacements[$original] = \Drupal::url('simplenews.newsletter_confirm_subscription', $route_parameters, $url_arguments);
             break;
 
           case 'unsubscribe-url':
@@ -111,20 +117,24 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
               continue;
             }
             $hash = simplenews_generate_hash($subscriber->getMail(), 'remove');
-            $url = 'newsletter/confirm/remove/' . $subscriber->id() . '/' . $newsletter->id() . '/' . REQUEST_TIME . '/' . $hash;
-            $replacements[$original] = url($url, $url_arguments);
+            $route_parameters += array(
+              'action' => 'remove',
+              'newsletter_id' => $newsletter->id(),
+              'hash' => $hash,
+            );
+            $replacements[$original] = \Drupal::url('simplenews.newsletter_confirm_subscription', $route_parameters, $url_arguments);
             break;
 
           case 'combined-url':
             $hash = simplenews_generate_hash($subscriber->getMail(), 'combined' . serialize($subscriber->getChanges()));
-            $url = 'newsletter/confirm/combined/' . $subscriber->id() . '/' . REQUEST_TIME . '/' . $hash;
-            $replacements[$original] = url($url, $url_arguments);
+            $route_parameters += array('hash' => $hash);
+            $replacements[$original] = \Drupal::url('simplenews.newsletter_confirm_combined', $route_parameters, $url_arguments);
             break;
 
           case 'manage-url':
             $hash = simplenews_generate_hash($subscriber->getMail(), 'manage');
-            $url = 'newsletter/subscriptions/' . $subscriber->id() . '/' . $newsletter->id() . '/' . REQUEST_TIME . '/' . $hash;
-            $replacements[$original] = url($url, $url_arguments);
+            $route_parameters += array('hash' => $hash);
+            $replacements[$original] = \Drupal::url('simplenews.newsletter_subscriptions_arguments', $route_parameters, $url_arguments);
             break;
 
           case 'mail':
@@ -157,7 +167,7 @@ function simplenews_tokens($type, $tokens, $data = array(), $options = array()) 
 
           case 'url':
             $uri = entity_uri('simplenews_newsletter', $newsletter);
-            $replacements[$original] = url($uri['path'], $uri['options']);
+            $replacements[$original] = Url::fromUri($uri['path'], $uri['options'])->toString();
             break;
         }
       }

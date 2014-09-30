@@ -9,9 +9,6 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\Component\Utility\String;
-use Drupal\simplenews\Entity\Subscriber;
-
 /**
  * (un)subscription of anonymous and authenticated users.
  *
@@ -797,7 +794,7 @@ rWcewRqx
     // Subscribe + submit
     // Assert confirmation message
 
-    $this->drupalPostForm('', NULL, t('Subscribe'));
+    $this->drupalPostForm('', array(), t('Subscribe'));
     $this->assertText(t('You have been subscribed.'), t('Authenticated user subscribed using the subscription block.'));
 
     // 2. Unsubscribe authenticated via subscription page
