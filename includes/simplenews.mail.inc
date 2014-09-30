@@ -7,9 +7,9 @@
  * @ingroup mail
  */
 
-use Drupal\Core\Language\LanguageManager;
 use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Session\AnonymousUserSession;
+use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simplenews\Source\SourceInterface;
@@ -279,7 +279,9 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
         // Break the sending if a percentage of max execution time was exceeded.
         $elapsed = _simplenews_measure_usec();
         if ($elapsed > SIMPLENEWS_SEND_TIME_LIMIT * ini_get('max_execution_time')) {
-          \Drupal::logger('simplenews')->warning('Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be sent during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array('!cron_throttle_setting' => l(t('Cron throttle setting'), 'admin/config/simplenews/mail')));
+          \Drupal::logger('simplenews')->warning('Sending interrupted: PHP maximum execution time almost exceeded. Remaining newsletters will be sent during the next cron run. If this warning occurs regularly you should reduce the !cron_throttle_setting.', array(
+            '!cron_throttle_setting' => \Drupal::l(t('Cron throttle setting'), new Url('simplenews.settings_mail')),
+          ));
           break;
         }
       }

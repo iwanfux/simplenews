@@ -83,7 +83,8 @@ abstract class SimplenewsTestBase extends WebTestBase {
   /**
    * Select randomly one of the available newsletters.
    *
-   * @return newsletter newsletter_id.
+   * @return string
+   *   The ID of a newsletter.
    */
   function getRandomNewsletter() {
     if ($newsletters = array_keys(simplenews_newsletter_get_all())) {

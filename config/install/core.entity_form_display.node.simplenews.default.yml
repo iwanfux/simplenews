@@ -2,8 +2,8 @@ langcode: en
 status: true
 dependencies:
   entity:
-    - field.instance.node.simplenews.body
-    - field.instance.node.simplenews.issue
+    - field.field.node.simplenews.body
+    - field.field.node.simplenews.issue
     - node.type.simplenews
   module:
     - options

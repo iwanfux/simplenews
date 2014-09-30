@@ -36,7 +36,6 @@ use Drupal\user\UserInterface;
  *     "id" = "id",
  *     "label" = "mail"
  *   },
- *   fieldable = TRUE,
  *   field_ui_base_route = "simplenews.settings_subscriber",
  *   admin_permission = "administer simplenews subscriptions",
  *   links = {

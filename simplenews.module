@@ -5,17 +5,14 @@
  * Simplenews node handling, sent email, newsletter block and general hooks
  */
 
+use Drupal\Component\Utility\Crypt;
+use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Language\LanguageInterface;
-use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\UserInterface;
-use Drupal\Component\Utility\String;
-use Drupal\Component\Utility\Crypt;
-use Drupal\Core\Language\Language;
 
 
 /**
@@ -83,31 +80,6 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
  * Used when sending an unlimited amount of mails from the spool.
  */
 define('SIMPLENEWS_UNLIMITED', -1);
-
-/**
- * Implements hook_permission().
- *
- * @todo Change sort order where required: http://drupal.org/node/224333#sorting_permissions
- */
-function simplenews_permission() {
-  return array(
-    'administer newsletters' => array(
-      'title' => t('Administer newsletters'),
-    ),
-    'administer simplenews subscriptions' => array(
-      'title' => t('Administer simplenews subscriptions'),
-    ),
-    'administer simplenews settings' => array(
-      'title' => t('Administer simplenews settings'),
-    ),
-    'send newsletter' => array(
-      'title' => t('Send newsletter'),
-    ),
-    'subscribe to newsletters' => array(
-      'title' => t('Subscribe to newsletters'),
-    ),
-  );
-}
 
 /**
  * Implements hook_init().
@@ -1103,7 +1075,8 @@ function simplenews_user_view(array &$build, UserInterface $account, EntityViewD
     if ($subscriber) {
       foreach ($newsletters as $newsletter) {
         if ($subscriber->isSubscribed($newsletter->id())) {
-          $links[] = l($newsletter->label(), 'newsletter/' . $newsletter->id());
+          // @todo Make links
+          $links[] = $newsletter->label();
         }
       }
     }
@@ -1128,7 +1101,7 @@ function simplenews_user_view(array &$build, UserInterface $account, EntityViewD
       $account->build['simplenews']['my_newsletters'] = array(
         '#type' => 'user_profile_item',
         '#title' => '',
-        '#markup' => t('Manage <a href="!url">subscriptions</a>', array('!url' => url('user/' . $account->id() . '/edit/simplenews'))),
+        '#markup' => t('Manage <a href="!url">subscriptions</a>', array('!url' => \Drupal::url('simplenews.newsletter_subscriptions_user', array('user' => $account->id())))),
       );
     }
   }
