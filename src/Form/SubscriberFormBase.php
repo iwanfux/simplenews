@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\simplenews\Entity\Newsletter;
+use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\Entity\User;
 
 /**
@@ -140,7 +141,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     // Set up some flags from which submit button visibility can be determined.
     $multiple = count($this->getNewsletters()) > 1;
-    $mail = $this->entity->getMail();
+    $mail = (bool) $this->entity->getMail();
     $subscribed = !$multiple && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
 
     // Add all buttons, but conditionally set #access.
@@ -224,6 +225,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   The form state object.
    */
   public function submitSubscribe(array $form, FormStateInterface $form_state) {
+    // @todo Redesign this inelegant submit process.
     $user = User::load($this->entity->getUserId());
     $to_subscribe = array();
     simplenews_confirmation_combine(TRUE);
@@ -236,6 +238,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
+    // Reload entity because it was modified and saved in …send_combined().
+    $this->setEntity(Subscriber::load($this->entity->id()));
     foreach ($to_subscribe as $id) {
       $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
     }
@@ -263,6 +267,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
+    // Reload entity because it was modified and saved in …send_combined().
+    $this->setEntity(Subscriber::load($this->entity->id()));
     foreach ($to_unsubscribe as $id) {
       $this->entity->unsubscribe($id, 'website');
     }
@@ -300,6 +306,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
+    // Reload entity because it was modified and saved in …send_combined().
+    $this->setEntity(Subscriber::load($this->entity->id()));
     foreach ($to_subscribe as $id) {
       $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
     }

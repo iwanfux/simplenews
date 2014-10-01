@@ -64,7 +64,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[0]['body'];
+    $body = array_pop($mails)['body'];
 
     // Verify listed changes.
     foreach ($newsletters as $newsletter_id => $newsletter) {
@@ -129,7 +129,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[1]['body'];
+    $body = array_pop($mails)['body'];
     /* @todo: get rid of new-line in text
     vn9whrkr@example.com at http://drupal8.local/:\\n\\n - Unsubscribe from
 rWcewRqx
@@ -185,7 +185,7 @@ rWcewRqx
     );
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = $mails[2]['body'];
+    $body = array_pop($mails)['body'];
 
     // Load simplenews settings config object.
     $config = \Drupal::config('simplenews.settings');
@@ -199,7 +199,7 @@ rWcewRqx
     );
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = $mails[3]['body'];
+    $body = array_pop($mails)['body'];
 
     // Change behavior to never, should send two separate mails.
     $config->set('subscription.use_combined', 'never');
@@ -231,7 +231,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[6]['body'];
+    $body = array_pop($mails)['body'];
 
     $confirm_url = $this->extractConfirmationLink($body);
     $this->drupalGet($confirm_url);
@@ -280,7 +280,7 @@ rWcewRqx
     $this->drupalPostForm(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = $mails[8]['body'];
+    $body = array_pop($mails)['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
