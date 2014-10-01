@@ -140,15 +140,15 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     // Set up some flags from which submit button visibility can be determined.
-    $multiple = count($this->getNewsletters()) > 1;
+    $options = $form['subscriptions']['#access'];
     $mail = (bool) $this->entity->getMail();
-    $subscribed = !$multiple && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
+    $subscribed = !$options && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
 
     // Add all buttons, but conditionally set #access.
     $actions = array(
       static::SUBMIT_SUBSCRIBE => array(
         // Show 'Subscribe' if not subscribed, or user is unknown.
-        '#access' => (!$multiple && !$subscribed) || !$mail,
+        '#access' => (!$options && !$subscribed) || !$mail,
         '#type' => 'submit',
         '#value' => t('Subscribe'),
         '#validate' => array('::validate'),
@@ -156,7 +156,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       ),
       static::SUBMIT_UNSUBSCRIBE => array(
         // Show 'Unsubscribe' if subscribed, or unknown and can select.
-        '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
+        '#access' => (!$options && $subscribed) || (!$mail && $options),
         '#type' => 'submit',
         '#value' => t('Unsubscribe'),
         '#validate' => array('::validate'),
@@ -165,7 +165,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       static::SUBMIT_UPDATE => array(
         // Show 'Update' if user is known and can select newsletters.
         // @todo Incorrect conditions.
-        '#access' => $mail,
+        '#access' => $options && $mail,
         '#type' => 'submit',
         '#value' => t('Update'),
         '#validate' => array('::validate'),
@@ -189,14 +189,14 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     }
 
     $valid_email = valid_email_address($mail);
-    if (!$valid_email) {
+    if (!$valid_email && $form['mail']['#access']) {
       $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
     }
 
-    // Unless we're in update mode, or only one newsletter is available, at
-    // least one checkbox must be checked.
-    // @todo Incorrect conditions.
-    if (!count($form_state->getValue('subscriptions')) && $this->getOnlyNewsletter() == NULL && $form_state->getValue('op') != t('Update')) {
+    // Unless the submit handler is 'update', if the newsletter checkboxes are
+    // available, at least one must be checked.
+    $update = in_array('::submitUpdate', $form_state->getSubmitHandlers());
+    if (!$update && $form['subscriptions']['#access'] && !count($form_state->getValue('subscriptions'))) {
       $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
     }
 
@@ -229,7 +229,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     $user = User::load($this->entity->getUserId());
     $to_subscribe = array();
     simplenews_confirmation_combine(TRUE);
-    foreach ($this->getSelectedNewsletters($form_state) as $id) {
+    $selected = $form['subscriptions']['#access'] ? $this->getSelectedNewsletters($form_state) : $this->getNewsletters();
+    foreach ($selected as $id) {
       if (!$this->entity->isSubscribed($id)) {
         $to_subscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
@@ -258,7 +259,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     $user = User::load($this->entity->getUserId());
     $to_unsubscribe = array();
     simplenews_confirmation_combine(TRUE);
-    foreach ($this->getSelectedNewsletters($form_state) as $id) {
+    $selected = $form['subscriptions']['#access'] ? $this->getSelectedNewsletters($form_state) : $this->getNewsletters();
+    foreach ($selected as $id) {
       if ($this->entity->isSubscribed($id)) {
         $to_unsubscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {

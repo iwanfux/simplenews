@@ -36,7 +36,7 @@ class SubscriptionWidget extends ButtonsWidget {
       $value = $item->{$this->column};
       // Keep the value if it actually is in the list of options (needs to be
       // checked against the flat list).
-      if ($item->status && isset($flat_options[$value])) {
+      if ($item->status == SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED && isset($flat_options[$value])) {
         $selected_options[] = $value;
       }
     }
