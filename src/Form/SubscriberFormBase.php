@@ -150,21 +150,25 @@ abstract class SubscriberFormBase extends ContentEntityForm {
         '#access' => (!$multiple && !$subscribed) || !$mail,
         '#type' => 'submit',
         '#value' => t('Subscribe'),
-        '#submit' => array('::submitForm', '::save', '::submitSubscribe'),
+        '#validate' => array('::validate'),
+        '#submit' => array('::submitForm', '::save', '::submitSubscribe', '::save'),
       ),
       static::SUBMIT_UNSUBSCRIBE => array(
         // Show 'Unsubscribe' if subscribed, or unknown and can select.
         '#access' => (!$multiple && $subscribed) || (!$mail && $multiple),
         '#type' => 'submit',
         '#value' => t('Unsubscribe'),
-        '#submit' => array('::submitForm', '::save', '::submitUnsubscribe'),
+        '#validate' => array('::validate'),
+        '#submit' => array('::submitForm', '::save', '::submitUnsubscribe', '::save'),
       ),
       static::SUBMIT_UPDATE => array(
         // Show 'Update' if user is known and can select newsletters.
+        // @todo Incorrect conditions.
         '#access' => $mail,
         '#type' => 'submit',
         '#value' => t('Update'),
-        '#submit' => array('::submitForm', '::save', '::submitUpdate'),
+        '#validate' => array('::validate'),
+        '#submit' => array('::submitForm', '::save', '::submitUpdate', '::save'),
       ),
     );
     return $actions;
@@ -173,14 +177,38 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    $mail = $form_state->getValue('mail')[0]['value'];
+  public function validate(array $form, FormStateInterface $form_state) {
+    $mail = $form_state->getValue(array('mail', 0, 'value'));
     // Users should login to manage their subscriptions.
     if (\Drupal::currentUser()->isAnonymous() && $user = user_load_by_mail($mail)) {
-      drupal_set_message($this->t('There is an account registered for the e-mail address %mail. Please log in to manage your newsletter subscriptions.', array('%mail' => $mail)));
+      $message = $user->isBlocked() ?
+        $this->t('The email address %mail belongs to a blocked user.', array('%mail' => $mail)) :
+        $this->t('There is an account registered for the e-mail address %mail. Please log in to manage your newsletter subscriptions.', array('%mail' => $mail));
+      $form_state->setErrorByName('mail', $message);
     }
+
+    $valid_email = valid_email_address($mail);
+    if (!$valid_email) {
+      $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
+    }
+
+    // Unless we're in update mode, or only one newsletter is available, at
+    // least one checkbox must be checked.
+    // @todo Incorrect conditions.
+    if (!count($form_state->getValue('subscriptions')) && $this->getOnlyNewsletter() == NULL && $form_state->getValue('op') != t('Update')) {
+      $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
+    }
+
+    parent::validate($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     // Merge with any existing subscriber.
-    elseif ($this->entity->isNew() && $subscriber = simplenews_subscriber_load_by_mail($form_state->getValue('mail')[0]['value'])) {
+    $mail = $form_state->getValue(array('mail', 0, 'value'));
+    if ($this->entity->isNew() && $subscriber = simplenews_subscriber_load_by_mail($mail)) {
       $this->setEntity($subscriber);
     }
 
@@ -209,7 +237,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
     foreach ($to_subscribe as $id) {
-      $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+      $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
     }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_SUBSCRIBE, $confirm));
   }
@@ -259,7 +287,6 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       // Subscribe if selected and not already subscribed.
       if (!$this->entity->isSubscribed($id) && array_search($id, $selected) !== FALSE) {
         $to_subscribe[] = $id;
-        $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
         }
@@ -274,7 +301,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
     foreach ($to_subscribe as $id) {
-      $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+      $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
     }
     foreach ($to_unsubscribe as $id) {
       $this->entity->unsubscribe($id, 'website');

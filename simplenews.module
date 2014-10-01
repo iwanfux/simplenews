@@ -974,7 +974,9 @@ function simplenews_user_presave(UserInterface $account) {
   $syncing = &drupal_static(__FUNCTION__, FALSE);
 
   /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
-  $subscriber = simplenews_subscriber_load_by_uid($account->id());
+  $subscriber = $account->isNew() ?
+    simplenews_subscriber_load_by_mail($account->getEmail()) :
+    simplenews_subscriber_load_by_uid($account->id());
   if ($subscriber && !$subscriber->isSyncing()) {
     $syncing = TRUE;
     // We only process existing accounts.
@@ -998,25 +1000,11 @@ function simplenews_user_presave(UserInterface $account) {
 }
 
 /**
- * Implements hook_user_cancel().
- */
-function simplenews_user_cancel($edit, $account, $method) {
-  // Deactivate subscriber when account is disabled via cancel user.
-
-  if ($account) {
-    $query = db_update('simplenews_subscriber')
-      ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
-      ->condition('uid', $account->uid)
-      ->execute();
-  }
-}
-
-/**
  * Implements hook_user_delete().
  */
 function simplenews_user_delete(UserInterface $account) {
   // Delete subscription when account is removed.
-  $subscriber = simplenews_subscriber_load_by_mail($account->getEmail());
+  $subscriber = simplenews_subscriber_load_by_uid($account->id());
   if ($subscriber) {
     $subscriber->delete();
   }

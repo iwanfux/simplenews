@@ -255,9 +255,24 @@ abstract class SimplenewsTestBase extends WebTestBase {
   }
 
   /**
+   * Login a user, resetting their password.
+   *
+   * Can be used if user is unverified and does not yet have a password.
+   *
+   * @param \Drupal\user\UserInterface $user
+   *   The user to login.
+   */
+  protected function resetPassLogin($user) {
+    $uid = $user->id();
+    $timestamp = REQUEST_TIME;
+    $hash = user_pass_rehash($user->getPassword(), $timestamp, $user->getLastLoginTime());
+    $this->drupalPostForm("/user/reset/$uid/$timestamp/$hash", array(), t('Log in'));
+  }
+
+  /**
    * Returns the last created Subscriber.
    *
-   * @return \Drupal\Core\Entity\EntityInterface|null
+   * @return \Drupal\simplenews\Entity\Subscriber|null
    *   The Subscriber entity, or NULL if there is none.
    */
   protected function getLatestSubscriber() {
@@ -265,6 +280,6 @@ abstract class SimplenewsTestBase extends WebTestBase {
       ->sort('created', 'DESC')
       ->range(0, 1)
       ->execute();
-    return Subscriber::load(array_shift($snids));
+    return empty($snids) ? NULL : Subscriber::load(array_shift($snids));
   }
 }

@@ -76,24 +76,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $valid_email = valid_email_address($form_state->getValue('mail')[0]['value']);
-    if (!$valid_email) {
-      $form_state->setErrorByName('mail', t('The e-mail address you supplied is not valid.'));
-    }
-
-    // Unless we're in update mode, or only one newsletter is available, at
-    // least one checkbox must be checked.
-    if (!count($form_state->getValue('subscriptions')) && $this->getOnlyNewsletter() == NULL && $form_state->getValue('op') != t('Update')) {
-      $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
-    }
-
-    parent::validateForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Pretend that the '#type' => 'value' field is a widget.
     if (count($this->getNewsletters()) == 1) {

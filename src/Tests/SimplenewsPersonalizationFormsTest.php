@@ -5,6 +5,7 @@
  */
 
 namespace Drupal\simplenews\Tests;
+use Drupal\Component\Utility\String;
 use Drupal\simplenews\Entity\Newsletter;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\Entity\Role;
@@ -59,7 +60,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
     // Assert fields are updated.
     $this->drupalGet("user/$uid");
-    $this->assertText($new_value);
+    $this->assertText(String::checkPlain($new_value));
 
     // Assert subscription remains unconfirmed.
     $subscriber = $this->getLatestSubscriber();
@@ -77,24 +78,11 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
     $user = User::load($uid);
 
     // Attempt subscribe and assert login message.
-    $this->subscribe('default', $email, array(), t('Subscribe'), 'newsletter/subscriptions', 403);
-    $this->assertRaw(t('There is an account registered for the e-mail address %mail. Please log in to manage your newsletter subscriptions', array('%mail' => $email)));
-
-    // Visit a confirm link and assert login message.
-    $subscriber = Subscriber::create(array('email' => $email));
-    $subscriber->subscribe('default', SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED);
-    $subscriber->save();
-    $data = array(
-      'simplenews_subscriber' => $subscriber,
-      'newsletter' => Newsletter::load('default'),
-    );
-    $this->drupalGet(\Drupal::token()->replace('[simplenews-subscriber:subscribe-url]', $data));
+    $this->subscribe('default', $email);
     $this->assertRaw(t('There is an account registered for the e-mail address %mail. Please log in to manage your newsletter subscriptions', array('%mail' => $email)));
 
     // Login.
-    $timestamp = REQUEST_TIME;
-    $hash = user_pass_rehash($user->getPassword(), $timestamp, $user->getLastLoginTime());
-    $this->drupalPostForm("/user/reset/$uid/$timestamp/$hash", array(), t('Log in'));
+    $this->resetPassLogin($user);
 
     // Subscribe.
     $new_value = $this->randomString(20);
@@ -102,7 +90,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
     // Assert fields are updated.
     $this->drupalGet("user/$uid");
-    $this->assertText($new_value);
+    $this->assertText(String::checkPlain($new_value));
   }
 
   /**
@@ -133,15 +121,17 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
     $uid = $this->registerUser($email);
 
     // Subscribe.
-    $this->subscribe('default', $email);
+    $this->resetPassLogin(User::load($uid));
+    $this->subscribe('default');
+    $this->drupalLogout();
 
     // Disable account.
     $this->drupalLogin($this->admin);
     $this->drupalPostForm("user/$uid/cancel", array(), t('Cancel account'));
 
-    // Assert subscription is inactive.
+    // Assert subscriber is inactive.
     $subscriber = $this->getLatestSubscriber();
-    $this->assertEqual($subscriber->subscriptions->get(0)->status, SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED);
+    $this->assertFalse($subscriber->getStatus());
   }
 
   /**
@@ -181,7 +171,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
     // Attempt subscribe and assert "blocked" message.
     $this->subscribe('default', $email);
-    $this->assertRaw(t('The email address %email belongs to a blocked user.', array('%email' => $email)));
+    $this->assertRaw(t('The email address %mail belongs to a blocked user.', array('%mail' => $email)));
   }
 
 }
