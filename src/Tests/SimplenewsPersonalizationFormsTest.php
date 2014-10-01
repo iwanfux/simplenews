@@ -86,7 +86,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
     // Subscribe.
     $new_value = $this->randomString(20);
-    $this->subscribe('default', NULL, array('field_shared[0][value]' => $new_value));
+    $this->subscribe('default', NULL, array('field_shared[0][value]' => $new_value), t('Update'));
 
     // Assert fields are updated.
     $this->drupalGet("user/$uid");
@@ -122,7 +122,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
     // Subscribe.
     $this->resetPassLogin(User::load($uid));
-    $this->subscribe('default');
+    $this->subscribe('default', NULL, array(), t('Update'));
     $this->drupalLogout();
 
     // Disable account.

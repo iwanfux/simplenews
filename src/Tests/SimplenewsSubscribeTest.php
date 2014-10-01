@@ -65,6 +65,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
 
     $mails = $this->drupalGetMails();
     $body = array_pop($mails)['body'];
+    $this->verbose($body);
 
     // Verify listed changes.
     foreach ($newsletters as $newsletter_id => $newsletter) {
@@ -130,6 +131,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
 
     $mails = $this->drupalGetMails();
     $body = array_pop($mails)['body'];
+    $this->verbose($body);
     /* @todo: get rid of new-line in text
     vn9whrkr@example.com at http://drupal8.local/:\\n\\n - Unsubscribe from
 rWcewRqx
@@ -281,6 +283,7 @@ rWcewRqx
 
     $mails = $this->drupalGetMails();
     $body = array_pop($mails)['body'];
+    $this->verbose($body);
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -566,6 +569,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
     $body = array_pop($mails)['body'];
+    $this->verbose($body);
     $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
 
     $confirm_url = $this->extractConfirmationLink($body);
@@ -617,6 +621,7 @@ rWcewRqx
     $body = array_pop($mails)['body'];
     // Remove line breaks from body in case the string is split.
     $body = str_replace("\n", ' ', $body);
+    $this->verbose($body);
     $this->assertTrue(strpos($body, 'is not subscribed to this mailing list') !== FALSE);
 
     // Test expired confirmation links.

@@ -227,7 +227,6 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   public function submitSubscribe(array $form, FormStateInterface $form_state) {
     // @todo Redesign this inelegant submit process.
     $user = User::load($this->entity->getUserId());
-    $to_subscribe = array();
     simplenews_confirmation_combine(TRUE);
     $selected = $form['subscriptions']['#access'] ? $this->getSelectedNewsletters($form_state) : $this->getNewsletters();
     foreach ($selected as $id) {
@@ -236,14 +235,14 @@ abstract class SubscriberFormBase extends ContentEntityForm {
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
         }
+        else {
+          $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+        }
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
     // Reload entity because it was modified and saved in …send_combined().
     $this->setEntity(Subscriber::load($this->entity->id()));
-    foreach ($to_subscribe as $id) {
-      $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
-    }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_SUBSCRIBE, $confirm));
   }
 
@@ -257,23 +256,21 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function submitUnsubscribe(array $form, FormStateInterface $form_state) {
     $user = User::load($this->entity->getUserId());
-    $to_unsubscribe = array();
     simplenews_confirmation_combine(TRUE);
     $selected = $form['subscriptions']['#access'] ? $this->getSelectedNewsletters($form_state) : $this->getNewsletters();
     foreach ($selected as $id) {
       if ($this->entity->isSubscribed($id)) {
-        $to_unsubscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('unsubscribe', $this->entity, simplenews_newsletter_load($id));
+        }
+        else {
+          $this->entity->unsubscribe($id, 'website');
         }
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
     // Reload entity because it was modified and saved in …send_combined().
     $this->setEntity(Subscriber::load($this->entity->id()));
-    foreach ($to_unsubscribe as $id) {
-      $this->entity->unsubscribe($id, 'website');
-    }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UNSUBSCRIBE, $confirm));
   }
 
@@ -288,8 +285,6 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   public function submitUpdate(array $form, FormStateInterface $form_state) {
     $selected = $this->getSelectedNewsletters($form_state);
     $user = User::load($this->entity->getUserId());
-    $to_subscribe = array();
-    $to_unsubscribe = array();
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getNewsletters() as $id) {
       // Subscribe if selected and not already subscribed.
@@ -298,24 +293,23 @@ abstract class SubscriberFormBase extends ContentEntityForm {
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('subscribe', $this->entity, simplenews_newsletter_load($id));
         }
+        else {
+          $this->entity->subscribe($id, SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
+        }
       }
       // Unsubscribe if subscribed and deselected.
       if ($this->entity->isSubscribed($id) && array_search($id, $selected) === FALSE) {
-        $to_unsubscribe[] = $id;
         if (simplenews_require_double_opt_in($id, $user)) {
           simplenews_confirmation_send('unsubscribe', $this->entity, simplenews_newsletter_load($id));
+        }
+        else {
+          $this->entity->unsubscribe($id, 'website');
         }
       }
     }
     $confirm = simplenews_confirmation_send_combined($this->entity);
     // Reload entity because it was modified and saved in …send_combined().
     $this->setEntity(Subscriber::load($this->entity->id()));
-    foreach ($to_subscribe as $id) {
-      $this->entity->subscribe($id, $confirm ? SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED : SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'website');
-    }
-    foreach ($to_unsubscribe as $id) {
-      $this->entity->unsubscribe($id, 'website');
-    }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, $confirm));
   }
 
