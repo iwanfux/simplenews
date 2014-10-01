@@ -17,6 +17,13 @@ use Drupal\user\Entity\User;
  */
 class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
   /**
+   * A user with administrative permissions.
+   *
+   * @var \Drupal\user\UserInterface
+   */
+  protected $admin;
+
+  /**
    * {@inheritdoc}
    */
   public function setUp() {
@@ -31,6 +38,10 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
     Role::load('authenticated')
       ->grantPermission('subscribe to newsletters')
       ->save();
+
+    $this->admin = $this->drupalCreateUser(array(
+      'administer users',
+    ));
   }
 
   /**
@@ -51,11 +62,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
     $this->assertText($new_value);
 
     // Assert subscription remains unconfirmed.
-    $snids = \Drupal::entityQuery('simplenews_subscriber')
-      ->sort('created', 'DESC')
-      ->range(0, 1)
-      ->execute();
-    $subscriber = Subscriber::load(array_shift($snids));
+    $subscriber = $this->getLatestSubscriber();
     $this->assertEqual($subscriber->subscriptions->get(0)->status, SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED);
   }
 
@@ -100,41 +107,81 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
 
   /**
    * Subscribe, request password: "name is not recognized".
-   * /
+   */
   public function testSubscribeRequestPassword() {
+    $email = $this->randomEmail();
+
     // Subscribe.
+    $this->subscribe('default', $email);
+
     // Request new password.
+    $this->drupalPostForm('user/password', array(
+      'name' => $email,
+    ), t('Email new password'));
+
     // Assert the email is not recognized as an account.
+    $this->assertRaw(t('Sorry, %name is not recognized as a username or an email address.', array('%name' => $email)));
   }
 
   /**
    * Disable account, subscriptions inactive.
-   * /
+   */
   public function testDisableAccount() {
+    $email = $this->randomEmail();
+
     // Register account.
+    $uid = $this->registerUser($email);
+
     // Subscribe.
+    $this->subscribe('default', $email);
+
     // Disable account.
-    // Assert subscriptions are inactive.
+    $this->drupalLogin($this->admin);
+    $this->drupalPostForm("user/$uid/cancel", array(), t('Cancel account'));
+
+    // Assert subscription is inactive.
+    $subscriber = $this->getLatestSubscriber();
+    $this->assertEqual($subscriber->subscriptions->get(0)->status, SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED);
   }
 
   /**
    * Delete account, subscriptions deleted.
-   * /
+   */
   public function testDeleteAccount() {
+    $email = $this->randomEmail();
+
     // Register account.
+    $uid = $this->registerUser($email);
+
     // Subscribe.
+    $this->subscribe('default', $email);
+
     // Delete account.
+    $this->drupalLogin($this->admin);
+    $this->drupalPostForm("user/$uid/cancel", array('user_cancel_method' => 'user_cancel_reassign'), t('Cancel account'));
+
     // Assert subscriptions are deleted.
+    $subscriber = $this->getLatestSubscriber();
+    $this->assertNull($subscriber, 'No subscriber found');
   }
 
   /**
    * Blocked account subscribes, display message.
-   * /
-  public function testBlockedSubscribe() {
-    // Register account.
-    // Block account.
-    // Attempt subscribe and assert "blocked" message.
-  }
    */
+  public function testBlockedSubscribe() {
+    $email = $this->randomEmail();
+
+    // Register account.
+    $uid = $this->registerUser($email);
+
+    // Block account.
+    $this->drupalLogin($this->admin);
+    $this->drupalPostForm("user/$uid/edit", array('status' => 0), t('Save'));
+    $this->drupalLogout();
+
+    // Attempt subscribe and assert "blocked" message.
+    $this->subscribe('default', $email);
+    $this->assertRaw(t('The email address %email belongs to a blocked user.', array('%email' => $email)));
+  }
 
 }

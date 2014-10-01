@@ -12,6 +12,7 @@ namespace Drupal\simplenews\Tests;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Newsletter;
+use Drupal\simplenews\Entity\Subscriber;
 use Drupal\simpletest\WebTestBase;
 use Drupal\user\Entity\Role;
 
@@ -251,5 +252,19 @@ abstract class SimplenewsTestBase extends WebTestBase {
       ->range(0, 1)
       ->execute();
     return array_shift($uids);
+  }
+
+  /**
+   * Returns the last created Subscriber.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface|null
+   *   The Subscriber entity, or NULL if there is none.
+   */
+  protected function getLatestSubscriber() {
+    $snids = \Drupal::entityQuery('simplenews_subscriber')
+      ->sort('created', 'DESC')
+      ->range(0, 1)
+      ->execute();
+    return Subscriber::load(array_shift($snids));
   }
 }
