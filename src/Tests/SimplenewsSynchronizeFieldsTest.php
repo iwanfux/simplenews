@@ -186,7 +186,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
       $bundle = $entity_type;
     }
     FieldStorageConfig::create(array(
-      'name' => $field_name,
+      'field_name' => $field_name,
       'entity_type' => $entity_type,
       'type' => $type,
     ))->save();
