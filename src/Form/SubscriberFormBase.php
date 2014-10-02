@@ -79,7 +79,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   /**
    * Convenience method for the case of only one available newsletter.
    *
-   * @see ::setNewsletter()
+   * @see ::setNewsletters()
    *
    * @return string|null
    *   If there is exactly one newsletter available in this form, this method

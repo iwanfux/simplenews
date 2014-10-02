@@ -41,6 +41,7 @@ class SimplenewsSynchronizeFieldsFormTest extends SimplenewsTestBase {
     // Create a user.
     $this->user = $this->drupalCreateUser(array(
       'administer simplenews subscriptions',
+      'administer simplenews settings',
     ));
     $this->user->setEmail('user@example.com');
     $this->user->set('field_shared', $this->randomMachineName());
@@ -72,6 +73,18 @@ class SimplenewsSynchronizeFieldsFormTest extends SimplenewsTestBase {
 
     $this->user = User::load($this->user->id());
     $this->assertEqual($this->user->field_shared->value, $new_value);
+
+    // Unset the sync setting and assert field is not synced.
+    $this->drupalPostForm('admin/config/people/simplenews/settings/subscriber', array('simplenews_sync_account' => FALSE), t('Save configuration'));
+
+    $unsynced_value = $this->randomMachineName();
+    $this->drupalPostForm('admin/people/simplenews/edit/' . $subscriber->id(), array('field_shared[0][value]' => $unsynced_value), t('Save'));
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
+    $this->assertRaw($unsynced_value);
+
+    $this->user = User::load($this->user->id());
+    $this->assertEqual($this->user->field_shared->value, $new_value);
+    $this->assertNotEqual($this->user->field_shared->value, $unsynced_value);
   }
 
 }

@@ -170,6 +170,62 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
   }
 
   /**
+   * Unsets the sync setting and asserts that fields are not synced.
+   */
+  public function testDisableSync() {
+    // Disable sync.
+    \Drupal::config('simplenews.settings')->set('subscriber.sync_account', FALSE)->save();
+
+    // Create and attach a field to both.
+    $this->addField('string', 'field_on_both', 'simplenews_subscriber');
+    $this->addField('string', 'field_on_both', 'user');
+
+    // Create a user with a value for the field.
+    $user = User::create(array(
+      'name' => 'user',
+      'field_on_both' => 'foo',
+      'mail' => 'user@example.com',
+    ));
+    $user->save();
+
+    // Create a subscriber.
+    $subscriber = Subscriber::create(array(
+      'mail' => 'user@example.com',
+    ));
+
+    // Assert that the shared field does not get the value from the user.
+    $this->assertNull($subscriber->get('field_on_both')->value);
+
+    // Update the subscriber and assert that it is not synced to the user.
+    $subscriber->set('field_on_both', 'bar');
+    $subscriber->save();
+    $user = User::load($user->id());
+    $this->assertEqual($user->get('field_on_both')->value, 'foo');
+
+    // Create a subscriber with a value for the field.
+    $subscriber = Subscriber::create(array(
+      'field_on_both' => 'foo',
+      'mail' => 'user2@example.com',
+    ));
+    $subscriber->save();
+
+    // Create a user.
+    $user = User::create(array(
+      'name' => 'user2',
+      'mail' => 'user2@example.com',
+    ));
+
+    // Assert that the shared field does not get the value from the user.
+    $this->assertNull($user->get('field_on_both')->value);
+
+    // Update the user and assert that it is not synced to the subscriber.
+    $user->set('field_on_both', 'bar');
+    $user->save();
+    $subscriber = Subscriber::load($subscriber->id());
+    $this->assertEqual($subscriber->get('field_on_both')->value, 'foo');
+  }
+
+  /**
    * Creates and saves a field storage and instance.
    *
    * @param string $type
