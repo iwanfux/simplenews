@@ -52,7 +52,7 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
     );
 
     // Tweak the appearance of the subscriptions widget.
-    if ($this->getOnlyNewsletter() != NULL) {
+    if ($this->getOnlyNewsletterId() != NULL) {
       $form['subscriptions']['#access'] = FALSE;
     }
 
@@ -65,10 +65,10 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   protected function actions(array $form, FormStateInterface $form_state) {
     // If only one newsletter, show Subscribe/Unsubscribe instead of Update.
     $actions = parent::actions($form, $form_state);
-    if ($this->getOnlyNewsletter() != NULL) {
+    if ($this->getOnlyNewsletterId() != NULL) {
       $actions[static::SUBMIT_UPDATE]['#access'] = FALSE;
-      $actions[static::SUBMIT_SUBSCRIBE]['#access'] = !$this->entity->isSubscribed($this->getOnlyNewsletter());
-      $actions[static::SUBMIT_UNSUBSCRIBE]['#access'] = $this->entity->isSubscribed($this->getOnlyNewsletter());
+      $actions[static::SUBMIT_SUBSCRIBE]['#access'] = !$this->entity->isSubscribed($this->getOnlyNewsletterId());
+      $actions[static::SUBMIT_UNSUBSCRIBE]['#access'] = $this->entity->isSubscribed($this->getOnlyNewsletterId());
     }
     return parent::actions($form, $form_state);
   }
@@ -79,15 +79,14 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Pretend that the '#type' => 'value' field is a widget.
     if (count($this->getNewsletters()) == 1) {
-      if ($this->entity->isSubscribed($this->getOnlyNewsletter())) {
+      if ($this->entity->isSubscribed($this->getOnlyNewsletterId())) {
         $form_state->unsetValue('subscriptions');
       }
       else {
-        $form_state->setValue('subscriptions', array(array('target_id' => $this->getOnlyNewsletter())));
+        $form_state->setValue('subscriptions', array(array('target_id' => $this->getOnlyNewsletterId())));
       }
     }
 
-    simplenews_confirmation_combine(TRUE);
     parent::submitForm($form, $form_state);
   }
 

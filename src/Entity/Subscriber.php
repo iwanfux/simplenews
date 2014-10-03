@@ -109,6 +109,13 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   /**
    * {@inheritdoc}
    */
+  public function getUser() {
+    return $this->getUserId() ? User::load($this->getUserId()) : user_load_by_mail($this->getMail());
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function setUserId($uid) {
     $this->set('uid', $uid);
   }
@@ -221,6 +228,12 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function unsubscribe($newsletter_id, $source = 'unknown', $timestamp = REQUEST_TIME) {
     if($subscription = $this->getSubscription($newsletter_id)) {
       $subscription->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+    } else {
+      $next_delta = count($this->subscriptions);
+      $this->subscriptions[$next_delta]->target_id = $newsletter_id;
+      $this->subscriptions[$next_delta]->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
+      $this->subscriptions[$next_delta]->source = $source;
+      $this->subscriptions[$next_delta]->timestamp = $timestamp;
     }
     // Clear eventually existing mail spool rows for this subscriber.
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
@@ -236,8 +249,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     parent::postSave($storage, $update);
 
     // Copy values for shared fields to existing user.
-    $user = User::load($this->getUserId());
-    if (isset($user)) {
+    if ($user = $this->getUser()) {
       static::$syncing = TRUE;
       foreach ($this->getUserSharedFields($user) as $field_name) {
         $user->set($field_name, $this->get($field_name)->getValue());
@@ -262,8 +274,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     }
 
     // Copy values for shared fields from existing user.
-    $user = User::load($this->getUserId());
-    if (isset($user)) {
+    if ($user = $this->getUser()) {
       foreach ($this->getUserSharedFields($user) as $field_name) {
         $this->set($field_name, $user->get($field_name)->getValue());
       }

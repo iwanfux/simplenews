@@ -9,7 +9,6 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\Entity\User;
 
 /**
@@ -21,14 +20,17 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $user = NULL) {
-    // Uid parameter has to be named $user but we use that name for the entity.
-    $uid = $user;
-
-    // Try to load a subscriber from the uid.
-    if (isset($uid)) {
-      $user = User::load($uid);
+    // Try to load a subscriber from the uid, otherwise just set the mail field
+    // on the new subscriber.
+    if (isset($user) && $user = User::load($user)) {
       $form_state->set('user', $user);
-      $this->setEntity(simplenews_subscriber_load_by_uid($uid) ?: Subscriber::create(array('mail' => $user->getEmail())));
+      if ($subscriber = simplenews_subscriber_load_by_uid($user->id())) {
+        $this->setEntity($subscriber);
+      }
+      else {
+        $this->entity->setUserId($user->id());
+        $this->entity->setMail($user->getEmail());
+      }
     }
 
     return parent::buildForm($form, $form_state);
@@ -66,11 +68,6 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   public function checkAccess($user) {
     $user = User::load($user);
     $account = $this->currentUser();
-
-    // Hide the form from menus/tabs if sync is disabled.
-    if (!\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
-      return AccessResult::forbidden();
-    }
 
     return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
       ->orIf(AccessResult::allowedIfHasPermission($account, 'subscribe to newsletters')

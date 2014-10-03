@@ -9,6 +9,7 @@
 
 namespace Drupal\simplenews\Tests;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Newsletter;
@@ -88,7 +89,7 @@ abstract class SimplenewsTestBase extends WebTestBase {
    * this correctly.
    */
   function randomEmail($number = 4, $domain = 'example.com') {
-    $mail = drupal_strtolower($this->randomMachineName($number) . '@' . $domain);
+    $mail = Unicode::strtolower($this->randomMachineName($number) . '@' . $domain);
     return $mail;
   }
 

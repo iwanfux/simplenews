@@ -43,15 +43,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *
    * @var string[]
    */
-  protected $newsletters = array();
-
-  /**
-   * {@inheritdoc}
-   */
-  public function __construct(EntityManagerInterface $entity_manager) {
-    $this->setNewsletters(array_keys(Newsletter::loadMultiple()));
-    parent::__construct($entity_manager);
-  }
+  protected $newsletters;
 
   /**
    * Set the newsletters available to select from.
@@ -68,12 +60,24 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   /**
    * Returns the newsletters available to select from.
    *
-   * @return string[]
-   *   The newsletter IDs available to select from, as an associative array with
-   *   values equNewsletter IDs for keys and values.
+   * @return \Drupal\simplenews\Entity\Newsletter[]
+   *   The newsletters available to select from, indexed by ID.
    */
   public function getNewsletters() {
+    if (!isset($this->newsletters)) {
+      $this->setNewsletters(simplenews_newsletter_get_visible());
+    }
     return $this->newsletters;
+  }
+
+  /**
+   * Returns the newsletters available to select from.
+   *
+   * @return string[]
+   *   The newsletter IDs available to select from, as an indexed array.
+   */
+  public function getNewsletterIds() {
+    return array_keys($this->newsletters);
   }
 
   /**
@@ -85,8 +89,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   If there is exactly one newsletter available in this form, this method
    *   returns its ID. Otherwise it returns NULL.
    */
-  protected function getOnlyNewsletter() {
-    $newsletters = $this->getNewsletters();
+  protected function getOnlyNewsletterId() {
+    $newsletters = $this->getNewsletterIds();
     if (count($newsletters) == 1) {
       return array_shift($newsletters);
     }
@@ -117,7 +121,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
 
     // Filter newsletter options as indicated with ::setNewsletters().
     $form['subscriptions']['widget']['#options']
-      = array_intersect_key($form['subscriptions']['widget']['#options'], array_flip($this->getNewsletters()));
+      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->getNewsletters());
 
     // Modify UI texts.
     if ($mail = $this->entity->getMail()) {
@@ -140,7 +144,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     // Set up some flags from which submit button visibility can be determined.
     $options = $form['subscriptions']['#access'];
     $mail = (bool) $this->entity->getMail();
-    $subscribed = !$options && $mail && $this->entity->isSubscribed($this->getOnlyNewsletter());
+    $subscribed = !$options && $mail && $this->entity->isSubscribed($this->getOnlyNewsletterId());
 
     // Add all buttons, but conditionally set #access.
     $actions = array(
@@ -162,7 +166,6 @@ abstract class SubscriberFormBase extends ContentEntityForm {
       ),
       static::SUBMIT_UPDATE => array(
         // Show 'Update' if user is known and can select newsletters.
-        // @todo Incorrect conditions.
         '#access' => $options && $mail,
         '#type' => 'submit',
         '#value' => t('Update'),
@@ -205,7 +208,9 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // Merge with any existing subscriber.
+    // Subclasses try to load an existing subscriber in different ways in
+    // buildForm. For anonymous user the email is unknown in buildForm, but here
+    // we can try again to load an existing subscriber.
     $mail = $form_state->getValue(array('mail', 0, 'value'));
     if ($this->entity->isNew() && $subscriber = simplenews_subscriber_load_by_mail($mail)) {
       $this->setEntity($subscriber);
@@ -223,12 +228,10 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   The form state object.
    */
   public function submitSubscribe(array $form, FormStateInterface $form_state) {
-    $mail = $form_state->getValue(array('mail', 0, 'value'));
-    $account = user_load_by_mail($mail);
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getSelectedNewsletters($form_state) as $newsletter_id) {
-      $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-      simplenews_subscribe($mail, $newsletter_id, $confirm, 'website');
+      $confirm = simplenews_require_double_opt_in($newsletter_id, $this->entity->getUserId());
+      simplenews_subscribe($this->entity->getMail(), $newsletter_id, $confirm, 'website');
     }
     $sent = simplenews_confirmation_send_combined();
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_SUBSCRIBE, $sent));
@@ -243,12 +246,10 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   The form state object.
    */
   public function submitUnsubscribe(array $form, FormStateInterface $form_state) {
-    $mail = $form_state->getValue(array('mail', 0, 'value'));
-    $account = user_load_by_mail($mail);
     simplenews_confirmation_combine(TRUE);
     foreach ($this->getSelectedNewsletters($form_state) as $newsletter_id) {
-      $confirm = simplenews_require_double_opt_in($newsletter_id, $account);
-      simplenews_unsubscribe($mail, $newsletter_id, $confirm, 'website');
+      $confirm = simplenews_require_double_opt_in($newsletter_id, $this->entity->getUserId());
+      simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, $confirm, 'website');
     }
     $sent = simplenews_confirmation_send_combined();
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UNSUBSCRIBE, $sent));
@@ -263,20 +264,18 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   The form state object.
    */
   public function submitUpdate(array $form, FormStateInterface $form_state) {
-    $mail = ($account = $form_state->get('user')) ? $account->getEmail() : $form_state->getValue(array('mail', 0, 'value'));
     // We first subscribe, then unsubscribe. This prevents deletion of
     // subscriptions when unsubscribed from the newsletter.
     $selected = $this->getSelectedNewsletters($form_state);
-    foreach ($this->getNewsletters() as $newsletter_id) {
+    foreach ($this->getNewsletterIds() as $newsletter_id) {
       if (in_array($newsletter_id, $selected)) {
-        simplenews_subscribe($mail, $newsletter_id, FALSE, 'website');
+        simplenews_subscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
       }
       else {
-        simplenews_unsubscribe($mail, $newsletter_id, FALSE, 'website');
+        simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
       }
     }
-    $sent = simplenews_confirmation_send_combined();
-    drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, $sent));
+    drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, FALSE));
   }
 
   /**

@@ -1398,13 +1398,16 @@ function simplenews_subscriber_load_by_mail($mail) {
  *   Subscriber user id.
  *
  * @return Subscriber
- *   Newsletter subscriber entity, FALSE if subscriber does not exist.
+ *   Newsletter subscriber entity, NULL if subscriber does not exist.
  *
  * @ingroup subscriber
  */
 function simplenews_subscriber_load_by_uid($uid) {
+  if (!$uid) {
+    return NULL;
+  }
   $subscribers = entity_load_multiple_by_properties('simplenews_subscriber', array('uid' => $uid));
-  return $uid && $subscribers ? reset($subscribers) : FALSE;
+  return $subscribers ? reset($subscribers) : NULL;
 }
 
 /**
@@ -2191,11 +2194,11 @@ function simplenews_cronapi($op) {
  *
  * @ingroup newsletter
  */
-function simplenews_require_double_opt_in($newsletter_id, $account) {
+function simplenews_require_double_opt_in($newsletter_id, $uid) {
   $user = \Drupal::currentUser();
-  // If email belongs to the current registered user, don't send confirmation.
+  // If user is currently logged in, don't send confirmation.
   // Other addresses receive a confirmation if double opt-in is selected.
-  if ($user && $account && $account->id() && $user->id() && $account->id() == $user->id()) {
+  if ($user->id() && $uid && $user->id() == $uid) {
     return FALSE;
   }
   else {

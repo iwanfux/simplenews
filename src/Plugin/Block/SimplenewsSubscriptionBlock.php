@@ -14,6 +14,7 @@ use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\simplenews\Entity\Newsletter;
 use Drupal\simplenews\Entity\Subscriber;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -190,9 +191,10 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
    * {@inheritdoc}
    */
   public function build() {
+    /** @var \Drupal\simplenews\Form\SubscriptionsBlockForm $form_object */
     $form_object = \Drupal::entityManager()->getFormObject('simplenews_subscriber', 'block');
     $form_object->setUniqueId($this->configuration['unique_id']);
-    $form_object->setNewsletters($this->configuration['newsletters']);
+    $form_object->setNewsletters(Newsletter::loadMultiple($this->configuration['newsletters']));
     $form_object->message = $this->configuration['message'];
 
     // Set the entity on the form.

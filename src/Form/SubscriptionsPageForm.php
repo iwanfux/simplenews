@@ -39,8 +39,6 @@ class SubscriptionsPageForm extends SubscriberFormBase {
       }
     }
 
-    $this->setNewsletters(array_keys(simplenews_newsletter_get_visible()));
-
     return parent::buildForm($form, $form_state);
   }
 

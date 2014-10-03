@@ -64,7 +64,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[0]['body'];
     $this->verbose($body);
 
     // Verify listed changes.
@@ -130,7 +130,7 @@ class SimplenewsSubscribeTest extends SimplenewsTestBase {
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[1]['body'];
     $this->verbose($body);
     /* @todo: get rid of new-line in text
     vn9whrkr@example.com at http://drupal8.local/:\\n\\n - Unsubscribe from
@@ -187,7 +187,7 @@ rWcewRqx
     );
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[2]['body'];
 
     // Load simplenews settings config object.
     $config = \Drupal::config('simplenews.settings');
@@ -201,7 +201,7 @@ rWcewRqx
     );
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Subscribe'));
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[3]['body'];
 
     // Change behavior to never, should send two separate mails.
     $config->set('subscription.use_combined', 'never');
@@ -233,7 +233,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[6]['body'];
 
     $confirm_url = $this->extractConfirmationLink($body);
     $this->drupalGet($confirm_url);
@@ -282,7 +282,7 @@ rWcewRqx
     $this->drupalPostForm(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[8]['body'];
     $this->verbose($body);
     $confirm_url = $this->extractConfirmationLink($body);
 
@@ -409,7 +409,7 @@ rWcewRqx
     $this->assertEqual(SIMPLENEWS_SUBSCRIPTION_STATUS_UNCONFIRMED, $subscription->status, t('Subscription is unconfirmed'));
 
     $mails = $this->drupalGetMails();
-    $confirm_url = $this->extractConfirmationLink(array_pop($mails)['body']);
+    $confirm_url = $this->extractConfirmationLink($mails[0]['body']);
 
     $this->drupalGet($confirm_url);
     $newsletter = simplenews_newsletter_load($newsletter_id);
@@ -467,7 +467,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'), t('Subscription confirmation e-mail sent.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[2]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -505,7 +505,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[3]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -544,7 +544,7 @@ rWcewRqx
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to complete your subscription.'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[5]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
@@ -568,7 +568,7 @@ rWcewRqx
     $this->drupalPostForm(NULL, $edit, t('Unsubscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[6]['body'];
     $this->verbose($body);
     $this->assertTrue(strpos($body, t('We have received a request to remove the @mail', array('@mail' => $mail))) === 0);
 
@@ -618,7 +618,7 @@ rWcewRqx
     $this->drupalPostForm('newsletter/subscriptions', $edit, t('Unsubscribe'));
     $this->assertText(t('You will receive a confirmation e-mail shortly containing further instructions on how to cancel your subscription.'));
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[7]['body'];
     // Remove line breaks from body in case the string is split.
     $body = str_replace("\n", ' ', $body);
     $this->verbose($body);
@@ -640,7 +640,7 @@ rWcewRqx
     $this->drupalPostForm(NULL, array(), t('Request new confirmation mail'));
 
     $mails = $this->drupalGetMails();
-    $body = array_pop($mails)['body'];
+    $body = $mails[9]['body'];
     $confirm_url = $this->extractConfirmationLink($body);
 
     $this->drupalGet($confirm_url);
