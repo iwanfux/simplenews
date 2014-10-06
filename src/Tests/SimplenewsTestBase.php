@@ -146,4 +146,37 @@ abstract class SimplenewsTestBase extends WebTestBase {
     );
     $this->drupalPostForm(NULL, $edit, t('Subscribe'));
   }
+
+  /**
+   * Returns the body content of the latest sent mail.
+   *
+   * @param int $offset
+   *   (optional) Specify to get the n:th last mail.
+   *
+   * @return string
+   *   The body of the latest sent mail.
+   */
+  protected function lastMailBody($offset = 0) {
+    $mails = $this->drupalGetMails();
+    return $mails[count($mails) - $offset - 1]['body'];
+  }
+
+  /**
+   * Checks if a string is found in the latest sent mail.
+   *
+   * @param string $needle
+   *   The string to find.
+   * @param bool $exist
+   *   (optional) Whether the string is expected to be found or not.
+   * @param int $offset
+   *   (optional) Specify to check the n:th last mail.
+   *
+   * @return bool
+   *   Whether the string was found, or the inverted if $exist is FALSE.
+   */
+  protected function assertMailText($needle, $exist = TRUE, $offset = 0) {
+    $body = preg_replace('/\s+/', ' ', $this->lastMailBody($offset));
+    $pos = strpos($body, $needle);
+    return $this->assertEqual($exist, $pos !== FALSE, "$needle found in mail");
+  }
 }
