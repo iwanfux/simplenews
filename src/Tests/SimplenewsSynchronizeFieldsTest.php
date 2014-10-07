@@ -35,6 +35,9 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $this->installEntitySchema('simplenews_subscriber');
     $this->installSchema('system', array('sequences', 'sessions'));
     \Drupal::config('system.mail')->set('interface.default', 'test_mail_collector')->save();
+    \Drupal::config('simplenews.settings')
+      ->set('subscriber.sync_account', TRUE)
+      ->save();
     ConfigurableLanguage::create(array('id' => 'fr'))->save();
   }
 
@@ -73,10 +76,11 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
     $subscriber = Subscriber::load($subscriber->id());
     $this->assertEqual($subscriber->getMail(), 'user2@example.com');
     $this->assertEqual($subscriber->getLangcode(), 'en');
+    $this->assertTrue($subscriber->getStatus());
 
-    // Status is only synced if sync_account is set.
-    $this->assertFalse($subscriber->getStatus());
-    \Drupal::config('simplenews.settings')->set('subscriber.sync_account', TRUE)->save();
+    // Status is not synced if sync_account is not set.
+    \Drupal::config('simplenews.settings')->set('subscriber.sync_account', FALSE)->save();
+    $user->block();
     $user->save();
     $subscriber = Subscriber::load($subscriber->id());
     $this->assertTrue($subscriber->getStatus());
@@ -215,7 +219,7 @@ class SimplenewsSynchronizeFieldsTest extends KernelTestBase {
       'mail' => 'user2@example.com',
     ));
 
-    // Assert that the shared field does not get the value from the user.
+    // Assert that the shared field does not get the value from the subscriber.
     $this->assertNull($user->get('field_on_both')->value);
 
     // Update the user and assert that it is not synced to the subscriber.
