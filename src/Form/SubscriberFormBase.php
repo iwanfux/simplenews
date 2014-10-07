@@ -8,7 +8,6 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\simplenews\Entity\Newsletter;
 
@@ -41,7 +40,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   /**
    * The newsletters available to select from.
    *
-   * @var string[]
+   * @var \Drupal\simplenews\Entity\Newsletter[]
    */
   protected $newsletters;
 
@@ -53,8 +52,8 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    * @param string[] $newsletters
    *   An array of Newsletter IDs.
    */
-  public function setNewsletters(array $newsletters) {
-    $this->newsletters = $newsletters;
+  public function setNewsletterIds(array $newsletters) {
+    $this->newsletters = Newsletter::loadMultiple($newsletters);
   }
 
   /**
@@ -65,7 +64,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function getNewsletters() {
     if (!isset($this->newsletters)) {
-      $this->setNewsletters(simplenews_newsletter_get_visible());
+      $this->setNewsletterIds(array_keys(simplenews_newsletter_get_visible()));
     }
     return $this->newsletters;
   }
@@ -77,13 +76,13 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *   The newsletter IDs available to select from, as an indexed array.
    */
   public function getNewsletterIds() {
-    return array_keys($this->newsletters);
+    return array_keys($this->getNewsletters());
   }
 
   /**
    * Convenience method for the case of only one available newsletter.
    *
-   * @see ::setNewsletters()
+   * @see ::setNewsletterIds()
    *
    * @return string|null
    *   If there is exactly one newsletter available in this form, this method
@@ -114,14 +113,26 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   abstract protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm);
 
   /**
+   * Returns the renderer for the 'subscriptions' field.
+   *
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state object.
+   *
+   * @return \Drupal\simplenews\SubscriptionWidgetInterface
+   *   The widget.
+   */
+  protected function getSubscriptionWidget(FormStateInterface $form_state) {
+    return $this->getFormDisplay($form_state)->getRenderer('subscriptions');
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $form = parent::form($form, $form_state);
+    $this->getSubscriptionWidget($form_state)
+      ->setAvailableNewsletterIds(array_keys($this->getNewsletters()));
 
-    // Filter newsletter options as indicated with ::setNewsletters().
-    $form['subscriptions']['widget']['#options']
-      = array_intersect_key($form['subscriptions']['widget']['#options'], $this->getNewsletters());
+    $form = parent::form($form, $form_state);
 
     // Modify UI texts.
     if ($mail = $this->entity->getMail()) {
@@ -142,7 +153,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     // Set up some flags from which submit button visibility can be determined.
-    $options = $form['subscriptions']['#access'];
+    $options = !$this->getSubscriptionWidget($form_state)->isHidden();
     $mail = (bool) $this->entity->getMail();
     $subscribed = !$options && $mail && $this->entity->isSubscribed($this->getOnlyNewsletterId());
 
@@ -197,7 +208,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     // Unless the submit handler is 'update', if the newsletter checkboxes are
     // available, at least one must be checked.
     $update = in_array('::submitUpdate', $form_state->getSubmitHandlers());
-    if (!$update && $form['subscriptions']['#access'] && !count($form_state->getValue('subscriptions'))) {
+    if (!$update && !$this->getSubscriptionWidget($form_state)->isHidden() && !count($form_state->getValue('subscriptions'))) {
       $form_state->setErrorByName('subscriptions', t('You must select at least one newsletter.'));
     }
 
@@ -217,6 +228,19 @@ abstract class SubscriberFormBase extends ContentEntityForm {
     }
 
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
+    // Subscriptions are handled later, in the submit callbacks through
+    // ::getSelectedNewsletters(). Letting them be copied here would break
+    // simplenews_subscribe() and simplenews_unsubscribe().
+    $subsciptions_value = $form_state->getValue('subscriptions');
+    $form_state->unsetValue('subscriptions');
+    parent::copyFormValuesToEntity($entity, $form, $form_state);
+    $form_state->setValue('subscriptions', $subsciptions_value);
   }
 
   /**
@@ -266,27 +290,13 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   public function submitUpdate(array $form, FormStateInterface $form_state) {
     // We first subscribe, then unsubscribe. This prevents deletion of
     // subscriptions when unsubscribed from the newsletter.
-    $selected = $this->getSelectedNewsletters($form_state);
-    foreach ($this->getNewsletterIds() as $newsletter_id) {
-      if (in_array($newsletter_id, $selected)) {
-        simplenews_subscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
-      }
-      else {
-        simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
-      }
+    foreach ($this->getSelectedNewsletters($form_state, FALSE) as $newsletter_id) {
+      simplenews_subscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
+    }
+    foreach ($this->getSelectedNewsletters($form_state, TRUE) as $newsletter_id) {
+      simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
     }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, FALSE));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function copyFormValuesToEntity(EntityInterface $entity, array $form, FormStateInterface $form_state) {
-    // Subscriptions are handled by submit callback instead.
-    $subsciptions_value = $form_state->getValue('subscriptions');
-    $form_state->unsetValue('subscriptions');
-    parent::copyFormValuesToEntity($entity, $form, $form_state);
-    $form_state->setValue('subscriptions', $subsciptions_value);
   }
 
   /**
@@ -294,13 +304,14 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    *
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Form state object.
+   * @param bool $deselected
+   *   (optional) If TRUE, return deselected newsletters instead.
    *
    * @return array
    *   Selected newsletter IDs.
    */
-  protected function getSelectedNewsletters(FormStateInterface $form_state) {
-    return array_map(function($item) {
-      return $item['target_id'];
-    }, $form_state->getValue('subscriptions') ?: array());
+  protected function getSelectedNewsletters(FormStateInterface $form_state, $deselected = FALSE) {
+    return $this->getSubscriptionWidget($form_state)
+      ->getSelectedNewsletterIds($form_state->getValue('subscriptions'), $deselected);
   }
 }

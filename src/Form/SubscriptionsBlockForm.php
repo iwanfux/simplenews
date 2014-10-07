@@ -44,17 +44,17 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
+    // Hide subscription widget if only one newsletter available.
+    if (count($this->getNewsletters()) == 1) {
+      $this->getSubscriptionWidget($form_state)->setHidden();
+    }
+
     $form = parent::form($form, $form_state);
 
     $form['message'] = array(
       '#type' => 'item',
       '#markup' => $this->message,
     );
-
-    // Tweak the appearance of the subscriptions widget.
-    if ($this->getOnlyNewsletterId() != NULL) {
-      $form['subscriptions']['#access'] = FALSE;
-    }
 
     return $form;
   }
@@ -71,23 +71,6 @@ class SubscriptionsBlockForm extends SubscriberFormBase {
       $actions[static::SUBMIT_UNSUBSCRIBE]['#access'] = $this->entity->isSubscribed($this->getOnlyNewsletterId());
     }
     return parent::actions($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    // Pretend that the '#type' => 'value' field is a widget.
-    if (count($this->getNewsletters()) == 1) {
-      if ($this->entity->isSubscribed($this->getOnlyNewsletterId())) {
-        $form_state->unsetValue('subscriptions');
-      }
-      else {
-        $form_state->setValue('subscriptions', array(array('target_id' => $this->getOnlyNewsletterId())));
-      }
-    }
-
-    parent::submitForm($form, $form_state);
   }
 
   /**
