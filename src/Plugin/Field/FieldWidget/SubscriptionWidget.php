@@ -9,8 +9,8 @@ namespace Drupal\simplenews\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Field\Plugin\Field\FieldWidget\OptionsButtonsWidget;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\options\Plugin\Field\FieldWidget\ButtonsWidget;
 use Drupal\simplenews\SubscriptionWidgetInterface;
 
 /**
@@ -25,7 +25,7 @@ use Drupal\simplenews\SubscriptionWidgetInterface;
  *   multiple_values = TRUE
  * )
  */
-class SubscriptionWidget extends ButtonsWidget implements SubscriptionWidgetInterface {
+class SubscriptionWidget extends OptionsButtonsWidget implements SubscriptionWidgetInterface {
 
   /**
    * IDs of the newsletters available for selection.
