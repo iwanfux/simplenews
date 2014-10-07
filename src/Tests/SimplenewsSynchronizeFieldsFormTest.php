@@ -94,7 +94,7 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
       $bundle = $entity_type;
     }
     FieldStorageConfig::create(array(
-      'name' => $field_name,
+      'field_name' => $field_name,
       'entity_type' => $entity_type,
       'type' => $type,
     ))->save();
@@ -108,5 +108,4 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
         'type' => 'string_textfield',
       ))->save();
   }
-
 }
