@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
 
 /**
@@ -207,13 +208,13 @@ class NewsletterIssueListForm extends FormBase {
       $node_url = $node->urlInfo();
       $node_edit_url = $node->urlInfo('edit-form');
       $options[$node->id()] = array(
-        'title' => \Drupal::l($node->getTitle(), $node_url->getRouteName(), $node_url->getRouteParameters()),
+        'title' => \Drupal::l($node->getTitle(), Url::fromRoute($node_url->getRouteName(), $node_url->getRouteParameters())),
         'newsletter' => $node->simplenews_issue->target_id && isset($categories[$node->simplenews_issue->target_id]) ? $categories[$node->simplenews_issue->target_id] : t('- Unassigned -'),
         'created' => format_date($node->getCreatedTime(), 'small'),
         'published' => drupal_render($published_render_array),
         'sent' => $send_status,
         'subscribers' => $subscriber_count,
-        'operations' => \Drupal::l(t('edit'), $node_edit_url->getRouteName(), $node_edit_url->getRouteParameters(), array('query' => drupal_get_destination())),
+        'operations' => \Drupal::l(t('edit'), Url::fromRoute($node_edit_url->getRouteName(), $node_url->getRouteParameters(), array('query' => drupal_get_destination()))),
       );
     }
 
