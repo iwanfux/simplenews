@@ -214,7 +214,7 @@ class NewsletterIssueListForm extends FormBase {
         'published' => drupal_render($published_render_array),
         'sent' => $send_status,
         'subscribers' => $subscriber_count,
-        'operations' => \Drupal::l(t('edit'), Url::fromRoute($node_edit_url->getRouteName(), $node_url->getRouteParameters(), array('query' => drupal_get_destination()))),
+        'operations' => \Drupal::l(t('edit'), Url::fromRoute($node_edit_url->getRouteName(), $node_edit_url->getRouteParameters(), array('query' => drupal_get_destination()))),
       );
     }
 
