@@ -923,7 +923,7 @@ function simplenews_mail($key, &$message, $params) {
   // Debug message of node and test emails is set in simplenews_mail_mail().
   $config = \Drupal::config('simplenews.settings');
   if ($config->get('mail.debug') && $key != 'node' && $key != 'test') {
-    watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+    \Drupal::logger('simplenews')->debug('Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']));
   }
 }
 
