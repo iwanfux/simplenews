@@ -8,8 +8,8 @@
 namespace Drupal\simplenews\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\Field\Plugin\Field\FieldWidget\OptionsButtonsWidget;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\options\Plugin\Field\FieldWidget\ButtonsWidget;
 
 /**
  * Plugin implementation of the 'simplenews_subscription_select' widget.
@@ -23,7 +23,7 @@ use Drupal\options\Plugin\Field\FieldWidget\ButtonsWidget;
  *   multiple_values = TRUE
  * )
  */
-class SubscriptionWidget extends ButtonsWidget {
+class SubscriptionWidget extends OptionsButtonsWidget {
 
   /**
    * {@inheritdoc}
