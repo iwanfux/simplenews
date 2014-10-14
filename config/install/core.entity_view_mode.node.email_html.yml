@@ -1,0 +1,8 @@
+id: node.email_html
+label: 'Email: HTML'
+status: false
+cache: true
+targetEntityType: node
+dependencies:
+  module:
+    - node
