@@ -56,6 +56,15 @@ interface SubscriberInterface extends ContentEntityInterface {
   public function getUserId();
 
   /**
+   * Returns corresponding User object, if any.
+   *
+   * @return \Drupal\user\UserInterface|null
+   *   The corresponding User object, or NULL if the subscriber is not synced
+   *   with a user.
+   */
+  public function getUser();
+
+  /**
    * Sets the corresponding user ID.
    *
    * @param string $uid

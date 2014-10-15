@@ -6,10 +6,7 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\simplenews\Entity\Subscriber;
-use Drupal\simpletest\WebTestBase;
 use Drupal\user\Entity\User;
 
 /**
@@ -17,7 +14,7 @@ use Drupal\user\Entity\User;
  *
  * @group simplenews
  */
-class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
+class SimplenewsSynchronizeFieldsFormTest extends SimplenewsTestBase {
 
   /**
    * Modules to enable.
@@ -44,6 +41,7 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
     // Create a user.
     $this->user = $this->drupalCreateUser(array(
       'administer simplenews subscriptions',
+      'administer simplenews settings',
     ));
     $this->user->setEmail('user@example.com');
     $this->user->set('field_shared', $this->randomMachineName());
@@ -75,37 +73,18 @@ class SimplenewsSynchronizeFieldsFormTest extends WebTestBase {
 
     $this->user = User::load($this->user->id());
     $this->assertEqual($this->user->field_shared->value, $new_value);
+
+    // Unset the sync setting and assert field is not synced.
+    $this->drupalPostForm('admin/config/people/simplenews/settings/subscriber', array('simplenews_sync_account' => FALSE), t('Save configuration'));
+
+    $unsynced_value = $this->randomMachineName();
+    $this->drupalPostForm('admin/people/simplenews/edit/' . $subscriber->id(), array('field_shared[0][value]' => $unsynced_value), t('Save'));
+    $this->drupalGet('admin/people/simplenews/edit/' . $subscriber->id());
+    $this->assertRaw($unsynced_value);
+
+    $this->user = User::load($this->user->id());
+    $this->assertEqual($this->user->field_shared->value, $new_value);
+    $this->assertNotEqual($this->user->field_shared->value, $unsynced_value);
   }
 
-  /**
-   * Creates and saves a field storage and instance.
-   *
-   * @param string $type
-   *   The field type.
-   * @param string $field_name
-   *   The name of the new field.
-   * @param string $entity_type
-   *   The ID of the entity type to attach the field instance to.
-   * @param string $bundle
-   *   (optional) The entity bundle. Defaults to same as $entity_type.
-   */
-  protected function addField($type, $field_name, $entity_type, $bundle = NULL) {
-    if (!isset($bundle)) {
-      $bundle = $entity_type;
-    }
-    FieldStorageConfig::create(array(
-      'field_name' => $field_name,
-      'entity_type' => $entity_type,
-      'type' => $type,
-    ))->save();
-    FieldConfig::create(array(
-      'field_name' => $field_name,
-      'entity_type' => $entity_type,
-      'bundle' => $bundle,
-    ))->save();
-    entity_get_form_display($entity_type, $bundle, 'default')
-      ->setComponent($field_name, array(
-        'type' => 'string_textfield',
-      ))->save();
-  }
 }

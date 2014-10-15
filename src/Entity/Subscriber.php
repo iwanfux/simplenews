@@ -25,6 +25,9 @@ use Drupal\user\UserInterface;
  *     "list_builder" = "Drupal\simplenews\SubscriberListBuilder",
  *     "form" = {
  *       "default" = "Drupal\simplenews\Form\SubscriberForm",
+ *       "account" = "Drupal\simplenews\Form\SubscriptionsAccountForm",
+ *       "block" = "Drupal\simplenews\Form\SubscriptionsBlockForm",
+ *       "page" = "Drupal\simplenews\Form\SubscriptionsPageForm",
  *       "delete" = "Drupal\simplenews\Form\SubscriberDeleteForm",
  *     }
  *   },
@@ -101,6 +104,16 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
       return $value[0]['target_id'];
     }
     return '0';
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUser() {
+    if (!\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
+      return NULL;
+    }
+    return $this->getUserId() ? User::load($this->getUserId()) : user_load_by_mail($this->getMail());
   }
 
   /**
@@ -239,8 +252,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     parent::postSave($storage, $update);
 
     // Copy values for shared fields to existing user.
-    $user = User::load($this->getUserId());
-    if (isset($user)) {
+    if ($user = $this->getUser()) {
       static::$syncing = TRUE;
       foreach ($this->getUserSharedFields($user) as $field_name) {
         $user->set($field_name, $this->get($field_name)->getValue());
@@ -265,8 +277,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     }
 
     // Copy values for shared fields from existing user.
-    $user = User::load($this->getUserId());
-    if (isset($user)) {
+    if ($user = $this->getUser()) {
       foreach ($this->getUserSharedFields($user) as $field_name) {
         $this->set($field_name, $user->get($field_name)->getValue());
       }
@@ -308,7 +319,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
     $fields['status'] = BaseFieldDefinition::create('boolean')
       ->setLabel(t('Status'))
       ->setDescription(t('Boolean indicating the status of the subscriber.'))
-      ->setSetting('default_value', FALSE);
+      ->setDefaultValue(TRUE);
 
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
@@ -319,7 +330,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
         'type' => 'email',
         'settings' => array(),
         'weight' => 5,
-      )) 
+      ))
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['uid'] = BaseFieldDefinition::create('entity_reference')

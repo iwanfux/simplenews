@@ -7,94 +7,54 @@
 
 namespace Drupal\simplenews\Form;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 
 /**
  * Configure simplenews subscriptions of a user.
  */
-class SubscriptionsAccountForm extends FormBase {
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getFormId() {
-    return 'simplenews_subscriptions_account';
-  }
+class SubscriptionsAccountForm extends SubscriberFormBase {
 
   /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
-    $subscriber = simplenews_subscriber_load_by_mail($user->getEmail());
-
-    $options = array();
-    $default_value = $subscriber ? $subscriber->getSubscribedNewsletterIds() : array();
-
-    // Get newsletters for subscription form checkboxes.
-    // Newsletters with opt-in/out method 'hidden' will not be listed.
-    foreach (simplenews_newsletter_get_visible() as $newsletter) {
-      $options[$newsletter->id()] = String::checkPlain($newsletter->name);
-    }
-
-    $form_state->set('user', $user);
-
-    $form['subscriptions'] = array(
-      '#type' => 'fieldset',
-      '#description' => t('Select your newsletter subscriptions.'),
-    );
-    $form['subscriptions']['newsletters'] = array(
-      '#type' => 'checkboxes',
-      '#options' => $options,
-      '#default_value' => $default_value,
-    );
-
-    $form['subscriptions']['#title'] = t('Current newsletter subscriptions');
-
-    $form['save'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#weight' => 20,
-    );
-
-    return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function submitForm(array &$form, FormStateInterface $form_state) {
-    $user = \Drupal::currentUser();
-
-    $account = $form_state->get('user');
-
-    // We first subscribe, then unsubscribe. This prevents deletion of subscriptions
-    // when unsubscribed from the
-    arsort($form_state->getValue('newsletters'), SORT_NUMERIC);
-    foreach ($form_state->getValue('newsletters') as $newsletter_id => $checked) {
-      if ($checked) {
-        simplenews_subscribe($account->getEmail(), $newsletter_id, FALSE, 'website');
+    // Try to load a subscriber from the uid, otherwise just set the mail field
+    // on the new subscriber.
+    if (isset($user)) {
+      $form_state->set('user', $user);
+      if ($subscriber = simplenews_subscriber_load_by_uid($user->id())) {
+        $this->setEntity($subscriber);
       }
       else {
-        simplenews_unsubscribe($account->getEmail(), $newsletter_id, FALSE, 'website');
+        $this->entity->setUserId($user->id());
+        $this->entity->setMail($user->getEmail());
       }
     }
-    if ($user->id() == $account->id()) {
-      drupal_set_message(t('Your newsletter subscriptions have been updated.'));
+
+    return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function actions(array $form, FormStateInterface $form_state) {
+    $actions = parent::actions($form, $form_state);
+    $actions[static::SUBMIT_UPDATE]['#value'] = $this->t('Save');
+    return $actions;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getSubmitMessage(FormStateInterface $form_state, $op, $confirm) {
+    $user = $form_state->get('user');
+    if (\Drupal::currentUser()->id() == $user->id()) {
+      return $this->t('Your newsletter subscriptions have been updated.');
     }
-    else {
-      drupal_set_message(t('The newsletter subscriptions for user %account have been updated.', array('%account' => $account->label() )));
-    }
+    return $this->t('The newsletter subscriptions for user %account have been updated.', array('%account' => $user->label()));
   }
 
   /**

@@ -1,0 +1,9 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - simplenews
+id: simplenews_subscriber.account
+label: Account
+targetEntityType: simplenews_subscriber
+cache: true
