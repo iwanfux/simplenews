@@ -10,6 +10,7 @@ namespace Drupal\simplenews\Form;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\user\UserInterface;
 
 /**
  * Configure simplenews subscriptions of a user.
@@ -19,10 +20,10 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $user = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, UserInterface $user = NULL) {
     // Try to load a subscriber from the uid, otherwise just set the mail field
     // on the new subscriber.
-    if (isset($user) && $user = User::load($user)) {
+    if (isset($user)) {
       $form_state->set('user', $user);
       if ($subscriber = simplenews_subscriber_load_by_uid($user->id())) {
         $this->setEntity($subscriber);
@@ -59,14 +60,13 @@ class SubscriptionsAccountForm extends SubscriberFormBase {
   /**
    * Checks access for the simplenews account form.
    *
-   * @param int $user
-   *   The ID of the account to use in the form.
+   * @param \Drupal\user\UserInterface $user
+   *   The account to use in the form.
    *
    * @return \Drupal\Core\Access\AccessResult
    *   An access result object.
    */
-  public function checkAccess($user) {
-    $user = User::load($user);
+  public function checkAccess(UserInterface $user) {
     $account = $this->currentUser();
 
     return AccessResult::allowedIfHasPermission($account, 'administer simplenews subscriptions')
