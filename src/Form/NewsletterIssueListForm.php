@@ -204,16 +204,14 @@ class NewsletterIssueListForm extends FormBase {
       $send_status = $node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING ? $subscriber_count - $pending_count : drupal_render($status_render_array);
 
       $published_render_array = array('#theme' => 'simplenews_status','#source' => 'published', '#status' => $node->isPublished());
-      $node_url = $node->urlInfo();
-      $node_edit_url = $node->urlInfo('edit-form');
       $options[$node->id()] = array(
-        'title' => \Drupal::l($node->getTitle(), $node_url->getRouteName(), $node_url->getRouteParameters()),
+        'title' => $node->link(),
         'newsletter' => $node->simplenews_issue->target_id && isset($categories[$node->simplenews_issue->target_id]) ? $categories[$node->simplenews_issue->target_id] : t('- Unassigned -'),
         'created' => format_date($node->getCreatedTime(), 'small'),
         'published' => drupal_render($published_render_array),
         'sent' => $send_status,
         'subscribers' => $subscriber_count,
-        'operations' => \Drupal::l(t('edit'), $node_edit_url->getRouteName(), $node_edit_url->getRouteParameters(), array('query' => drupal_get_destination())),
+        'operations' => $node->link(t('edit'), 'edit-form', array('query' => drupal_get_destination())),
       );
     }
 

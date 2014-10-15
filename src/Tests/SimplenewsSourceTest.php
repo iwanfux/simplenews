@@ -230,9 +230,8 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
 
     // Test that tokens are correctly replaced.
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
-      debug($mail['body']);
       // Verify title.
-      $this->assertTrue(strpos($mail['body'], '<h2>' . $node->getTitle() . '</h2>') !== FALSE);
+      $this->assertTrue(strpos($mail['body'], '<h2>' . htmlentities($node->getTitle()) . '</h2>') !== FALSE);
 
       // Make sure that the same mail was used in the body token as it has been
       // sent to.

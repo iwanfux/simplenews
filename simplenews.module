@@ -10,7 +10,9 @@ use Drupal\Component\Utility\String;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
 use Drupal\node\NodeInterface;
+use Drupal\node\NodeTypeInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\UserInterface;
 
@@ -82,121 +84,17 @@ define('SIMPLENEWS_OPT_INOUT_DOUBLE', 'double');
 define('SIMPLENEWS_UNLIMITED', -1);
 
 /**
- * Implements hook_init().
- *
- * @todo move this to a specific form theme function ?
- */
-function simplenews_init() {
-  drupal_add_css(drupal_get_path('module', 'simplenews') . '/simplenews.css', array('every_page' => TRUE));
-}
-
-/**
- * Implements hook_menu().
- */
-function simplenews_menu() {
-  $items['admin/content/simplenews'] = array(
-    'title' => 'Newsletters',
-    'description' => 'List newsletters and newsletter sent status.',
-    'type' => MENU_LOCAL_TASK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_admin_newsletter_issues'),
-    'access arguments' => array('administer newsletters'),
-    'file' => 'includes/simplenews.admin.inc',
-  );
-
-  $items['admin/content/simplenews/subscriptions/delete'] = array(
-    'title' => 'Delete',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('simplenews_subscription_multiple_delete_confirm'),
-    'access arguments' => array('administer simplenews subscriptions'),
-    'file' => 'includes/simplenews.admin.inc',
-  );
-
-  // Explicitly define add and remove menu routers even if they are are equal
-  // to avoid conflicts with the different combined arguments.
-  $items['newsletter/confirm/add/%/%/%/%'] = array(
-    'title' => 'Confirm newsletter subscriptions',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'simplenews_confirm_subscription',
-    'page arguments' => array(2, 3, 4, 5, 6),
-    'access arguments' => array('subscribe to newsletters'),
-    'file' => 'includes/simplenews.subscription.inc',
-  );
-  $items['newsletter/confirm/remove/%/%/%/%'] = $items['newsletter/confirm/add/%/%/%/%'];
-
-  // Backwards compatibility for old links.
-  $items['newsletter/confirm'] = array(
-    'title' => 'Confirm newsletter subscriptions',
-    'type' => MENU_CALLBACK,
-    'page callback' => 'simplenews_old_confirm_subscription',
-    'page arguments' => array(),
-    'access arguments' => array('subscribe to newsletters'),
-    'file' => 'includes/simplenews.subscription.inc',
-  );
-
-  $items['node/%node/simplenews'] = array(
-    'title' => 'Newsletter',
-    'type' => MENU_LOCAL_TASK,
-    'access callback' => 'simplenews_node_tab_access',
-    'access arguments' => array(1),
-    'page callback' => 'simplenews_node_tab_page',
-    'page arguments' => array(1),
-    'context' => MENU_LOCAL_TASK,
-    'file' => 'includes/simplenews.admin.inc',
-    'weight' => 2,
-  );
-
-  return $items;
-}
-
-/**
- * Implements hook_admin_paths().
- */
-function simplenews_admin_paths() {
-  $paths = array(
-    'node/*/simplenews' => TRUE,
-  );
-  return $paths;
-}
-
-/**
  * Implements hook_node_type_delete().
  */
-function simplenews_node_type_delete($info) {
+function simplenews_node_type_delete(NodeTypeInterface $info) {
   drupal_static_reset('simplenews_get_content_types');
-}
-
-/**
- * Implements hook_node_type_update().
- */
-function simplenews_node_type_update($info) {
-  drupal_static_reset('simplenews_get_content_types');
-  if (simplenews_check_node_types($info->type)) {
-    simplenews_issue_fields_add($info);
-  }
-  else {
-    // Don't remove the field. This leads to data loss.
-  }
-}
-
-/**
- * Implements hook_node_type_insert().
- */
-function simplenews_node_type_insert($info) {
-  // Avoid using simplenews_check_node_type() because the node type cache
-  // has not been cleared yet.
-  /*if (variable_get('simplenews_content_type_' . $info->type, FALSE)) {
-    simplenews_issue_fields_add($info);
-  }*/
 }
 
 /**
  * Implements hook_node_view().
  */
-function simplenews_node_view($node, $view_mode) {
-  return;
-  if (!simplenews_check_node_types($node->getEntityTypeId())) {
+function simplenews_node_view(array &$build, NodeInterface $node, $display, $view_mode) {
+  if (!simplenews_check_node_types($node->getType())) {
     return;
   }
 
@@ -212,24 +110,25 @@ function simplenews_node_view($node, $view_mode) {
   );
 
   // If the current user is a subscriber, extend context.
-  if ($GLOBALS['user']->id() > 0 && $subscriber = simplenews_subscriber_load_by_mail($GLOBALS['user']->getEmail())) {
+  $user = \Drupal::currentUser();
+  if ($user->id() > 0 && $subscriber = simplenews_subscriber_load_by_mail($user->getEmail())) {
     $context['simplenews_subscriber'] = $subscriber;
   }
 
   // Loop over all render array elements.
-  foreach (element_children($node->content) as $key) {
-    $element = &$node->content[$key];
+  foreach (Element::children($build) as $key) {
+    $element = &$build[$key];
     // Make sure this is a field.
     if (!isset($element['#field_type'])) {
       continue;
     }
     // Loop over all field values.
-    foreach (element_children($element) as $field_key) {
+    foreach (Element::children($element) as $field_key) {
       $item = &$element[$field_key];
       // Only fields which result in simple markup elements are supported for
       // token replacements for now.
       if (isset($item['#markup'])) {
-        $item['#markup'] = token_replace($item['#markup'], $context, array());
+        $item['#markup'] = \Drupal::token()->replace($item['#markup'], $context, array());
       }
     }
   }
@@ -315,381 +214,17 @@ function simplenews_get_content_types() {
 }
 
 /**
- * Add fields for newsletter, status and sent count to a note type.
- *
- * @param $type
- *   A node type object.
- *
- * @ingroup issue
- */
-function simplenews_issue_fields_add($type) {
-  simplenews_issue_newsletter_field_add($type);
-  simplenews_issue_handler_field_add($type);
-  simplenews_issue_handler_settings_field_add($type);
-  simplenews_issue_status_field_add($type);
-  simplenews_issue_sent_count_field_add($type);
-}
-
-/**
- * Add field for newsletter
- *
- * @param $type A node type object.
- *
- * @ingroup issue
- */
-function simplenews_issue_newsletter_field_add($type) {
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.newsletter');
-  $field = field_info_field($field_name);
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if (empty($field)) {
-    $field = array(
-      'field_name' => $field_name,
-      'type' => 'entityreference',
-      'cardinality' => 1,
-      'entity_types' => array('node'),
-      'translatable' => FALSE,
-      'settings' => array(
-        'target_type' => 'simplenews_newsletter',
-        'handler' => 'base',
-        'handler_submit' => 'Change handler',
-        'handler_settings' => array(
-          'sort' => array(
-            'type' => 'property',
-            'property' => 'weight',
-            'direction' => 'ASC',
-          ),
-          'behaviors' => array(
-            'views-select-list' => array(
-              'status' => 1,
-            ),
-          ),
-        ),
-      ),
-    );
-    $field = field_create_field($field);
-  }
-  if (empty($instance)) {
-    $newsletter = simplenews_newsletter_get_all();
-    $default_value = array();
-    if ($newsletter) {
-      $newsletter = reset($newsletter);
-      $default_value = array(array('target_id' => $newsletter->newsletter_id));
-    }
-
-    $instance = array(
-      'label' => t('Newsletter'),
-      'field_name' => $field_name,
-      'bundle' => $type->type,
-      'entity_type' => 'node',
-      'required' => TRUE,
-      'default_value' => $default_value,
-      'widget' => array(
-        'type' => 'options_select',
-      ),
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'entityreference_label',
-        ),
-        'teaser' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_plain' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_html' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_textalt' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-}
-
-/**
- * Add a field for the recipient handler choice.
- *
- * @param $type A node type object
- *
- * @ingroup issue
- */
-function simplenews_issue_handler_field_add($type) {
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.handler');
-  $field = field_info_field($field_name);
-  $instance = field_info_instance('node', $field_name, $type->type);
-
-  if (empty($field)) {
-    $field = array(
-      'field_name' => $field_name,
-      'type' => 'list_text',
-      'cardinality' => 1,
-      'entity_types' => array('node'),
-      'translatable' => FALSE,
-      'settings' => array(
-        'allowed_values_function' => 'simplenews_handler_field_allowed_values',
-      ),
-    );
-    $field = field_create_field($field);
-  }
-
-  if (empty($instance)) {
-    // We set the default value to simplenews_subscription
-    $instance = array(
-      'label' => t('Recipient Handler'),
-      'field_name' => $field_name,
-      'bundle' => $type->type,
-      'entity_type' => 'node',
-      'required' => TRUE,
-      'default_value' => array(
-        array(
-          'value' => 'simplenews_subscription',
-        ),
-      ),
-      'widget' => array(
-        'type' => 'options_select',
-      ),
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-}
-
-/**
- * Add a field for the recipient handler settings.
- *
- * @param $type A node type object
- *
- * @ingroup issue
- */
-function simplenews_issue_handler_settings_field_add($type) {
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.handler_settings');
-  $field = field_info_field($field_name);
-  $instance = field_info_instance('node', $field_name, $type->type);
-
-  if (empty($field)) {
-    $field = array(
-      'field_name' => $field_name,
-      'type' => 'text_long',
-      'cardinality' => 1,
-      'entity_types' => array('node'),
-      'translatable' => FALSE,
-      'settings' => array(),
-      'default_formatter' => 'hidden',
-    );
-    $field = field_create_field($field);
-  }
-
-  if (empty($instance)) {
-    // We set the default value to simplenews_subscription
-    $instance = array(
-      'label' => t('Recipient Handle Settings'),
-      'field_name' => $field_name,
-      'bundle' => $type->type,
-      'entity_type' => 'node',
-      'widget' => array(
-        'type' => 'text_textarea',
-      ),
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-}
-
-/**
- * Add field for status
- *
- * @param $type A node type object.
- *
- * @ingroup issue
- */
-function simplenews_issue_status_field_add($type) {
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.issue_status');
-  $field = field_info_field($field_name);
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if (empty($field)) {
-    $field = array(
-      'field_name' => $field_name,
-      'type' => 'number_integer',
-      'cardinality' => 1,
-      'entity_types' => array('node'),
-      'translatable' => FALSE,
-      'settings' => array(),
-    );
-    $field = field_create_field($field);
-  }
-  if (empty($instance)) {
-    $instance = array(
-      'label' => t('Status'),
-      'field_name' => $field_name,
-      'bundle' => $type->type,
-      'entity_type' => 'node',
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'teaser' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_plain' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_html' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_textalt' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-}
-
-/**
- * Add field for status
- *
- * @param $type A node type object.
- *
- * @ingroup issue
- */
-function simplenews_issue_sent_count_field_add($type) {
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.sent_count');
-  $field = field_info_field($field_name);
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if (empty($field)) {
-    $field = array(
-      'field_name' => $field_name,
-      'type' => 'number_integer',
-      'cardinality' => 1,
-      'entity_types' => array('node'),
-      'translatable' => FALSE,
-      'settings' => array(),
-    );
-    $field = field_create_field($field);
-  }
-  if (empty($instance)) {
-    $instance = array(
-      'label' => t('Sent subscriber count'),
-      'field_name' => $field_name,
-      'bundle' => $type->type,
-      'entity_type' => 'node',
-      'display' => array(
-        'default' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'teaser' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_plain' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_html' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-        'email_textalt' => array(
-          'label' => 'hidden',
-          'type' => 'hidden',
-        ),
-      ),
-    );
-    field_create_instance($instance);
-  }
-}
-
-/**
- * Remove fields for newsletter, status and sent count to a note type.
- *
- * @param $type
- *   A node type object.
- *
- * @ingroup issue
- */
-function simplenews_issue_fields_remove($type) {
-  /*$config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.newsletter');
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if ($instance) {
-    field_delete_instance($instance);
-  }
-  $field_name = $config->get('fields.issue_status');
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if ($instance) {
-    field_delete_instance($instance);
-  }
-  $field_name = $config->get('fields.sent_count');
-  $instance = field_info_instance('node', $field_name, $type->type);
-  if ($instance) {
-    field_delete_instance($instance);
-  }*/
-}
-
-/**
- * Get the fieldname(s) from a content type that hold the newsletter.
- *
- * @param $bundle_name
- *   The content type of which to return the field.
- * @return field definition
- *   Field name of the field containing the newsletter, FALSE if no field is
- *   selected.
- *
- * @ingroup issue
- */
-function simplenews_get_newsletter_field($bundle_name) {
-  $fields_info = field_info_fields();
-  $config = \Drupal::config('simplenews.settings');
-  $field_name = $config->get('fields.newsletter');
-  $instances = field_info_instances('node', $bundle_name);
-  if (isset($instances[$field_name])) {
-    return $fields_info[$field_name];
-  }
-  else {
-    return FALSE;
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter().
  *
  * Add checkbox to the content type form to use the content type as newsletter.
  */
-function simplenews_form_node_type_form_alter(&$form, $form_state) {
+function simplenews_form_node_type_form_alter(&$form, FormStateInterface $form_state) {
   // Add option to use content type as simplenews newsletter.
-  /*$form['workflow']['simplenews_content_type'] = array(
+  $form['workflow']['simplenews_content_type'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use as simplenews newsletter'),
-    '#default_value' => variable_get('simplenews_content_type_' . $form['#node_type']->type, 0),
-  );*/
+    '#default_value' => 0,
+  );
 }
 
 /**
@@ -697,129 +232,31 @@ function simplenews_form_node_type_form_alter(&$form, $form_state) {
  */
 function simplenews_form_node_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   // Add Simplenews settings to simplenews newsletter node form.
-  if (in_array($form_state->getFormObject()->getEntity()->getType(), simplenews_get_content_types())) {
-    _simplenews_node_form($form, $form_state);
-  }
-}
+  $node = $form_state->getFormObject()->getEntity();
+  if (in_array($node->getType(), simplenews_get_content_types())) {
+    // Display warning if the node is currently being sent.
+    if (!$node->isNew()) {
+      if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING) {
+        drupal_set_message(t('This newsletter issue is currently being sent. Any changes will be reflected in the e-mails which have not been sent yet.'), 'warning');
+      }
+    }
 
-/**
- * @todo
- */
-function _simplenews_node_form(&$form, $form_state) {
+    if (\Drupal::moduleHandler()->moduleExists('token')) {
+      $form['simplenews_token_help'] = array(
+        '#title' => t('Replacement patterns'),
+        '#type' => 'fieldset',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        '#description' => t('These tokens can be used in all text fields except subject and will be replaced on-screen and in the email.'),
+      );
 
-  // Display warning if the node is currently being sent.
-  if (!$form_state->getFormObject()->getEntity()->isNew()) {
-    $node = $form_state->getFormObject()->getEntity();
-    if ($node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_PENDING) {
-      drupal_set_message(t('This newsletter issue is currently being sent. Any changes will be reflected in the e-mails which have not been sent yet.'), 'warning');
+      $form['simplenews_token_help']['browser'] = array(
+        '#theme' => 'token_tree',
+        '#token_types' => array('simplenews-newsletter', 'simplenews-subscriber', 'node'),
+        '#dialog' => TRUE,
+      );
     }
   }
-
-  if (\Drupal::moduleHandler()->moduleExists('token')) {
-    $form['simplenews_token_help'] = array(
-      '#title' => t('Replacement patterns'),
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#description' => t('These tokens can be used in all text fields except subject and will be replaced on-screen and in the email.'),
-    );
-
-    $form['simplenews_token_help']['browser'] = array(
-      '#theme' => 'token_tree',
-      '#token_types' => array('simplenews-newsletter', 'simplenews-subscriber', 'node'),
-      '#dialog' => TRUE,
-    );
-  }
-}
-
-/**
- * Implements hook_entity_info().
- */
-function simplenews_entity_info() {
-  return array(
-    'simplenews_newsletter' => array(
-      'label' => t('Simplenews newsletter'),
-      'entity class' => 'SimplenewsNewsletter',
-      'controller class' => 'SimplenewsNewsletterController',
-      'metadata controller class' => 'SimplenewsNewsletterMetadataController',
-      'views controller class' => 'EntityDefaultViewsController',
-      'base table' => 'simplenews_newsletter',
-      'fieldable' => TRUE,
-      'entity keys' => array(
-        'id' => 'newsletter_id',
-        'label' => 'name',
-      ),
-      'label callback' => 'entity_class_label',
-      'uri callback' => 'entity_class_uri',
-      'view modes' => array(
-        'full' => array(
-          'label' => t('Default'),
-          'custom settings' => FALSE,
-        ),
-      ),
-      'access callback' => 'simplenews_newsletter_access',
-    ),
-    'simplenews_subscriber' => array(
-      'label' => t('Simplenews subscriber'),
-      'entity class' => 'SimplenewsSubscriber',
-      'controller class' => 'SimplenewsSubscriberController',
-      'metadata controller class' => 'SimplenewsSubscriberMetadataController',
-      'views controller class' => 'EntityDefaultViewsController',
-      'base table' => 'simplenews_subscriber',
-      'fieldable' => TRUE,
-      'entity keys' => array(
-        'id' => 'snid',
-        'label' => 'mail',
-      ),
-      'label callback' => 'entity_class_label',
-      'uri callback' => 'entity_class_uri',
-      'view modes' => array(
-        'full' => array(
-          'label' => t('Default'),
-          'custom settings' => FALSE,
-        ),
-      ),
-      'access callback' => 'simplenews_subscriber_access',
-    ),
-  );
-}
-
-/**
- * Entity access callback for simplenews newsletter entity.
- */
-function simplenews_newsletter_access($op, SimplenewsNewsletter $newsletter, $account = NULL) {
-  if ($op == 'view') {
-    return TRUE;
-  }
-  return user_access('administer newsletters');
-}
-
-/**
- * Entity access callback for simplenews newsletter entity.
- */
-function simplenews_subscriber_access($op, SimplenewsSubscriber $subscriber, $account = NULL) {
-  return user_access('administer simplenews subscriptions');
-}
-
-/**
- * Implements hook_entity_info_alter().
- */
-function simplenews_entity_info_alter(&$info) {
-  // Add the 'Plain', 'HTML' and 'Text alternative' view mode for nodes in email.
-  $info['node']['view modes'] += array(
-    'email_plain' => array(
-      'label' => t('Email: Plain'),
-      'custom settings' => FALSE,
-    ),
-    'email_html' => array(
-      'label' => t('Email: HTML'),
-      'custom settings' => FALSE,
-    ),
-    'email_textalt' => array(
-      'label' => t('Email: HTML text alternative'),
-      'custom settings' => FALSE,
-    ),
-  );
 }
 
 /**
@@ -1014,47 +451,12 @@ function simplenews_user_delete(UserInterface $account) {
 }
 
 /**
- * Implements hook_user_categories().
- */
-function simplenews_user_categories() {
-  $output[] = array(
-    'name' => 'simplenews',
-    'title' => t('Newsletters'),
-    'weight' => 10,
-    'access callback' => 'simplenews_subscription_edit_access',
-  );
-  return $output;
-}
-
-/**
- * Access callback for user newsletter editing.
- */
-function simplenews_subscription_edit_access($account) {
-  $user = \Drupal::currentUser();
-  // Disallow anonymous.
-  if (!$account || $account->id() == 0) {
-    return FALSE;
-  }
-  // Allow edit own subscription.
-  if ($user->id() == $account->id()) {
-    if ($account->hasPermission('subscribe to newsletters')) {
-      return TRUE;
-    }
-  }
-  // Allow administrator to edit account's subscription.
-  if ($user->hasPermission('administer users')) {
-    return TRUE;
-  }
-  return FALSE;
-}
-
-/**
  * Implements hook_user_view().
  */
 function simplenews_user_view(array &$build, UserInterface $account, EntityViewDisplayInterface $display, $view_mode, $langcode) {
   $user = \Drupal::currentUser();
   if ($user->id() == $account->id() || $account->hasPermission('administer users')) {
-    $account->build['simplenews'] = array(
+    $build['simplenews'] = array(
       '#type' => 'user_profile_category',
       '#title' => t('Newsletters'),
     );
@@ -1082,39 +484,20 @@ function simplenews_user_view(array &$build, UserInterface $account, EntityViewD
     // When a user has no permission to subscribe and is not subscribed
     // we do not display the 'no subscriptions' message.
     if ($account->hasPermission('subscribe to newsletters') || $links != t('None')) {
-      $account->build['simplenews']['subscriptions'] = array(
+      $build['simplenews']['subscriptions'] = array(
         '#type' => 'user_profile_item',
         '#title' => t('Subscribed to'),
         '#markup' => $links,
       );
     }
     if ($account->hasPermission('subscribe to newsletters')) {
-      $account->build['simplenews']['my_newsletters'] = array(
+      $build['simplenews']['my_newsletters'] = array(
         '#type' => 'user_profile_item',
         '#title' => '',
         '#markup' => t('Manage <a href="!url">subscriptions</a>', array('!url' => \Drupal::url('simplenews.newsletter_subscriptions_user', array('user' => $account->id())))),
       );
     }
   }
-}
-
-/**
- * Implements hook_forms().
- *
- * All form blocks are build using simplenews_block_form().
- * hook_forms() is required to provide unique form id for each block form.
- */
-function simplenews_forms($form_id, $args) {
-  $forms = array();
-  $match = preg_match('/simplenews_block_form_(\d+)/', $form_id, $matches);
-  if ($match) {
-    module_load_include('inc', 'simplenews', 'includes/simplenews.subscription');
-    $forms['simplenews_block_form_' . $matches[1]] = array(
-      'callback' => 'simplenews_block_form',
-      'callback arguments' => array($matches[1]),
-    );
-  }
-  return $forms;
 }
 
 /**
@@ -1301,46 +684,6 @@ function simplenews_get_subscriptions_by_list($newsletter_id) {
     ->condition('ss.newsletter_id', $newsletter_id)
     ->condition('ss.status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
   return $query->execute()->fetchAllAssoc('mail');
-}
-
-/**
- * Update subscriber objects in the database.
- *
- * @param $conditions
- *   Array of selection conditions. e.g. array('newsletter_id' => 5, 'snid' => 12).
- * @param $data
- *   Associative array of database fields to be updated.
- *
- * @todo Replace with simplenews_subscription_save() ?
- *
- * @ingroup subscription
- */
-function simplenews_subscription_update($conditions = array(), $data) {
-  $query = db_update('simplenews_subscription');
-  foreach ($conditions as $key => $condition) {
-    $query->condition($key, $condition);
-  }
-  $query->fields($data);
-  $query->execute();
-}
-
-/**
- * Save a subscription.
- *
- * @ingroup subscription
- */
-function simplenews_subscription_save($subscription) {
-  db_merge('simplenews_subscription')
-    ->key(array('newsletter_id' => $subscription->newsletter_id))
-    ->key(array('snid' => $subscription->snid))
-    ->fields(array(
-      'snid' => $subscription->snid,
-      'newsletter_id' => $subscription->newsletter_id,
-      'status' => $subscription->status,
-      'timestamp' => $subscription->timestamp,
-      'source' => $subscription->source,
-    ))
-    ->execute();
 }
 
 /**
@@ -1546,7 +889,7 @@ function simplenews_mail($key, &$message, $params) {
   // Debug message of node and test emails is set in simplenews_mail_mail().
   $config = \Drupal::config('simplenews.settings');
   if ($config->get('mail.debug') && $key != 'node' && $key != 'test') {
-    watchdog('simplenews', 'Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']), WATCHDOG_DEBUG);
+    \Drupal::logger('simplenews')->debug('Outgoing email. Message type: %type<br />Subject: %subject<br />Recipient: %to', array('%type' => $key, '%to' => $message['to'], '%subject' => $message['subject']));
   }
 }
 
@@ -1650,18 +993,6 @@ function simplenews_newsletter_get_all() {
  */
 function simplenews_newsletter_load_multiple($ids = NULL, $reset = FALSE) {
   return entity_load_multiple('simplenews_newsletter', $ids, $reset);
-}
-
-/**
- * Delete one or many newsletter from the database.
- *
- * @param $id
- *   Simplenews newsletter ID or Array of Simplenews newsletter IDs.
- *
- * @ingroup newsletter
- */
-function simplenews_newsletter_delete($id) {
-  entity_delete('simplenews_newsletter', $id);
 }
 
 /**
@@ -1916,69 +1247,6 @@ function simplenews_theme() {
 }
 
 /**
- * Process variables to format the simplenews block.
- *
- * Collect data and apply access restrictions.
- *
- * @see simplenews-block.tpl.php
- *
- * @ingroup theming
- */
-function template_preprocess_simplenews_block(&$variables) {
-  global $user;
-  $newsletter_id = $variables['newsletter_id'];
-  $newsletter = simplenews_newsletter_load($newsletter_id);
-
-  // Set default values in case of missing permission.
-  $variables['form'] = '';
-  $variables['subscription_link'] = '';
-  $variables['newsletter_link'] = '';
-  $variables['issue_list'] = '';
-  $variables['rssfeed'] = '';
-
-  // Block content variables
-  $variables['message'] = String::checkPlain(variable_get('simplenews_block_m_' . $newsletter_id, t('Stay informed on our latest news!')));
-  if (user_access('subscribe to newsletters')) {
-    module_load_include('inc', 'simplenews', 'simplenews.subscription');
-    $variables['form'] = drupal_get_form('simplenews_block_form_' . $newsletter_id);
-    $variables['subscription_link'] = l(t('Manage my subscriptions'), 'newsletter/subscriptions');
-  }
-  // @todo replace path
-  $variables['newsletter_link'] = l(t('Previous issues'), 'newsletter/' . $newsletter_id);
-  $recent = simplenews_recent_newsletters($newsletter_id, variable_get('simplenews_block_i_' . $newsletter_id, 5));
-  $variables['issue_list'] = '';
-  if ($recent) {
-    $variables['issue_list'] = theme('item_list', array('items' => $recent, 'title' => t('Previous issues'), 'type' => 'ul'));
-  }
-  $variables['rssfeed'] = theme('feed_icon', array('url' => 'newsletter/feed/' . $newsletter_id, 'title' => t('@newsletter feed', array('@newsletter' => $newsletter->name))));
-
-  // Block content control variables
-  $variables['use_form'] = variable_get('simplenews_block_f_' . $newsletter_id, 1);
-  $variables['use_issue_link'] = variable_get('simplenews_block_l_' . $newsletter_id, 1);
-  $variables['use_issue_list'] = variable_get('simplenews_block_i_status_' . $newsletter_id, 0);
-  $variables['use_rss'] = variable_get('simplenews_block_r_' . $newsletter_id, 1);
-
-  // Additional variables
-  $variables['subscribed'] = empty($user->uid) ? FALSE : (simplenews_user_is_subscribed($user->getEmail(), $newsletter_id) == TRUE);
-  $variables['user'] = !empty($user->uid);
-}
-
-/**
- * Process variables for the multi subscription block.
- *
- * $variables are empty:
- *
- * @see simplenews-multi-block.tpl.php
- *
- * @ingroup theming
- */
-function template_preprocess_simplenews_multi_block(&$variables) {
-  // Block content variables
-  $variables['message'] = String::checkPlain(variable_get('simplenews_block_m_multiple', t('Select the newsletter(s) to which you want to subscribe or unsubscribe.')));
-  $variables['form'] = drupal_get_form('simplenews_subscriptions_multi_block_form');
-}
-
-/**
  * @todo
  *
  * @see template_preprocess_field()
@@ -2117,13 +1385,6 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 }
 
 /**
- * Access callback; Access to Newsletter tab page.
- */
-function simplenews_node_tab_access(NodeInterface $node) {
-  return simplenews_check_node_types($node->getType()) && \Drupal::currentUser()->hasPermission('send newsletter');
-}
-
-/**
  * Update the sent status of a node.
  *
  * If the node part of a translation set, all corresponding translations are
@@ -2142,9 +1403,9 @@ function simplenews_issue_update_sent_status(NodeInterface $node, $status = SIMP
 }
 
 /**
- * Implements hook_field_extra_fields().
+ * Implements hook_entity_extra_fields().
  */
-function simplenews_field_extra_fields() {
+function simplenews_entity_extra_fields() {
   $return['user']['user'] = array(
     'display' => array(
       'simplenews' => array(
@@ -2169,26 +1430,6 @@ function simplenews_node_access(NodeInterface $node, $op, $account) {
       drupal_set_message(t('You can\'t delete this newsletter because it has not been sent to all its subscribers.'), 'warning');
       return AccessResult::forbidden()->cacheUntilEntityChanges($node);
     }
-  }
-}
-
-/**
- * Implements hook_cronapi().
- *
- * As initiated by elysia_cron.
- * http://drupal.org/project/elysia_cron
- * */
-function simplenews_cronapi($op) {
-
-  switch ($op) {
-    case 'list':
-      return array(
-        'simplenews_cron' => t('Process simplenews mail spool'),
-      );
-    case 'rule':
-      return '5 * * * *';
-    case 'execute':
-      break;
   }
 }
 
@@ -2483,26 +1724,6 @@ function simplenews_confirmation_get_changes_list(Subscriber $subscriber, $chang
     $changes_list[$newsletter_id] = \Drupal::token()->replace($line, $newsletter_context, array('sanitize' => FALSE));
   }
   return $changes_list;
-}
-
-/**
- * Implements hook_field_access().
- */
-function simplenews_field_access($op, $field, $entity_type, $entity, $account) {
-  // Deny access to the issue status and sent count fields, these are used for
-  // data storage only.
-  if (in_array($field['field_name'], array('simplenews_issue_status', 'simplenews_sent_count', 'simplenews_handler_settings', 'simplenews_handler'))) {
-    return FALSE;
-  }
-}
-
-/**
- * Getter callback for simplenews_subscriptions property.
- *
- * The simplenews_subscriptions property is defined in simplenews.info.inc
- */
-function simplenews_property_simplenews_subscriptions_getter_callback($item) {
-  return $item->newsletter_ids;
 }
 
 /**

@@ -38,14 +38,17 @@ class ConfirmationController extends ControllerBase {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
-    $noindex = array(
-      '#tag' => 'meta',
-      '#attributes' => array(
-        'name' => 'robots',
-        'content' => 'noindex',
+    $noindex['#attached']['html_head'][] = array(
+      array(
+        '#tag' => 'meta',
+        '#attributes' => array(
+          'name' => 'robots',
+          'content' => 'noindex',
+        ),
       ),
+      'simplenews-noindex',
     );
-    drupal_add_html_head($noindex, 'simplenews-noindex');
+    drupal_render($noindex);
 
     $subscriber = simplenews_subscriber_load($snid);
 
@@ -133,14 +136,17 @@ class ConfirmationController extends ControllerBase {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
-    $noindex = array(
-      '#tag' => 'meta',
-      '#attributes' => array(
-        'name' => 'robots',
-        'content' => 'noindex',
+    $noindex['#attached']['html_head'][] = array(
+      array(
+        '#tag' => 'meta',
+        '#attributes' => array(
+          'name' => 'robots',
+          'content' => 'noindex',
+        ),
       ),
+      'simplenews-noindex',
     );
-    drupal_add_html_head($noindex, 'simplenews-noindex');
+    drupal_render($noindex);
 
     $subscriber = simplenews_subscriber_load($snid);
     if ($subscriber && $hash == simplenews_generate_hash($subscriber->getMail(), $action, $timestamp)) {

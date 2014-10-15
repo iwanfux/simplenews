@@ -89,7 +89,7 @@ class SimplenewsSubscriptionBlock extends BlockBase implements ContainerFactoryP
     // By default, the block will contain 1 newsletter.
     return array(
       'newsletters' => array(),
-      'message' => t('Select the newsletter(s) to which you want to subscribe or unsubscribe.'),
+      'message' => t('Stay informed - subscribe to our newsletter.'),
       'form' => 1,
       'issue_status' => 0,
       'issues' => 5,

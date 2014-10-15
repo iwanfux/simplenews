@@ -19,6 +19,8 @@ use Drupal\simplenews\Source\Spool;
 /**
  * Add the newsletter node to the mail spool.
  *
+ * The caller is responsible for saving the changed node entity.
+ *
  * @param $node
  *   The newsletter node to be sent.
  *
@@ -42,7 +44,6 @@ function simplenews_add_node_to_spool($node) {
 
   module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
   $node->simplenews_issue->subscribers = simplenews_count_subscriptions($node->simplenews_issue->target_id);
-  $node->save();
 
   db_insert('simplenews_mail_spool')
     ->from($select)

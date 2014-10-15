@@ -1,0 +1,8 @@
+id: node.email_textalt
+label: 'Email: HTML text alternative'
+status: false
+cache: true
+targetEntityType: node
+dependencies:
+  module:
+    - node

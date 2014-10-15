@@ -58,7 +58,7 @@ class SubscriberForm extends SubscriberFormBase {
       else {
         $form['language']['langcode'] = array(
           '#type' => 'select',
-          '#default_value' => $subscriber->language()->id,
+          '#default_value' => $subscriber->language()->getId(),
           '#options' => $language_options,
           '#required' => TRUE,
         );
