@@ -148,17 +148,20 @@ abstract class SimplenewsTestBase extends WebTestBase {
   }
 
   /**
-   * Returns the body content of the latest sent mail.
+   * Returns the body content of mail that has been sent.
    *
    * @param int $offset
-   *   (optional) Specify to get the n:th last mail.
+   *   Zero-based ordinal number of a sent mail.
    *
-   * @return string
-   *   The body of the latest sent mail.
+   * @return string|bool
+   *   The body of the mail, or FALSE if the offset is invalid.
    */
-  protected function lastMailBody($offset = 0) {
+  protected function getMail($offset) {
     $mails = $this->drupalGetMails();
-    return $mails[count($mails) - $offset - 1]['body'];
+    if ($this->assertTrue(isset($mails[$offset]), t('Valid mails offset %offset (%count mails sent).', array('%offset' => $offset, '%count' => count($mails))))) {
+      return $mails[$offset]['body'];
+    }
+    return FALSE;
   }
 
   /**
@@ -166,16 +169,16 @@ abstract class SimplenewsTestBase extends WebTestBase {
    *
    * @param string $needle
    *   The string to find.
+   * @param int $offset
+   *   Specify to check the n:th last mail.
    * @param bool $exist
    *   (optional) Whether the string is expected to be found or not.
-   * @param int $offset
-   *   (optional) Specify to check the n:th last mail.
    *
    * @return bool
    *   Whether the string was found, or the inverted if $exist is FALSE.
    */
-  protected function assertMailText($needle, $exist = TRUE, $offset = 0) {
-    $body = preg_replace('/\s+/', ' ', $this->lastMailBody($offset));
+  protected function assertMailText($needle, $offset, $exist = TRUE) {
+    $body = preg_replace('/\s+/', ' ', $this->getMail($offset));
     $pos = strpos($body, $needle);
     return $this->assertEqual($exist, $pos !== FALSE, "$needle found in mail");
   }
