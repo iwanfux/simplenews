@@ -253,7 +253,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function submitSubscribe(array $form, FormStateInterface $form_state) {
     simplenews_confirmation_combine(TRUE);
-    foreach ($this->getSelectedNewsletters($form_state) as $newsletter_id) {
+    foreach ($this->extractNewsletterIds($form_state, TRUE) as $newsletter_id) {
       $confirm = simplenews_require_double_opt_in($newsletter_id, $this->entity->getUserId());
       simplenews_subscribe($this->entity->getMail(), $newsletter_id, $confirm, 'website');
     }
@@ -271,7 +271,7 @@ abstract class SubscriberFormBase extends ContentEntityForm {
    */
   public function submitUnsubscribe(array $form, FormStateInterface $form_state) {
     simplenews_confirmation_combine(TRUE);
-    foreach ($this->getSelectedNewsletters($form_state) as $newsletter_id) {
+    foreach ($this->extractNewsletterIds($form_state, TRUE) as $newsletter_id) {
       $confirm = simplenews_require_double_opt_in($newsletter_id, $this->entity->getUserId());
       simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, $confirm, 'website');
     }
@@ -290,28 +290,28 @@ abstract class SubscriberFormBase extends ContentEntityForm {
   public function submitUpdate(array $form, FormStateInterface $form_state) {
     // We first subscribe, then unsubscribe. This prevents deletion of
     // subscriptions when unsubscribed from the newsletter.
-    foreach ($this->getSelectedNewsletters($form_state, FALSE) as $newsletter_id) {
+    foreach ($this->extractNewsletterIds($form_state, TRUE) as $newsletter_id) {
       simplenews_subscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
     }
-    foreach ($this->getSelectedNewsletters($form_state, TRUE) as $newsletter_id) {
+    foreach ($this->extractNewsletterIds($form_state, FALSE) as $newsletter_id) {
       simplenews_unsubscribe($this->entity->getMail(), $newsletter_id, FALSE, 'website');
     }
     drupal_set_message($this->getSubmitMessage($form_state, static::SUBMIT_UPDATE, FALSE));
   }
 
   /**
-   * Extracts the IDs of the newsletters selected in the subscriptions widget.
+   * Extracts selected/deselected newsletters IDs from the subscriptions widget.
    *
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   Form state object.
-   * @param bool $deselected
-   *   (optional) If TRUE, return deselected newsletters instead.
+   * @param bool $selected
+   *   Whether to extract selected (TRUE) or deselected (FALSE) newsletter IDs.
    *
-   * @return array
-   *   Selected newsletter IDs.
+   * @return string[]
+   *   IDs of selected/deselected newsletters.
    */
-  protected function getSelectedNewsletters(FormStateInterface $form_state, $deselected = FALSE) {
+  protected function extractNewsletterIds(FormStateInterface $form_state, $selected) {
     return $this->getSubscriptionWidget($form_state)
-      ->getSelectedNewsletterIds($form_state->getValue('subscriptions'), $deselected);
+      ->extractNewsletterIds($form_state->getValue('subscriptions'), $selected);
   }
 }

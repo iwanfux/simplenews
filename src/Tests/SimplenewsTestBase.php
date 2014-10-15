@@ -88,8 +88,8 @@ abstract class SimplenewsTestBase extends WebTestBase {
    * Email addresses are case sensitive, simplenews system should handle with
    * this correctly.
    */
-  function randomEmail($number = 4, $domain = 'example.com') {
-    $mail = Unicode::strtolower($this->randomMachineName($number) . '@' . $domain);
+  function randomEmail($number = 4, $prefix = 'simpletest_', $domain = 'example.com') {
+    $mail = Unicode::strtolower($this->randomMachineName($number, $prefix) . '@' . $domain);
     return $mail;
   }
 

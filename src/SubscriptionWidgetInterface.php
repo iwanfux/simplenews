@@ -40,16 +40,16 @@ interface SubscriptionWidgetInterface extends WidgetInterface {
   public function isHidden();
 
   /**
-   * Returns the IDs of the selected newsletters.
+   * Returns the IDs of the selected or deselected newsletters.
    *
    * @param array $form_state_value
    *   The value of the widget as returned by FormStateInterface::getValue().
-   * @param bool $deselected
-   *   If TRUE, return deselected newsletters instead.
+   * @param bool $selected
+   *   Whether to extract selected (TRUE) or deselected (FALSE) newsletter IDs.
    *
    * @return string[]
-   *   IDs of selected (or deselected) newsletters.
+   *   IDs of selected/deselected newsletters.
    */
-  public function getSelectedNewsletterIds($form_state_value, $deselected = FALSE);
+  public function extractNewsletterIds($form_state_value, $selected);
 
 }

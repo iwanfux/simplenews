@@ -114,11 +114,11 @@ class SubscriptionWidget extends OptionsButtonsWidget implements SubscriptionWid
   /**
    * {@inheritdoc}
    */
-  public function getSelectedNewsletterIds($form_state_value, $deselected = FALSE) {
+  public function extractNewsletterIds($form_state_value, $selected = TRUE) {
     $selected_ids = array_map(function($item) {
       return $item['target_id'];
     }, $form_state_value);
-    return $deselected ? array_diff($this->newsletterIds, $selected_ids) : $selected_ids;
+    return $selected ? $selected_ids : array_diff($this->newsletterIds, $selected_ids);
   }
 
 }
