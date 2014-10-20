@@ -1,0 +1,10 @@
+id: simplenews_pending
+label: 'Simplenews spool size'
+description: 'Pending items in the simplenews spool.'
+category: Simplenews
+sensor_id: simplenews_pending
+value_label: 'Pending items'
+status: FALSE
+dependencies:
+  module:
+    - simplenews

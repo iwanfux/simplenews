@@ -9,10 +9,7 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\Component\Utility\String;
 use Drupal\node\Entity\Node;
-use Drupal\simplenews\Entity\Newsletter;
-use Drupal\simplenews\Entity\Subscriber;
 
 /**
  * Test cases for creating and sending newsletters.

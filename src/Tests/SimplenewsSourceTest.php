@@ -10,6 +10,7 @@
 namespace Drupal\simplenews\Tests;
 
 use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
 use Drupal\node\Entity\Node;
 use Drupal\simplenews\Entity\Newsletter;
 use \Drupal\simplenews\Source\SourceTest;
@@ -247,10 +248,10 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
       $this->assertEqual(1, preg_match_all('/Mail token/', $mail['params']['plaintext'], $matches));
 
       // Make sure formatted address is properly encoded.
-      $from = '"' . addslashes(mime_header_encode($edit_newsletter['from_name'])) . '" <' . $edit_newsletter['from_address'] . '>';
+      $from = '"' . addslashes(Unicode::mimeHeaderEncode($edit_newsletter['from_name'])) . '" <' . $edit_newsletter['from_address'] . '>';
       $this->assertEqual($from, $mail['reply-to']);
       // And make sure it won't get encoded twice.
-      $this->assertEqual($from, mime_header_encode($mail['reply-to']));
+      $this->assertEqual($from, Unicode::mimeHeaderEncode($mail['reply-to']));
 
       // @todo: Improve this check, there are currently two spaces, not sure
       // where they are coming from.

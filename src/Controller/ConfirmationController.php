@@ -38,14 +38,16 @@ class ConfirmationController extends ControllerBase {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
-    $noindex = array(
-      '#tag' => 'meta',
-      '#attributes' => array(
-        'name' => 'robots',
-        'content' => 'noindex',
+    $attached['html_head'][] = array(
+      array(
+        '#tag' => 'meta',
+        '#attributes' => array(
+          'name' => 'robots',
+          'content' => 'noindex',
+        ),
       ),
+      'simplenews-noindex',
     );
-    drupal_add_html_head($noindex, 'simplenews-noindex');
 
     $subscriber = simplenews_subscriber_load($snid);
 
@@ -62,12 +64,16 @@ class ConfirmationController extends ControllerBase {
         $context = array(
           'simplenews_subscriber' => $subscriber,
         );
-        return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', 'subscribe_combined', $context);
+        $build = \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', 'subscribe_combined', $context);
+        $build['#attached'] = $attached;
+        return $build;
       }
       // When not called with immediate parameter the user will be directed to the
       // (un)subscribe confirmation page.
       if (!$immediate) {
-        return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmMultiForm', $subscriber);
+        $build = \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmMultiForm', $subscriber);
+        $build['#attached'] = $attached;
+        return $build;
       }
       else {
         // Redirect and display message if no changes are available.
@@ -133,14 +139,16 @@ class ConfirmationController extends ControllerBase {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
-    $noindex = array(
-      '#tag' => 'meta',
-      '#attributes' => array(
-        'name' => 'robots',
-        'content' => 'noindex',
+    $attached['html_head'][] = array(
+      array(
+        '#tag' => 'meta',
+        '#attributes' => array(
+          'name' => 'robots',
+          'content' => 'noindex',
+        ),
       ),
+      'simplenews-noindex',
     );
-    drupal_add_html_head($noindex, 'simplenews-noindex');
 
     $subscriber = simplenews_subscriber_load($snid);
     if ($subscriber && $hash == simplenews_generate_hash($subscriber->getMail(), $action, $timestamp)) {
@@ -154,17 +162,23 @@ class ConfirmationController extends ControllerBase {
           'newsletter' => $newsletter,
         );
         $token = $action == 'add' ? 'subscribe' : 'unsubscribe';
-        return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', $token, $context);
+        $build = \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\RequestHashForm', $token, $context);
+        $build['#attached'] = $attached;
+        return $build;
       }
       // When called with additional arguments the user will be directed to the
       // (un)subscribe confirmation page. The additional arguments will be passed
       // on to the confirmation page.
       if (!$immediate) {
         if ($action == 'remove') {
-          return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmRemovalForm', $subscriber->getMail(), $newsletter);
+          $build = \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmRemovalForm', $subscriber->getMail(), $newsletter);
+          $build['#attached'] = $attached;
+          return $build;
         }
         elseif ($action == 'add') {
-          return \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmAddForm', $subscriber->getMail(), $newsletter);
+          $build = \Drupal::formBuilder()->getForm('\Drupal\simplenews\Form\ConfirmAddForm', $subscriber->getMail(), $newsletter);
+          $build['#attached'] = $attached;
+          return $build;
         }
       }
       else {
