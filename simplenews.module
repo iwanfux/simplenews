@@ -208,7 +208,7 @@ function simplenews_get_content_types() {
 
   if (!$simplenews_types) {
     $field_map = \Drupal::entityManager()->getFieldMapByFieldType('simplenews_issue');
-    $simplenews_types = $field_map['node']['simplenews_issue']['bundles'];
+    $simplenews_types = $field_map['node']['simplenews_issue']['bundles'] ?: array();
   }
   return $simplenews_types;
 }
@@ -349,7 +349,8 @@ function simplenews_user_profile_form_submit($form, FormStateInterface $form_sta
 function simplenews_user_create(UserInterface $account) {
   // Copy values for shared fields from existing subscriber.
   $mail = $account->getEmail();
-  if ($mail && $subscriber = simplenews_subscriber_load_by_mail($mail)) {
+  $sync = \Drupal::config('simplenews.settings')->get('subscriber.sync_account');
+  if ($sync && $mail && $subscriber = simplenews_subscriber_load_by_mail($mail)) {
     foreach ($subscriber->getUserSharedFields($account) as $field_name) {
       $account->set($field_name, $subscriber->get($field_name)->getValue());
     }
@@ -411,7 +412,9 @@ function simplenews_user_presave(UserInterface $account) {
   $syncing = &drupal_static(__FUNCTION__, FALSE);
 
   /** @var \Drupal\simplenews\Entity\Subscriber $subscriber */
-  $subscriber = simplenews_subscriber_load_by_uid($account->id());
+  $subscriber = $account->isNew() ?
+    simplenews_subscriber_load_by_mail($account->getEmail()) :
+    simplenews_subscriber_load_by_uid($account->id());
   if ($subscriber && !$subscriber->isSyncing()) {
     $syncing = TRUE;
     // We only process existing accounts.
@@ -425,8 +428,10 @@ function simplenews_user_presave(UserInterface $account) {
     }
 
     // Copy values for shared fields to existing subscriber.
-    foreach ($subscriber->getUserSharedFields($account) as $field_name) {
-      $subscriber->set($field_name, $account->get($field_name)->getValue());
+    if (\Drupal::config('simplenews.settings')->get('subscriber.sync_account')) {
+      foreach ($subscriber->getUserSharedFields($account) as $field_name) {
+        $subscriber->set($field_name, $account->get($field_name)->getValue());
+      }
     }
 
     $subscriber->save();
@@ -435,25 +440,11 @@ function simplenews_user_presave(UserInterface $account) {
 }
 
 /**
- * Implements hook_user_cancel().
- */
-function simplenews_user_cancel($edit, $account, $method) {
-  // Deactivate subscriber when account is disabled via cancel user.
-
-  if ($account) {
-    $query = db_update('simplenews_subscriber')
-      ->fields(array('activated' => SIMPLENEWS_SUBSCRIPTION_INACTIVE))
-      ->condition('uid', $account->uid)
-      ->execute();
-  }
-}
-
-/**
  * Implements hook_user_delete().
  */
 function simplenews_user_delete(UserInterface $account) {
   // Delete subscription when account is removed.
-  $subscriber = simplenews_subscriber_load_by_mail($account->getEmail());
+  $subscriber = simplenews_subscriber_load_by_uid($account->id());
   if ($subscriber) {
     $subscriber->delete();
   }
@@ -753,13 +744,16 @@ function simplenews_subscriber_load_by_mail($mail) {
  *   Subscriber user id.
  *
  * @return Subscriber
- *   Newsletter subscriber entity, FALSE if subscriber does not exist.
+ *   Newsletter subscriber entity, NULL if subscriber does not exist.
  *
  * @ingroup subscriber
  */
 function simplenews_subscriber_load_by_uid($uid) {
+  if (!$uid) {
+    return NULL;
+  }
   $subscribers = entity_load_multiple_by_properties('simplenews_subscriber', array('uid' => $uid));
-  return $subscribers ? reset($subscribers) : FALSE;
+  return $subscribers ? reset($subscribers) : NULL;
 }
 
 /**
@@ -1444,11 +1438,11 @@ function simplenews_node_access(NodeInterface $node, $op, $account) {
  *
  * @ingroup newsletter
  */
-function simplenews_require_double_opt_in($newsletter_id, $account) {
+function simplenews_require_double_opt_in($newsletter_id, $uid) {
   $user = \Drupal::currentUser();
-  // If email belongs to the current registered user, don't send confirmation.
+  // If user is currently logged in, don't send confirmation.
   // Other addresses receive a confirmation if double opt-in is selected.
-  if ($user && $account && $account->id() && $user->id() && $account->id() == $user->id()) {
+  if ($user->id() && $uid && $user->id() == $uid) {
     return FALSE;
   }
   else {
