@@ -14,6 +14,7 @@ use Drupal\simpletest\KernelTestBase;
  * Tests for simplenews sensor.
  *
  * @group simplenews
+ * @requires module monitoring
  */
 class SimplenewsMonitoringTest extends KernelTestBase {
 
@@ -22,12 +23,15 @@ class SimplenewsMonitoringTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('simplenews', 'monitoring', 'monitoring_test');
+  public static $modules = array('node', 'user', 'field', 'text', 'simplenews', 'monitoring', 'monitoring_test');
 
   /**
    * Tests individual sensors.
    */
   function testSensors() {
+    $this->installConfig(array('simplenews'));
+    $this->installEntitySchema('monitoring_sensor_result');
+    $this->installSchema('simplenews', 'simplenews_mail_spool');
 
     // No spool items - status OK.
     $result = $this->runSensor('simplenews_pending');
@@ -36,8 +40,9 @@ class SimplenewsMonitoringTest extends KernelTestBase {
     // Crate a spool item in state pending.
     simplenews_save_spool(array(
       'mail' => 'mail@example.com',
-      'nid' => 1,
-      'tid' => 1,
+      'entity_type' => 'node',
+      'entity_id' => 1,
+      'newsletter_id' => 'default',
       'snid' => 1,
       'data' => array('data' => 'data'),
     ));

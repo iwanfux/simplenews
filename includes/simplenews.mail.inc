@@ -362,8 +362,9 @@ function simplenews_save_spool($spool) {
   db_insert('simplenews_mail_spool')
     ->fields(array(
       'mail' => $spool['mail'],
-      'nid' => $spool['nid'],
-      'tid' => $spool['tid'],
+      'entity_type' => $spool['entity_type'],
+      'entity_id' => $spool['entity_id'],
+      'newsletter_id' => $spool['newsletter_id'],
       'snid' => $spool['snid'],
       'status' => $status,
       'timestamp' => $time,

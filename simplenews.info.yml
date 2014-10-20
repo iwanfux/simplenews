@@ -9,4 +9,6 @@ dependencies:
 - entity_reference
 - field
 - options
+test_dependencies:
+- monitoring
 configure: simplenews.admin

@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\monitoring\Plugin\monitoring\Sensor\SensorSimplenewsPending.
+ * Contains \Drupal\simplenews\Plugin\monitoring\Sensor\SensorSimplenewsPending.
  */
 
 namespace Drupal\simplenews\Plugin\monitoring\Sensor;
