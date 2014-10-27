@@ -14,7 +14,7 @@ settings:
   handler_settings:
     target_bundles: {  }
 dependencies:
-  entity:
+  config:
     - field.storage.node.issue
     - node.type.simplenews
 field_type: simplenews_issue

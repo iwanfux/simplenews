@@ -20,6 +20,6 @@ settings:
   handler_settings:
     target_bundles: {  }
 dependencies:
-  entity:
+  config:
     - field.storage.simplenews_subscriber.subscriptions
 field_type: simplenews_subscription

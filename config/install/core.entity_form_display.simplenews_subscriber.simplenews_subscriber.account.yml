@@ -1,7 +1,7 @@
 langcode: und
 status: true
 dependencies:
-  entity:
+  config:
     - core.entity_form_mode.simplenews_subscriber.account
     - field.field.simplenews_subscriber.simplenews_subscriber.subscriptions
   module:

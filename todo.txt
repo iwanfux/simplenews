@@ -12,5 +12,8 @@ simplenews_issue_send: convert to action
 simplenews_get_source_caches: convert to plugin
 simplenews_impersonate_user/simplenews_revert_user: use core method when commited
 simplenews.mail.inc: convert to services
-simplenews: replace subscirber and issue overview with views
 simplenews_subscription_delete: redo in a proper way
+simplenews:
+- replace subscriber and issue overview with views
+- Inactive subscribers?!
+- Subscription/subscriber mix problem
