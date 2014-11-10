@@ -7,6 +7,7 @@
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -15,7 +16,6 @@ use Drupal\node\NodeInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\simplenews\Entity\Subscriber;
 use Drupal\user\UserInterface;
-
 
 /**
  * NEWSLETTER MAIL PRIORITY
@@ -772,9 +772,9 @@ function simplenews_subscriber_load_by_hash($hash) {
     return FALSE;
   }
 
-  $md5 = drupal_substr($hash, 0, 10);
+  $md5 = Unicode::substr($hash, 0, 10);
 
-  list($snid, $newsletter_id) = explode('t', drupal_substr($hash, 10));
+  list($snid, $newsletter_id) = explode('t', Unicode::substr($hash, 10));
 
   $subscriber = simplenews_subscriber_load($snid);
   if (!$subscriber) {
@@ -782,7 +782,7 @@ function simplenews_subscriber_load_by_hash($hash) {
   }
 
   // Check the hash if the comparison fails, return a not found error.
-  if ($md5 != drupal_substr(md5($subscriber->mail . simplenews_private_key()), 0, 10)) {
+  if ($md5 != Unicode::substr(md5($subscriber->mail . simplenews_private_key()), 0, 10)) {
     return FALSE;
   }
   return $subscriber;

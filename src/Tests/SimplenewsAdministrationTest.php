@@ -341,7 +341,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Filter a single mail address, the one assigned to a user.
     $edit = array(
-      'email' => drupal_substr(current($subscribers['all']), 0, 4)
+      'email' => Unicode::substr(current($subscribers['all']), 0, 4)
     );
     $this->drupalPostForm(NULL, $edit, t('Filter'));
 
@@ -585,7 +585,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->clickLink(t('Add content type'));
     $edit = array(
       'name' => $name = $this->randomMachineName(),
-      'type' => $type = drupal_strtolower($name),
+      'type' => $type = strtolower($name),
       'simplenews_content_type' => TRUE,
     );
     $this->drupalPostForm(NULL, $edit, t('Save content type'));

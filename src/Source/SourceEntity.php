@@ -6,6 +6,8 @@
  */
 
 namespace Drupal\simplenews\Source;
+
+use Drupal\Component\Utility\Unicode;
 use Drupal\file\Entity\File;
 
 /**
@@ -177,10 +179,10 @@ class SourceEntity implements SourceEntityInterface {
    */
   function getFromFormatted() {
     // Windows based PHP systems don't accept formatted email addresses.
-    if (drupal_substr(PHP_OS, 0, 3) == 'WIN') {
+    if (Unicode::substr(PHP_OS, 0, 3) == 'WIN') {
       return $this->getFromAddress();
     }
-    return '"' . addslashes(mime_header_encode($this->getNewsletter()->from_name)) . '" <' . $this->getFromAddress() . '>';
+    return '"' . addslashes(Unicode::mimeHeaderEncode($this->getNewsletter()->from_name)) . '" <' . $this->getFromAddress() . '>';
   }
 
   /**
@@ -492,4 +494,5 @@ class SourceEntity implements SourceEntityInterface {
     $this->cache->set('data', 'attachments', $attachments);
     return $attachments;
   }
+
 }
