@@ -306,7 +306,7 @@ function simplenews_form_user_register_form_alter(&$form, FormStateInterface $fo
       '#description' => t('Select the newsletter(s) to which you wish to subscribe.'),
       '#weight' => 5,
     );
-    $form['simplenews']['newsletters'] = array(
+    $form['simplenews']['subscriptions'] = array(
       '#type' => 'checkboxes',
       '#options' => $options,
       '#default_value' => $default_value,
@@ -327,8 +327,8 @@ function simplenews_form_user_register_form_alter(&$form, FormStateInterface $fo
 function simplenews_user_profile_form_submit($form, FormStateInterface $form_state) {
   $account = $form_state->getFormObject()->getEntity();
   // Process subscription check boxes.
-  if ($form_state->getValue('newsletters')) {
-    $newsletters = simplenews_newsletter_load_multiple(array_filter($form_state->getValue('newsletters')));
+  if ($form_state->getValue('subscriptions')) {
+    $newsletters = simplenews_newsletter_load_multiple(array_filter($form_state->getValue('subscriptions')));
     foreach ($newsletters as $newsletter) {
       simplenews_subscribe($account->getEmail(), $newsletter->id(), FALSE, 'website', $account->getPreferredLangcode());
       drupal_set_message(t('You have been subscribed to %newsletter.', array('%newsletter' => $newsletter->name)));
