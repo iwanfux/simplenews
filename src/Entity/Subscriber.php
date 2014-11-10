@@ -122,7 +122,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function setUserId($uid) {
     $this->set('uid', $uid);
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -136,7 +136,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
   public function setLangcode($langcode) {
     $this->set('langcode', $langcode);
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -211,9 +211,10 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    * {@inheritdoc}
    */
   public function subscribe($newsletter_id, $status = SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, $source = 'unknown', $timestamp = REQUEST_TIME) {
-    if($subscription = $this->getSubscription($newsletter_id)) {
+    if ($subscription = $this->getSubscription($newsletter_id)) {
       $subscription->status = $status;
-    } else {
+    }
+    else {
       $next_delta = count($this->subscriptions);
       $this->subscriptions[$next_delta]->target_id = $newsletter_id;
       $this->subscriptions[$next_delta]->status = $status;
@@ -229,9 +230,10 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
    * {@inheritdoc}
    */
   public function unsubscribe($newsletter_id, $source = 'unknown', $timestamp = REQUEST_TIME) {
-    if($subscription = $this->getSubscription($newsletter_id)) {
+    if ($subscription = $this->getSubscription($newsletter_id)) {
       $subscription->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
-    } else {
+    }
+    else {
       $next_delta = count($this->subscriptions);
       $this->subscriptions[$next_delta]->target_id = $newsletter_id;
       $this->subscriptions[$next_delta]->status = SIMPLENEWS_SUBSCRIPTION_STATUS_UNSUBSCRIBED;
@@ -323,10 +325,10 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
 
     $fields['mail'] = BaseFieldDefinition::create('email')
       ->setLabel(t('Email'))
-      ->setDescription(t('The subscribers email address.'))
+      ->setDescription(t("The subscriber's email address."))
       ->setSetting('default_value', '')
       ->setRequired(TRUE)
-      ->setDisplayOptions('form', array( 
+      ->setDisplayOptions('form', array(
         'type' => 'email',
         'settings' => array(),
         'weight' => 5,
@@ -342,7 +344,7 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
 
     $fields['langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(t('Language code'))
-      ->setDescription(t('The subscribers preffered language.'));
+      ->setDescription(t("The subscriber's preferred language."));
 
     $fields['changes'] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Changes'))
@@ -354,4 +356,5 @@ class Subscriber extends ContentEntityBase implements SubscriberInterface {
 
     return $fields;
   }
+
 }
