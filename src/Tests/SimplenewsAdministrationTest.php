@@ -28,7 +28,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
    * Implement getNewsletterFieldId($newsletter_id)
    */
   function getNewsletterFieldId($newsletter_id) {
-    return 'edit-newsletters-' . str_replace('_', '-', $newsletter_id);
+    return 'edit-subscriptions-' . str_replace('_', '-', $newsletter_id);
   }
 
   /**
@@ -105,7 +105,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
         $this->assertNoFieldChecked($this->getNewsletterFieldId($newsletter->id()));
       }
       else {
-        $this->assertNoField('newsletters[' . $newsletter->id() . ']', t('Hidden or silent newsletter is not shown.'));
+        $this->assertNoField('subscriptions[' . $newsletter->id() . ']', t('Hidden or silent newsletter is not shown.'));
       }
     }
 
@@ -115,7 +115,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
       'mail' => $this->randomEmail(),
       'pass[pass1]' => $pass = $this->randomMachineName(),
       'pass[pass2]' => $pass,
-      'newsletters[' . $off_double_newsletter_id . ']' => $off_double_newsletter_id,
+      'subscriptions[' . $off_double_newsletter_id . ']' => $off_double_newsletter_id,
     );
     $this->drupalPostForm(NULL, $edit, t('Create new account'));
 
@@ -151,7 +151,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
         }
         list($new_account_setting, $opt_inout_setting) = explode('-', $newsletter->name);
         if ($newsletter->opt_inout == 'hidden') {
-          $this->assertNoField('newsletters[' . $newsletter->id() . ']', t('Hidden newsletter is not shown.'));
+          $this->assertNoField('subscriptions[' . $newsletter->id() . ']', t('Hidden newsletter is not shown.'));
         }
         elseif ($newsletter->new_account == 'on' || $newsletter->name == 'off-double' || $newsletter->new_account == 'silent') {
           // All on, silent and the explicitly selected newsletter should be checked.
@@ -165,7 +165,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Unsubscribe from a newsletter.
     $edit = array(
-      'newsletters[' . $off_double_newsletter_id . ']' => FALSE,
+      'subscriptions[' . $off_double_newsletter_id . ']' => FALSE,
     );
     $this->drupalPostForm(NULL, $edit, t('Save'));
     $this->assertNoFieldChecked($this->getNewsletterFieldId($off_double_newsletter_id));
@@ -341,7 +341,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Filter a single mail address, the one assigned to a user.
     $edit = array(
-      'email' => drupal_substr(current($subscribers['all']), 0, 4)
+      'email' => Unicode::substr(current($subscribers['all']), 0, 4)
     );
     $this->drupalPostForm(NULL, $edit, t('Filter'));
 
@@ -551,7 +551,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->assertTitle(t('Edit subscriber @mail', array('@mail' => $subscriber->getMail())) . ' | Drupal');
     $nlids = $subscriber->getSubscribedNewsletterIds();
     $newsletter_id = reset($nlids);
-    $edit['newsletters[' . $newsletter_id . ']'] = FALSE;
+    $edit['subscriptions[' . $newsletter_id . ']'] = FALSE;
     $this->drupalPostForm(NULL, $edit, t('Save'));
     \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
     drupal_static_reset('simplenews_user_is_subscribed');
@@ -585,7 +585,7 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
     $this->clickLink(t('Add content type'));
     $edit = array(
       'name' => $name = $this->randomMachineName(),
-      'type' => $type = drupal_strtolower($name),
+      'type' => $type = strtolower($name),
       'simplenews_content_type' => TRUE,
     );
     $this->drupalPostForm(NULL, $edit, t('Save content type'));

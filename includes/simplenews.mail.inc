@@ -7,6 +7,8 @@
  * @ingroup mail
  */
 
+use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Mail\MailFormatHelper;
 use Drupal\Core\Mail\MailInterface;
 use Drupal\Core\Session\AnonymousUserSession;
 use Drupal\Core\Url;
@@ -461,7 +463,7 @@ function simplenews_get_spool($limit = SIMPLENEWS_UNLIMITED, $conditions = array
       $query->range(0, $limit);
     }
     foreach ($query->execute() as $message) {
-      if (drupal_strlen($message->data)) {
+      if (Unicode::strlen($message->data)) {
         $message->data = unserialize($message->data);
       }
       else {
@@ -692,7 +694,7 @@ function _simplenews_set_from() {
   $name = $config->get('from_name');
 
   // Windows based PHP systems don't accept formatted email addresses.
-  $formatted_address = (drupal_substr(PHP_OS, 0, 3) == 'WIN') ? $address : '"'. addslashes(mime_header_encode($name)) .'" <'. $address .'>';
+  $formatted_address = (Unicode::substr(PHP_OS, 0, 3) == 'WIN') ? $address : '"'. addslashes(Unicode::mimeHeaderEncode($name)) .'" <'. $address .'>';
 
   return array(
     'address' => $address,
@@ -703,20 +705,22 @@ function _simplenews_set_from() {
 /**
  * HTML to text conversion for HTML and special characters.
  *
- * Converts some special HTML characters in addition to drupal_html_to_text()
+ * Converts some special HTML characters in addition to
+ * MailFormatHelper::htmlToText().
  *
  * @param string $text
  *   The source text with HTML and special characters.
- * @param boolean $inline_hyperlinks
+ * @param bool $inline_hyperlinks
  *   TRUE: URLs will be placed inline.
  *   FALSE: URLs will be converted to numbered reference list.
+ *
  * @return string
  *   The target text with HTML and special characters replaced.
  */
 function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   // By replacing <a> tag by only its URL the URLs will be placed inline
   // in the email body and are not converted to a numbered reference list
-  // by drupal_html_to_text().
+  // by MailFormatHelper::htmlToText().
   // URL are converted to absolute URL as drupal_html_to_text() would have.
   if ($inline_hyperlinks) {
     $pattern = '@<a[^>]+?href="([^"]*)"[^>]*?>(.+?)</a>@is';
@@ -728,7 +732,7 @@ function simplenews_html_to_text($text, $inline_hyperlinks = TRUE) {
   $text = preg_replace(array_keys($preg), array_values($preg), $text);
 
   // Perform standard drupal html to text conversion.
-  return drupal_html_to_text($text);
+  return MailFormatHelper::htmlToText($text);
 }
 
 /**
@@ -750,9 +754,9 @@ function _simplenews_absolute_mail_urls($match) {
 
     // If the link is formed by Drupal's URL filter, we only return the URL.
     // The URL filter generates a label out of the original URL.
-    if (strpos($label, '...') === drupal_strlen($label) - 3) {
+    if (strpos($label, '...') === Unicode::strlen($label) - 3) {
       // Remove ellipsis from end of label.
-      $label = drupal_substr($label, 0, drupal_strlen($label) - 3);
+      $label = Unicode::substr($label, 0, Unicode::strlen($label) - 3);
     }
     if (strpos($url, $label) !== FALSE) {
       return $url;

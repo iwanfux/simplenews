@@ -8,8 +8,8 @@
 namespace Drupal\simplenews\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\simplenews\NewsletterInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\simplenews\NewsletterInterface;
 
 /**
  * Defines the simplenews newsletter entity.
@@ -102,7 +102,7 @@ class Newsletter extends ConfigEntityBase implements NewsletterInterface {
    */
   public $from_address;
 
-    /**
+  /**
    * Indicates if hyperlinks should be kept inline or extracted.
    *
    * @var boolean
