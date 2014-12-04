@@ -1398,7 +1398,7 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
  * @ingroup issue
  */
 function simplenews_issue_update_sent_status(NodeInterface $node, $status = SIMPLENEWS_STATUS_SEND_PENDING) {
-  simplenews_issue_status($node, $status);
+  $node->simplenews_issue->status = $status;
   $node->save();
 }
 
