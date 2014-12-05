@@ -9,6 +9,7 @@ description: ''
 required: false
 default_value: {  }
 default_value_function: ''
+translatable: false
 settings:
   handler: default
   handler_settings:
