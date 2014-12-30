@@ -7,6 +7,9 @@ newsletter:
   priority: 0
   receipt: 0
   send: 0
+  # These are set in simplenews_install()
+  from_address: ~
+  test_address: ~
   test_address_override: 0
 
 subscriber:

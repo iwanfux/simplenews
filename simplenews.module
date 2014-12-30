@@ -863,7 +863,6 @@ function simplenews_recent_newsletters($newsletter_id, $count = 5) {
  *   The parameter array, containing the following keys:
  *   - simplenews_source: An implementation of SimplenewsSourceInterface which
  *     provides the necessary information to build the newsletter mail.
- *  @see drupal_mail()
  */
 function simplenews_mail($key, &$message, $params) {
   module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
@@ -1187,23 +1186,16 @@ function simplenews_theme() {
   $path = drupal_get_path('module', 'simplenews');
 
   return array(
-    'simplenews_multi_block' => array(
-      'template' => 'simplenews-multi-block',
-      'arguments' => array(),
-      'path' => $path . '/theme',
-    ),
     'simplenews_admin_categories' => array(
       'render element' => 'form',
-    ),
-    'simplenews_block' => array(
-      'render element' => 'newsletter_id',
-      'template' => 'simplenews-block',
-      'pattern' => 'simplenews_block__',
-      'path' => $path . '/theme',
+      'file' => 'simplenews.admin.inc',
+      'path' => $path . '/includes',
+      'function' => 'theme_simplenews_admin_categories',
     ),
     'simplenews_status' => array(
       'file' => 'simplenews.admin.inc',
       'path' => $path . '/includes',
+      'function' => 'theme_simplenews_status',
       'variables' => array(
         'source' => NULL,
         'status' => NULL,
@@ -1218,7 +1210,6 @@ function simplenews_theme() {
       ),
       'path' => $path . '/theme',
       'mail theme' => TRUE,
-      'template' => 'simplenews-newsletter-body',
       'pattern' => 'simplenews-newsletter-body__',
     ),
     'simplenews_newsletter_footer' => array(
@@ -1232,7 +1223,6 @@ function simplenews_theme() {
       ),
       'path' => $path . '/theme',
       'mail theme' => TRUE,
-      'template' => 'simplenews-newsletter-footer',
       'pattern' => 'simplenews-newsletter-footer__',
     ),
     'simplenews_filter_form' => array(
@@ -1242,6 +1232,7 @@ function simplenews_theme() {
     ),
     'simplenews_field' => array(
       'render element' => 'element',
+      'function' => 'theme_simplenews_field',
     ),
   );
 }
@@ -1626,12 +1617,12 @@ function simplenews_confirmation_send_combined() {
     $subscriber->setChanges($changes);
     if ((count($changes) > 1 && $use_combined != 'never') || $use_combined == 'always') {
       $key = 'subscribe_combined';
-      drupal_mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
+      \Drupal::service('plugin.manager.mail')->mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
     }
     else {
       foreach ($changes as $newsletter_id => $key) {
         $params['context']['newsletter'] = simplenews_newsletter_load($newsletter_id);
-        drupal_mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
+        \Drupal::service('plugin.manager.mail')->mail('simplenews', $key, $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
       }
     }
 
@@ -1668,7 +1659,7 @@ function simplenews_confirmation_send($action, $subscriber, $newsletter) {
     $params['from'] = _simplenews_set_from();
     $params['context']['newsletter'] = $newsletter;
     $params['context']['simplenews_subscriber'] = $subscriber;
-    drupal_mail('simplenews', $action, $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
+    \Drupal::service('plugin.manager.mail')->mail('simplenews', $action, $subscriber->mail, $subscriber->language, $params, $params['from']['address']);
   }
 }
 

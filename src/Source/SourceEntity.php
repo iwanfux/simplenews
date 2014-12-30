@@ -41,7 +41,7 @@ class SourceEntity implements SourceEntityInterface {
   protected $subscriber;
 
   /**
-   * The mail key used for drupal_mail().
+   * The mail key used for mails.
    */
   protected $key = 'test';
 

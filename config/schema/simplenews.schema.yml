@@ -21,12 +21,18 @@ simplenews.settings:
         receipt:
           type: boolean
           label: Default require receipt setting for newsletters
+        from_address:
+          type: string
+          label: Default from email address
+        from_name:
+          type: label
+          label: Default from name
         send:
           type: integer
           label: Default send operation
         test_address:
           type: string
-          label: Test Email address
+          label: Test email address
         test_address_override:
           type: integer
           label: Allow to override the send operation
@@ -142,10 +148,10 @@ simplenews.newsletter.*:
       type: boolean
       label: 'TRUE if a read receipt should be requested.'
     from_name:
-      type: string
+      type: label
       label: 'Name of the email author.'
     subject:
-      type: string
+      type: label
       label: 'Subject of newsletter email. May contain tokens.'
     from_address:
       type: string
@@ -229,3 +235,29 @@ field.value.simplenews_subscription:
   type: field.value.entity_reference
   label: 'Default value'
   mapping: { }
+
+# Block schema
+block.settings.simplenews_subscription_block:
+  type: block_settings
+  mapping:
+    newsletters:
+      type: sequence
+      label: Newsletters
+      sequence:
+        - type: string
+          label: Newsletter ID
+    message:
+      type: label
+      label: Message
+    form:
+      type: integer
+      label: Form behavior
+    issue_status:
+      type: integer
+      label: Issue status
+    issues:
+      type: integer
+      label: How many issues to show
+    unique_id:
+      type: string
+      label: Unique ID

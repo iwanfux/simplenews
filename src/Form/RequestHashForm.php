@@ -83,7 +83,7 @@ class RequestHashForm extends ConfirmFormBase {
     $params['from'] = _simplenews_set_from();
     $params['context'] = $form_state->get('context');
     $subscriber = $params['context']['simplenews_subscriber'];
-    drupal_mail('simplenews', $form_state->get('key'), $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
+    \Drupal::service('plugin.manager.mail')->mail('simplenews', $form_state->get('key'), $subscriber->getMail(), $subscriber->getLangcode(), $params, $params['from']['address']);
     drupal_set_message(t('The confirmation mail has been sent.'));
     $form_state->setRedirect('<front>');
   }

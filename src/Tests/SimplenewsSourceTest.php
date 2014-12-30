@@ -9,12 +9,9 @@
 
 namespace Drupal\simplenews\Tests;
 
-use Drupal\Component\Utility\String;
 use Drupal\Component\Utility\Unicode;
 use Drupal\node\Entity\Node;
-use Drupal\simplenews\Entity\Newsletter;
 use \Drupal\simplenews\Source\SourceTest;
-use Drupal\simplenews\Entity\Subscriber;
 
 /**
  * Test cases for creating and sending newsletters.
@@ -167,6 +164,7 @@ class SimplenewsSourceTest extends SimplenewsTestBase {
     // Test that tokens are correctly replaced.
     $newsletter_id = $this->getRandomNewsletter();
     foreach (array_slice($this->drupalGetMails(), 0, 3) as $mail) {
+      debug($mail['body']);
       // Make sure that the same mail was used in the body token as it has been
       // sent to. Also verify that the mail is plaintext.
       $this->assertTrue(strpos($mail['body'], '*' . $mail['to'] . '*') !== FALSE);

@@ -92,7 +92,7 @@ interface SourceInterface {
   function getTokenContext();
 
   /**
-   * Returns the mail key to be used for drupal_mail().
+   * Returns the mail key to be used for mails.
    *
    * @return
    *   The mail key, either test or node.

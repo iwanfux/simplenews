@@ -11,6 +11,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\OptionsButtonsWidget;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\OptGroup;
 use Drupal\simplenews\SubscriptionWidgetInterface;
 
 /**
@@ -76,7 +77,7 @@ class SubscriptionWidget extends OptionsButtonsWidget implements SubscriptionWid
    */
   protected function getSelectedOptions(FieldItemListInterface $items, $delta = 0) {
     // Copy parent behavior but also check the status property.
-    $flat_options = $this->flattenOptions($this->getOptions($items->getEntity()));
+    $flat_options = OptGroup::flattenOptions($this->getOptions($items->getEntity()));
     $selected_options = array();
     foreach ($items as $item) {
       $value = $item->{$this->column};
