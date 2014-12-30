@@ -1472,68 +1472,6 @@ function simplenews_simplenews_source_cache_info() {
 }
 
 /**
- * Impersonates another user.
- *
- * Each time this function is called, the active user is saved and $new_user
- * becomes the active user. Multiple calls to this function can be nested,
- * and session saving will be disabled until all impersonation attempts have
- * been reverted using user_revert_user().
- *
- * @todo: This function is a backport of http://drupal.org/node/287292. Switch
- * to that once available.
- *
- * @param $new_user
- *   User to impersonate, either a UID or a user object.
- *
- * @return
- *   Current user object.
- *
- * @see simplenews_revert_user()
- */
-function simplenews_impersonate_user(UserInterface $new_user = NULL) {
-  $account = \Drupal::currentUser();
-  $user_original = &drupal_static(__FUNCTION__);
-
-  if (!isset($new_user)) {
-    if (isset($user_original) && !empty($user_original)) {
-      // Restore the previous user from the stack.
-      $user = array_pop($user_original);
-
-      // Re-enable session saving if we are no longer impersonating a user.
-      if (empty($user_original)) {
-        drupal_save_session(TRUE);
-      }
-    }
-  }
-  else {
-    // Push the original user onto the stack and prevent session saving.
-    $user_original[] = $account;
-    drupal_save_session(FALSE);
-
-    if (is_numeric($new_user)) {
-      $account = $new_user->load();
-    }
-    else {
-      $account = is_object($new_user) ? $new_user : (object) $new_user;
-    }
-  }
-
-  return $account;
-}
-
-/**
- * Reverts to the previous user after impersonating.
- *
- * @return
- *   Current user.
- *
- * @see simplenews_impersonate_user()
- */
-function simplenews_revert_user() {
-  return simplenews_impersonate_user();
-}
-
-/**
  * Starts combining confirmation mails.
  *
  * If combining mails is enabled, it is mandatory to call

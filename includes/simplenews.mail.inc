@@ -240,9 +240,8 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
   if ($spool_list) {
 
     // Switch to the anonymous user.
-    // @todo change to something similar like in WebTestBase.php line 705
     $anonymous_user = new AnonymousUserSession();
-    //simplenews_impersonate_user($anonymous_user);
+    \Drupal::service('account_switcher')->switchTo($anonymous_user);
 
     $count_fail = $count_success = 0;
     $sent = array();

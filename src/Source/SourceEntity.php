@@ -9,6 +9,7 @@ namespace Drupal\simplenews\Source;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\file\Entity\File;
+use Drupal\user\Entity\User;
 
 /**
  * Default source class for entities.
@@ -249,7 +250,7 @@ class SourceEntity implements SourceEntityInterface {
 
     // Switch to the user
     if ($this->uid = $this->getSubscriber()->getUserId()) {
-      //simplenews_impersonate_user($this->uid);
+      \Drupal::service('account_switcher')->switchTo(User::load($this->uid));
     }
 
     // Change language if the requested language is enabled.
