@@ -23,12 +23,14 @@ class SimplenewsMonitoringTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('node', 'user', 'field', 'text', 'simplenews', 'monitoring', 'monitoring_test');
+  public static $modules = array('node', 'user', 'field', 'text', 'simplenews', 'monitoring', 'monitoring_test', 'entity_reference');
 
   /**
    * Tests individual sensors.
    */
   function testSensors() {
+
+    $this->installConfig(array('node'));
     $this->installConfig(array('simplenews'));
     $this->installEntitySchema('monitoring_sensor_result');
     $this->installSchema('simplenews', 'simplenews_mail_spool');

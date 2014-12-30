@@ -334,9 +334,8 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
       \Drupal::logger('simplenews')->notice('%success emails sent, %fail failed.', array('%success' => $count_success, '%fail' => $count_fail));
     }
 
-    $config = \Drupal::configFactory()->get('simplenews.settings');
-    $config->set('mail.last_cron', REQUEST_TIME);
-    $config->set('mail.last_sent', $count_success);
+    \Drupal::state()->set('simplenews.last_cron', REQUEST_TIME);
+    \Drupal::state()->set('simplenews.last_sent', $count_success);
 
     simplenews_revert_user();
     return $count_success;

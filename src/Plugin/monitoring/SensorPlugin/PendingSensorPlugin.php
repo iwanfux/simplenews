@@ -1,18 +1,18 @@
 <?php
 /**
  * @file
- * Contains \Drupal\simplenews\Plugin\monitoring\Sensor\SensorSimplenewsPending.
+ * Contains \Drupal\simplenews\Plugin\monitoring\SensorPlugin\PendingSensorPlugin.
  */
 
-namespace Drupal\simplenews\Plugin\monitoring\Sensor;
+namespace Drupal\simplenews\Plugin\monitoring\SensorPlugin;
 
 use Drupal\monitoring\Result\SensorResultInterface;
-use Drupal\monitoring\Sensor\SensorThresholds;
+use Drupal\monitoring\SensorPlugin\SensorPluginBase;
 
 /**
  * Monitors pending items in the simplenews mail spool.
  *
- * @Sensor(
+ * @SensorPlugin(
  *   id = "simplenews_pending",
  *   label = @Translation("Simplenews Pending"),
  *   description = @Translation("Monitors pending items in the simplenews mail spool."),
@@ -24,7 +24,7 @@ use Drupal\monitoring\Sensor\SensorThresholds;
  *
  * @see simplenews_count_spool()
  */
-class SensorSimplenewsPending extends SensorThresholds {
+class PendingSensorPlugin extends SensorPluginBase {
 
   /**
    * {@inheritdoc}

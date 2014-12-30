@@ -7,13 +7,7 @@ bundle: simplenews_subscriber
 label: Subscriptions
 description: ''
 required: false
-default_value:
-  -
-    target_id: default
-    handler: simplenews_all
-    handler_settings: ''
-    status: 0
-    sent_count: 0
+default_value: {}
 default_value_function: ''
 translatable: false
 settings:

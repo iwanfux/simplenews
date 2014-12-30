@@ -153,9 +153,9 @@ class NewsletterIssueListForm extends FormBase {
       '#validate' => array('simplenews_admin_issues_validate'),
     );*/
 
-    if ($config->get('mail.last_cron')) {
+    if ($last_sent = \Drupal::state()->get('simplenews.last_sent')) {
       $form['last_sent'] = array(
-        '#markup' => '<p>' . \Drupal::translation()->formatPlural($config->get('mail.last_sent'), 'Last batch: 1 mail sent at !time.', 'Last batch: !count mails sent at !time.', array('!time' => format_date($config->get('mail.last_cron'), 'small'), '!count' => $config->get('mail.last_sent'))) . "</p>\n",
+        '#markup' => '<p>' . \Drupal::translation()->formatPlural($config->get('mail.last_sent'), 'Last batch: 1 mail sent at !time.', 'Last batch: !count mails sent at !time.', array('!time' => format_date(\Drupal::state()->get('simplenews.last_cron'), 'small'), '!count' => $last_sent)) . "</p>\n",
       );
     }
     // Table header. Used as tablesort default

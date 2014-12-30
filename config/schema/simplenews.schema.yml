@@ -1,3 +1,124 @@
+# Settings schema.
+simplenews.settings:
+  type: mapping
+  label: 'Simplenews settings'
+  mapping:
+    private_key:
+      type: string
+      label: Private key
+    hash_expiration:
+      type: integer
+      label: Hash expiration
+    newsletter:
+      type: mapping
+      mapping:
+        format:
+          type: string
+          label: Default format for new newsletters
+        priority:
+          type: integer
+          label: Default priority for new newsletters
+        receipt:
+          type: boolean
+          label: Default require receipt setting for newsletters
+        send:
+          type: integer
+          label: Default send operation
+        test_address:
+          type: string
+          label: Test Email address
+        test_address_override:
+          type: integer
+          label: Allow to override the send operation
+
+    subscriber:
+      type: mapping
+      mapping:
+        sync_account:
+          type: boolean
+          label: Sync users and their subscriber entities
+
+    subscription:
+      type: mapping
+      label: Subscription settings
+      mapping:
+        use_combined:
+          type: string
+          label: Combined setting
+        confirm_subscribe_subject:
+          type: label
+          label: Subscribe confirmation subject
+        confirm_subscribe_unsubscribed:
+          type: text
+          label: Subscribe confirmation message
+        confirm_subscribe_subscribed:
+          type: text
+          label: Already subscribed message
+        confirm_unsubscribe_subscribed:
+          type: text
+          label: Unsubscribe message
+        confirm_unsubscribe_unsubscribed:
+          type: text
+          label: Already Unsubscribe message
+        confirm_combined_subject:
+          type: label
+          label: Combined subscribe subject
+        confirm_combined_body:
+          type: text
+          label: Combined subscribe message
+        confirm_combined_body_unchanged:
+          type: text
+          label: Combined subscribe unchanged message
+        confirm_combined_line_subscribe_unsubscribed:
+          type: label
+          label: Combined subscribe message
+        confirm_combined_line_subscribe_subscribed:
+          type: label
+          label: Combined already subscribed message
+        confirm_combined_line_unsubscribe_subscribed:
+          type: label
+          label: Combined unsubscribe message
+        confirm_combined_line_unsubscribe_unsubscribed:
+          type: label
+          label: Combined already unsubscribed message
+        confirm_subscribe_page:
+          type: string
+          label: Confirmation subscribe redirect page
+        confirm_unsubscribe_page:
+          type: string
+          label: Confirmation unsubscribe redirect page
+
+    mail:
+      type: mapping
+      label: Mail settings
+      mapping:
+        use_cron:
+          type: boolean
+          label: Use cron
+        throttle:
+          type: integer
+          label: Mails to send per cron run
+        spool_progress_expiration:
+          type: integer
+          label: Spool in progress expiration
+        spool_expire:
+          type: integer
+          label: Expiration of sent mails in spool
+        debug:
+          type: boolean
+          label: Debug
+        source_cache:
+          type: string
+          label: Source cache implementation
+        source:
+          type: string
+          label: Source implementation
+        source_node:
+          type: string
+          label: Source implementation for nodes
+
+
+# Newsletter config entity schema.
 simplenews.newsletter.*:
   type: config_entity
   label: 'Newsletter'
@@ -15,7 +136,7 @@ simplenews.newsletter.*:
       type: string
       label: 'HTML or plaintext newsletter indicator'
     priority:
-      type: int
+      type: integer
       label: 'Priority indicator'
     receipt:
       type: boolean
@@ -39,7 +160,7 @@ simplenews.newsletter.*:
       type: string
       label: 'Defines the Opt-In/out options.'
     weight:
-      type: int
+      type: integer
       label: 'Weight of this newsletter (used for sorting).'
 
 field.simplenews_subscription.settings:
@@ -60,3 +181,51 @@ field.simplenews_subscription.instance_settings:
     handler_settings:
       type: entity_reference.[%parent.handler].handler_settings
       label: 'Reference method settings'
+
+# Monitoring schema.
+monitoring.settings.simplenews_pending:
+  type: monitoring.settings_base
+  label: 'Simplenews pending sensor settings'
+  mapping: { }
+
+# Simplenews issue field type schema.
+field.storage_settings.simplenews_issue:
+  type: field.storage_settings.entity_reference
+  label: 'Simplenews issue settings'
+  mapping: { }
+
+field.field_settings.simplenews_issue:
+  type: field.field_settings.entity_reference
+  label: 'Simplenews issue settings'
+
+field.value.simplenews_issue:
+  type: field.value.entity_reference
+  label: 'Default value'
+  mapping:
+    handler:
+      type: string
+      label: Handler
+    handler_settings:
+      type: mapping
+      label: Handler settings
+    status:
+      type: integer
+      label: Sent status
+    sent_count:
+      type: integer
+      label: Sent count
+
+# Simplenews suscription field type schema.
+field.storage_settings.simplenews_subscription:
+  type: field.storage_settings.entity_reference
+  label: 'Simplenews subscription settings'
+  mapping: { }
+
+field.field_settings.simplenews_subscription:
+  type: field.field_settings.entity_reference
+  label: 'Simplenews subscription settings'
+
+field.value.simplenews_subscription:
+  type: field.value.entity_reference
+  label: 'Default value'
+  mapping: { }
