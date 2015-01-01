@@ -80,11 +80,8 @@ class Spool implements SpoolInterface {
     $source_class = $this->getSourceImplementation($spool_data) ? '\Drupal\simplenews\Source\SourceNode' : '\Drupal\simplenews\Source\SourceNode';
     $source = new $source_class($entity, $subscriber, $spool_data->entity_type);
 
-    // Set which entity is actually used. In case of a translation set, this might
-    // not be the same entity.
-    $this->processed[$spool_data->msid]->actual_entity_type = $source->getEntityType();
-    $this->processed[$spool_data->msid]->actual_entity_id
-      = $source->getEntity()->id();
+    // Set the langcode langcode.
+    $this->processed[$spool_data->msid]->langcode = $source->getEntity()->language()->getId();
     return $source;
   }
 

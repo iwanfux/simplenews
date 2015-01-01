@@ -1,4 +1,4 @@
-id: node.simplenews.issue
+id: node.simplenews.simplenews_issue
 status: true
 langcode: en
 field_name: simplenews_issue
@@ -9,7 +9,7 @@ description: ''
 required: false
 default_value: {  }
 default_value_function: ''
-translatable: false
+translatable: true
 settings:
   handler: default
   handler_settings:

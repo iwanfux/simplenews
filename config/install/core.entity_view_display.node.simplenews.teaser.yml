@@ -1,0 +1,30 @@
+uuid: 1754e700-7290-485d-a404-4a052ef18ae2
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.teaser
+    - field.field.node.simplenews.body
+    - field.field.node.simplenews.simplenews_issue
+    - node.type.simplenews
+  module:
+    - text
+    - user
+id: node.simplenews.teaser
+label: null
+targetEntityType: node
+bundle: simplenews
+mode: teaser
+content:
+  body:
+    type: text_trimmed
+    weight: 0
+    settings:
+      trim_length: 600
+    third_party_settings: {  }
+    label: hidden
+hidden:
+  langcode: true
+  simplenews_issue: true
+  links: true
+third_party_settings: {  }

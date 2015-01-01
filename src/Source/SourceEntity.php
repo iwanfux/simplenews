@@ -18,6 +18,8 @@ class SourceEntity implements SourceEntityInterface {
 
   /**
    * The entity object.
+   *
+   * @var \Drupal\Core\Entity\ContentEntityInterface
    */
   protected $entity;
 
@@ -69,6 +71,9 @@ class SourceEntity implements SourceEntityInterface {
   public function setEntity($entity, $entity_type) {
     $this->entity_type = $entity_type;
     $this->entity = $entity;
+    if ($this->entity->hasTranslation($this->getLanguage())) {
+      $this->entity = $this->entity->getTranslation($this->getLanguage());
+    }
   }
 
   /**
@@ -304,7 +309,7 @@ class SourceEntity implements SourceEntityInterface {
 
     // Build message body
     // Supported view modes: 'email_plain', 'email_html', 'email_textalt'
-    $build = entity_view($this->getEntity(), 'email_' . $format);
+    $build = \Drupal::entityManager()->getViewBuilder($this->getEntityType())->view($this->getEntity(), 'email_' . $format, $this->getLanguage());
     $build['#entity_type'] = $this->getEntityType();
 
     // We need to prevent the standard theming hooks, but we do want to allow
@@ -344,7 +349,7 @@ class SourceEntity implements SourceEntityInterface {
       '#language' => $this->getLanguage(),
       '#simplenews_subscriber' => $this->getSubscriber(),
     );
-    $markup = drupal_render($body);
+    $markup = \Drupal::service('renderer')->renderPlain($body);
     $this->cache->set('build', 'body:' . $format, $markup);
     return $markup;
   }
@@ -383,7 +388,7 @@ class SourceEntity implements SourceEntityInterface {
     $body = $this->buildBody($format);
 
     // Build message body, replace tokens.
-    $body = \Drupal::token()->replace($body, $this->getTokenContext(), array('sanitize' => FALSE));
+    $body = \Drupal::token()->replace($body, $this->getTokenContext(), array('sanitize' => FALSE, 'langcode' => $this->getLanguage()));
     if ($format == 'plain') {
       // Convert HTML to text if requested to do so.
       $body = simplenews_html_to_text($body, $this->getNewsletter()->hyperlinks);
@@ -422,7 +427,7 @@ class SourceEntity implements SourceEntityInterface {
       '#language' => $this->getLanguage(),
       '#format' => $format,
     );
-    $markup = drupal_render($footer);
+    $markup = \Drupal::service('renderer')->renderPlain($footer);
 
     $this->cache->set('build', 'footer:' . $format, $markup);
     return $markup;
@@ -457,7 +462,7 @@ class SourceEntity implements SourceEntityInterface {
     if ($cache = $this->cache->get('final', 'footer:' . $format)) {
       return $cache;
     }
-    $final_footer = \Drupal::token()->replace($this->buildFooter($format), $this->getTokenContext(), array('sanitize' => FALSE));
+    $final_footer = \Drupal::token()->replace($this->buildFooter($format), $this->getTokenContext(), array('sanitize' => FALSE, 'langcode' => $this->getLanguage()));
     $this->cache->set('final', 'footer:' . $format, $final_footer);
     $this->resetContext();
     return $final_footer;

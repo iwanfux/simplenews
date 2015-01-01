@@ -261,11 +261,11 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
         simplenews_update_spool(array($msid), $row_result);
         if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
           $count_success++;
-          if (!isset($sent[$row->actual_entity_type][$row->actual_entity_id])) {
-            $sent[$row->actual_entity_type][$row->actual_entity_id] = 1;
+          if (!isset($sent[$row->entity_type][$row->entity_id][$row->langcode])) {
+            $sent[$row->entity_type][$row->entity_id][$row->langcode] = 1;
           }
           else {
-            $sent[$row->actual_entity_type][$row->actual_entity_id]++;
+            $sent[$row->entity_type][$row->entity_id][$row->langcode]++;
           }
         }
         if ($row_result['error']) {
@@ -296,12 +296,12 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
       simplenews_update_spool(array($msid), $row_result);
       if ($row_result['status'] == SIMPLENEWS_SPOOL_DONE) {
         $count_success++;
-        if (isset($row->actual_entity_type) && isset($row->actual_entity_id)) {
-          if (!isset($sent[$row->actual_entity_type][$row->actual_entity_id])) {
-            $sent[$row->actual_entity_type][$row->actual_entity_id] = 1;
+        if (isset($row->langcode)) {
+          if (!isset($sent[$row->entity_type][$row->entity_id][$row->langcode])) {
+            $sent[$row->entity_type][$row->entity_id][$row->langcode] = 1;
           }
           else {
-            $sent[$row->actual_entity_type][$row->actual_entity_id]++;
+            $sent[$row->entity_type][$row->entity_id][$row->langcode]++;
           }
         }
       }
@@ -314,10 +314,13 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     $lock = \Drupal::lock();
     if ($lock->acquire('simplenews_update_sent_count')) {
       foreach ($sent as $entity_type => $ids) {
-        foreach ($ids as $entity_id => $count) {
+        foreach ($ids as $entity_id => $languages) {
           \Drupal::entityManager()->getStorage($entity_type)->resetCache(array($entity_id));
           $entity = entity_load($entity_type, $entity_id);
-          $entity->simplenews_issue->sent_count = $entity->simplenews_issue->sent_count + $count;
+          foreach ($languages as $langcode => $count) {
+            $translation = $entity->getTranslation($langcode);
+            $translation->simplenews_issue->sent_count = $translation->simplenews_issue->sent_count + $count;
+          }
           $entity->save();
         }
       }

@@ -1,7 +1,7 @@
 id: default
 name: 'Default newsletter'
 description: 'This is the auto generated default newsletter'
-format: null
+format: plain
 priority: 0
 receipt: 0
 from_name: ''

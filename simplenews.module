@@ -548,7 +548,7 @@ function simplenews_subscribe($mail, $newsletter_id, $confirm = TRUE, $source = 
     //    set in their account settings.
     // By default the preferred language is not set.
     if (\Drupal::languageManager()->isMultilingual()) {
-      if ($account->id()) {
+      if ($account) {
         $preferred_langcode = $account->getPreferredLangcode();
       }
       else {
@@ -885,14 +885,14 @@ function simplenews_get_recipient_handler($newsletter, $handler, $configuration 
  * @param $newsletter_id
  *   Simplenews newsletter ID.
  *
- * @return SimplenewsNewsletter
- *   Newsletter entity object, FALSE if newsletter does not exist.
+ * @return \Drupal\simplenews\NewsletterInterface
+ *   Newsletter entity object, NULL if newsletter does not exist.
  *
  * @ingroup newsletter
  */
 function simplenews_newsletter_load($newsletter_id, $reset = FALSE) {
   $newsletter = simplenews_newsletter_load_multiple(array($newsletter_id), array(), $reset);
-  return $newsletter ? reset($newsletter) : FALSE;
+  return $newsletter ? reset($newsletter) : NULL;
 }
 
 /**
