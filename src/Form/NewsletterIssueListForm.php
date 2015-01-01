@@ -195,7 +195,6 @@ class NewsletterIssueListForm extends FormBase {
     $options = array();
 
     module_load_include('inc', 'simplenews', 'includes/simplenews.mail');
-    module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $categories = simplenews_newsletter_list();
     foreach (Node::loadMultiple($nids) as $node) {
       $subscriber_count = $node->simplenews_issue->status == SIMPLENEWS_STATUS_SEND_READY ? $node->simplenews_issue->subscribers : simplenews_count_subscriptions($node->simplenews_issue->target_id);

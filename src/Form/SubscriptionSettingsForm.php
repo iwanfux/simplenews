@@ -26,7 +26,7 @@ class SubscriptionSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->get('simplenews.settings');
+    $config = $this->config('simplenews.settings');
 
     $form['subscription_mail'] = array(
       '#type' => 'fieldset',
@@ -187,15 +187,8 @@ class SubscriptionSettingsForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->configFactory()->get('simplenews.settings')
+    $this->config('simplenews.settings')
       ->set('subscription.use_combined', $form_state->getValue('simplenews_use_combined'))
       ->set('subscription.use_combined', $form_state->getValue('simplenews_confirm_subscribe_subject'))
       ->set('subscription.confirm_subscribe_unsubscribed', $form_state->getValue('simplenews_confirm_subscribe_unsubscribed'))

@@ -99,7 +99,7 @@ class NodeTabForm extends FormBase {
         '#default_value' => $default_handler,
         '#access' => count($options) > 1,
         '#ajax' => array(
-          'callback' => 'simplenews_node_tab_send_form_handler_update',
+          'callback' => '::ajaxUpdateRecipientHandlerSettings',
           'wrapper' => 'recipient-handler-settings',
           'method' => 'replace',
           'effect' => 'fade',
@@ -290,5 +290,13 @@ class NodeTabForm extends FormBase {
     }
     return AccessResult::neutral();
   }
+
+  /**
+   * Return the updated recipient handler settings form.
+   */
+  public function ajaxUpdateRecipientHandlerSettings($form, FormStateInterface $form_state) {
+    return empty($form['simplenews']['recipient_handler_settings']) ? array('#markup' => '<div id="recipient-handler-settings"></div>') : $form['simplenews']['recipient_handler_settings'];
+  }
+
 
 }

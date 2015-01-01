@@ -7,7 +7,6 @@
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\String;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -1085,15 +1084,7 @@ function simplenews_theme() {
   $path = drupal_get_path('module', 'simplenews');
 
   return array(
-    'simplenews_admin_categories' => array(
-      'render element' => 'form',
-      'file' => 'simplenews.admin.inc',
-      'path' => $path . '/includes',
-      'function' => 'theme_simplenews_admin_categories',
-    ),
     'simplenews_status' => array(
-      'file' => 'simplenews.admin.inc',
-      'path' => $path . '/includes',
       'function' => 'theme_simplenews_status',
       'variables' => array(
         'source' => NULL,
@@ -1123,11 +1114,6 @@ function simplenews_theme() {
       'path' => $path . '/theme',
       'mail theme' => TRUE,
       'pattern' => 'simplenews-newsletter-footer__',
-    ),
-    'simplenews_filter_form' => array(
-      'render element' => 'form',
-      'file' => 'simplenews.admin.inc',
-      'path' => $path . '/includes',
     ),
     'simplenews_field' => array(
       'render element' => 'element',
@@ -1213,6 +1199,82 @@ function theme_simplenews_field($variables) {
   return $output;
 }
 
+
+/**
+ * Return a status image.
+ *
+ * @param $variables An associative array containing:
+ *   source: Source which status will be displayed ('published', 'activated', 'sent')
+ *   status: Status of the source (0 or 1)
+ *
+ * @return string
+ *   HTML string containing an image tag.
+ *
+ * @ingroup theming
+ */
+function theme_simplenews_status($variables) {
+  $source = $variables['source'];
+  $status = $variables['status'];
+  $sent_count = NULL;
+  if (isset($variables['sent_count'])) {
+    $sent_count = $variables['sent_count'];
+  }
+  $additional = '';
+
+  switch ($source) {
+    case 'published':
+      $images = array(
+        0 => 'images/sn-saved.png',
+        1 => 'images/sn-sent.png',
+      );
+      $title = array(
+        0 => t('Not published'),
+        1 => t('Published'),
+      );
+      break;
+    case 'activated':
+      $images = array(
+        0 => 'images/sn-saved.png',
+        1 => 'images/sn-sent.png',
+      );
+      $title = array(
+        0 => t('Inactive: no newsletters will be sent'),
+        1 => t('Active: user will receive newsletters'),
+      );
+      break;
+    case 'sent':
+      $images = array(
+        SIMPLENEWS_STATUS_SEND_PENDING => 'images/sn-cron.png',
+        SIMPLENEWS_STATUS_SEND_READY => 'images/sn-sent.png',
+      );
+      $title = array(
+        SIMPLENEWS_STATUS_SEND_NOT => t('Not yet sent'),
+        SIMPLENEWS_STATUS_SEND_PENDING => t('Currently sending by cron'),
+        SIMPLENEWS_STATUS_SEND_READY => t('Sent'),
+        SIMPLENEWS_STATUS_SEND_PUBLISH => t('Send on publish'),
+      );
+      if ($status == SIMPLENEWS_STATUS_SEND_READY && $sent_count !== NULL) {
+        $additional = ' (' . $sent_count . ')';
+      }
+      break;
+  }
+  // Build the output
+  if (isset($images[$status])) {
+    $img_vars = array(
+      '#theme' => 'image',
+      '#uri' => drupal_get_path('module', 'simplenews') . '/' . $images[$status],
+      '#alt' => $title[$status] . $additional,
+      '#title' => $title[$status] .$additional,
+      '#getsize' => TRUE,
+    );
+    $output = drupal_render($img_vars);
+  }
+  else {
+    $output = String::checkPlain($title[(int) $status]);
+  }
+  return $output;
+}
+
 /**
  * Process variables to format the simplenews newsletter body.
  *
@@ -1221,10 +1283,6 @@ function theme_simplenews_field($variables) {
  * @ingroup theming
  */
 function template_preprocess_simplenews_newsletter_body(&$variables) {
-  // We don't want to include links and comments in the email.
-  unset($variables['build']['links']);
-  unset($variables['build']['comments']);
-
   $entity_type = $variables['build']['#entity_type'];
   $entity = !empty($variables['build']['#' . $entity_type]) ? $variables['build']['#' . $entity_type] : $variables['build']['#entity'];
 
@@ -1275,6 +1333,65 @@ function template_preprocess_simplenews_newsletter_footer(&$variables) {
 }
 
 /**
+ * Callback to send newsletters.
+ */
+function simplenews_issue_send($nids) {
+  $sent_nodes = array();
+  foreach (node_load_multiple($nids) as $node) {
+    if (simplenews_issue_status($node) != SIMPLENEWS_STATUS_SEND_NOT) {
+      continue;
+    }
+
+    if ($node->status == NODE_NOT_PUBLISHED) {
+      simplenews_issue_update_sent_status($node, SIMPLENEWS_COMMAND_SEND_PUBLISH);
+      drupal_set_message(t('Newsletter %title is unpublished and will be sent on publish.', array('%title' => $node->title)));
+      continue;
+    }
+
+    simplenews_add_node_to_spool($node);
+    $sent_nodes[$node->nid] = $node->title;
+  }
+
+  // If there were any newsletters sent, display a message.
+  if (!empty($sent_nodes)) {
+    $conditions = array('entity_id' => array_keys($sent_nodes), 'entity_type' => 'node');
+    // Attempt to send immediatly, if configured to do so.
+    if (simplenews_mail_attempt_immediate_send($conditions)) {
+      drupal_set_message(t('Sent the following newsletters: %titles.', array('%titles' => implode(', ', $sent_nodes))));
+    }
+    else {
+      drupal_set_message(t('The following newsletter are now pending: %titles.', array('%titles' => implode(', ', $sent_nodes))));
+    }
+  }
+}
+
+/**
+ * Count number of subscribers per newsletter list.
+ *
+ * @param $newsletter_id
+ *   The newsletter id.
+ *
+ * @return
+ *   Number of subscribers.
+ */
+function simplenews_count_subscriptions($newsletter_id) {
+  $subscription_count = &drupal_static(__FUNCTION__);
+
+  if (isset($subscription_count[$newsletter_id])) {
+    return $subscription_count[$newsletter_id];
+  }
+
+  // @todo: entity query + aggregate
+  $query = db_select('simplenews_subscriber__subscriptions', 'ss');
+  $query->leftJoin('simplenews_subscriber', 'sn', 'sn.id = ss.entity_id');
+  $query->condition('subscriptions_target_id', $newsletter_id)
+    ->condition('sn.status', 1)
+    ->condition('ss.subscriptions_status', SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED);
+  $subscription_count[$newsletter_id] = $query->countQuery()->execute()->fetchField();
+  return $subscription_count[$newsletter_id];
+}
+
+/**
  * Update the sent status of a node.
  *
  * If the node part of a translation set, all corresponding translations are
@@ -1293,9 +1410,9 @@ function simplenews_issue_update_sent_status(NodeInterface $node, $status = SIMP
 }
 
 /**
- * Implements hook_entity_extra_fields().
+ * Implements hook_entity_extra_field_info().
  */
-function simplenews_entity_extra_fields() {
+function simplenews_entity_extra_field_info() {
   $return['user']['user'] = array(
     'display' => array(
       'simplenews' => array(

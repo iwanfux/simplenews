@@ -9,7 +9,6 @@ namespace Drupal\simplenews\Form;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\Entity\User;
 use Drupal\user\UserInterface;
 
 /**

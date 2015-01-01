@@ -26,7 +26,7 @@ class NewsletterSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->get('simplenews.settings');
+    $config = $this->config('simplenews.settings');
     $form['simplenews_default_options'] = array(
       '#type' => 'fieldset',
       '#title' => $this->t('Default newsletter options'),
@@ -106,13 +106,6 @@ class NewsletterSettingsForm extends ConfigFormBase {
     );
 
     return parent::buildForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
   }
 
   /**

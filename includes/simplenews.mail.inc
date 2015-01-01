@@ -44,7 +44,6 @@ function simplenews_add_node_to_spool($node) {
   $select->addExpression(SIMPLENEWS_SUBSCRIPTION_STATUS_SUBSCRIBED, 'status');
   $select->addExpression(REQUEST_TIME, 'timestamp');
 
-  module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
   $node->simplenews_issue->subscribers = simplenews_count_subscriptions($node->simplenews_issue->target_id);
 
   db_insert('simplenews_mail_spool')

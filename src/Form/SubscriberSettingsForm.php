@@ -26,7 +26,7 @@ class SubscriberSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->configFactory()->get('simplenews.settings');
+    $config = $this->config('simplenews.settings');
     $form['account'] = array(
       '#type' => 'fieldset',
       '#title' => $this->t('User account'),
@@ -53,7 +53,7 @@ class SubscriberSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->configFactory()->get('simplenews.settings')
+    $this->config('simplenews.settings')
       ->set('subscriber.sync_account', $form_state->getValue('simplenews_sync_account'))
       ->save();
 

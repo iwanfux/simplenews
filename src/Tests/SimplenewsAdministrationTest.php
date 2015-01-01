@@ -439,7 +439,6 @@ class SimplenewsAdministrationTest extends SimplenewsTestBase {
 
     // Make sure the user is subscribed to the first newsletter_id.
     simplenews_subscribe($user_mail, $first, FALSE);
-    module_load_include('inc', 'simplenews', 'includes/simplenews.admin');
     $before_count = simplenews_count_subscriptions($first);
 
     // Block the user.

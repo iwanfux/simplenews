@@ -3,12 +3,11 @@ description: 'Send newsletters to subscribed email addresses.'
 type: module
 package: Mail
 core: 8.x
-version: VERSION
 dependencies:
-- node
-- entity_reference
-- field
-- options
+  - node
+  - entity_reference
+  - field
+  - options
 test_dependencies:
-- monitoring
-configure: simplenews.admin
+  - monitoring
+configure: simplenews.newsletter_list
