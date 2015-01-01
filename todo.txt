@@ -4,9 +4,7 @@ simplenews_form_node_type_form_alter: reimplement
 simplenews_user_delete: check user_sync flag
 simplenews_get_subscriptions_by_list: delete?
 simplenews_recent_newsletters: Replace this list by a View
-simplenews_private_key: use \Drupal::state
 simplenews_help: work over
-simplenews_variable_info: config schema for simplenews.settings; test config translation
 template_*: theme_hook_suggestions separate hook, check it
 simplenews_issue_send: convert to action
 simplenews_get_source_caches: convert to plugin

@@ -1,5 +1,3 @@
-# @todo Move to state, or remove?
-private_key: FALSE
 hash_expiration: 86400
 
 newsletter:
@@ -7,9 +5,6 @@ newsletter:
   priority: 0
   receipt: 0
   send: 0
-  # These are set in simplenews_install()
-  from_address: ~
-  test_address: ~
   test_address_override: 0
 
 subscriber:
@@ -18,13 +13,16 @@ subscriber:
 subscription:
   use_combined: multiple
   confirm_subscribe_subject: 'Confirmation for [simplenews-newsletter:name] from [site:name]'
-  confirm_subscribe_unsubscribed: 'We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:subscribe-url]'
+  confirm_subscribe_unsubscribed: |
+We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name] newsletter on [site:name] website at [site:url]. To confirm please use the link below.
+
+[simplenews-subscriber:subscribe-url]
   confirm_subscribe_subscribed: 'We have received a request to subscribe [simplenews-subscriber:mail] to the [simplenews-newsletter:name]  newsletter on [site:name] website at [site:url]. However, this email is already subscribed to this newsletter. If you intended to unsubscribe please visit our site: [site:url]'
-  confirm_unsubscribe_subscribed: 'We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-newsletter:name] mailing list on [site:name] website at [site:url]. To confirm please use the link below.\n\n[simplenews-subscriber:unsubscribe-url]'
+  confirm_unsubscribe_subscribed: 'We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-newsletter:name] mailing list on [site:name] website at [site:url]. To confirm please use the link below.\r\n\r\n[simplenews-subscriber:unsubscribe-url]'
   confirm_unsubscribe_unsubscribed: 'We have received a request to remove the [simplenews-subscriber:mail] from the [simplenews-newsletter:name] mailing list on [site:name] website at [site:url]. However, this email is not subscribed to this mailing list. If you intended to subscribe please visit our site at [site:url]'
   confirm_combined_subject: 'Confirmation for [site:name]'
-  confirm_combined_body: 'We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\n\n[changes-list]\n\nTo confirm please use the link below.\n\n[simplenews-subscriber:combined-url]'
-  confirm_combined_body_unchanged: 'We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\n\n[changes-list]\n\nNo confirmation necessary because all requested changes equal the current state.'
+  confirm_combined_body: 'We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\r\n\r\n[changes-list]\r\n\r\nTo confirm please use the link below.\r\n\r\n[simplenews-subscriber:combined-url]'
+  confirm_combined_body_unchanged: 'We have received a request for the following subscription changes for [simplenews-subscriber:mail] at [site:url]:\r\n\r\n[changes-list]\r\n\r\nNo confirmation necessary because all requested changes equal the current state.'
   confirm_combined_line_subscribe_unsubscribed: 'Subscribe to [simplenews-newsletter:name]'
   confirm_combined_line_subscribe_subscribed: 'Already subscribed to [simplenews-newsletter:name]'
   confirm_combined_line_unsubscribe_subscribed: 'Unsubscribe from [simplenews-newsletter:name]'
@@ -38,6 +36,8 @@ mail:
   spool_progress_expiration: 3600
   spool_expire: 0
   debug: FALSE
+  last_cron: 0
+  last_sent: 0
   source_cache: \Drupal\simplenews\Source\SourceCacheBuild
   source: \Drupal\simplenews\Source\SourceEntity
   source_node: \Drupal\simplenews\Source\SourceNode

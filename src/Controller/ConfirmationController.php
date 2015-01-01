@@ -7,10 +7,9 @@
 
 namespace Drupal\simplenews\Controller;
 
-use Drupal\Component\Utility\String;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Url;
-use Drupal\simplenews\Entity\Subscriber;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Returns responses for confirmation routes.
@@ -33,8 +32,7 @@ class ConfirmationController extends ControllerBase {
    * @param $hash
    *   The confirmation hash.
    */
-  public function confirm_combined($snid, $timestamp, $hash, $immediate = FALSE) {
-    $arguments = array_slice(func_get_args(), 3);
+  public function confirmCombined($snid, $timestamp, $hash, $immediate = FALSE) {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
@@ -94,7 +92,7 @@ class ConfirmationController extends ControllerBase {
         return $this->redirect('<front>');
       }
     }
-    return MENU_NOT_FOUND;
+    throw new NotFoundHttpException();
   }
 
   /**
@@ -135,7 +133,7 @@ class ConfirmationController extends ControllerBase {
    * @param $hash
    *   The confirmation hash.
    */
-  function confirm_subscription($action, $snid, $newsletter_id, $timestamp, $hash, $immediate = FALSE) {
+  function confirmSubscription($action, $snid, $newsletter_id, $timestamp, $hash, $immediate = FALSE) {
     $config = \Drupal::config('simplenews.settings');
 
     // Prevent search engines from indexing this page.
@@ -200,6 +198,6 @@ class ConfirmationController extends ControllerBase {
         }
       }
     }
-    return MENU_NOT_FOUND;
+    throw new NotFoundHttpException();
   }
 }

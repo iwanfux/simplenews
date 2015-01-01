@@ -274,7 +274,7 @@ class SourceEntity implements SourceEntityInterface {
 
     // Switch back to the previous user.
     if ($this->uid) {
-      simplenews_revert_user();
+      \Drupal::service('account_switcher')->switchBack();
     }
 
     // Switch language back.

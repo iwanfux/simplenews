@@ -336,7 +336,7 @@ function simplenews_mail_spool($limit = SIMPLENEWS_UNLIMITED, array $conditions 
     \Drupal::state()->set('simplenews.last_cron', REQUEST_TIME);
     \Drupal::state()->set('simplenews.last_sent', $count_success);
 
-    simplenews_revert_user();
+    \Drupal::service('account_switcher')->switchBack();
     return $count_success;
   }
 }

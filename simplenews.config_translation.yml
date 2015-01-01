@@ -1,0 +1,5 @@
+simplenews.settings:
+  title: 'Simplenews settings'
+  base_route_name: simplenews.newsletter_list
+  names:
+    - simplenews.settings

@@ -3,14 +3,12 @@ simplenews.settings:
   type: mapping
   label: 'Simplenews settings'
   mapping:
-    private_key:
-      type: string
-      label: Private key
     hash_expiration:
       type: integer
       label: Hash expiration
     newsletter:
       type: mapping
+      label: Newsletter settings
       mapping:
         format:
           type: string
