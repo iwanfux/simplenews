@@ -18,10 +18,15 @@ use Drupal\simpletest\WebTestBase;
 use Drupal\user\Entity\Role;
 
 /**
- * Class SimplenewsTestBase
+ * Base class for simplenews web tests.
  */
 abstract class SimplenewsTestBase extends WebTestBase {
 
+  /**
+   * Modules to enable.
+   *
+   * @var array
+   */
   public static $modules = array('simplenews', 'block');
 
   /**
