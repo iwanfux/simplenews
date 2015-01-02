@@ -188,8 +188,13 @@ class SimplenewsSendTest extends SimplenewsTestBase {
       $this->assertEqual(SIMPLENEWS_STATUS_SEND_NOT, $node->simplenews_issue->status, t('Newsletter not sent yet.'));
     }
 
+    /*
+     * @todo Enable these tests again in https://www.drupal.org/node/2401019.
+     *
+
     // Send the first and last newsletter on the newsletter overview.
     list ($first, $second, $unpublished) = $nodes;
+
 
     $edit = array(
       'issues[' . $first->id() . ']' => $first->id(),
@@ -219,6 +224,7 @@ class SimplenewsSendTest extends SimplenewsTestBase {
       unset($this->subscribers[$mail['to']]);
     }
     $this->assertEqual(0, count($this->subscribers), t('all subscribers have received a mail'));
+    */
   }
 
   /**

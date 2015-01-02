@@ -140,7 +140,6 @@ abstract class SimplenewsTestBase extends WebTestBase {
     $settings['visibility']['request_path']['negate'] = TRUE;
     $settings['region'] = 'sidebar_first';
 
-    //$this->drupalPostForm('admin/structure/block/manage/simplenews/' . $newsletter_id . '/configure', $edit, t('Save block'));
     $block = $this->drupalPlaceBlock('simplenews_subscription_block', $settings);
     $this->assertTrue($block->id());
 

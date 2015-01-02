@@ -11,6 +11,8 @@ use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\node\NodeInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\simplenews\Entity\Subscriber;
@@ -217,13 +219,60 @@ function simplenews_get_content_types() {
  *
  * Add checkbox to the content type form to use the content type as newsletter.
  */
-function simplenews_form_node_type_form_alter(&$form, FormStateInterface $form_state) {
+function simplenews_form_node_type_form_alter(array &$form, FormStateInterface $form_state) {
   // Add option to use content type as simplenews newsletter.
+
+  $node_type = $form_state->getFormObject()->getEntity();
+
+  // Get the default based on the existence of the simplenews_issue field.
+  $default = FALSE;
+  if (!$node_type->isNew()) {
+    $fields = \Drupal::entityManager()->getFieldDefinitions('node', $node_type->id());
+    $default = isset($fields['simplenews_issue']);
+  }
+
   $form['workflow']['simplenews_content_type'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use as simplenews newsletter'),
-    '#default_value' => 0,
+    '#default_value' => $default,
+    '#description' => t('This will add the simplenews issue field to this content type, allowing content of this type to be sent out as a newsletter issue.'),
   );
+
+  $form['actions']['submit']['#submit'][] = 'simplenews_form_node_type_submit';
+}
+
+/**
+ * Submit callback to add the simplenews_issue field to node types.
+ */
+function simplenews_form_node_type_submit(array $form, FormStateInterface $form_state) {
+  $checked = $form_state->getValue('simplenews_content_type');
+
+  $node_type = $form_state->getFormObject()->getEntity();
+  // Get the default based on the existence of the simplenews_issue field.
+  $fields = \Drupal::entityManager()->getFieldDefinitions('node', $node_type->id());
+  $exists = isset($fields['simplenews_issue']);
+
+  if ($checked && !$exists) {
+    // If checked and the field does not exist yet, create it.
+    $field_storage = FieldStorageConfig::loadByName('node', 'simplenews_issue');
+    $field = FieldConfig::create([
+      'field_storage' => $field_storage,
+      'label' => t('Issue'),
+      'bundle' => $node_type->id(),
+      'translatable' => TRUE,
+    ]);
+    $field->save();
+
+    // Set the default widget.
+    entity_get_form_display('node', $node_type->id(), 'default')
+      ->setComponent($field->getName())
+      ->save();
+  }
+  elseif (!$checked && $exists) {
+    // @todo Consider deleting the field or find a way to disable it. Maybe
+    //   do not allow to disable the checkbox and point to removing the field
+    //   manually? Or remove this feature completely and rely on the field only.
+  }
 }
 
 /**
@@ -696,13 +745,17 @@ function simplenews_get_subscriptions_by_list($newsletter_id) {
  * @ingroup subscription
  */
 function simplenews_subscription_delete($conditions = array()) {
-  return;
   // @todo: redo this in a proper way
+  if (!db_table_exists('simplenews_subscriber__subscriptions')) {
+    // This can happen if this is called during uninstall.
+    return;
+  }
   $query = db_delete('simplenews_subscriber__subscriptions');
   foreach ($conditions as $key => $condition) {
     $query->condition($key, $condition);
   }
   $query->execute();
+  \Drupal::entityManager()->getStorage('simplenews_subscriber')->resetCache();
 }
 
 /**

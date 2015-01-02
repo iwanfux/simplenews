@@ -7,6 +7,7 @@
 
 namespace Drupal\simplenews\Entity;
 
+use Drupal\block\Entity\Block;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\simplenews\NewsletterInterface;
@@ -148,10 +149,41 @@ class Newsletter extends ConfigEntityBase implements NewsletterInterface {
   /**
    * {@inheritdoc}
    */
-  public function delete() {
-    simplenews_subscription_delete(array('subscriptions_target_id' => $this->id));
-    drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $this->name)));
-    parent::delete();
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+    foreach ($entities as $newsletter) {
+      simplenews_subscription_delete(array('subscriptions_target_id' => $newsletter->id()));
+      drupal_set_message(t('All subscriptions to newsletter %newsletter have been deleted.', array('%newsletter' => $newsletter->label())));
+    }
+
+    if (\Drupal::moduleHandler()->moduleExists('block')) {
+      // Make sure there are no active blocks for these newsletters.
+      $ids = \Drupal::entityQuery('block')
+        ->condition('plugin', 'simplenews_subscription_block')
+        ->condition('settings.newsletters.*', array_keys($entities))
+        ->execute();
+      if ($ids) {
+        $blocks = Block::loadMultiple($ids);
+        foreach ($blocks as $block) {
+          $settings = $block->get('settings');
+          foreach ($entities as $newsletter) {
+            if (in_array($newsletter->id(), $settings['newsletters'])) {
+              unset($settings['newsletters'][array_search($newsletter->id(), $settings['newsletters'])]);
+            }
+          }
+          // If there are no enabled newsletters left, delete the block.
+          if (empty($settings['newsletters'])) {
+            $block->delete();
+          }
+          else {
+            // otherwise, update the settings and save.
+            $block->set('settings', $settings);
+            $block->save();
+          }
+        }
+      }
+    }
+
   }
 
 }
