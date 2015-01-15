@@ -105,7 +105,7 @@ class SimplenewsPersonalizationFormsTest extends SimplenewsTestBase {
     // Request new password.
     $this->drupalPostForm('user/password', array(
       'name' => $email,
-    ), t('Email new password'));
+    ), t('Submit'));
 
     // Assert the email is not recognized as an account.
     $this->assertRaw(t('Sorry, %name is not recognized as a username or an email address.', array('%name' => $email)));

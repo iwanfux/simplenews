@@ -39,8 +39,8 @@ use Drupal\user\UserInterface;
  *   field_ui_base_route = "simplenews.settings_subscriber",
  *   admin_permission = "administer simplenews subscriptions",
  *   links = {
- *     "edit-form" = "simplenews.subscriber_edit",
- *     "delete-form" = "simplenews.subscriber_delete",
+ *     "edit-form" = "admin/people/simplenews/edit/{simplenews_subscriber}",
+ *     "delete-form" = "/admin/people/simplenews/delete/{simplenews_subscriber}",
  *   }
  * )
  */

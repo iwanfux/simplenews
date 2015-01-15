@@ -33,8 +33,8 @@ use Drupal\simplenews\NewsletterInterface;
  *     "label" = "name"
  *   },
  *   links = {
- *     "delete-form" = "simplenews.newsletter_delete",
- *     "edit-form" = "simplenews.newsletter_edit"
+ *     "delete-form" = "/admin/config/services/simplenews/manage/{simplenews_newsletter}/delete",
+ *     "edit-form" = "/admin/config/services/simplenews/manage/{simplenews_newsletter}"
  *   }
  * )
  */

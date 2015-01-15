@@ -46,7 +46,7 @@ simplenews.newsletter_add:
   requirements:
     _entity_create_access: 'simplenews_newsletter'
 
-simplenews.newsletter_edit:
+entity.simplenews_newsletter.edit_form:
   path: '/admin/config/services/simplenews/manage/{simplenews_newsletter}'
   defaults:
     _entity_form: 'simplenews_newsletter.edit'
@@ -54,7 +54,7 @@ simplenews.newsletter_edit:
   requirements:
     _entity_access: 'simplenews_newsletter.update'
 
-simplenews.newsletter_delete:
+entity.simplenews_newsletter.delete_form:
   path: '/admin/config/services/simplenews/manage/{simplenews_newsletter}/delete'
   defaults:
     _entity_form: 'simplenews_newsletter.delete'
@@ -78,7 +78,7 @@ simplenews.subscriber_add:
   requirements:
     _entity_create_access: 'simplenews_subscriber'
 
-simplenews.subscriber_edit:
+entity.simplenews_subscriber.edit_form:
   path: 'admin/people/simplenews/edit/{simplenews_subscriber}'
   defaults:
     _entity_form: 'simplenews_subscriber.default'
@@ -86,7 +86,7 @@ simplenews.subscriber_edit:
   requirements:
     _entity_access: 'simplenews_subscriber.update'
 
-simplenews.subscriber_delete:
+entity.simplenews_subscriber.delete_form:
   path: '/admin/people/simplenews/delete/{simplenews_subscriber}'
   defaults:
     _entity_form: 'simplenews_subscriber.delete'
